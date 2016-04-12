@@ -2,7 +2,7 @@
 
 Title: parseLogs.py
 Author: David Leclerc
-Date: 11.04.16
+Date: 12.04.16
 
 """
 
@@ -19,47 +19,111 @@ import matplotlib.dates as dates
 
 
 
-# Define main
-def main():
+# Define function to read Kahn reports
+def readKahnReport(subject):
 
-    # Read logs
-    print "Reading logs..."
-    log = "/home/david/Documents/MyAPS/Logs/data_1.txt"
+    # Read data from log
+    print "Reading Kahn log..."
+    log = "/home/david/Documents/MyAPS/Logs/data_" + str(subject) + ".txt"
     
     with open(log) as f:
         log_contents = f.readlines()
 
     n_log_entries = len(log_contents)
 
-
-
-    # Extract data from logs
+    # Parse data from logs
     print "Extracting blood sugar levels..."
-    blood_sugar_levels = np.zeros(n_log_entries, dtype = float)
+
     blood_sugar_times = np.zeros(n_log_entries, dtype = object)
+    blood_sugar_levels = np.zeros(n_log_entries, dtype = float)
 
     for i in range(n_log_entries):
 
+        # Parse entry
         log_entry = log_contents[i].replace("\n", "").split("\t")
+
+        # Extract information from entry
         log_date = log_entry[0]
         log_time = log_entry[1]
-        log_timestamp = datetime.datetime.strptime(log_date + " " + log_time, "%m-%d-%Y %H:%M")
         log_code = int(log_entry[2])
         log_value = 0.0555 * float(log_entry[3]) # Conversion from mg/dl to mmol/l
+        log_timestamp = datetime.datetime.strptime(log_date + " " + log_time, "%m-%d-%Y %H:%M")
 
-        # Only read plausible blood sugar levels
-        if log_code > 35 and log_value >= 1.0:
-            blood_sugar_levels[i] = log_value
+        # Store plausible blood sugar levels
+        if log_code > 35 and log_value > 0:
             blood_sugar_times[i] = log_timestamp
+            blood_sugar_levels[i] = log_value
 
     # Delete array elements for leftout entries
-    blood_sugar_levels = blood_sugar_levels[np.nonzero(blood_sugar_levels)]
     blood_sugar_times = blood_sugar_times[np.nonzero(blood_sugar_times)]
+    blood_sugar_levels = blood_sugar_levels[np.nonzero(blood_sugar_levels)]
+
+    return [blood_sugar_times, blood_sugar_levels]
 
 
+
+
+
+# Define function to read Freestyle reports
+def readFreestyleReport():
+
+    # Read data from log
+    print "Reading Freestyle log..."
+    log = "/home/david/Documents/MyAPS/Logs/dataMe.txt"
+
+    with open(log) as f:
+        log_contents = f.readlines()    
+
+    n_log_entries = len(log_contents) - 1 # Keeping header out of the count
+
+    # Parse data from logs
+    print "Extracting blood sugar levels..."
+
+    blood_sugar_times = np.zeros(n_log_entries, dtype = object)
+    blood_sugar_levels = np.zeros(n_log_entries, dtype = float)
+
+    for i in range(1, n_log_entries):
+
+        # Parse log entry
+        log_entry = log_contents[i]
+
+        for wrong_char in ["\x00", "\xff", "\xfe", "\r", "\n"]:
+            log_entry = log_entry.replace(wrong_char, "")
+
+        log_entry = log_entry.split("\t")
+
+        # Extract information from entry
+        log_value = 0.0555 * float(log_entry[10]) # Conversion from mg/dl to mmol/l
+        log_timestamp = datetime.datetime(int(log_entry[4]), \
+            int(log_entry[2]), \
+            int(log_entry[3]), \
+            int(log_entry[5]), \
+            int(log_entry[6]))
+
+        # Store plausible blood sugar levels
+        if log_value > 0:
+            blood_sugar_times[i] = log_timestamp
+            blood_sugar_levels[i] = log_value
+
+    # Delete array elements for leftout entries
+    blood_sugar_times = blood_sugar_times[np.nonzero(blood_sugar_times)]
+    blood_sugar_levels = blood_sugar_levels[np.nonzero(blood_sugar_levels)]
+
+    return [blood_sugar_times, blood_sugar_levels]
+
+
+
+
+
+# Define main
+def main():
 
     # Generate plot
     print "Generating plot of blood sugar levels..."
+
+    # Get blood sugar levels
+    #[blood_sugar_times, blood_sugar_levels] = readKahnReport(1)
+    [blood_sugar_times, blood_sugar_levels] = readFreestyleReport()
 
     # Define font
     matplotlib.rc("font", **{"family" : "Ubuntu"})
@@ -85,8 +149,6 @@ def main():
 
     # Show plot
     plt.show()
-
-
 
     # End of script
     print "Done!"
