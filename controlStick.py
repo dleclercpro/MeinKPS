@@ -1,5 +1,7 @@
 #! /usr/bin/python
 
+
+
 """
 ================================================================================
 TITLE:    controlStick
@@ -22,6 +24,8 @@ NOTES:    ...
 ================================================================================
 """
 
+
+
 # LIBRARIES
 import serial
 import os
@@ -29,6 +33,13 @@ import sys
 import time
 import datetime
 import numpy as np
+
+
+
+# USER-DEFINED LIBRARIES
+import lib
+
+
 
 # DEFINITIONS
 LOGS_ADDRESS = '/home/david/Documents/MeinKPS/stickLogs.txt'
@@ -43,22 +54,24 @@ class stick:
     PRODUCT                 = 0x8001
 
     # INITIALIZATION RESPONSE INDICES
-    ACK                     = 0
-    STATUS                  = 1
-    SERIAL                  = range(3, 6)
-    RADIOFREQUENCY          = 8
-    DESCRIPTION             = range(9, 19)
-    VERSION                 = range(19, 21)
-    INTERFACES              = range(21, 64)
+    ACK_INDEX               = 0
+    STATUS_INDEX            = 1
+    SERIAL_INDEX            = range(3, 6)
+    RADIOFREQUENCY_INDEX    = 8
+    DESCRIPTION_INDEX       = range(9, 19)
+    VERSION_INDEX           = range(19, 21)
+    INTERFACES_INDEX        = range(22, 64)
 
     # STATUS RESPONSE INDICES
-    SIGNAL                  = 3
+    SIGNAL_INDEX            = 3
 
     # STICK CONSTANTS
     SIGNAL_THRESHOLD        = 150
     N_READ_ATTEMPTS         = 5
     N_READ_BYTES            = 64
     SLEEP_TIME              = 0.25
+    RADIOFREQUENCIES        = {0: 916.5, 1: 868.35, 255: 916.5}
+    INTERFACES              = {1: "Paradigm RF", 3: "USB"}
 
 
 
@@ -106,33 +119,11 @@ class stick:
         # Generate handle for the stick
         self.getHandle()
 
-        # Ask for stick info
-        self.sendRequest([4, 0, 0])
+        # Ask for stick infos
+        self.getInfos()
 
-        self.ack            = self.response[self.ACK]
-        self.status         = self.response[self.STATUS]
-        self.serial         = self.response[self.SERIAL]
-        self.radiofrequency = self.response[self.RADIOFREQUENCY]
-        self.description    = self.response[self.DESCRIPTION]
-        self.version        = self.response[self.VERSION]
-        self.interfaces     = self.response[self.INTERFACES]
-
-        print "ACK: " + str(self.ack)
-        print "Status: " + str(self.status)
-        print "Serial: " + str(self.serial)
-        print "Radiofrequency: " + str(self.radiofrequency)
-        print "Description: " + str(self.description)
-        print "Version: " + str(self.version)
-        print "Interfaces: " + str(self.interfaces)
-
-        # Ask for stick status, namely signal strength
-        self.signal = 0
-
-        while self.signal < self.SIGNAL_THRESHOLD:
-            self.sendRequest([6, 0, 0])
-            self.signal = self.response[self.SIGNAL]
-
-            print "Signal strength: " + str(self.signal)
+        # Ask for signal strength
+        self.getSignalStrength()
 
 
 
@@ -175,8 +166,8 @@ class stick:
             if len(self.raw_response) == 0:
 
                 # Keep track of number of reading trials
-                print "Reading attempt: " + str(i + 1) +
-                      "/" + str(self.N_READ_ATTEMPTS)
+                print "Reading attempt: " + \
+                      str(i + 1) + "/" + str(self.N_READ_ATTEMPTS)
 
                 # Send stick command
                 self.handle.write(bytearray(self.request))
@@ -209,6 +200,9 @@ class stick:
         self.response = np.vectorize(ord)(self.raw_response)
         self.response_hex = np.vectorize(hex)(self.response)
         self.response_str = np.vectorize(chr)(self.response)
+
+        # Pad hexadecimal formatted response
+        self.response_hex = np.vectorize(lib.padHexadecimal)(self.response_hex)
 
         # Correct unreadable characters in string stick response
         self.response_str[self.response < 32] = "."
@@ -246,6 +240,85 @@ class stick:
 
 
 
+    def getInfos(self):
+
+        """
+        ========================================================================
+        GETINFOS
+        ========================================================================
+
+        ...
+        """
+
+        self.sendRequest([4, 0, 0])
+
+        # Get ACK
+        self.ack            = self.response[self.ACK_INDEX]
+
+        # Get status
+        self.status         = self.response_str[self.STATUS_INDEX]
+
+        # Get serial number
+        self.serial         = self.response_hex[self.SERIAL_INDEX]
+        self.serial         = "".join([x[2:] for x in self.serial])
+
+        # Get radiofrequency
+        self.radiofrequency = self.response[self.RADIOFREQUENCY_INDEX]
+        self.radiofrequency = self.RADIOFREQUENCIES[self.radiofrequency]
+
+        # Get description of communication protocol
+        self.description    = self.response_str[self.DESCRIPTION_INDEX]
+        self.description    = "".join(self.description)
+
+        # Get software version
+        self.version        = self.response[self.VERSION_INDEX]
+        self.version        = self.version[0] + 0.01 * self.version[1]
+
+        # Get interfaces
+        self.interfaces     = self.response[self.INTERFACES_INDEX]
+        self.interfaces     = np.trim_zeros(self.interfaces, "b")
+        self.interfaces     = list(self.interfaces)
+        self.n_interfaces   = len(self.interfaces) / 2
+
+        # Loop over all found interfaces
+        for i in range(self.n_interfaces):
+            self.interfaces[2 * i + 1] = self.INTERFACES[self.interfaces[2 * i + 1]]
+
+        # Print infos
+        print "ACK: " + str(self.ack)
+        print "Status: " + self.status
+        print "Serial: " + self.serial
+        print "Radiofrequency: " + str(self.radiofrequency) + " MHz"
+        print "Description: " + self.description
+        print "Version: " + str(self.version)
+        print "Interfaces: " + str(self.interfaces)
+        print
+
+
+
+    def getSignalStrength(self):
+
+            """
+            ====================================================================
+            GETSIGNALSTRENGTH
+            ====================================================================
+
+            ...
+            """
+
+            self.signal = 0
+
+            # Loop until signal found is sufficiently strong
+            while self.signal < self.SIGNAL_THRESHOLD:
+                self.sendRequest([6, 0, 0])
+                self.signal = self.response[self.SIGNAL_INDEX]
+
+                print "Signal strength: " + str(self.signal)
+
+            print
+
+
+
 def main():
 
     """
@@ -276,16 +349,6 @@ def main():
     #response = sendRequest(self.handle, [5, 0, 0], 0)
     #print "ACK: " + str(response)
     #print "\n"
-
-    #for i in range(5):
-    #    if len(response) == 0:
-    #        print "No response..."
-    #        time.sleep(0.5)
-    #        response = self.handle.read(self.N_READ_BYTES)
-    #    else:
-    #        print "Got response!"
-    #        print response.decode()
-    #        break
 
     # Stop stick
     my_stick.stop()
