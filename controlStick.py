@@ -42,7 +42,7 @@ import lib
 
 
 # DEFINITIONS
-LOGS_ADDRESS = '/home/david/Documents/MeinKPS/stickLogs.txt'
+LOGS_ADDRESS = "/home/david/Documents/MeinKPS/stickLogs.txt"
 NOW          = datetime.datetime.now()
 
 
@@ -233,10 +233,9 @@ class stick:
         print self.response
 
         for i in range(8):
-            print ' '.join(self.response_hex[i * 8 : (i + 1) * 8])
-
-        for i in range(8):
-            print ''.join(self.response_str[i * 8 : (i + 1) * 8])
+            print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
+                  "\t" + \
+                  "".join(self.response_str[i * 8 : (i + 1) * 8])
 
 
 
@@ -332,32 +331,32 @@ def main():
     # Instanciate a stick for me
     my_stick = stick()
 
-    # Start stick
+    # Start my stick
     my_stick.start()
 
     # Get stick status
-    #response = sendRequest(self.handle, [3, 0, 0], 0)
+    #sendRequest(self.handle, [3, 0, 0], 0)
     #print "ACK: " + str(response)
     #print "\n"
     
     # Count packets on USB side of stick
-    #response = sendRequest(self.handle, [5, 1, 0], 0)
-    #print "ACK: " + str(response)
-    #print "\n"
+    my_stick.sendRequest([5, 1, 0])
+    print str(my_stick.response)
+    print
 
     # Count packets on RF side of stick
-    #response = sendRequest(self.handle, [5, 0, 0], 0)
-    #print "ACK: " + str(response)
-    #print "\n"
+    my_stick.sendRequest([5, 0, 0])
+    print str(my_stick.response)
+    print
 
-    # Stop stick
+    # Stop my stick
     my_stick.stop()
 
     # End of script
-    print 'Done!'
+    print "Done!"
 
 
 
 # Run script when called from terminal
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
