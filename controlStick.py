@@ -61,12 +61,14 @@ class stick:
     DESCRIPTION_INDEX       = range(9, 19)
     VERSION_INDEX           = range(19, 21)
     INTERFACES_INDEX        = range(22, 64)
+    NAK_INDEX               = 33
 
     # STATUS RESPONSE INDICES
     SIGNAL_INDEX            = 3
 
     # STICK CONSTANTS
     SIGNAL_THRESHOLD        = 150
+    N_WRITE_ATTEMPTS        = 5
     N_READ_ATTEMPTS         = 5
     N_READ_BYTES            = 64
     SLEEP_TIME              = 0.25
@@ -162,24 +164,33 @@ class stick:
         self.raw_response = ""
 
         # Ask for response from stick until we get one
-        for i in range(self.N_READ_ATTEMPTS):
-            if len(self.raw_response) == 0:
+        for i in range(self.N_WRITE_ATTEMPTS):
 
-                # Keep track of number of reading trials
-                print "Reading attempt: " + \
-                      str(i + 1) + "/" + str(self.N_READ_ATTEMPTS)
+            # Send stick command
+            self.handle.write(bytearray(self.request))
 
-                # Send stick command
-                self.handle.write(bytearray(self.request))
+            for j in range(self.N_READ_ATTEMPTS):
+                if len(self.raw_response) == 0:
 
-                # Wait for response
-                time.sleep(self.SLEEP_TIME)
+                    # Keep track of number of reading trials
+                    print "Write: " + \
+                          str(i + 1) + "/" + str(self.N_WRITE_ATTEMPTS) + \
+                          "\t" + \
+                          "Read: " + \
+                          str(j + 1) + "/" + str(self.N_READ_ATTEMPTS)
 
-                # Read stick response
-                self.raw_response = self.handle.read(self.N_READ_BYTES)
+                    # Wait for response
+                    time.sleep(self.SLEEP_TIME)
 
-            else:
-                break
+                    # Read stick response
+                    self.raw_response = self.handle.read(self.N_READ_BYTES)
+
+                else:
+                    break
+
+        # If no response at all was received, quit
+        if len(self.raw_response) == 0:
+            sys.exit("Unable to read from stick. :-(")
 
 
 
@@ -230,12 +241,12 @@ class stick:
         self.parseRawResponse()
 
         # Print stick response in readable formats
-        print self.response
-
         for i in range(8):
             print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
                   "\t" + \
                   "".join(self.response_str[i * 8 : (i + 1) * 8])
+
+        #print self.response
 
 
 
@@ -249,7 +260,12 @@ class stick:
         ...
         """
 
+        # Ask stick for its infos
         self.sendRequest([4, 0, 0])
+
+        if self.response[self.NAK_INDEX] == 1:
+            print "There was an error during initialization! Retrying..."
+            self.sendRequest([4, 0, 0])
 
         # Get ACK
         self.ack            = self.response[self.ACK_INDEX]
@@ -297,24 +313,74 @@ class stick:
 
     def getSignalStrength(self):
 
-            """
-            ====================================================================
-            GETSIGNALSTRENGTH
-            ====================================================================
+        """
+        ========================================================================
+        GETSIGNALSTRENGTH
+        ========================================================================
 
-            ...
-            """
+        ...
+        """
 
-            self.signal = 0
+        self.signal = 0
+        self.n_signal_read_attempts = 0
 
-            # Loop until signal found is sufficiently strong
-            while self.signal < self.SIGNAL_THRESHOLD:
-                self.sendRequest([6, 0, 0])
-                self.signal = self.response[self.SIGNAL_INDEX]
+        # Loop until signal found is sufficiently strong
+        while self.signal < self.SIGNAL_THRESHOLD:
+            self.sendRequest([6, 0, 0])
+            self.signal = self.response[self.SIGNAL_INDEX]
+            self.n_signal_read_attempts += 1
 
-                print "Signal strength: " + str(self.signal)
+            print "Signal read attempt: " + str(self.n_signal_read_attempts)
+            print "Signal strength: " + str(self.signal)
 
-            print
+        print
+
+
+
+    def getStatus(self):
+
+        """
+        ========================================================================
+        GETSTATUS
+        ========================================================================
+
+        ...
+        """
+
+        # Ask stick its status
+        self.sendRequest([3, 0, 0])
+
+
+
+    def getUSBStats(self):
+
+        """
+        ========================================================================
+        GETUSBSTATS
+        ========================================================================
+
+        ...
+        """
+
+        self.sendRequest([5, 1, 0])
+        
+        print
+
+
+
+    def getRFStats(self):
+
+        """
+        ========================================================================
+        GETRFSTATS
+        ========================================================================
+
+        ...
+        """
+
+        self.sendRequest([5, 0, 0])
+        
+        print
 
 
 
@@ -333,21 +399,12 @@ def main():
 
     # Start my stick
     my_stick.start()
-
-    # Get stick status
-    #sendRequest(self.handle, [3, 0, 0], 0)
-    #print "ACK: " + str(response)
-    #print "\n"
     
     # Count packets on USB side of stick
-    my_stick.sendRequest([5, 1, 0])
-    print str(my_stick.response)
-    print
+    my_stick.getUSBStats()
 
-    # Count packets on RF side of stick
-    my_stick.sendRequest([5, 0, 0])
-    print str(my_stick.response)
-    print
+    # Count packets on RF transmitter side of stick
+    my_stick.getRFStats()
 
     # Stop my stick
     my_stick.stop()
