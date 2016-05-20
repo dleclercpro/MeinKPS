@@ -36,8 +36,8 @@ import numpy as np
 
 
 
-# USER-DEFINED LIBRARIES
-import lib
+# USER LIBRARIES
+from lib import *
 
 
 
@@ -58,7 +58,7 @@ class stick:
     NAK_INDEX               = 33
     STATUS_INDEX            = 1
     SERIAL_INDEX            = range(3, 6)
-    FREQUENCY_INDEX    = 8
+    FREQUENCY_INDEX         = 8
     DESCRIPTION_INDEX       = range(9, 19)
     VERSION_INDEX           = range(19, 21)
     INTERFACES_INDEX        = range(22, 64)
@@ -69,10 +69,10 @@ class stick:
     # STICK CONSTANTS
     SIGNAL_THRESHOLD        = 150
     N_WRITE_ATTEMPTS        = 3
-    N_READ_ATTEMPTS         = 3
+    N_READ_ATTEMPTS         = 2
     N_READ_BYTES            = 64
-    SLEEP_TIME              = 0.1
-    FREQUENCIES        = {0: 916.5, 1: 868.35, 255: 916.5}
+    SLEEP_TIME              = 0.001
+    FREQUENCIES             = {0: 916.5, 1: 868.35, 255: 916.5}
     INTERFACES              = {1: "Paradigm RF", 3: "USB"}
 
 
@@ -122,10 +122,17 @@ class stick:
         self.getHandle()
 
         # Ask for stick infos
-        self.getInfos()
+        #self.getInfos()
 
         # Ask for signal strength
+        #self.getSignalStrength()
+
+        self.getInfos()
+        self.getInfos()
         self.getSignalStrength()
+        self.getInfos()
+        self.getSignalStrength()
+        
 
 
 
@@ -190,6 +197,11 @@ class stick:
 
         # If no response at all was received, quit
         if len(self.raw_response) == 0:
+
+            # Stop stick
+            #self.stop()
+
+            # Exit program
             sys.exit("Unable to read from stick. :-(")
 
 
@@ -213,11 +225,32 @@ class stick:
         self.response_str = np.vectorize(chr)(self.response)
 
         # Pad hexadecimal formatted response
-        self.response_hex = np.vectorize(lib.padHexadecimal)(self.response_hex)
+        self.response_hex = np.vectorize(padHexaString)(self.response_hex)
 
         # Correct unreadable characters in string stick response
         self.response_str[self.response < 32] = "."
         self.response_str[self.response > 126] = "."
+
+
+
+    def printResponse(self):
+
+        """
+        ========================================================================
+        PRINTRESPONSE
+        ========================================================================
+
+        ...
+        """
+
+        # Print original response
+        #print self.response
+
+        # Print hexadecimal and string responses in rows of 8 bytes
+        for i in range(8):
+            print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
+                  "\t" + \
+                  "".join(self.response_str[i * 8 : (i + 1) * 8])
 
 
 
@@ -238,12 +271,32 @@ class stick:
         self.parseRawResponse()
 
         # Print stick response in readable formats
-        for i in range(8):
-            print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
-                  "\t" + \
-                  "".join(self.response_str[i * 8 : (i + 1) * 8])
+        self.printResponse()
 
-        #print self.response
+
+
+    def freeBuffer(self):
+
+        """
+        ========================================================================
+        freeBuffer
+        ========================================================================
+
+        ...
+        """
+
+        n_trials = 5
+
+        for i in range(n_trials):
+            print str(i) + "/" + str(n_trials)
+
+            self.raw_response = self.handle.read(self.N_READ_BYTES)
+
+            if len(self.raw_response) == 0:
+                break
+                print "Buffer freed!"
+            else:
+                print "Trying to free buffer again..."
 
 
 
@@ -262,10 +315,10 @@ class stick:
         self.sendRequest()
 
         # Get NAK
-        self.nak         = self.response[self.NAK_INDEX]
+        #self.nak         = self.response[self.NAK_INDEX]
 
         # Make sure NAK is negative
-        self.verifyErrors()
+        #self.verifyErrors()
 
         # Get ACK
         self.ack         = self.response[self.ACK_INDEX]
@@ -290,13 +343,13 @@ class stick:
         self.version     = self.version[0] + 0.01 * self.version[1]
 
         # Get interfaces
-        self.interfaces  = self.response[self.INTERFACES_INDEX]
-        self.interfaces  = np.trim_zeros(self.interfaces, "b")
-        self.interfaces  = list(self.interfaces)
+        #self.interfaces  = self.response[self.INTERFACES_INDEX]
+        #self.interfaces  = np.trim_zeros(self.interfaces, "b")
+        #self.interfaces  = list(self.interfaces)
 
         # Loop over all found interfaces
-        for i in range(len(self.interfaces) / 2):
-            self.interfaces[2 * i + 1] = self.INTERFACES[self.interfaces[2 * i + 1]]
+        #for i in range(len(self.interfaces) / 2):
+        #    self.interfaces[2 * i + 1] = self.INTERFACES[self.interfaces[2 * i + 1]]
 
         # Print infos
         print "ACK: " + str(self.ack)
@@ -305,7 +358,7 @@ class stick:
         print "Radiofrequency: " + str(self.frequency) + " MHz"
         print "Description: " + self.description
         print "Version: " + str(self.version)
-        print "Interfaces: " + str(self.interfaces)
+        #print "Interfaces: " + str(self.interfaces)
         print
 
 
@@ -362,12 +415,12 @@ class stick:
         #self.packets_received = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
         #self.packets_sent = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
 
-        print self.errors_crc
-        print self.errors_seq
-        print self.errors_nak
-        print self.errors_timeout
-        print self.packets_received
-        print self.packets_sent
+        print "Bad CRCs: " + str(self.errors_crc)
+        print "Sequential errors: " + str(self.errors_seq)
+        print "NAKs: " + str(self.errors_nak)
+        print "Timeout errors: " + str(self.errors_timeout)
+        print "Packets received: " + str(self.packets_received)
+        print "Packets sent: " + str(self.packets_sent)
         print
 
 
@@ -397,21 +450,21 @@ class stick:
         #self.packets_received = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
         #self.packets_sent = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
 
-        print self.errors_crc
-        print self.errors_seq
-        print self.errors_nak
-        print self.errors_timeout
-        print self.packets_received
-        print self.packets_sent
+        print "Bad CRCs: " + str(self.errors_crc)
+        print "Sequential errors: " + str(self.errors_seq)
+        print "NAKs: " + str(self.errors_nak)
+        print "Timeout errors: " + str(self.errors_timeout)
+        print "Packets received: " + str(self.packets_received)
+        print "Packets sent: " + str(self.packets_sent)
         print
 
 
 
-    def getRFBufferState(self):
+    def getDownloadState(self):
 
         """
         ========================================================================
-        GETRFBUFFERSTATE
+        GETDOWNLOADSTATE
         ========================================================================
 
         ...
@@ -437,7 +490,9 @@ class stick:
 
         if self.nak == 1:
 
-            print "There was a NAK received in the last response. Resending request..."
+            print "There was a NAK received in the last response. " + \
+                  "Resending request..."
+
             self.sendRequest()
 
 
@@ -464,8 +519,21 @@ def main():
     # Count packets on RF transmitter side of stick
     my_stick.getRFState()
 
+    # Count packets on USB side of stick
+    my_stick.getUSBState()
+
+    # Count packets on RF transmitter side of stick
+    my_stick.getRFState()
+
     # Get stick RF buffer status (waiting to download)
-    my_stick.getRFBufferState()
+    for i in range(10):
+        my_stick.getDownloadState()
+
+    # Count packets on USB side of stick
+    my_stick.getUSBState()
+
+    # Count packets on RF transmitter side of stick
+    my_stick.getRFState()
 
     # Stop my stick
     my_stick.stop()

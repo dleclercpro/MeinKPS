@@ -21,11 +21,11 @@ NOTES:    ...
 """
 
 # Pad an hexadecimal string with zeros
-def padHexadecimal(x):
+def padHexaString(x):
 
         """
         ========================================================================
-        PADHEXADECIMAL
+        PADHEXASTRING
         ========================================================================
 
         ...
