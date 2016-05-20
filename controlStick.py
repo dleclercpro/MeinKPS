@@ -55,23 +55,23 @@ class stick:
 
     # INITIALIZATION RESPONSE INDICES
     ACK_INDEX               = 0
+    NAK_INDEX               = 33
     STATUS_INDEX            = 1
     SERIAL_INDEX            = range(3, 6)
-    RADIOFREQUENCY_INDEX    = 8
+    FREQUENCY_INDEX    = 8
     DESCRIPTION_INDEX       = range(9, 19)
     VERSION_INDEX           = range(19, 21)
     INTERFACES_INDEX        = range(22, 64)
-    NAK_INDEX               = 33
 
     # STATUS RESPONSE INDICES
     SIGNAL_INDEX            = 3
 
     # STICK CONSTANTS
     SIGNAL_THRESHOLD        = 150
-    N_WRITE_ATTEMPTS        = 5
-    N_READ_ATTEMPTS         = 5
+    N_WRITE_ATTEMPTS        = 3
+    N_READ_ATTEMPTS         = 3
     N_READ_BYTES            = 64
-    SLEEP_TIME              = 0.25
+    SLEEP_TIME              = 0.1
     RADIOFREQUENCIES        = {0: 916.5, 1: 868.35, 255: 916.5}
     INTERFACES              = {1: "Paradigm RF", 3: "USB"}
 
@@ -263,47 +263,52 @@ class stick:
         # Ask stick for its infos
         self.sendRequest([4, 0, 0])
 
-        if self.response[self.NAK_INDEX] == 1:
+        # Get NAK
+        self.nak         = self.response[self.NAK_INDEX]
+
+        # Make sure there was no error
+        if self.nak == 1:
             print "There was an error during initialization! Retrying..."
-            self.sendRequest([4, 0, 0])
+            self.getInfos()
+
+
 
         # Get ACK
-        self.ack            = self.response[self.ACK_INDEX]
+        self.ack         = self.response[self.ACK_INDEX]
 
         # Get status
-        self.status         = self.response_str[self.STATUS_INDEX]
+        self.status      = self.response_str[self.STATUS_INDEX]
 
         # Get serial number
-        self.serial         = self.response_hex[self.SERIAL_INDEX]
-        self.serial         = "".join([x[2:] for x in self.serial])
+        self.serial      = self.response_hex[self.SERIAL_INDEX]
+        self.serial      = "".join(x[2:] for x in self.serial)
 
         # Get radiofrequency
-        self.radiofrequency = self.response[self.RADIOFREQUENCY_INDEX]
-        self.radiofrequency = self.RADIOFREQUENCIES[self.radiofrequency]
+        self.frequency   = self.response[self.FREQUENCY_INDEX]
+        self.frequency   = self.RADIOFREQUENCIES[self.frequency]
 
         # Get description of communication protocol
-        self.description    = self.response_str[self.DESCRIPTION_INDEX]
-        self.description    = "".join(self.description)
+        self.description = self.response_str[self.DESCRIPTION_INDEX]
+        self.description = "".join(self.description)
 
         # Get software version
-        self.version        = self.response[self.VERSION_INDEX]
-        self.version        = self.version[0] + 0.01 * self.version[1]
+        self.version     = self.response[self.VERSION_INDEX]
+        self.version     = self.version[0] + 0.01 * self.version[1]
 
         # Get interfaces
-        self.interfaces     = self.response[self.INTERFACES_INDEX]
-        self.interfaces     = np.trim_zeros(self.interfaces, "b")
-        self.interfaces     = list(self.interfaces)
-        self.n_interfaces   = len(self.interfaces) / 2
+        self.interfaces  = self.response[self.INTERFACES_INDEX]
+        self.interfaces  = np.trim_zeros(self.interfaces, "b")
+        self.interfaces  = list(self.interfaces)
 
         # Loop over all found interfaces
-        for i in range(self.n_interfaces):
+        for i in range(len(self.interfaces) / 2):
             self.interfaces[2 * i + 1] = self.INTERFACES[self.interfaces[2 * i + 1]]
 
         # Print infos
         print "ACK: " + str(self.ack)
         print "Status: " + self.status
         print "Serial: " + self.serial
-        print "Radiofrequency: " + str(self.radiofrequency) + " MHz"
+        print "Radiofrequency: " + str(self.frequency) + " MHz"
         print "Description: " + self.description
         print "Version: " + str(self.version)
         print "Interfaces: " + str(self.interfaces)
@@ -330,56 +335,114 @@ class stick:
             self.signal = self.response[self.SIGNAL_INDEX]
             self.n_signal_read_attempts += 1
 
-            print "Signal read attempt: " + str(self.n_signal_read_attempts)
+            print "Signal read: " + str(self.n_signal_read_attempts) + "/-"
             print "Signal strength: " + str(self.signal)
 
         print
 
 
 
-    def getStatus(self):
+    def getUSBState(self):
 
         """
         ========================================================================
-        GETSTATUS
-        ========================================================================
-
-        ...
-        """
-
-        # Ask stick its status
-        self.sendRequest([3, 0, 0])
-
-
-
-    def getUSBStats(self):
-
-        """
-        ========================================================================
-        GETUSBSTATS
+        GETUSBSTATE
         ========================================================================
 
         ...
         """
 
+        # Ask stick for its USB state
         self.sendRequest([5, 1, 0])
-        
+
+        # Get errors
+        self.errors_crc = self.response[3]
+        self.errors_seq = self.response[4]
+        self.errors_nak = self.response[5]
+        self.errors_timeout = self.response[6]
+        self.packets_received = self.response[7:11]
+        self.packets_sent = self.response[11:15]
+
+        self.packets_received = (
+                                    self.packets_received[0] << 24 |
+                                    self.packets_received[1] << 16 |
+                                    self.packets_received[2] << 8 |
+                                    self.packets_received[3]
+                                )
+        self.packets_sent =     (
+                                    self.packets_received[0] << 24 |
+                                    self.packets_received[1] << 16 |
+                                    self.packets_received[2] << 8 |
+                                    self.packets_received[3]
+                                )
+
+        print self.errors_crc
+        print self.errors_seq
+        print self.errors_nak
+        print self.errors_timeout
+        print self.packets_received
+        print self.packets_sent
         print
 
 
 
-    def getRFStats(self):
+    def getRFState(self):
 
         """
         ========================================================================
-        GETRFSTATS
+        GETRFSTATE
         ========================================================================
 
         ...
         """
 
+        # Ask stick for its USB state
         self.sendRequest([5, 0, 0])
-        
+
+        # Get errors
+        self.errors_crc = self.response[3]
+        self.errors_seq = self.response[4]
+        self.errors_nak = self.response[5]
+        self.errors_timeout = self.response[6]
+        self.packets_received = self.response[7:11]
+        self.packets_sent = self.response[11:15]
+
+        self.packets_received = (
+                                    self.packets_received[0] << 24 |
+                                    self.packets_received[1] << 16 |
+                                    self.packets_received[2] << 8 |
+                                    self.packets_received[3]
+                                )
+        self.packets_sent =     (
+                                    self.packets_received[0] << 24 |
+                                    self.packets_received[1] << 16 |
+                                    self.packets_received[2] << 8 |
+                                    self.packets_received[3]
+                                )
+
+        print self.errors_crc
+        print self.errors_seq
+        print self.errors_nak
+        print self.errors_timeout
+        print self.packets_received
+        print self.packets_sent
+        print
+
+
+
+    def getRFBufferState(self):
+
+        """
+        ========================================================================
+        GETRFBUFFERSTATE
+        ========================================================================
+
+        ...
+        """
+
+        # Ask stick its general status
+        self.sendRequest([3, 0, 0])
+
         print
 
 
@@ -401,10 +464,13 @@ def main():
     my_stick.start()
     
     # Count packets on USB side of stick
-    my_stick.getUSBStats()
+    my_stick.getUSBState()
 
     # Count packets on RF transmitter side of stick
-    my_stick.getRFStats()
+    my_stick.getRFState()
+
+    # Get stick RF buffer status (waiting to download)
+    #my_stick.getRFBufferState()
 
     # Stop my stick
     my_stick.stop()
