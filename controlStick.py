@@ -72,7 +72,7 @@ class stick:
     N_READ_ATTEMPTS         = 3
     N_READ_BYTES            = 64
     SLEEP_TIME              = 0.1
-    RADIOFREQUENCIES        = {0: 916.5, 1: 868.35, 255: 916.5}
+    FREQUENCIES        = {0: 916.5, 1: 868.35, 255: 916.5}
     INTERFACES              = {1: "Paradigm RF", 3: "USB"}
 
 
@@ -221,7 +221,7 @@ class stick:
 
 
 
-    def sendRequest(self, request):
+    def sendRequest(self):
 
         """
         ========================================================================
@@ -230,9 +230,6 @@ class stick:
 
         ...
         """
-
-        # Save request in stick instance
-        self.request = request
 
         # Send command to stick and wait for response
         self.getRawResponse()
@@ -261,17 +258,14 @@ class stick:
         """
 
         # Ask stick for its infos
-        self.sendRequest([4, 0, 0])
+        self.request = [4, 0, 0]
+        self.sendRequest()
 
         # Get NAK
         self.nak         = self.response[self.NAK_INDEX]
 
-        # Make sure there was no error
-        if self.nak == 1:
-            print "There was an error during initialization! Retrying..."
-            self.getInfos()
-
-
+        # Make sure NAK is negative
+        self.verifyErrors()
 
         # Get ACK
         self.ack         = self.response[self.ACK_INDEX]
@@ -285,7 +279,7 @@ class stick:
 
         # Get radiofrequency
         self.frequency   = self.response[self.FREQUENCY_INDEX]
-        self.frequency   = self.RADIOFREQUENCIES[self.frequency]
+        self.frequency   = self.FREQUENCIES[self.frequency]
 
         # Get description of communication protocol
         self.description = self.response_str[self.DESCRIPTION_INDEX]
@@ -325,13 +319,14 @@ class stick:
 
         ...
         """
-
+        self.request = [6, 0, 0]
         self.signal = 0
         self.n_signal_read_attempts = 0
 
         # Loop until signal found is sufficiently strong
         while self.signal < self.SIGNAL_THRESHOLD:
-            self.sendRequest([6, 0, 0])
+
+            self.sendRequest()
             self.signal = self.response[self.SIGNAL_INDEX]
             self.n_signal_read_attempts += 1
 
@@ -353,7 +348,8 @@ class stick:
         """
 
         # Ask stick for its USB state
-        self.sendRequest([5, 1, 0])
+        self.request = [5, 1, 0]
+        self.sendRequest()
 
         # Get errors
         self.errors_crc = self.response[3]
@@ -363,18 +359,8 @@ class stick:
         self.packets_received = self.response[7:11]
         self.packets_sent = self.response[11:15]
 
-        self.packets_received = (
-                                    self.packets_received[0] << 24 |
-                                    self.packets_received[1] << 16 |
-                                    self.packets_received[2] << 8 |
-                                    self.packets_received[3]
-                                )
-        self.packets_sent =     (
-                                    self.packets_received[0] << 24 |
-                                    self.packets_received[1] << 16 |
-                                    self.packets_received[2] << 8 |
-                                    self.packets_received[3]
-                                )
+        #self.packets_received = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
+        #self.packets_sent = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
 
         print self.errors_crc
         print self.errors_seq
@@ -397,7 +383,8 @@ class stick:
         """
 
         # Ask stick for its USB state
-        self.sendRequest([5, 0, 0])
+        self.request = [5, 0, 0]
+        self.sendRequest()
 
         # Get errors
         self.errors_crc = self.response[3]
@@ -407,18 +394,8 @@ class stick:
         self.packets_received = self.response[7:11]
         self.packets_sent = self.response[11:15]
 
-        self.packets_received = (
-                                    self.packets_received[0] << 24 |
-                                    self.packets_received[1] << 16 |
-                                    self.packets_received[2] << 8 |
-                                    self.packets_received[3]
-                                )
-        self.packets_sent =     (
-                                    self.packets_received[0] << 24 |
-                                    self.packets_received[1] << 16 |
-                                    self.packets_received[2] << 8 |
-                                    self.packets_received[3]
-                                )
+        #self.packets_received = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
+        #self.packets_sent = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
 
         print self.errors_crc
         print self.errors_seq
@@ -441,9 +418,27 @@ class stick:
         """
 
         # Ask stick its general status
-        self.sendRequest([3, 0, 0])
+        self.request = [3, 0, 0]
+        self.sendRequest()
 
         print
+
+
+
+    def verifyErrors(self):
+
+        """
+        ========================================================================
+        VERIFYERRORS
+        ========================================================================
+
+        ...
+        """
+
+        if self.nak == 1:
+
+            print "There was a NAK received in the last response. Resending request..."
+            self.sendRequest()
 
 
 
@@ -470,7 +465,7 @@ def main():
     my_stick.getRFState()
 
     # Get stick RF buffer status (waiting to download)
-    #my_stick.getRFBufferState()
+    my_stick.getRFBufferState()
 
     # Stop my stick
     my_stick.stop()
