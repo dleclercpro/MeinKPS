@@ -68,8 +68,7 @@ class stick:
 
     # STICK CONSTANTS
     SIGNAL_THRESHOLD        = 150
-    N_WRITE_ATTEMPTS        = 3
-    N_READ_ATTEMPTS         = 2
+    N_REQUEST_ATTEMPTS      = 3
     N_READ_BYTES            = 64
     SLEEP_TIME              = 0.001
     FREQUENCIES             = {0: 916.5, 1: 868.35, 255: 916.5}
@@ -96,13 +95,15 @@ class stick:
         self.handle = serial.Serial()
         self.handle.port = "/dev/ttyUSB0"
         self.handle.baudrate = 9600
-        self.handle.xonxoff = False
-        self.handle.rtscts = True
-        self.handle.dsrdtr = True
         self.handle.timeout = 0.5
+        self.handle.dsrdtr = True
+        self.handle.rtscts = True
+        self.handle.xonxoff = False
 
         # Open serial port
         self.handle.open()
+
+        # Flush input and output
         self.handle.flushInput()
         self.handle.flushOutput()
 
@@ -122,17 +123,10 @@ class stick:
         self.getHandle()
 
         # Ask for stick infos
-        #self.getInfos()
+        self.getInfos()
 
         # Ask for signal strength
-        #self.getSignalStrength()
-
-        self.getInfos()
-        self.getInfos()
         self.getSignalStrength()
-        self.getInfos()
-        self.getSignalStrength()
-        
 
 
 
@@ -164,44 +158,34 @@ class stick:
         ...
         """
 
-        # Read command to send to stick
+        # Read request to send to stick
         print "Request to send: " + str(self.request)
 
         # Initialize stick response
         self.raw_response = ""
 
         # Ask for response from stick until we get one
-        for i in range(self.N_WRITE_ATTEMPTS):
+        for i in range(self.N_REQUEST_ATTEMPTS):
+            if len(self.raw_response) == 0:
 
-            # Send stick command
-            self.handle.write(bytearray(self.request))
+                # Keep track of number of attempts
+                print "Request attempt: " + \
+                      str(i + 1) + "/" + str(self.N_REQUEST_ATTEMPTS)
 
-            for j in range(self.N_READ_ATTEMPTS):
-                if len(self.raw_response) == 0:
+                # Send stick command
+                self.handle.write(bytearray(self.request))
 
-                    # Keep track of number of reading trials
-                    print "Write: " + \
-                          str(i + 1) + "/" + str(self.N_WRITE_ATTEMPTS) + \
-                          "\t" + \
-                          "Read: " + \
-                          str(j + 1) + "/" + str(self.N_READ_ATTEMPTS)
+                # Wait for response
+                time.sleep(self.SLEEP_TIME)
 
-                    # Wait for response
-                    time.sleep(self.SLEEP_TIME)
+                # Read stick response
+                self.raw_response = self.handle.read(self.N_READ_BYTES)
 
-                    # Read stick response
-                    self.raw_response = self.handle.read(self.N_READ_BYTES)
-
-                else:
-                    break
+            else:
+                break
 
         # If no response at all was received, quit
         if len(self.raw_response) == 0:
-
-            # Stop stick
-            #self.stop()
-
-            # Exit program
             sys.exit("Unable to read from stick. :-(")
 
 
@@ -254,7 +238,7 @@ class stick:
 
 
 
-    def sendRequest(self):
+    def sendRequest(self, request):
 
         """
         ========================================================================
@@ -263,6 +247,9 @@ class stick:
 
         ...
         """
+
+        # Set request
+        self.request = request
 
         # Send command to stick and wait for response
         self.getRawResponse()
@@ -275,28 +262,62 @@ class stick:
 
 
 
-    def freeBuffer(self):
+    def emptyBuffer(self):
 
         """
         ========================================================================
-        freeBuffer
+        emptyBuffer
         ========================================================================
 
         ...
         """
 
-        n_trials = 5
+        # Define emptying buffer attempt variable
+        n = 0
 
-        for i in range(n_trials):
-            print str(i) + "/" + str(n_trials)
+        while len(self.raw_response) != 0:
 
+            # Update attempt variable
+            n += 1
+
+            # Keep track of attempts to free buffer
+            print "Freeing buffer attempt: " + str(n) + "/-"
+
+            # Read buffer
             self.raw_response = self.handle.read(self.N_READ_BYTES)
 
-            if len(self.raw_response) == 0:
-                break
-                print "Buffer freed!"
-            else:
-                print "Trying to free buffer again..."
+        print "Buffer emptied!"
+
+
+
+    def getSignalStrength(self):
+
+        """
+        ========================================================================
+        GETSIGNALSTRENGTH
+        ========================================================================
+
+        ...
+        """
+
+        self.signal = 0
+
+        # Define reading signal strength attempt variable
+        n = 0
+
+        # Loop until signal found is sufficiently strong
+        while self.signal < self.SIGNAL_THRESHOLD:
+
+            # Update attempt variable
+            n += 1
+
+            self.sendRequest([6, 0, 0])
+            self.signal = self.response[self.SIGNAL_INDEX]
+
+            print "Signal read: " + str(n) + "/-"
+            print "Signal strength: " + str(self.signal)
+
+        print
 
 
 
@@ -311,14 +332,7 @@ class stick:
         """
 
         # Ask stick for its infos
-        self.request = [4, 0, 0]
-        self.sendRequest()
-
-        # Get NAK
-        #self.nak         = self.response[self.NAK_INDEX]
-
-        # Make sure NAK is negative
-        #self.verifyErrors()
+        self.sendRequest([4, 0, 0])
 
         # Get ACK
         self.ack         = self.response[self.ACK_INDEX]
@@ -343,13 +357,13 @@ class stick:
         self.version     = self.version[0] + 0.01 * self.version[1]
 
         # Get interfaces
-        #self.interfaces  = self.response[self.INTERFACES_INDEX]
-        #self.interfaces  = np.trim_zeros(self.interfaces, "b")
-        #self.interfaces  = list(self.interfaces)
+        self.interfaces  = self.response[self.INTERFACES_INDEX]
+        self.interfaces  = np.trim_zeros(self.interfaces, "b")
+        self.interfaces  = list(self.interfaces)
 
         # Loop over all found interfaces
-        #for i in range(len(self.interfaces) / 2):
-        #    self.interfaces[2 * i + 1] = self.INTERFACES[self.interfaces[2 * i + 1]]
+        for i in range(len(self.interfaces) / 2):
+            self.interfaces[2 * i + 1] = self.INTERFACES[self.interfaces[2 * i + 1]]
 
         # Print infos
         print "ACK: " + str(self.ack)
@@ -358,34 +372,7 @@ class stick:
         print "Radiofrequency: " + str(self.frequency) + " MHz"
         print "Description: " + self.description
         print "Version: " + str(self.version)
-        #print "Interfaces: " + str(self.interfaces)
-        print
-
-
-
-    def getSignalStrength(self):
-
-        """
-        ========================================================================
-        GETSIGNALSTRENGTH
-        ========================================================================
-
-        ...
-        """
-        self.request = [6, 0, 0]
-        self.signal = 0
-        self.n_signal_read_attempts = 0
-
-        # Loop until signal found is sufficiently strong
-        while self.signal < self.SIGNAL_THRESHOLD:
-
-            self.sendRequest()
-            self.signal = self.response[self.SIGNAL_INDEX]
-            self.n_signal_read_attempts += 1
-
-            print "Signal read: " + str(self.n_signal_read_attempts) + "/-"
-            print "Signal strength: " + str(self.signal)
-
+        print "Interfaces: " + str(self.interfaces)
         print
 
 
@@ -401,8 +388,7 @@ class stick:
         """
 
         # Ask stick for its USB state
-        self.request = [5, 1, 0]
-        self.sendRequest()
+        self.sendRequest([5, 1, 0])
 
         # Get errors
         self.errors_crc = self.response[3]
@@ -436,8 +422,7 @@ class stick:
         """
 
         # Ask stick for its USB state
-        self.request = [5, 0, 0]
-        self.sendRequest()
+        self.sendRequest([5, 0, 0])
 
         # Get errors
         self.errors_crc = self.response[3]
@@ -470,30 +455,10 @@ class stick:
         ...
         """
 
-        # Ask stick its general status
-        self.request = [3, 0, 0]
-        self.sendRequest()
+        # Ask stick if data requested is ready to be downloaded
+        self.sendRequest([3, 0, 0])
 
         print
-
-
-
-    def verifyErrors(self):
-
-        """
-        ========================================================================
-        VERIFYERRORS
-        ========================================================================
-
-        ...
-        """
-
-        if self.nak == 1:
-
-            print "There was a NAK received in the last response. " + \
-                  "Resending request..."
-
-            self.sendRequest()
 
 
 
@@ -519,21 +484,9 @@ def main():
     # Count packets on RF transmitter side of stick
     my_stick.getRFState()
 
-    # Count packets on USB side of stick
-    my_stick.getUSBState()
-
-    # Count packets on RF transmitter side of stick
-    my_stick.getRFState()
-
     # Get stick RF buffer status (waiting to download)
-    for i in range(10):
-        my_stick.getDownloadState()
-
-    # Count packets on USB side of stick
-    my_stick.getUSBState()
-
-    # Count packets on RF transmitter side of stick
-    my_stick.getRFState()
+    #for i in range(10):
+    #    my_stick.getDownloadState()
 
     # Stop my stick
     my_stick.stop()
