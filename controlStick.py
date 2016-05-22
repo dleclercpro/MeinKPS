@@ -10,7 +10,7 @@ AUTHOR:   David Leclerc
 
 VERSION:  0.1
 
-DATE:     19.05.2016
+DATE:     22.05.2016
 
 LICENSE:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -42,8 +42,8 @@ from lib import *
 
 
 # DEFINITIONS
-LOGS_ADDRESS = "/home/david/Documents/MeinKPS/stickLogs.txt"
-NOW          = datetime.datetime.now()
+LOGS_ADDRESS                = "/home/david/Documents/MeinKPS/stickLogs.txt"
+NOW                         = datetime.datetime.now()
 
 
 
@@ -52,21 +52,6 @@ class stick:
     # STICK CHARACTERISTICS
     VENDOR                  = 0x0a21
     PRODUCT                 = 0x8001
-
-    # INITIALIZATION RESPONSE INDICES
-    ACK_INDEX               = 0
-    NAK_INDEX               = 33
-    STATUS_INDEX            = 1
-    SERIAL_INDEX            = range(3, 6)
-    FREQUENCY_INDEX         = 8
-    DESCRIPTION_INDEX       = range(9, 19)
-    VERSION_INDEX           = range(19, 21)
-    INTERFACES_INDEX        = range(22, 64)
-
-    # STATUS RESPONSE INDICES
-    SIGNAL_INDEX            = 3
-
-    # STICK CONSTANTS
     SIGNAL_THRESHOLD        = 150
     N_REQUEST_ATTEMPTS      = 3
     N_READ_BYTES            = 64
@@ -128,6 +113,9 @@ class stick:
         # Ask for signal strength
         self.getSignalStrength()
 
+        # Prepare stick to received requests    ###
+        self.emptyBuffer()
+
 
 
     def stop(self):
@@ -148,6 +136,40 @@ class stick:
 
 
 
+    def emptyBuffer(self):
+
+        """
+        ========================================================================
+        EMPTYBUFFER
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line for easier reading of output in terminal
+        print
+
+        # Tell user the buffer is going to be emptied
+        print "Trying to empty buffer..."
+
+        # Define emptying buffer attempt variable
+        n = 0
+
+        while len(self.raw_response) != 0:
+
+            # Update attempt variable
+            n += 1
+
+            # Keep track of attempts to free buffer
+            print "Freeing buffer attempt: " + str(n) + "/-"
+
+            # Read buffer
+            self.raw_response = self.handle.read(self.N_READ_BYTES)
+
+        print "Buffer emptied!"
+
+
+
     def getRawResponse(self):
 
         """
@@ -157,6 +179,9 @@ class stick:
 
         ...
         """
+
+        # Print empty line for easier reading of output in terminal
+        print
 
         # Read request to send to stick
         print "Request to send: " + str(self.request)
@@ -227,7 +252,7 @@ class stick:
         ...
         """
 
-        # Print original response
+        # Print vectorized raw response
         #print self.response
 
         # Print hexadecimal and string responses in rows of 8 bytes
@@ -262,34 +287,6 @@ class stick:
 
 
 
-    def emptyBuffer(self):
-
-        """
-        ========================================================================
-        emptyBuffer
-        ========================================================================
-
-        ...
-        """
-
-        # Define emptying buffer attempt variable
-        n = 0
-
-        while len(self.raw_response) != 0:
-
-            # Update attempt variable
-            n += 1
-
-            # Keep track of attempts to free buffer
-            print "Freeing buffer attempt: " + str(n) + "/-"
-
-            # Read buffer
-            self.raw_response = self.handle.read(self.N_READ_BYTES)
-
-        print "Buffer emptied!"
-
-
-
     def getSignalStrength(self):
 
         """
@@ -312,12 +309,10 @@ class stick:
             n += 1
 
             self.sendRequest([6, 0, 0])
-            self.signal = self.response[self.SIGNAL_INDEX]
+            self.signal = self.response[3]
 
             print "Signal read: " + str(n) + "/-"
             print "Signal strength: " + str(self.signal)
-
-        print
 
 
 
@@ -335,35 +330,26 @@ class stick:
         self.sendRequest([4, 0, 0])
 
         # Get ACK
-        self.ack         = self.response[self.ACK_INDEX]
+        self.ack         = self.response[0]
 
         # Get status
-        self.status      = self.response_str[self.STATUS_INDEX]
+        self.status      = self.response_str[1]
 
         # Get serial number
-        self.serial      = self.response_hex[self.SERIAL_INDEX]
-        self.serial      = "".join(x[2:] for x in self.serial)
+        self.serial      = "".join(x[2:] for x in self.response_hex[3:6])
 
         # Get radiofrequency
-        self.frequency   = self.response[self.FREQUENCY_INDEX]
-        self.frequency   = self.FREQUENCIES[self.frequency]
+        self.frequency   = self.FREQUENCIES[self.response[8]]
 
         # Get description of communication protocol
-        self.description = self.response_str[self.DESCRIPTION_INDEX]
-        self.description = "".join(self.description)
+        self.description = "".join(self.response_str[9:19])
 
         # Get software version
-        self.version     = self.response[self.VERSION_INDEX]
-        self.version     = self.version[0] + 0.01 * self.version[1]
+        self.version     = 1.00 * self.response[19:21][0] + \
+                           0.01 * self.response[19:21][1]
 
         # Get interfaces
-        self.interfaces  = self.response[self.INTERFACES_INDEX]
-        self.interfaces  = np.trim_zeros(self.interfaces, "b")
-        self.interfaces  = list(self.interfaces)
-
-        # Loop over all found interfaces
-        for i in range(len(self.interfaces) / 2):
-            self.interfaces[2 * i + 1] = self.INTERFACES[self.interfaces[2 * i + 1]]
+        self.interfaces  = np.trim_zeros(self.response[22:64], "b")
 
         # Print infos
         print "ACK: " + str(self.ack)
@@ -373,7 +359,6 @@ class stick:
         print "Description: " + self.description
         print "Version: " + str(self.version)
         print "Interfaces: " + str(self.interfaces)
-        print
 
 
 
@@ -391,23 +376,26 @@ class stick:
         self.sendRequest([5, 1, 0])
 
         # Get errors
-        self.errors_crc = self.response[3]
-        self.errors_seq = self.response[4]
-        self.errors_nak = self.response[5]
-        self.errors_timeout = self.response[6]
-        self.packets_received = self.response[7:11]
-        self.packets_sent = self.response[11:15]
+        self.usb_errors_crc = self.response[3]
+        self.usb_errors_seq = self.response[4]
+        self.usb_errors_nak = self.response[5]
+        self.usb_errors_timeout = self.response[6]
+        self.usb_packets_received = self.response[7:11]
+        self.usb_packets_sent = self.response[11:15]
 
-        #self.packets_received = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
-        #self.packets_sent = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
+        # Parse number of packets received/sent
+        self.usb_packets_received = int(sum(self.usb_packets_received \
+                                * 256 ** np.linspace(3, 0, 4)))
+        self.usb_packets_sent = int(sum(self.usb_packets_sent \
+                            * 256 ** np.linspace(3, 0, 4)))
 
-        print "Bad CRCs: " + str(self.errors_crc)
-        print "Sequential errors: " + str(self.errors_seq)
-        print "NAKs: " + str(self.errors_nak)
-        print "Timeout errors: " + str(self.errors_timeout)
-        print "Packets received: " + str(self.packets_received)
-        print "Packets sent: " + str(self.packets_sent)
-        print
+        # Print USB state
+        print "USB Bad CRCs: " + str(self.usb_errors_crc)
+        print "USB Sequential errors: " + str(self.usb_errors_seq)
+        print "USB NAKs: " + str(self.usb_errors_nak)
+        print "USB Timeout errors: " + str(self.usb_errors_timeout)
+        print "USB Packets received: " + str(self.usb_packets_received)
+        print "USB Packets sent: " + str(self.usb_packets_sent)
 
 
 
@@ -421,27 +409,30 @@ class stick:
         ...
         """
 
-        # Ask stick for its USB state
+        # Ask stick for its RF state
         self.sendRequest([5, 0, 0])
 
         # Get errors
-        self.errors_crc = self.response[3]
-        self.errors_seq = self.response[4]
-        self.errors_nak = self.response[5]
-        self.errors_timeout = self.response[6]
-        self.packets_received = self.response[7:11]
-        self.packets_sent = self.response[11:15]
+        self.rf_errors_crc = self.response[3]
+        self.rf_errors_seq = self.response[4]
+        self.rf_errors_nak = self.response[5]
+        self.rf_errors_timeout = self.response[6]
+        self.rf_packets_received = self.response[7:11]
+        self.rf_packets_sent = self.response[11:15]
 
-        #self.packets_received = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
-        #self.packets_sent = self.packets_received[0] << 24 | self.packets_received[1] << 16 | self.packets_received[2] << 8 | self.packets_received[3]
+        # Parse number of packets received/sent
+        self.rf_packets_received = int(sum(self.rf_packets_received \
+                                * 256 ** np.linspace(3, 0, 4)))
+        self.rf_packets_sent = int(sum(self.rf_packets_sent \
+                            * 256 ** np.linspace(3, 0, 4)))
 
-        print "Bad CRCs: " + str(self.errors_crc)
-        print "Sequential errors: " + str(self.errors_seq)
-        print "NAKs: " + str(self.errors_nak)
-        print "Timeout errors: " + str(self.errors_timeout)
-        print "Packets received: " + str(self.packets_received)
-        print "Packets sent: " + str(self.packets_sent)
-        print
+        # Print rf state
+        print "RF Bad CRCs: " + str(self.rf_errors_crc)
+        print "RF Sequential errors: " + str(self.rf_errors_seq)
+        print "RF NAKs: " + str(self.rf_errors_nak)
+        print "RF Timeout errors: " + str(self.rf_errors_timeout)
+        print "RF Packets received: " + str(self.rf_packets_received)
+        print "RF Packets sent: " + str(self.rf_packets_sent)
 
 
 
@@ -457,8 +448,6 @@ class stick:
 
         # Ask stick if data requested is ready to be downloaded
         self.sendRequest([3, 0, 0])
-
-        print
 
 
 
@@ -492,6 +481,7 @@ def main():
     my_stick.stop()
 
     # End of script
+    print
     print "Done!"
 
 
