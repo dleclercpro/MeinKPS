@@ -37,7 +37,7 @@ import numpy as np
 
 
 # USER LIBRARIES
-from lib import *
+import lib
 
 
 
@@ -58,7 +58,7 @@ class stick:
     N_READ_BYTES            = 64
     SLEEP_TIME              = 0.001
     FREQUENCIES             = {0: 916.5, 1: 868.35, 255: 916.5}
-    INTERFACES              = {1: "Paradigm RF", 3: "USB"}
+    INTERADIOACES              = {1: "Paradigm RADIO", 3: "USB"}
 
 
 
@@ -181,9 +181,6 @@ class stick:
         ...
         """
 
-        # Print empty line for easier reading of output in terminal
-        print
-
         # Read request to send to stick
         print "Request to send: " + str(self.request)
 
@@ -235,7 +232,8 @@ class stick:
         self.response_str = np.vectorize(chr)(self.response)
 
         # Pad hexadecimal formatted response
-        self.response_hex = np.vectorize(padHexaString)(self.response_hex)
+        self.response_hex = np.vectorize(lib.padHexadecimalString) \
+                                        (self.response_hex)
 
         # Correct unreadable characters in string stick response
         self.response_str[self.response < 32] = "."
@@ -273,6 +271,9 @@ class stick:
 
         ...
         """
+
+        # Print empty line for easier reading of output in terminal
+        print
 
         # Set request
         self.request = request
@@ -381,14 +382,8 @@ class stick:
         self.usb_errors_seq = self.response[4]
         self.usb_errors_nak = self.response[5]
         self.usb_errors_timeout = self.response[6]
-        self.usb_packets_received = self.response[7:11]
-        self.usb_packets_sent = self.response[11:15]
-
-        # Parse number of packets received/sent
-        self.usb_packets_received = int(sum(self.usb_packets_received \
-                                * 256 ** np.linspace(3, 0, 4)))
-        self.usb_packets_sent = int(sum(self.usb_packets_sent \
-                            * 256 ** np.linspace(3, 0, 4)))
+        self.usb_packets_received = lib.getNumberPackets(self.response[7:11])
+        self.usb_packets_sent = lib.getNumberPackets(self.response[11:15])
 
         # Print USB state
         print "USB Bad CRCs: " + str(self.usb_errors_crc)
@@ -400,40 +395,34 @@ class stick:
 
 
 
-    def getRFState(self):
+    def getRadioState(self):
 
         """
         ========================================================================
-        GETRFSTATE
+        GETRADIOSTATE
         ========================================================================
 
         ...
         """
 
-        # Ask stick for its RF state
+        # Ask stick for its RADIO state
         self.sendRequest([5, 0, 0])
 
         # Get errors
-        self.rf_errors_crc = self.response[3]
-        self.rf_errors_seq = self.response[4]
-        self.rf_errors_nak = self.response[5]
-        self.rf_errors_timeout = self.response[6]
-        self.rf_packets_received = self.response[7:11]
-        self.rf_packets_sent = self.response[11:15]
-
-        # Parse number of packets received/sent
-        self.rf_packets_received = int(sum(self.rf_packets_received \
-                                * 256 ** np.linspace(3, 0, 4)))
-        self.rf_packets_sent = int(sum(self.rf_packets_sent \
-                            * 256 ** np.linspace(3, 0, 4)))
+        self.radio_errors_crc = self.response[3]
+        self.radio_errors_seq = self.response[4]
+        self.radio_errors_nak = self.response[5]
+        self.radio_errors_timeout = self.response[6]
+        self.radio_packets_received = lib.getNumberPackets(self.response[7:11])
+        self.radio_packets_sent = lib.getNumberPackets(self.response[11:15])
 
         # Print rf state
-        print "RF Bad CRCs: " + str(self.rf_errors_crc)
-        print "RF Sequential errors: " + str(self.rf_errors_seq)
-        print "RF NAKs: " + str(self.rf_errors_nak)
-        print "RF Timeout errors: " + str(self.rf_errors_timeout)
-        print "RF Packets received: " + str(self.rf_packets_received)
-        print "RF Packets sent: " + str(self.rf_packets_sent)
+        print "RADIO Bad CRCs: " + str(self.radio_errors_crc)
+        print "RADIO Sequential errors: " + str(self.radio_errors_seq)
+        print "RADIO NAKs: " + str(self.radio_errors_nak)
+        print "RADIO Timeout errors: " + str(self.radio_errors_timeout)
+        print "RADIO Packets received: " + str(self.radio_packets_received)
+        print "RADIO Packets sent: " + str(self.radio_packets_sent)
 
 
 
@@ -452,73 +441,87 @@ class stick:
 
 
 
-    def speakWithPump(self):
+    def powerPump(self):
 
         """
         ========================================================================
-        SPEAKWITHPUMP
+        POWERPUMP
         ========================================================================
 
         ...
         """
 
-        # Ask stick if data requested is ready to be downloaded
-        params = [0x02] #[0x01, 0x0a]
-        n_params = len(params)
-        head = [1, 0, 167, 1]
-        serial = [ord(x) for x in "574180".decode("hex")]
-        high_byte = n_params >> 8 & 0xFF
-        low_byte = n_params & 0xFF
-        test = [0x80 | high_byte, low_byte]
-        button = 0 #85
-        max_retries = 1 #2
-        pages = 0 #1 #2
-        code = 91 #93
+        # Power control
+        self.pump_packet_parameters = [1, 10]
+        self.pump_packet_button = 85
+        self.pump_packet_retries = 0
+        self.pump_packet_pages = 0
+        self.pump_packet_code = 93
 
-        packet = head + serial
-        packet.extend(test)
-        packet.append(button)
-        packet.append(max_retries)
-        packet.append(pages)
-        packet.append(0)
-        packet.append(code)
-        packet.append(compute(packet))
-        packet.extend(params)
-        packet.append(compute(params))
-
-        print packet
-
-        self.sendRequest(packet)
+        # Send packet to pump
+        self.sendPumpPacket()
 
 
 
-lookup = [ 0, 155, 173, 54, 193, 90, 108, 247, 25, 130, 180, 47,
-    216, 67, 117, 238, 50, 169, 159, 4, 243, 104, 94, 197, 43, 176,
-    134, 29, 234, 113, 71, 220, 100, 255, 201, 82, 165, 62, 8, 147,
-    125, 230, 208, 75, 188, 39, 17, 138, 86, 205, 251, 96, 151, 12,
-    58, 161, 79, 212, 226, 121, 142, 21, 35, 184, 200, 83, 101, 254,
-    9, 146, 164, 63, 209, 74, 124, 231, 16, 139, 189, 38, 250, 97,
-    87, 204, 59, 160, 150, 13, 227, 120, 78, 213, 34, 185, 143, 20,
-    172, 55, 1, 154, 109, 246, 192, 91, 181, 46, 24, 131, 116, 239,
-    217, 66, 158, 5, 51, 168, 95, 196, 242, 105, 135, 28, 42, 177,
-    70, 221, 235, 112, 11, 144, 166, 61, 202, 81, 103, 252, 18, 137,
-    191, 36, 211, 72, 126, 229, 57, 162, 148, 15, 248, 99, 85, 206,
-    32, 187, 141, 22, 225, 122, 76, 215, 111, 244, 194, 89, 174, 53,
-    3, 152, 118, 237, 219, 64, 183, 44, 26, 129, 93, 198, 240, 107,
-    156, 7, 49, 170, 68, 223, 233, 114, 133, 30, 40, 179, 195, 88,
-    110, 245, 2, 153, 175, 52, 218, 65, 119, 236, 27, 128, 182, 45,
-    241, 106, 92, 199, 48, 171, 157, 6, 232, 115, 69, 222, 41, 178,
-    132, 31, 167, 60, 10, 145, 102, 253, 203, 80, 190, 37, 19, 136,
-    127, 228, 210, 73, 149, 14, 56, 163, 84, 207, 249, 98, 140, 23,
-    33, 186, 77, 214, 224, 123 ]
+    def sendPumpPacket(self):
 
-def compute(block):
-    result = 0
+        """
+        ========================================================================
+        SENDPUMPPACKET
+        ========================================================================
 
-    for i in range(len(block)):
-        result = lookup[(result ^ block[i] & 0xFF)]
+        ...
+        """
 
-    return result
+        # Print empty line for easier reading of output in terminal
+        print
+
+        # Prepare packet to send to pump
+        self.preparePumpPacket()
+
+        print "This packet will be sent over to the pump: " + \
+              str(self.pump_packet)
+
+        # Send packet through stick
+        self.sendRequest(self.pump_packet)
+
+
+
+    def preparePumpPacket(self):
+
+        """
+        ========================================================================
+        PREPAREPUMPPACKET
+        ========================================================================
+
+        ...
+        """
+
+        # Initialize packet to send to pump
+        self.pump_packet = []
+
+        # Evaluate some parts of packet based on input
+        self.pump_packet_head = [1, 0, 167, 1]
+        self.pump_packet_serial = [ord(x) for x in
+                                   str(self.SERIAL_NUMBER).decode("hex")]
+        self.pump_packet_extremities = [(128 |
+                                        (len(self.pump_packet_parameters) >> 8
+                                        & 256)),
+                                        (len(self.pump_packet_parameters)
+                                        & 256)]
+
+        # Build said packet
+        self.pump_packet.extend(self.pump_packet_head)
+        self.pump_packet.extend(self.pump_packet_serial)
+        self.pump_packet.extend(self.pump_packet_extremities)
+        self.pump_packet.append(self.pump_packet_button)
+        self.pump_packet.append(self.pump_packet_retries)
+        self.pump_packet.append(self.pump_packet_pages)
+        self.pump_packet.append(0)
+        self.pump_packet.append(self.pump_packet_code)
+        self.pump_packet.append(lib.computeCRC8(self.pump_packet))
+        self.pump_packet.extend(self.pump_packet_parameters)
+        self.pump_packet.append(lib.computeCRC8(self.pump_packet_parameters))
 
 
 
@@ -541,13 +544,13 @@ def main():
     # Count packets on USB side of stick
     my_stick.getUSBState()
 
-    # Count packets on RF transmitter side of stick
-    my_stick.getRFState()
+    # Count packets on RADIO transmitter side of stick
+    my_stick.getRadioState()
 
     # Try to speak with pump
-    my_stick.speakWithPump()
+    my_stick.powerPump()
 
-    # Get stick RF buffer status (waiting to download)
+    # Get stick RADIO buffer status (waiting to download)
     #for i in range(10):
     #    my_stick.getDownloadState()
 
