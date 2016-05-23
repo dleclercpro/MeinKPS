@@ -479,9 +479,6 @@ class stick:
         # Prepare packet to send to pump
         self.preparePumpPacket()
 
-        print "This packet will be sent over to the pump: " + \
-              str(self.pump_packet)
-
         # Send packet through stick
         self.sendRequest(self.pump_packet)
 
@@ -504,11 +501,11 @@ class stick:
         self.pump_packet_head = [1, 0, 167, 1]
         self.pump_packet_serial = [ord(x) for x in
                                    str(self.SERIAL_NUMBER).decode("hex")]
-        self.pump_packet_extremities = [(128 |
-                                        (len(self.pump_packet_parameters) >> 8
-                                        & 256)),
-                                        (len(self.pump_packet_parameters)
-                                        & 256)]
+        self.pump_packet_extremities = [128 |
+                                        len(self.pump_packet_parameters) >> 8
+                                        & 255,
+                                        len(self.pump_packet_parameters)
+                                        & 255]
 
         # Build said packet
         self.pump_packet.extend(self.pump_packet_head)
