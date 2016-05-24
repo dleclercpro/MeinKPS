@@ -54,7 +54,6 @@ class stick:
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
     READ_BYTES       = 64
-    SLEEP_TIME       = 0.1
     FREQUENCIES      = {0: 916.5, 1: 868.35, 255: 916.5}
     INTERFACES       = {1: "Paradigm RF", 3: "USB"}
 
@@ -195,11 +194,8 @@ class stick:
             # Keep track of number of attempts
             print "Request attempt: " + str(n) + "/-"
 
-            # Send stick command
+            # Send stick request
             self.handle.write(bytearray(self.request))
-
-            # Wait for response
-            time.sleep(self.SLEEP_TIME)
 
             # Read stick response
             self.raw_response = self.handle.read(self.READ_BYTES)
@@ -477,12 +473,6 @@ class stick:
             # Update attempt variable
             n += 1
 
-            # Waiting a bit before asking for data [again]
-            print "Waiting a bit for data... " + \
-                  "(" + str(self.SLEEP_TIME) + "s)"
-
-            time.sleep(self.SLEEP_TIME)
-
             # Keep track of attempts
             print "Look for pump data in buffer: " + str(n) + "/-"
 
@@ -494,11 +484,6 @@ class stick:
 
             # Get size of response waiting in radio buffer
             self.bytes_ready = self.response[7]
-
-        # If number of waiting bytes is not plausible, quit
-        if (self.bytes_ready < 64) & (self.bytes_ready != 15):
-            sys.exit("Unable to get a correct number of bytes waiting " +
-                     "to be downloaded. :-(")
 
 
 
@@ -534,8 +519,11 @@ class stick:
             # Ask pump if data is ready to be read
             self.askPumpData()
 
+        # Empty buffer after asking repeatedly if data was ready
+        self.emptyBuffer()
+
         # Give user info
-        print "Number of bytes ready to be downloaded: " + \
+        print "Number of bytes ready to be read: " + \
               str(self.bytes_ready)
 
         # Initialize request asking stick to read data in its buffer

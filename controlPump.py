@@ -132,6 +132,88 @@ class pump:
 
 
 
+    def readModel(self):
+
+        """
+        ========================================================================
+        READMODEL
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Reading pump model..."
+
+        # Specify request parameters for command
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 141
+        self.stick.pump_request_parameters = []
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 78
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Get pump data
+        self.stick.getPumpData()
+
+        # Extract pump model from received data
+        self.model = int("".join(self.stick.response_str[14:17]))
+
+        # Give user info
+        print "Pump model: " + str(self.model)
+
+
+
+    def readFirmwareVersion(self):
+
+        """
+        ========================================================================
+        READFIRMWAREVERSION
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Reading pump firmware version..."
+
+        # Specify request parameters for command
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 116
+        self.stick.pump_request_parameters = []
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 78
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Get pump data
+        self.stick.getPumpData()
+
+        # Extract pump firmware from received data
+        self.firmware = "".join(self.stick.response_str[17:21]) + \
+                        " " + \
+                        "".join(self.stick.response_str[21:24])
+
+        # Give user info
+        print "Pump firmware version: " + self.firmware
+
+
+
     def readBatteryLevel(self):
 
         """
@@ -408,46 +490,6 @@ class pump:
 
 
 
-    def readModel(self):
-
-        """
-        ========================================================================
-        READMODEL
-        ========================================================================
-
-        ...
-        """
-
-        # Print empty line to make output easier to read
-        print
-
-        # Give user info
-        print "Reading pump model..."
-
-        # Specify request parameters for command
-        self.stick.pump_request_power = 0
-        self.stick.pump_request_attempts = 2
-        self.stick.pump_request_pages = 1
-        self.stick.pump_request_code = 141
-        self.stick.pump_request_parameters = []
-
-        # Specify expected number of bytes as a response
-        self.stick.expected_bytes = 78
-
-        # Send request to pump
-        self.stick.sendPumpRequest()
-
-        # Get pump data
-        self.stick.getPumpData()
-
-        # Extract pump model from received data
-        self.model = int("".join(self.stick.response_str[14:17]))
-
-        # Give user info
-        print "Pump model obtained: " + str(self.model)
-
-
-
     def readRemainingInsulin(self):
 
         """
@@ -489,6 +531,48 @@ class pump:
 
 
 
+    def readBolusHistory(self):
+
+        """
+        ========================================================================
+        READBOLUSHISTORY
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Reading bolus history..."
+
+        # Specify request parameters for command
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 39
+        self.stick.pump_request_parameters = []
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 15
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Get pump data
+        self.stick.getPumpData()
+
+        # Extract pump bolus history from received data
+        #self.bolus_history = "".join(self.stick.response_str[17:21]) + \
+        #                     " " + \
+        #                     "".join(self.stick.response_str[21:24])
+
+        # Give user info
+        #print "Pump firmware version: " + self.bolus_history
+
+
+
 def main():
 
     """
@@ -507,6 +591,9 @@ def main():
 
     # Read pump model
     my_pump.readModel()
+
+    # Read pump firmware version
+    my_pump.readFirmwareVersion()
 
     # Send bolus to pump
     my_pump.deliverBolus(0.3)
@@ -529,6 +616,9 @@ def main():
 
     # Read remaining amount of insulin in pump
     my_pump.readRemainingInsulin()
+
+    # Read bolus history of pump
+    my_pump.readBolusHistory()
 
     # Stop my stick
     my_pump.stick.stop()
