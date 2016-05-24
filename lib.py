@@ -10,7 +10,7 @@ AUTHOR:   David Leclerc
 
 VERSION:  0.1
 
-DATE:     19.05.2016
+DATE:     24.05.2016
 
 LICENSE:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -39,22 +39,32 @@ def padHexadecimalString(x):
 
 
 
-def getNumberPackets(x):
+def convertBytesDecimal(x):
 
         """
         ========================================================================
-        getNumberPackets
+        CONVERTBYTESDECIMAL
         ========================================================================
 
-        ...
+        This is a function that converts a number expressed in bytes to its
+        decimal equivalent.
         """
 
-        n_packets = int(x[0] * 256 ** 3 + \
-                        x[1] * 256 ** 2 + \
-                        x[2] * 256 ** 1 + \
-                        x[3] * 256 ** 0)
+        return sum(x * 256 ** np.arange(len(x) - 1, -1, -1))
 
-        return n_packets
+
+
+def getByte(x, N):
+
+        """
+        ========================================================================
+        GETBYTE
+        ========================================================================
+
+        This is a function that extracts the Nth byte of a number x.
+        """
+
+        return x / 256 ** N % 256
 
 
 
