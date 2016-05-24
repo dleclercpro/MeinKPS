@@ -52,6 +52,7 @@ class stick:
     # STICK CHARACTERISTICS
     VENDOR                  = 0x0a21
     PRODUCT                 = 0x8001
+    PUMP_SERIAL_NUMBER      = 574180
     SIGNAL_THRESHOLD        = 150
     REQUEST_ATTEMPTS        = 3
     DOWNLOAD_ATTEMPTS       = 10
@@ -114,6 +115,9 @@ class stick:
 
         # Prepare stick to received requests
         self.emptyBuffer()
+
+        # Get state of stick
+        self.getState()
 
 
 
@@ -374,11 +378,11 @@ class stick:
 
 
 
-    def getUSBState(self):
+    def getState(self):
 
         """
         ========================================================================
-        GETUSBSTATE
+        GETSTATE
         ========================================================================
 
         ...
@@ -403,18 +407,6 @@ class stick:
         print "USB Packets received: " + str(self.usb_packets_received)
         print "USB Packets sent: " + str(self.usb_packets_sent)
 
-
-
-    def getRFState(self):
-
-        """
-        ========================================================================
-        GETRFSTATE
-        ========================================================================
-
-        ...
-        """
-
         # Ask stick for its radio transmitter state
         self.sendRequest([5, 0, 0])
 
@@ -436,11 +428,50 @@ class stick:
 
 
 
-    def askData(self):
+    def sendPumpPacket(self):
 
         """
         ========================================================================
-        ASKDATA
+        SENDPUMPPACKET
+        ========================================================================
+
+        ...
+        """
+
+        # Initialize packet to send to pump
+        self.packet = []
+
+        # Evaluate some parts of packet based on input
+        self.packet_head = [1, 0, 167, 1]
+        self.packet_serial_number = [ord(x) for x in
+            str(self.PUMP_SERIAL_NUMBER).decode("hex")]
+        self.packet_parameters_info = [128 |
+            lib.getByte(len(self.packet_parameters), 1),
+            lib.getByte(len(self.packet_parameters), 0)]
+
+        # Build said packet
+        self.packet.extend(self.packet_head)
+        self.packet.extend(self.packet_serial_number)
+        self.packet.extend(self.packet_parameters_info)
+        self.packet.append(self.packet_button)
+        self.packet.append(self.packet_attempts)
+        self.packet.append(self.packet_pages)
+        self.packet.append(0)
+        self.packet.append(self.packet_code)
+        self.packet.append(lib.computeCRC8(self.packet))
+        self.packet.extend(self.packet_parameters)
+        self.packet.append(lib.computeCRC8(self.packet_parameters))
+
+        # Send packet through stick
+        self.sendRequest(self.packet)
+
+
+
+    def askPumpData(self):
+
+        """
+        ========================================================================
+        ASKPUMPDATA
         ========================================================================
 
         ...
@@ -462,11 +493,14 @@ class stick:
                 n += 1
 
                 # Keep track of attempts
-                print "Data read attempt: " + \
+                print "Pump data read attempt: " + \
                       str(n) + "/" + str(self.DOWNLOAD_ATTEMPTS)
 
                 # Send request to stick
                 self.sendRequest([3, 0, 0])
+
+                # Wait for response
+                time.sleep(self.SLEEP_TIME)
 
                 # Get size of response waiting in radio buffer
                 self.bytes_waiting = self.response[7]
@@ -475,7 +509,7 @@ class stick:
                 break
 
         # If number of waiting bytes was always incorrectly found, quit
-        if self.bytes_waiting < 64 & self.bytes_waiting != 15:
+        if (self.bytes_waiting < 64) & (self.bytes_waiting != 15):
             sys.exit("Unable to get a correct number of bytes waiting " + \
                      "to be downloaded. :-(")
 
@@ -485,18 +519,18 @@ class stick:
 
 
 
-    def getData(self):
+    def getPumpData(self):
 
         """
         ========================================================================
-        GETDATA
+        GETPUMPDATA
         ========================================================================
 
         ...
         """
 
-        # Ask stick if download is ready
-        self.askData()
+        # Ask stick if pump data is ready
+        self.askPumpData()
 
         # Initialize packet asking stick to download data on the radio buffer
         self.packet = []
@@ -509,6 +543,9 @@ class stick:
 
         # Send said packet
         self.sendRequest(self.packet)
+
+        # Empty buffer for next command ### MIGHT CAUSE PROBLEMS LATER
+        self.emptyBuffer()
 
 
 
@@ -527,12 +564,6 @@ def main():
 
     # Start my stick
     my_stick.start()
-    
-    # Get state of USB side of stick
-    my_stick.getUSBState()
-
-    # Get state of radio transmitter side of stick
-    my_stick.getRFState()
 
     # Stop my stick
     my_stick.stop()
