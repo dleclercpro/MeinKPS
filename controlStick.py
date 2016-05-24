@@ -10,7 +10,7 @@ AUTHOR:   David Leclerc
 
 VERSION:  0.1
 
-DATE:     22.05.2016
+DATE:     24.05.2016
 
 LICENSE:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -42,8 +42,8 @@ import lib
 
 
 # DEFINITIONS
-LOGS_ADDRESS                = "/home/david/Documents/MeinKPS/stickLogs.txt"
-NOW                         = datetime.datetime.now()
+LOGS_ADDRESS    = "./stickLogs.txt"
+NOW             = datetime.datetime.now()
 
 
 
@@ -52,13 +52,13 @@ class stick:
     # STICK CHARACTERISTICS
     VENDOR                  = 0x0a21
     PRODUCT                 = 0x8001
-    SERIAL_NUMBER           = 574180
     SIGNAL_THRESHOLD        = 150
     N_REQUEST_ATTEMPTS      = 3
+    N_DOWNLOAD_ATTEMPTS     = 10
     N_READ_BYTES            = 64
-    SLEEP_TIME              = 0.001
+    SLEEP_TIME              = 0.1
     FREQUENCIES             = {0: 916.5, 1: 868.35, 255: 916.5}
-    INTERADIOACES              = {1: "Paradigm RADIO", 3: "USB"}
+    INTERFACES              = {1: "Paradigm RF", 3: "USB"}
 
 
 
@@ -114,7 +114,7 @@ class stick:
         # Ask for signal strength
         self.getSignalStrength()
 
-        # Prepare stick to received requests    ###
+        # Prepare stick to received requests
         self.emptyBuffer()
 
 
@@ -134,6 +134,9 @@ class stick:
 
         # Remove serial port
         os.system("sudo modprobe -r usbserial")
+
+        # Print empty line for easier reading of output in terminal
+        print
 
 
 
@@ -180,9 +183,6 @@ class stick:
 
         ...
         """
-
-        # Read request to send to stick
-        print "Request to send: " + str(self.request)
 
         # Initialize stick response
         self.raw_response = ""
@@ -275,6 +275,9 @@ class stick:
         # Print empty line for easier reading of output in terminal
         print
 
+        # Print request to send to stick
+        print "Request to send: " + str(self.request)
+
         # Set request
         self.request = request
 
@@ -313,6 +316,7 @@ class stick:
             self.sendRequest([6, 0, 0])
             self.signal = self.response[3]
 
+            # Keep track of attempts reading signal strength
             print "Signal read: " + str(n) + "/-"
             print "Signal strength: " + str(self.signal)
 
@@ -382,8 +386,8 @@ class stick:
         self.usb_errors_seq = self.response[4]
         self.usb_errors_nak = self.response[5]
         self.usb_errors_timeout = self.response[6]
-        self.usb_packets_received = lib.getNumberPackets(self.response[7:11])
-        self.usb_packets_sent = lib.getNumberPackets(self.response[11:15])
+        self.usb_packets_received = lib.convertBytesDecimal(self.response[7:11])
+        self.usb_packets_sent = lib.convertBytesDecimal(self.response[11:15])
 
         # Print USB state
         print "USB Bad CRCs: " + str(self.usb_errors_crc)
@@ -395,130 +399,99 @@ class stick:
 
 
 
-    def getRadioState(self):
+    def getRFState(self):
 
         """
         ========================================================================
-        GETRADIOSTATE
+        GETRFSTATE
         ========================================================================
 
         ...
         """
 
-        # Ask stick for its RADIO state
+        # Ask stick for its radio transmitter state
         self.sendRequest([5, 0, 0])
 
         # Get errors
-        self.radio_errors_crc = self.response[3]
-        self.radio_errors_seq = self.response[4]
-        self.radio_errors_nak = self.response[5]
-        self.radio_errors_timeout = self.response[6]
-        self.radio_packets_received = lib.getNumberPackets(self.response[7:11])
-        self.radio_packets_sent = lib.getNumberPackets(self.response[11:15])
+        self.rf_errors_crc = self.response[3]
+        self.rf_errors_seq = self.response[4]
+        self.rf_errors_nak = self.response[5]
+        self.rf_errors_timeout = self.response[6]
+        self.rf_packets_received = lib.convertBytesDecimal(self.response[7:11])
+        self.rf_packets_sent = lib.convertBytesDecimal(self.response[11:15])
 
         # Print rf state
-        print "RADIO Bad CRCs: " + str(self.radio_errors_crc)
-        print "RADIO Sequential errors: " + str(self.radio_errors_seq)
-        print "RADIO NAKs: " + str(self.radio_errors_nak)
-        print "RADIO Timeout errors: " + str(self.radio_errors_timeout)
-        print "RADIO Packets received: " + str(self.radio_packets_received)
-        print "RADIO Packets sent: " + str(self.radio_packets_sent)
+        print "RF Bad CRCs: " + str(self.rf_errors_crc)
+        print "RF Sequential errors: " + str(self.rf_errors_seq)
+        print "RF NAKs: " + str(self.rf_errors_nak)
+        print "RF Timeout errors: " + str(self.rf_errors_timeout)
+        print "RF Packets received: " + str(self.rf_packets_received)
+        print "RF Packets sent: " + str(self.rf_packets_sent)
 
 
 
-    def getDownloadState(self):
-
-        """
-        ========================================================================
-        GETDOWNLOADSTATE
-        ========================================================================
-
-        ...
-        """
-
-        # Ask stick if data requested is ready to be downloaded
-        self.sendRequest([3, 0, 0])
-
-
-
-    def powerPump(self):
+    def askData(self):
 
         """
         ========================================================================
-        POWERPUMP
+        ASKDOWNLOAD
         ========================================================================
 
         ...
         """
 
-        # Power control
-        self.pump_packet_parameters = [1, 10]
-        self.pump_packet_button = 85
-        self.pump_packet_retries = 0
-        self.pump_packet_pages = 0
-        self.pump_packet_code = 93
+        # Initialize number of waiting bytes
+        self.bytes_waiting = 0
 
-        # Send packet to pump
-        self.sendPumpPacket()
+        # Define downloading attempt variable
+        n = 0
+
+        # Ask stick if data requested is ready to be downloaded until it is
+        for i in range(self.DOWNLOAD_ATTEMPTS):
+
+            # Update attempt variable
+            n += 1
+
+            # Verify if number of bytes waiting is correct
+            if self.bytes_waiting < 64 & self.bytes_waiting != 15:
+
+                # Send request to stick
+                self.sendRequest([3, 0, 0])
+
+                # Get size of response waiting in radio buffer
+                self.bytes_waiting = response[7]
+
+            else:
+                break
+
+        # If number of waiting bytes was always incorrectly found, quit
+        if self.bytes_waiting < 64 & self.bytes_waiting != 15:
+            sys.exit("Unable to get a correct number of bytes waiting " + \
+                     "to be downloaded. :-(")
+
+        else:
+            print "Number of bytes waiting to be downloaded: " + \
+                  str(self.bytes_waiting)
 
 
 
-    def sendPumpPacket(self):
+    def getData(self):
 
         """
         ========================================================================
-        SENDPUMPPACKET
+        GETDATA
         ========================================================================
 
         ...
         """
 
-        # Print empty line for easier reading of output in terminal
-        print
+        # Ask stick if download is ready
+        self.askData()
 
-        # Prepare packet to send to pump
-        self.preparePumpPacket()
-
-        # Send packet through stick
-        self.sendRequest(self.pump_packet)
-
-
-
-    def preparePumpPacket(self):
-
-        """
-        ========================================================================
-        PREPAREPUMPPACKET
-        ========================================================================
-
-        ...
-        """
-
-        # Initialize packet to send to pump
-        self.pump_packet = []
-
-        # Evaluate some parts of packet based on input
-        self.pump_packet_head = [1, 0, 167, 1]
-        self.pump_packet_serial = [ord(x) for x in
-                                   str(self.SERIAL_NUMBER).decode("hex")]
-        self.pump_packet_extremities = [128 |
-                                        len(self.pump_packet_parameters) >> 8
-                                        & 255,
-                                        len(self.pump_packet_parameters)
-                                        & 255]
-
-        # Build said packet
-        self.pump_packet.extend(self.pump_packet_head)
-        self.pump_packet.extend(self.pump_packet_serial)
-        self.pump_packet.extend(self.pump_packet_extremities)
-        self.pump_packet.append(self.pump_packet_button)
-        self.pump_packet.append(self.pump_packet_retries)
-        self.pump_packet.append(self.pump_packet_pages)
-        self.pump_packet.append(0)
-        self.pump_packet.append(self.pump_packet_code)
-        self.pump_packet.append(lib.computeCRC8(self.pump_packet))
-        self.pump_packet.extend(self.pump_packet_parameters)
-        self.pump_packet.append(lib.computeCRC8(self.pump_packet_parameters))
+        # Ask the stick for the downloaded data on the radio buffer
+        self.sendRequest([12, 0,
+                          lib.getByte(self.bytes_waiting, 1),
+                          lib.getByte(self.bytes_waiting, 0)])
 
 
 
@@ -538,24 +511,19 @@ def main():
     # Start my stick
     my_stick.start()
     
-    # Count packets on USB side of stick
+    # Get state of USB side of stick
     my_stick.getUSBState()
 
-    # Count packets on RADIO transmitter side of stick
-    my_stick.getRadioState()
+    # Get state of radio transmitter side of stick
+    my_stick.getRFState()
 
-    # Try to speak with pump
-    my_stick.powerPump()
-
-    # Get stick RADIO buffer status (waiting to download)
-    #for i in range(10):
-    #    my_stick.getDownloadState()
+    # Get data waiting in radio buffer
+    my_stick.getData()
 
     # Stop my stick
     my_stick.stop()
 
     # End of script
-    print
     print "Done!"
 
 
