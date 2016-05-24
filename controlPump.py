@@ -39,8 +39,8 @@ import controlStick
 
 
 # DEFINITIONS
-LOGS_ADDRESS    = "./stickLogs.txt"
-NOW             = datetime.datetime.now()
+LOGS_ADDRESS = "./stickLogs.txt"
+NOW          = datetime.datetime.now()
 
 
 
@@ -48,9 +48,14 @@ class pump:
 
     # PUMP CHARACTERISTICS
     PUMP_SERIAL_NUMBER  = 574180
-    POWERUP_TIME        = 10 # Time (s) it takes for the pump to go online
-    SESSION_TIME        = 15 # Time (m) for which pump will listen to RFs
-    BOLUS_SPEED         = 40 # 1U takes 40s to be enacted
+    POWERUP_TIME        = 10      # Time (s) it takes for the pump to go online
+    SESSION_TIME        = 15      # Time (m) for which pump will listen to RFs
+    TIME_BLOCK          = 30      # Time block (m) for temporary basal rates
+    BOLUS_DELIVERY_RATE = 40      # Bolus delivery rate (s/U)
+    BOLUS_BLOCK         = 10      # Bolus are splitted in blocks of 0.1U
+    BOLUS_RATE_FACTOR   = 40      # Conversion of bolus rate to bytes
+    BASAL_STROKES       = 10.0    # Size of basal strokes
+    VOLTAGE_FACTOR      = 0.0001  # Conversion of battery voltage
     BUTTONS             = {"EASY":0, "ESC":1, "ACT":2, "UP":3, "DOWN":4}
     BATTERY_STATUS      = {0:"NORMAL", 1:"LOW"}
 
@@ -101,10 +106,8 @@ class pump:
         self.stick.request_attempts = 0
         self.stick.request_pages = 0
         self.stick.request_code = 93
-        self.stick.request_parameters = [
-            1,       # Default byte
-            duration # Duration of RF session
-            ]
+        self.stick.request_parameters = [1,
+            duration]
 
         # Send request to pump
         self.stick.sendPumpRequest()
@@ -146,17 +149,222 @@ class pump:
         # Send request to pump
         self.stick.sendPumpRequest(expecting_data = True)
 
-        # Extract battery level from received data
+        # Extract battery level from received data (voltages not very reliable,
+        # rounding is necessary)
         self.battery_status = self.BATTERY_STATUS[self.stick.response[3]]
-        self.battery_level = round((
-            lib.getByte(self.stick.response[4], 0) * 256 | \
-            lib.getByte(self.stick.response[5], 0)) \
-            / 10000.0, # FIXME Convert to voltages
-            2)
+        self.battery_level = round(
+            (lib.getByte(self.stick.response[4], 0) * 256
+            | lib.getByte(self.stick.response[5], 0)) * self.VOLTAGE_FACTOR,
+            1)
 
         # Give user info
         print "Battery status: " + self.battery_status
         print "Battery level: " + str(self.battery_level) + "V"
+
+
+
+    def suspend(self):
+
+        """
+        ========================================================================
+        SUSPEND
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Suspending pump activity..."
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 2
+        self.stick.request_pages = 1
+        self.stick.request_code = 77
+        self.stick.request_parameters = [1]
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Give user info
+        print "Pump activity suspended."
+
+
+
+    def resume(self):
+
+        """
+        ========================================================================
+        RESUME
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Resuming pump activity..."
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 2
+        self.stick.request_pages = 1
+        self.stick.request_code = 77
+        self.stick.request_parameters = [0]
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Give user info
+        print "Pump activity resumed."
+
+
+
+    def pushButton(self, button):
+
+        """
+        ========================================================================
+        PUSHBUTTON
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Pushing button: " + button
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 1
+        self.stick.request_pages = 0
+        self.stick.request_code = 91
+        self.stick.request_parameters = [int(self.BUTTONS[button])]
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Give user info
+        print "Button pushed."
+
+
+
+    def deliverBolus(self, bolus):
+
+        """
+        ========================================================================
+        DELIVERBOLUS
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Sending bolus: " + str(bolus) + "U"
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 0
+        self.stick.request_pages = 1
+        self.stick.request_code = 66
+        self.stick.request_parameters = [int(bolus * self.BOLUS_BLOCK)]
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Evaluating time required for bolus to be delivered (giving it 10
+        # additional seconds to be safe)
+        bolus_time = self.BOLUS_DELIVERY_RATE * bolus + 10 
+
+        # Give user info
+        print "Waiting for bolus to be delivered... (" + \
+              str(bolus_time) + "s)"
+
+        time.sleep(bolus_time)
+
+        # Give user info
+        print "Bolus sent."
+
+
+
+    def setTemporaryBasalRate(self, rate, duration):
+
+        """
+        ========================================================================
+        SETTEMPORARYBASALRATE
+        ========================================================================
+
+        Note: Make sure the temporary basal option is set to absolute (U/H) on
+              the pump, or this command will not work!
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Set temporary basal rate: " + \
+            str(rate) + "U/H " + \
+            str(duration) + "m"
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 0
+        self.stick.request_pages = 1
+        self.stick.request_code = 76
+        self.stick.request_parameters = [0,
+            int(rate * self.BOLUS_RATE_FACTOR),
+            int(duration / self.TIME_BLOCK)]
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Give user info
+        print "Temporary basal rate set."
+
+
+
+    def setTemporaryBasalRatePercentage(self, rate, duration):
+
+        """
+        ========================================================================
+        SETTEMPORARYBASALRATEPERCENTAGE
+        ========================================================================
+
+        Note: Make sure the temporary basal option is set to percentage on the
+              pump, or this command will not work!
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Set temporary basal rate (in percentage): " + \
+            str(rate) + "%, " + \
+            str(duration) + "m"
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 0
+        self.stick.request_pages = 1
+        self.stick.request_code = 105
+        self.stick.request_parameters = [int(rate),
+            int(duration / self.TIME_BLOCK)]
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Give user info
+        print "Temporary basal rate set."
 
 
 
@@ -194,11 +402,11 @@ class pump:
 
 
 
-    def suspend(self):
+    def readRemainingInsulin(self):
 
         """
         ========================================================================
-        SUSPEND
+        READREMAININGINSULIN
         ========================================================================
 
         ...
@@ -208,158 +416,24 @@ class pump:
         print
 
         # Give user info
-        print "Suspending pump activity..."
+        print "Reading amount of insulin left..."
 
         # Specify request parameters for command
         self.stick.request_power = 0
         self.stick.request_attempts = 2
         self.stick.request_pages = 1
-        self.stick.request_code = 77
-        self.stick.request_parameters = [1] # Default parameter
+        self.stick.request_code = 115
+        self.stick.request_parameters = []
 
         # Send request to pump
-        self.stick.sendPumpRequest()
+        self.stick.sendPumpRequest(expecting_data = True)
+
+        # Extract remaining amout of insulin
+        self.insulin = ((lib.getByte(self.stick.response[13], 0) * 256
+            | lib.getByte(self.stick.response[14], 0)) / self.BASAL_STROKES)
 
         # Give user info
-        print "Pump activity suspended."
-
-
-
-    def resume(self):
-
-        """
-        ========================================================================
-        RESUME
-        ========================================================================
-
-        ...
-        """
-
-        # Print empty line to make output easier to read
-        print
-
-        # Give user info
-        print "Resuming pump activity..."
-
-        # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 2
-        self.stick.request_pages = 1
-        self.stick.request_code = 77
-        self.stick.request_parameters = [0] # Default parameter
-
-        # Send request to pump
-        self.stick.sendPumpRequest()
-
-        # Give user info
-        print "Pump activity resumed."
-
-
-
-    def pushButton(self, button):
-
-        """
-        ========================================================================
-        PUSHBUTTON
-        ========================================================================
-
-        ...
-        """
-
-        # Print empty line to make output easier to read
-        print
-
-        # Give user info
-        print "Pushing button: " + button
-
-        # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 1
-        self.stick.request_pages = 0
-        self.stick.request_code = 91
-        self.stick.request_parameters = [int(self.BUTTONS[button])]
-
-        # Send request to pump
-        self.stick.sendPumpRequest()
-
-
-
-    def sendBolus(self, bolus):
-
-        """
-        ========================================================================
-        SENDBOLUS
-        ========================================================================
-
-        ...
-        """
-
-        # Print empty line to make output easier to read
-        print
-
-        # Give user info
-        print "Sending bolus: " + str(bolus) + "U"
-
-        # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 0
-        self.stick.request_pages = 1
-        self.stick.request_code = 66
-        self.stick.request_parameters = [
-            int(bolus * 10) # Bolus are 0.1 units
-            ]
-
-        # Send request to pump
-        self.stick.sendPumpRequest()
-
-        # Evaluating time required for bolus to be enacted
-        bolus_time = self.BOLUS_SPEED * bolus \
-                     + 10 # Give it 10 more seconds to be safe
-
-        # Give user info
-        print "Waiting for bolus to be enacted... (" + \
-              str(bolus_time) + "s)"
-
-        time.sleep(bolus_time)
-
-        # Give user info
-        print "Bolus sent."
-
-
-
-    def setTemporaryBasalPercent(self, rate, duration):
-
-        """
-        ========================================================================
-        SETTEMPORARYBASALPERCENT
-        ========================================================================
-
-        ...
-        """
-
-        # Print empty line to make output easier to read
-        print
-
-        # Give user info
-        print "Set temporary basal rate (in percentage): " + \
-            str(rate) + "%, " + \
-            str(duration) + "m"
-
-        # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 0
-        self.stick.request_pages = 1
-        self.stick.request_code = 105
-        self.stick.request_parameters = [
-            int(rate),         # Rate is set in percentage
-            int(duration / 30) # Duration is splitted in blocks of 30 minutes
-            ]
-
-        # Send request to pump
-        self.stick.sendPumpRequest()
-
-        # Give user info
-        print "Temporary basal rate set."
+        print "Amount of insulin left: " + str(self.insulin) + "U"
 
 
 
@@ -383,10 +457,11 @@ def main():
     my_pump.readModel()
 
     # Send bolus to pump
-    #my_pump.sendBolus(0.5)
+    #my_pump.deliverBolus(0.5)
 
     # Send temporary basal rate to pump
-    #my_pump.setTemporaryBasalPercent(50, 90)
+    my_pump.setTemporaryBasalRate(2, 60)
+    #my_pump.setTemporaryBasalRatePercentage(50, 90)
 
     # Suspend pump activity
     #my_pump.suspend()
@@ -399,6 +474,9 @@ def main():
 
     # Read battery level of pump
     my_pump.readBatteryLevel()
+
+    # Read remaining amount of insulin in pump
+    my_pump.readRemainingInsulin()
 
     # Stop my stick
     my_pump.stick.stop()

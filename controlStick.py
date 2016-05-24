@@ -42,24 +42,24 @@ import lib
 
 
 # DEFINITIONS
-LOGS_ADDRESS    = "./stickLogs.txt"
-NOW             = datetime.datetime.now()
+LOGS_ADDRESS = "./stickLogs.txt"
+NOW          = datetime.datetime.now()
 
 
 
 class stick:
 
     # STICK CHARACTERISTICS
-    VENDOR                  = 0x0a21
-    PRODUCT                 = 0x8001
-    PUMP_SERIAL_NUMBER      = 574180
-    SIGNAL_THRESHOLD        = 150
-    REQUEST_ATTEMPTS        = 3
-    DOWNLOAD_ATTEMPTS       = 15
-    READ_BYTES              = 64
-    SLEEP_TIME              = 0.1
-    FREQUENCIES             = {0: 916.5, 1: 868.35, 255: 916.5}
-    INTERFACES              = {1: "Paradigm RF", 3: "USB"}
+    VENDOR                 = 0x0a21
+    PRODUCT                = 0x8001
+    PUMP_SERIAL_NUMBER     = 574180
+    SIGNAL_THRESHOLD       = 150
+    REQUEST_ATTEMPTS       = 3
+    RETRIEVE_DATA_ATTEMPTS = 250
+    READ_BYTES             = 64
+    SLEEP_TIME             = 0.1
+    FREQUENCIES            = {0: 916.5, 1: 868.35, 255: 916.5}
+    INTERFACES             = {1: "Paradigm RF", 3: "USB"}
 
 
 
@@ -457,23 +457,29 @@ class stick:
         if expecting_data:
 
             # Initialize number of waiting bytes
-            self.bytes_waiting = 0
+            self.bytes_ready = 0
 
             # Define downloading attempt variable
             n = 0
 
             # Ask stick if data requested is ready to be downloaded until it is
-            for i in range(self.DOWNLOAD_ATTEMPTS):
+            for i in range(self.RETRIEVE_DATA_ATTEMPTS):
 
                 # Verify if number of bytes waiting is correct
-                if (self.bytes_waiting < 64) & (self.bytes_waiting != 15):
+                if (self.bytes_ready < 64) & (self.bytes_ready != 15):
 
                     # Update attempt variable
                     n += 1
 
                     # Keep track of attempts
-                    print "Pump data read attempt: " + \
-                          str(n) + "/" + str(self.DOWNLOAD_ATTEMPTS)
+                    print "Read pump data attempt: " + \
+                          str(n) + "/" + str(self.RETRIEVE_DATA_ATTEMPTS)
+
+                    # Waiting a bit before asking for data [again]
+                    print "Waiting a bit for data... " + \
+                          "(" + str(self.SLEEP_TIME) + "s)"
+
+                    time.sleep(self.SLEEP_TIME)
 
                     # Define request to ask if data is received
                     self.request = [3, 0, 0]
@@ -482,28 +488,28 @@ class stick:
                     self.sendRequest()
 
                     # Get size of response waiting in radio buffer
-                    self.bytes_waiting = self.response[7]
+                    self.bytes_ready = self.response[7]
 
                 else:
                     break
 
             # If number of waiting bytes was always incorrectly found, quit
-            if (self.bytes_waiting < 64) & (self.bytes_waiting != 15):
+            if (self.bytes_ready < 64) & (self.bytes_ready != 15):
                 sys.exit("Unable to get a correct number of bytes waiting " + \
                          "to be downloaded. :-(")
 
             # Otherwise, download data
             else:
-                print "Number of bytes waiting to be downloaded: " + \
-                      str(self.bytes_waiting)
+                print "Number of bytes ready to be downloaded: " + \
+                      str(self.bytes_ready)
 
                 # Initialize request asking stick to download data in the buffer
                 self.request = []
 
                 # Build said request
                 self.request.extend([12, 0])
-                self.request.extend([lib.getByte(self.bytes_waiting, 1),
-                                    lib.getByte(self.bytes_waiting, 0)])
+                self.request.extend([lib.getByte(self.bytes_ready, 1),
+                                    lib.getByte(self.bytes_ready, 0)])
                 self.request.append(lib.computeCRC8(self.request))
 
                 # Send said request
