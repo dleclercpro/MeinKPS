@@ -122,7 +122,7 @@ def computeCRC8(x):
 
         # Look for CRC in table
         for i in range(len(x)):
-            crc = lookup_table[crc ^ x[i] & 255]
+            crc = lookup_table[crc ^ getByte(x[i], 0)]
 
         # Return CRC
         return crc
