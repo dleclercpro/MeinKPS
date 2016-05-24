@@ -50,10 +50,11 @@ class pump:
     PUMP_SERIAL_NUMBER  = 574180
     POWERUP_TIME        = 10
     SLEEP_TIME          = 0.1
+    BOLUS_SPEED         = 40 # 1U takes 40 seconds to be enacted
 
 
 
-    def start(self):
+    def start(self, do_power_up = True):
 
         """
         ========================================================================
@@ -69,15 +70,15 @@ class pump:
         # Start stick
         self.stick.start()
 
-        # Get state of USB side of stick
-        self.stick.getState()
+        # Power up if needed
+        if do_power_up:
 
-        # Power up my pump
-        self.powerUp()
+            # Power up the pump
+            self.powerUp(10)
 
 
 
-    def powerUp(self):
+    def powerUp(self, duration):
 
         """
         ========================================================================
@@ -87,20 +88,95 @@ class pump:
         ...
         """
 
-        # Specify packet parameters for command
-        self.stick.packet_button = 85
-        self.stick.packet_attempts = 0
-        self.stick.packet_pages = 0
-        self.stick.packet_code = 93
-        self.stick.packet_parameters = [1, 10]
+        # Print empty line to make output easier to read
+        print
 
-        # Send packet to pump
-        self.stick.sendPumpPacket()
+        # Give user info
+        print "Powering up the pump..."
+
+        # Specify request parameters for command
+        self.stick.request_button = 85
+        self.stick.request_attempts = 0
+        self.stick.request_pages = 0
+        self.stick.request_code = 93
+        self.stick.request_parameters = [
+            1,       # Default byte
+            duration # Duration of RF session
+            ]
+
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = False)
 
         # Wait for response from pump
-        print "Sleep until pump is powered up... " + \
+        print "Sleeping until pump is powered up... " + \
               "(" + str(self.POWERUP_TIME) + "s)"
+
         time.sleep(self.POWERUP_TIME)
+
+        # Give user info
+        print "Pump powered up."
+
+
+
+    def suspend(self):
+
+        """
+        ========================================================================
+        SUSPEND
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Suspending pump activity..."
+
+        # Specify request parameters for command
+        self.stick.request_button = 0
+        self.stick.request_attempts = 2
+        self.stick.request_pages = 1
+        self.stick.request_code = 77
+        self.stick.request_parameters = []
+
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = False)
+
+        # Give user info
+        print "Pump activity suspended."
+
+
+
+    def resume(self):
+
+        """
+        ========================================================================
+        RESUME
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Resuming pump activity..."
+
+        # Specify request parameters for command
+        self.stick.request_button = 0
+        self.stick.request_attempts = 2
+        self.stick.request_pages = 1
+        self.stick.request_code = 77
+        self.stick.request_parameters = []
+
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = False)
+
+        # Give user info
+        print "Pump activity resumed."
 
 
 
@@ -114,23 +190,27 @@ class pump:
         ...
         """
 
-        # Specify packet parameters for command
-        self.stick.packet_button = 0
-        self.stick.packet_attempts = 2
-        self.stick.packet_pages = 1
-        self.stick.packet_code = 141
-        self.stick.packet_parameters = []
+        # Print empty line to make output easier to read
+        print
 
-        # Send packet to pump
-        self.stick.sendPumpPacket()
+        # Give user info
+        print "Reading pump model..."
 
-        # Wait for response from pump
-        print "Sleep until pump responds... " + \
-              "(" + str(self.SLEEP_TIME) + "s)"
-        time.sleep(self.SLEEP_TIME)
+        # Specify request parameters for command
+        self.stick.request_button = 0
+        self.stick.request_attempts = 2
+        self.stick.request_pages = 1
+        self.stick.request_code = 141
+        self.stick.request_parameters = []
 
-        # Get data sent back from pump
-        self.stick.getPumpData()
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = True)
+
+        # Extract pump model from received data
+        self.model = int("".join(self.stick.response_str[14:17]))
+
+        # Give user info
+        print "Pump model obtained: " + str(self.model)
 
 
 
@@ -144,17 +224,36 @@ class pump:
         ...
         """
 
-        # Specify packet parameters for command
-        self.stick.packet_button = 0
-        self.stick.packet_attempts = 0
-        self.stick.packet_pages = 1
-        self.stick.packet_code = 66
-        self.stick.packet_parameters = [
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Sending bolus: " + str(bolus) + "U"
+
+        # Specify request parameters for command
+        self.stick.request_button = 0
+        self.stick.request_attempts = 0
+        self.stick.request_pages = 1
+        self.stick.request_code = 66
+        self.stick.request_parameters = [
             int(bolus * 10) # Bolus are 0.1 units
             ]
 
-        # Send packet to pump
-        self.stick.sendPumpPacket()
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = False)
+
+        # Evaluating time required for bolus to be enacted
+        bolus_time = self.BOLUS_SPEED * bolus \
+                     + 10 # Give it 10 more seconds to be safe
+
+        # Give user info
+        print "Waiting for bolus to be enacted... (" + \
+              str(bolus_time) + "s)"
+
+        time.sleep(bolus_time)
+
+        # Give user info
+        print "Bolus sent."
 
 
 
@@ -168,18 +267,29 @@ class pump:
         ...
         """
 
-        # Specify packet parameters for command
-        self.stick.packet_button = 0
-        self.stick.packet_attempts = 0
-        self.stick.packet_pages = 1
-        self.stick.packet_code = 105
-        self.stick.packet_parameters = [
-            int(rate),          # Rate is set in percentage
-            int(duration / 30)  # Duration is splitted in blocks of 30 minutes
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Set temporary basal rate (in percentage): " + \
+            str(rate) + "%, " + \
+            str(duration) + "m"
+
+        # Specify request parameters for command
+        self.stick.request_button = 0
+        self.stick.request_attempts = 0
+        self.stick.request_pages = 1
+        self.stick.request_code = 105
+        self.stick.request_parameters = [
+            int(rate),         # Rate is set in percentage
+            int(duration / 30) # Duration is splitted in blocks of 30 minutes
             ]
 
-        # Send packet to pump
-        self.stick.sendPumpPacket()
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = False)
+
+        # Give user info
+        print "Temporary basal rate set."
 
 
 
@@ -197,14 +307,22 @@ def main():
     my_pump = pump()
 
     # Start pump
-    my_pump.start()
+    my_pump.start(do_power_up = True)
 
     # Read pump model
     my_pump.readModel()
 
     # Send bolus to pump
-    #my_pump.sendBolus(0.5)
+    my_pump.sendBolus(0.5)
+
+    # Send temporary basal rate to pump
     my_pump.setTemporaryBasalPercent(50, 90)
+
+    # Suspend pump activity
+    #my_pump.suspend()
+
+    # Resume pump activity
+    #my_pump.resume()
 
     # Stop my stick
     my_pump.stick.stop()
