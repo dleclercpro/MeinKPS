@@ -48,13 +48,15 @@ class pump:
 
     # PUMP CHARACTERISTICS
     PUMP_SERIAL_NUMBER  = 574180
-    POWERUP_TIME        = 10
-    SLEEP_TIME          = 0.1
-    BOLUS_SPEED         = 40 # 1U takes 40 seconds to be enacted
+    POWERUP_TIME        = 10 # Time (s) it takes for the pump to go online
+    SESSION_TIME        = 15 # Time (m) for which pump will listen to RFs
+    BOLUS_SPEED         = 40 # 1U takes 40s to be enacted
+    BUTTONS             = {"EASY":0, "ESC":1, "ACT":2, "UP":3, "DOWN":4}
+    BATTERY_STATUS      = {0:"NORMAL", 1:"LOW"}
 
 
 
-    def start(self, do_power_up = True):
+    def start(self, do_power_up = True, session_time = SESSION_TIME):
 
         """
         ========================================================================
@@ -74,7 +76,7 @@ class pump:
         if do_power_up:
 
             # Power up the pump
-            self.powerUp(10)
+            self.powerUp(session_time)
 
 
 
@@ -92,10 +94,10 @@ class pump:
         print
 
         # Give user info
-        print "Powering up the pump..."
+        print "Powering up the pump for: " + str(duration) + "m"
 
         # Specify request parameters for command
-        self.stick.request_button = 85
+        self.stick.request_power = 85
         self.stick.request_attempts = 0
         self.stick.request_pages = 0
         self.stick.request_code = 93
@@ -105,7 +107,7 @@ class pump:
             ]
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = False)
+        self.stick.sendPumpRequest()
 
         # Wait for response from pump
         print "Sleeping until pump is powered up... " + \
@@ -115,6 +117,80 @@ class pump:
 
         # Give user info
         print "Pump powered up."
+
+
+
+    def readBatteryLevel(self):
+
+        """
+        ========================================================================
+        READBATTERYLEVEL
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Reading battery level..."
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 2
+        self.stick.request_pages = 1
+        self.stick.request_code = 114
+        self.stick.request_parameters = []
+
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = True)
+
+        # Extract battery level from received data
+        self.battery_status = self.BATTERY_STATUS[self.stick.response[3]]
+        self.battery_level = round((
+            lib.getByte(self.stick.response[4], 0) * 256 | \
+            lib.getByte(self.stick.response[5], 0)) \
+            / 10000.0, # FIXME Convert to voltages
+            2)
+
+        # Give user info
+        print "Battery status: " + self.battery_status
+        print "Battery level: " + str(self.battery_level) + "V"
+
+
+
+    def readModel(self):
+
+        """
+        ========================================================================
+        READMODEL
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Reading pump model..."
+
+        # Specify request parameters for command
+        self.stick.request_power = 0
+        self.stick.request_attempts = 2
+        self.stick.request_pages = 1
+        self.stick.request_code = 141
+        self.stick.request_parameters = []
+
+        # Send request to pump
+        self.stick.sendPumpRequest(expecting_data = True)
+
+        # Extract pump model from received data
+        self.model = int("".join(self.stick.response_str[14:17]))
+
+        # Give user info
+        print "Pump model obtained: " + str(self.model)
 
 
 
@@ -135,14 +211,14 @@ class pump:
         print "Suspending pump activity..."
 
         # Specify request parameters for command
-        self.stick.request_button = 0
+        self.stick.request_power = 0
         self.stick.request_attempts = 2
         self.stick.request_pages = 1
         self.stick.request_code = 77
-        self.stick.request_parameters = []
+        self.stick.request_parameters = [1] # Default parameter
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = False)
+        self.stick.sendPumpRequest()
 
         # Give user info
         print "Pump activity suspended."
@@ -166,25 +242,25 @@ class pump:
         print "Resuming pump activity..."
 
         # Specify request parameters for command
-        self.stick.request_button = 0
+        self.stick.request_power = 0
         self.stick.request_attempts = 2
         self.stick.request_pages = 1
         self.stick.request_code = 77
-        self.stick.request_parameters = []
+        self.stick.request_parameters = [0] # Default parameter
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = False)
+        self.stick.sendPumpRequest()
 
         # Give user info
         print "Pump activity resumed."
 
 
 
-    def readModel(self):
+    def pushButton(self, button):
 
         """
         ========================================================================
-        READMODEL
+        PUSHBUTTON
         ========================================================================
 
         ...
@@ -194,23 +270,17 @@ class pump:
         print
 
         # Give user info
-        print "Reading pump model..."
+        print "Pushing button: " + button
 
         # Specify request parameters for command
-        self.stick.request_button = 0
-        self.stick.request_attempts = 2
-        self.stick.request_pages = 1
-        self.stick.request_code = 141
-        self.stick.request_parameters = []
+        self.stick.request_power = 0
+        self.stick.request_attempts = 1
+        self.stick.request_pages = 0
+        self.stick.request_code = 91
+        self.stick.request_parameters = [int(self.BUTTONS[button])]
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = True)
-
-        # Extract pump model from received data
-        self.model = int("".join(self.stick.response_str[14:17]))
-
-        # Give user info
-        print "Pump model obtained: " + str(self.model)
+        self.stick.sendPumpRequest()
 
 
 
@@ -231,7 +301,7 @@ class pump:
         print "Sending bolus: " + str(bolus) + "U"
 
         # Specify request parameters for command
-        self.stick.request_button = 0
+        self.stick.request_power = 0
         self.stick.request_attempts = 0
         self.stick.request_pages = 1
         self.stick.request_code = 66
@@ -240,7 +310,7 @@ class pump:
             ]
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = False)
+        self.stick.sendPumpRequest()
 
         # Evaluating time required for bolus to be enacted
         bolus_time = self.BOLUS_SPEED * bolus \
@@ -276,7 +346,7 @@ class pump:
             str(duration) + "m"
 
         # Specify request parameters for command
-        self.stick.request_button = 0
+        self.stick.request_power = 0
         self.stick.request_attempts = 0
         self.stick.request_pages = 1
         self.stick.request_code = 105
@@ -286,7 +356,7 @@ class pump:
             ]
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = False)
+        self.stick.sendPumpRequest()
 
         # Give user info
         print "Temporary basal rate set."
@@ -307,22 +377,28 @@ def main():
     my_pump = pump()
 
     # Start pump
-    my_pump.start(do_power_up = True)
+    my_pump.start()
 
     # Read pump model
     my_pump.readModel()
 
     # Send bolus to pump
-    my_pump.sendBolus(0.5)
+    #my_pump.sendBolus(0.5)
 
     # Send temporary basal rate to pump
-    my_pump.setTemporaryBasalPercent(50, 90)
+    #my_pump.setTemporaryBasalPercent(50, 90)
 
     # Suspend pump activity
     #my_pump.suspend()
 
     # Resume pump activity
     #my_pump.resume()
+
+    # Push button on pump
+    my_pump.pushButton("DOWN")
+
+    # Read battery level of pump
+    my_pump.readBatteryLevel()
 
     # Stop my stick
     my_pump.stick.stop()

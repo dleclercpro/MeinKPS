@@ -158,7 +158,7 @@ class stick:
         # Define emptying buffer attempt variable
         n = 0
 
-        while len(self.response) != 0:
+        while len(self.raw_response) != 0:
 
             # Update attempt variable
             n += 1
@@ -167,7 +167,7 @@ class stick:
             print "Freeing buffer attempt: " + str(n) + "/-"
 
             # Read buffer
-            self.response = self.handle.read(self.READ_BYTES)
+            self.raw_response = self.handle.read(self.READ_BYTES)
 
         print "Buffer emptied!"
 
@@ -187,11 +187,11 @@ class stick:
         print "Sending request: " + str(self.request)
 
         # Initialize stick response
-        self.response = ""
+        self.raw_response = ""
 
         # Ask for response from stick until we get one
         for i in range(self.REQUEST_ATTEMPTS):
-            if len(self.response) == 0:
+            if len(self.raw_response) == 0:
 
                 # Keep track of number of attempts
                 print "Request attempt: " + \
@@ -204,13 +204,13 @@ class stick:
                 time.sleep(self.SLEEP_TIME)
 
                 # Read stick response
-                self.response = self.handle.read(self.READ_BYTES)
+                self.raw_response = self.handle.read(self.READ_BYTES)
 
             else:
                 break
 
         # If no response at all was received, quit
-        if len(self.response) == 0:
+        if len(self.raw_response) == 0:
             sys.exit("Unable to read from stick. :-(")
 
         # Parse response of stick
@@ -231,8 +231,8 @@ class stick:
         ...
         """
 
-        # Vectorize response
-        self.response = [x for x in self.response]
+        # Vectorize raw response
+        self.response = [x for x in self.raw_response]
 
         # Convert stick response to various formats for more convenience
         self.response = np.vectorize(ord)(self.response)
@@ -416,7 +416,7 @@ class stick:
 
 
 
-    def sendPumpRequest(self, expecting_data):
+    def sendPumpRequest(self, expecting_data = False):
 
         """
         ========================================================================
@@ -441,7 +441,7 @@ class stick:
         self.request.extend(self.request_head)
         self.request.extend(self.request_serial_number)
         self.request.extend(self.request_parameters_info)
-        self.request.append(self.request_button)
+        self.request.append(self.request_power)
         self.request.append(self.request_attempts)
         self.request.append(self.request_pages)
         self.request.append(0)
