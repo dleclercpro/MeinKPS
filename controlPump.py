@@ -10,7 +10,7 @@ AUTHOR:   David Leclerc
 
 VERSION:  0.1
 
-DATE:     24.05.2016
+DATE:     25.05.2016
 
 LICENSE:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -47,15 +47,17 @@ NOW          = datetime.datetime.now()
 class pump:
 
     # PUMP CHARACTERISTICS
-    PUMP_SERIAL_NUMBER  = 574180
-    POWERUP_TIME        = 10      # Time (s) it takes for the pump to go online
-    SESSION_TIME        = 15      # Time (m) for which pump will listen to RFs
-    TIME_BLOCK          = 30      # Time block (m) for temporary basal rates
-    BOLUS_DELIVERY_RATE = 40      # Bolus delivery rate (s/U)
-    BOLUS_BLOCK         = 10      # Bolus are splitted in blocks of 0.1U
-    BOLUS_RATE_FACTOR   = 40      # Conversion of bolus rate to bytes
-    BASAL_STROKES       = 10.0    # Size of basal strokes
-    VOLTAGE_FACTOR      = 0.0001  # Conversion of battery voltage
+    SERIAL_NUMBER       = 574180
+    POWERUP_TIME        = 10     # Time (s) it takes for the pump to go online
+    SESSION_TIME        = 15     # Time (m) for which pump will listen to RFs
+    SUSPENSION_TIME     = 5      # Time (s) it takes to suspend pump activity
+    TIME_BLOCK          = 30     # Time block (m) for temporary basal rates
+    BOLUS_DELIVERY_RATE = 40     # Bolus delivery rate (s/U)
+    BOLUS_BLOCK         = 10     # Bolus are splitted in blocks of 0.1U
+    BOLUS_RATE_FACTOR   = 40     # Conversion of bolus rate to bytes
+    BOLUS_EXTRA_TIME    = 7.5    # Ensure bolus was completely given
+    BASAL_STROKES       = 10.0   # Size of basal strokes
+    VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
     BUTTONS             = {"EASY":0, "ESC":1, "ACT":2, "UP":3, "DOWN":4}
     BATTERY_STATUS      = {0:"NORMAL", 1:"LOW"}
 
@@ -76,6 +78,9 @@ class pump:
 
         # Start stick
         self.stick.start()
+
+        # Give stick the serial number of the pump
+        self.stick.pump_serial_number = self.SERIAL_NUMBER
 
         # Power up if needed
         if do_power_up:
@@ -102,20 +107,24 @@ class pump:
         print "Powering up the pump for: " + str(duration) + "m"
 
         # Specify request parameters for command
-        self.stick.request_power = 85
-        self.stick.request_attempts = 0
-        self.stick.request_pages = 0
-        self.stick.request_code = 93
-        self.stick.request_parameters = [1,
+        self.stick.pump_request_power = 85
+        self.stick.pump_request_attempts = 0
+        self.stick.pump_request_pages = 0
+        self.stick.pump_request_code = 93
+        self.stick.pump_request_parameters = [1,
             duration]
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 0
 
         # Send request to pump
         self.stick.sendPumpRequest()
 
-        # Wait for response from pump
+        # Give user info
         print "Sleeping until pump is powered up... " + \
               "(" + str(self.POWERUP_TIME) + "s)"
 
+        # Wait
         time.sleep(self.POWERUP_TIME)
 
         # Give user info
@@ -140,14 +149,20 @@ class pump:
         print "Reading battery level..."
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 2
-        self.stick.request_pages = 1
-        self.stick.request_code = 114
-        self.stick.request_parameters = []
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 114
+        self.stick.pump_request_parameters = []
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 15
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = True)
+        self.stick.sendPumpRequest()
+
+        # Get pump data
+        self.stick.getPumpData()
 
         # Extract battery level from received data (voltages not very reliable,
         # rounding is necessary)
@@ -158,8 +173,8 @@ class pump:
             1)
 
         # Give user info
-        print "Battery status: " + self.battery_status
-        print "Battery level: " + str(self.battery_level) + "V"
+        print "Battery status: " + self.battery_status # FIXME
+        print "Battery level: " + str(self.battery_level) + "V" # FIXME
 
 
 
@@ -180,14 +195,24 @@ class pump:
         print "Suspending pump activity..."
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 2
-        self.stick.request_pages = 1
-        self.stick.request_code = 77
-        self.stick.request_parameters = [1]
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 77
+        self.stick.pump_request_parameters = [1]
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 0
 
         # Send request to pump
         self.stick.sendPumpRequest()
+
+        # Give user info
+        print "Waiting for pump activity to be completely suspended... " + \
+              "(" + str(self.SUSPENSION_TIME) + "s)"
+
+        # Wait
+        time.sleep(self.SUSPENSION_TIME)
 
         # Give user info
         print "Pump activity suspended."
@@ -211,11 +236,14 @@ class pump:
         print "Resuming pump activity..."
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 2
-        self.stick.request_pages = 1
-        self.stick.request_code = 77
-        self.stick.request_parameters = [0]
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 77
+        self.stick.pump_request_parameters = [0]
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 0
 
         # Send request to pump
         self.stick.sendPumpRequest()
@@ -242,11 +270,14 @@ class pump:
         print "Pushing button: " + button
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 1
-        self.stick.request_pages = 0
-        self.stick.request_code = 91
-        self.stick.request_parameters = [int(self.BUTTONS[button])]
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 1
+        self.stick.pump_request_pages = 0
+        self.stick.pump_request_code = 91
+        self.stick.pump_request_parameters = [int(self.BUTTONS[button])]
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 0
 
         # Send request to pump
         self.stick.sendPumpRequest()
@@ -273,23 +304,26 @@ class pump:
         print "Sending bolus: " + str(bolus) + "U"
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 0
-        self.stick.request_pages = 1
-        self.stick.request_code = 66
-        self.stick.request_parameters = [int(bolus * self.BOLUS_BLOCK)]
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 0
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 66
+        self.stick.pump_request_parameters = [int(bolus * self.BOLUS_BLOCK)]
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 0
 
         # Send request to pump
         self.stick.sendPumpRequest()
 
-        # Evaluating time required for bolus to be delivered (giving it 10
+        # Evaluating time required for bolus to be delivered (giving it some
         # additional seconds to be safe)
-        bolus_time = self.BOLUS_DELIVERY_RATE * bolus + 10 
+        bolus_time = self.BOLUS_DELIVERY_RATE * bolus + self.BOLUS_EXTRA_TIME
 
         # Give user info
-        print "Waiting for bolus to be delivered... (" + \
-              str(bolus_time) + "s)"
+        print "Waiting for bolus to be delivered... (" + str(bolus_time) + "s)"
 
+        # Wait
         time.sleep(bolus_time)
 
         # Give user info
@@ -317,13 +351,16 @@ class pump:
             str(duration) + "m"
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 0
-        self.stick.request_pages = 1
-        self.stick.request_code = 76
-        self.stick.request_parameters = [0,
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 0
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 76
+        self.stick.pump_request_parameters = [0,
             int(rate * self.BOLUS_RATE_FACTOR),
             int(duration / self.TIME_BLOCK)]
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 0
 
         # Send request to pump
         self.stick.sendPumpRequest()
@@ -353,12 +390,15 @@ class pump:
             str(duration) + "m"
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 0
-        self.stick.request_pages = 1
-        self.stick.request_code = 105
-        self.stick.request_parameters = [int(rate),
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 0
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 105
+        self.stick.pump_request_parameters = [int(rate),
             int(duration / self.TIME_BLOCK)]
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 0
 
         # Send request to pump
         self.stick.sendPumpRequest()
@@ -385,14 +425,20 @@ class pump:
         print "Reading pump model..."
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 2
-        self.stick.request_pages = 1
-        self.stick.request_code = 141
-        self.stick.request_parameters = []
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 141
+        self.stick.pump_request_parameters = []
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 78
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = True)
+        self.stick.sendPumpRequest()
+
+        # Get pump data
+        self.stick.getPumpData()
 
         # Extract pump model from received data
         self.model = int("".join(self.stick.response_str[14:17]))
@@ -419,14 +465,20 @@ class pump:
         print "Reading amount of insulin left..."
 
         # Specify request parameters for command
-        self.stick.request_power = 0
-        self.stick.request_attempts = 2
-        self.stick.request_pages = 1
-        self.stick.request_code = 115
-        self.stick.request_parameters = []
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 115
+        self.stick.pump_request_parameters = []
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 78
 
         # Send request to pump
-        self.stick.sendPumpRequest(expecting_data = True)
+        self.stick.sendPumpRequest()
+
+        # Get pump data
+        self.stick.getPumpData()
 
         # Extract remaining amout of insulin
         self.insulin = ((lib.getByte(self.stick.response[13], 0) * 256
@@ -457,17 +509,17 @@ def main():
     my_pump.readModel()
 
     # Send bolus to pump
-    #my_pump.deliverBolus(0.5)
+    my_pump.deliverBolus(0.3)
 
     # Send temporary basal rate to pump
-    my_pump.setTemporaryBasalRate(2, 60)
+    #my_pump.setTemporaryBasalRate(2, 60)
     #my_pump.setTemporaryBasalRatePercentage(50, 90)
 
     # Suspend pump activity
-    #my_pump.suspend()
+    my_pump.suspend()
 
     # Resume pump activity
-    #my_pump.resume()
+    my_pump.resume()
 
     # Push button on pump
     my_pump.pushButton("DOWN")
@@ -486,6 +538,6 @@ def main():
 
 
 
-# Run script when called from terminal
+# Run this when script is called from terminal
 if __name__ == "__main__":
     main()

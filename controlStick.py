@@ -10,7 +10,7 @@ AUTHOR:   David Leclerc
 
 VERSION:  0.1
 
-DATE:     24.05.2016
+DATE:     25.05.2016
 
 LICENSE:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -50,16 +50,13 @@ NOW          = datetime.datetime.now()
 class stick:
 
     # STICK CHARACTERISTICS
-    VENDOR                 = 0x0a21
-    PRODUCT                = 0x8001
-    PUMP_SERIAL_NUMBER     = 574180
-    SIGNAL_THRESHOLD       = 150
-    REQUEST_ATTEMPTS       = 3
-    RETRIEVE_DATA_ATTEMPTS = 250
-    READ_BYTES             = 64
-    SLEEP_TIME             = 0.1
-    FREQUENCIES            = {0: 916.5, 1: 868.35, 255: 916.5}
-    INTERFACES             = {1: "Paradigm RF", 3: "USB"}
+    VENDOR           = 0x0a21
+    PRODUCT          = 0x8001
+    SIGNAL_THRESHOLD = 150
+    READ_BYTES       = 64
+    SLEEP_TIME       = 0.1
+    FREQUENCIES      = {0: 916.5, 1: 868.35, 255: 916.5}
+    INTERFACES       = {1: "Paradigm RF", 3: "USB"}
 
 
 
@@ -153,7 +150,7 @@ class stick:
         """
 
         # Tell user the buffer is going to be emptied
-        print "Trying to empty buffer..."
+        print "Emptying buffer..."
 
         # Define emptying buffer attempt variable
         n = 0
@@ -163,13 +160,10 @@ class stick:
             # Update attempt variable
             n += 1
 
-            # Keep track of attempts to free buffer
-            print "Freeing buffer attempt: " + str(n) + "/-"
-
             # Read buffer
             self.raw_response = self.handle.read(self.READ_BYTES)
 
-        print "Buffer emptied!"
+        print "Buffer emptied after " + str(n - 1) + " attempt(s)."
 
 
 
@@ -189,25 +183,26 @@ class stick:
         # Initialize stick response
         self.raw_response = ""
 
+        # Initialize reading attempt variable
+        n = 0
+
         # Ask for response from stick until we get one
-        for i in range(self.REQUEST_ATTEMPTS):
-            if len(self.raw_response) == 0:
+        while len(self.raw_response) == 0:
 
-                # Keep track of number of attempts
-                print "Request attempt: " + \
-                      str(i + 1) + "/" + str(self.REQUEST_ATTEMPTS)
+            # Update attempt variable
+            n += 1
 
-                # Send stick command
-                self.handle.write(bytearray(self.request))
+            # Keep track of number of attempts
+            print "Request attempt: " + str(n) + "/-"
 
-                # Wait for response
-                time.sleep(self.SLEEP_TIME)
+            # Send stick command
+            self.handle.write(bytearray(self.request))
 
-                # Read stick response
-                self.raw_response = self.handle.read(self.READ_BYTES)
+            # Wait for response
+            time.sleep(self.SLEEP_TIME)
 
-            else:
-                break
+            # Read stick response
+            self.raw_response = self.handle.read(self.READ_BYTES)
 
         # If no response at all was received, quit
         if len(self.raw_response) == 0:
@@ -240,8 +235,8 @@ class stick:
         self.response_str = np.vectorize(chr)(self.response)
 
         # Pad hexadecimal formatted response
-        self.response_hex = np.vectorize(lib.padHexadecimalString) \
-                                        (self.response_hex)
+        self.response_hex = (np.vectorize(lib.padHexadecimalString)
+                             (self.response_hex))
 
         # Correct unreadable characters in string stick response
         self.response_str[self.response < 32] = "."
@@ -286,30 +281,30 @@ class stick:
         # Define request for stick infos
         self.request = [4, 0, 0]
 
-        # Send said request
+        # Send request
         self.sendRequest()
 
         # Extract ACK
-        self.ack         = self.response[0]
+        self.ack = self.response[0]
 
         # Extract status
-        self.status      = self.response_str[1]
+        self.status = self.response_str[1]
 
         # Extract serial number
-        self.serial      = "".join(x[2:] for x in self.response_hex[3:6])
+        self.serial = "".join(x[2:] for x in self.response_hex[3:6])
 
         # Extract radiofrequency
-        self.frequency   = self.FREQUENCIES[self.response[8]]
+        self.frequency = self.FREQUENCIES[self.response[8]]
 
         # Extract description of communication protocol
         self.description = "".join(self.response_str[9:19])
 
         # Extract software version
-        self.version     = 1.00 * self.response[19:21][0] + \
-                           0.01 * self.response[19:21][1]
+        self.version = 1.00 * self.response[19:21][0] + \
+                       0.01 * self.response[19:21][1]
 
         # Extract interfaces
-        self.interfaces  = np.trim_zeros(self.response[22:64], "b")
+        self.interfaces = np.trim_zeros(self.response[22:64], "b")
 
         # Print infos
         print "ACK: " + str(self.ack)
@@ -344,19 +339,21 @@ class stick:
             n += 1
 
             # Keep track of attempts reading signal strength
-            print "Signal read: " + str(n) + "/-"
+            print "Look for sufficient signal strength: " + str(n) + "/-"
 
             # Define request for stick signal strength
             self.request = [6, 0, 0]
 
-            # Send said request
+            # Send request
             self.sendRequest()
 
             # Extract signal strength from response
             self.signal = self.response[3]
 
             # Print signal strength
-            print "Signal strength: " + str(self.signal)
+            print "Signal strength found: " + str(self.signal)
+            print "Expected minimal signal strength: " + \
+                  str(self.SIGNAL_THRESHOLD)
 
 
 
@@ -373,7 +370,7 @@ class stick:
         # Define request for stick USB state
         self.request = [5, 1, 0]
 
-        # Send said request
+        # Send request
         self.sendRequest()
 
         # Extract errors
@@ -395,7 +392,7 @@ class stick:
         # Define request for stick RF state
         self.request = [5, 0, 0]
 
-        # Send said request
+        # Send request
         self.sendRequest()
 
         # Extract errors
@@ -416,7 +413,7 @@ class stick:
 
 
 
-    def sendPumpRequest(self, expecting_data = False):
+    def sendPumpRequest(self):
 
         """
         ========================================================================
@@ -426,97 +423,135 @@ class stick:
         ...
         """
 
-        # Initialize request to send to pump
-        self.request = []
+        # Initialize pump request
+        self.pump_request = []
 
-        # Evaluate some parts of request first
-        self.request_head = [1, 0, 167, 1]
-        self.request_serial_number = [ord(x) for x in
-            str(self.PUMP_SERIAL_NUMBER).decode("hex")]
-        self.request_parameters_info = [128 |
-            lib.getByte(len(self.request_parameters), 1),
-            lib.getByte(len(self.request_parameters), 0)]
+        # Evaluate parts of pump request based on input
+        self.pump_request_head = [1, 0, 167, 1]
+        self.pump_request_serial_number = lib.encodePumpSerialNumber(
+            self.pump_serial_number)
+        self.pump_request_parameter_check = [128 | lib.getByte(
+            len(self.pump_request_parameters), 1), lib.getByte(
+            len(self.pump_request_parameters), 0)]
 
-        # Build said request
-        self.request.extend(self.request_head)
-        self.request.extend(self.request_serial_number)
-        self.request.extend(self.request_parameters_info)
-        self.request.append(self.request_power)
-        self.request.append(self.request_attempts)
-        self.request.append(self.request_pages)
-        self.request.append(0)
-        self.request.append(self.request_code)
-        self.request.append(lib.computeCRC8(self.request))
-        self.request.extend(self.request_parameters)
-        self.request.append(lib.computeCRC8(self.request_parameters))
+        # Build pump request
+        self.pump_request.extend(self.pump_request_head)
+        self.pump_request.extend(self.pump_request_serial_number)
+        self.pump_request.extend(self.pump_request_parameter_check)
+        self.pump_request.append(self.pump_request_power)
+        self.pump_request.append(self.pump_request_attempts)
+        self.pump_request.append(self.pump_request_pages)
+        self.pump_request.append(0)
+        self.pump_request.append(self.pump_request_code)
+        self.pump_request.append(lib.computeCRC8(self.pump_request))
+        self.pump_request.extend(self.pump_request_parameters)
+        self.pump_request.append(lib.computeCRC8(self.pump_request_parameters))
 
-        # Send said request
+        # Save pump request to stick request variable
+        self.request = self.pump_request
+
+        # Send request
         self.sendRequest()
 
-        # If expecting data, ask stick to get it on the radio buffer
-        if expecting_data:
 
-            # Initialize number of waiting bytes
-            self.bytes_ready = 0
 
-            # Define downloading attempt variable
-            n = 0
+    def askPumpData(self):
 
-            # Ask stick if data requested is ready to be downloaded until it is
-            for i in range(self.RETRIEVE_DATA_ATTEMPTS):
+        """
+        ========================================================================
+        ASKPUMPDATA
+        ========================================================================
 
-                # Verify if number of bytes waiting is correct
-                if (self.bytes_ready < 64) & (self.bytes_ready != 15):
+        ...
+        """
 
-                    # Update attempt variable
-                    n += 1
+        # Initialize number of bytes waiting in buffer
+        self.bytes_ready = 0
 
-                    # Keep track of attempts
-                    print "Read pump data attempt: " + \
-                          str(n) + "/" + str(self.RETRIEVE_DATA_ATTEMPTS)
+        # Define asking attempt variable
+        n = 0
 
-                    # Waiting a bit before asking for data [again]
-                    print "Waiting a bit for data... " + \
-                          "(" + str(self.SLEEP_TIME) + "s)"
+        # If number of bytes waiting is correct, data is ready
+        while (self.bytes_ready < 64) & (self.bytes_ready != 15):
 
-                    time.sleep(self.SLEEP_TIME)
+            # Update attempt variable
+            n += 1
 
-                    # Define request to ask if data is received
-                    self.request = [3, 0, 0]
+            # Waiting a bit before asking for data [again]
+            print "Waiting a bit for data... " + \
+                  "(" + str(self.SLEEP_TIME) + "s)"
 
-                    # Send said request
-                    self.sendRequest()
+            time.sleep(self.SLEEP_TIME)
 
-                    # Get size of response waiting in radio buffer
-                    self.bytes_ready = self.response[7]
+            # Keep track of attempts
+            print "Look for pump data in buffer: " + str(n) + "/-"
 
-                else:
-                    break
+            # Define request to ask stick if data was received
+            self.request = [3, 0, 0]
 
-            # If number of waiting bytes was always incorrectly found, quit
-            if (self.bytes_ready < 64) & (self.bytes_ready != 15):
-                sys.exit("Unable to get a correct number of bytes waiting " + \
-                         "to be downloaded. :-(")
+            # Send request
+            self.sendRequest()
 
-            # Otherwise, download data
-            else:
-                print "Number of bytes ready to be downloaded: " + \
-                      str(self.bytes_ready)
+            # Get size of response waiting in radio buffer
+            self.bytes_ready = self.response[7]
 
-                # Initialize request asking stick to download data in the buffer
-                self.request = []
+        # If number of waiting bytes is not plausible, quit
+        if (self.bytes_ready < 64) & (self.bytes_ready != 15):
+            sys.exit("Unable to get a correct number of bytes waiting " +
+                     "to be downloaded. :-(")
 
-                # Build said request
-                self.request.extend([12, 0])
-                self.request.extend([lib.getByte(self.bytes_ready, 1),
-                                    lib.getByte(self.bytes_ready, 0)])
-                self.request.append(lib.computeCRC8(self.request))
 
-                # Send said request
-                self.sendRequest()
 
-                # Empty buffer for next command
-                self.emptyBuffer()
+    def getPumpData(self):
+
+        """
+        ========================================================================
+        GETPUMPDATA
+        ========================================================================
+
+        ...
+        """
+
+        # Ask if data was correctly received on first try
+        self.askPumpData()
+
+        # If not, resend pump request
+        while self.bytes_ready != self.expected_bytes:
+
+            # Give user info
+            print "Number of bytes found: " + str(self.bytes_ready)
+            print "Expected number of bytes: " + str(self.expected_bytes)
+
+            # Give user info
+            print "Resending pump request..."
+
+            # Reset stick request to pump request
+            self.request = self.pump_request
+
+            # Resend request to pump
+            self.sendPumpRequest()
+
+            # Ask pump if data is ready to be read
+            self.askPumpData()
+
+        # Give user info
+        print "Number of bytes ready to be downloaded: " + \
+              str(self.bytes_ready)
+
+        # Initialize request asking stick to read data in its buffer
+        self.request = []
+
+        # Build request
+        self.request.extend([12, 0])
+        self.request.extend([lib.getByte(self.bytes_ready, 1),
+                            lib.getByte(self.bytes_ready, 0)])
+        self.request.append(lib.computeCRC8(self.request))
+
+        # Send request
+        self.sendRequest()
+
+        # Empty buffer for next command
+        self.emptyBuffer()
 
 
 
@@ -544,6 +579,6 @@ def main():
 
 
 
-# Run script when called from terminal
+# Run this when script is called from terminal
 if __name__ == "__main__":
     main()

@@ -29,6 +29,20 @@ import numpy as np
 
 
 
+def encodePumpSerialNumber(x):
+
+        """
+        ========================================================================
+        ENCODEPUMPSERIALNUMBER
+        ========================================================================
+
+        ...
+        """
+
+        return [ord(i) for i in str(x).decode("hex")]
+
+
+
 def padHexadecimalString(x):
 
         """
@@ -39,7 +53,6 @@ def padHexadecimalString(x):
         Pad an hexadecimal string with zeros
         """
 
-        # Return padded hexadecimal string
         return "0x" + x[2:].zfill(2)
 
 
