@@ -53,9 +53,9 @@ class stick:
     VENDOR                  = 0x0a21
     PRODUCT                 = 0x8001
     SIGNAL_THRESHOLD        = 150
-    N_REQUEST_ATTEMPTS      = 3
-    N_DOWNLOAD_ATTEMPTS     = 10
-    N_READ_BYTES            = 64
+    REQUEST_ATTEMPTS        = 3
+    DOWNLOAD_ATTEMPTS       = 10
+    READ_BYTES              = 64
     SLEEP_TIME              = 0.1
     FREQUENCIES             = {0: 916.5, 1: 868.35, 255: 916.5}
     INTERFACES              = {1: "Paradigm RF", 3: "USB"}
@@ -80,11 +80,9 @@ class stick:
         # Generate serial port handle
         self.handle = serial.Serial()
         self.handle.port = "/dev/ttyUSB0"
-        self.handle.baudrate = 9600
         self.handle.timeout = 0.5
-        self.handle.dsrdtr = True
         self.handle.rtscts = True
-        self.handle.xonxoff = False
+        self.handle.dsrdtr = True
 
         # Open serial port
         self.handle.open()
@@ -168,7 +166,7 @@ class stick:
             print "Freeing buffer attempt: " + str(n) + "/-"
 
             # Read buffer
-            self.raw_response = self.handle.read(self.N_READ_BYTES)
+            self.raw_response = self.handle.read(self.READ_BYTES)
 
         print "Buffer emptied!"
 
@@ -188,12 +186,12 @@ class stick:
         self.raw_response = ""
 
         # Ask for response from stick until we get one
-        for i in range(self.N_REQUEST_ATTEMPTS):
+        for i in range(self.REQUEST_ATTEMPTS):
             if len(self.raw_response) == 0:
 
                 # Keep track of number of attempts
                 print "Request attempt: " + \
-                      str(i + 1) + "/" + str(self.N_REQUEST_ATTEMPTS)
+                      str(i + 1) + "/" + str(self.REQUEST_ATTEMPTS)
 
                 # Send stick command
                 self.handle.write(bytearray(self.request))
@@ -202,7 +200,7 @@ class stick:
                 time.sleep(self.SLEEP_TIME)
 
                 # Read stick response
-                self.raw_response = self.handle.read(self.N_READ_BYTES)
+                self.raw_response = self.handle.read(self.READ_BYTES)
 
             else:
                 break
@@ -251,11 +249,14 @@ class stick:
         ...
         """
 
+        # Define number of rows [of 8 bytes] to be printed 
+        n_rows = len(self.response) / 8 + int(len(self.response) % 8 != 0)
+
         # Print vectorized raw response
         #print self.response
 
-        # Print hexadecimal and string responses in rows of 8 bytes
-        for i in range(8):
+        # Print hexadecimal and string responses
+        for i in range(n_rows):
             print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
                   "\t" + \
                   "".join(self.response_str[i * 8 : (i + 1) * 8])
@@ -275,11 +276,11 @@ class stick:
         # Print empty line for easier reading of output in terminal
         print
 
-        # Print request to send to stick
-        print "Request to send: " + str(self.request)
-
         # Set request
         self.request = request
+
+        # Print request to send to stick
+        print "Request to send: " + str(self.request)
 
         # Send command to stick and wait for response
         self.getRawResponse()
@@ -313,11 +314,16 @@ class stick:
             # Update attempt variable
             n += 1
 
-            self.sendRequest([6, 0, 0])
-            self.signal = self.response[3]
-
             # Keep track of attempts reading signal strength
             print "Signal read: " + str(n) + "/-"
+
+            # Send request to stick
+            self.sendRequest([6, 0, 0])
+
+            # Get signal strength
+            self.signal = self.response[3]
+
+            # Print signal strength
             print "Signal strength: " + str(self.signal)
 
 
@@ -434,7 +440,7 @@ class stick:
 
         """
         ========================================================================
-        ASKDOWNLOAD
+        ASKDATA
         ========================================================================
 
         ...
@@ -449,17 +455,21 @@ class stick:
         # Ask stick if data requested is ready to be downloaded until it is
         for i in range(self.DOWNLOAD_ATTEMPTS):
 
-            # Update attempt variable
-            n += 1
-
             # Verify if number of bytes waiting is correct
-            if self.bytes_waiting < 64 & self.bytes_waiting != 15:
+            if (self.bytes_waiting < 64) & (self.bytes_waiting != 15):
+
+                # Update attempt variable
+                n += 1
+
+                # Keep track of attempts
+                print "Data read attempt: " + \
+                      str(n) + "/" + str(self.DOWNLOAD_ATTEMPTS)
 
                 # Send request to stick
                 self.sendRequest([3, 0, 0])
 
                 # Get size of response waiting in radio buffer
-                self.bytes_waiting = response[7]
+                self.bytes_waiting = self.response[7]
 
             else:
                 break
@@ -488,10 +498,17 @@ class stick:
         # Ask stick if download is ready
         self.askData()
 
-        # Ask the stick for the downloaded data on the radio buffer
-        self.sendRequest([12, 0,
-                          lib.getByte(self.bytes_waiting, 1),
-                          lib.getByte(self.bytes_waiting, 0)])
+        # Initialize packet asking stick to download data on the radio buffer
+        self.packet = []
+
+        # Build said packet
+        self.packet.extend([12, 0])
+        self.packet.extend([lib.getByte(self.bytes_waiting, 1),
+                            lib.getByte(self.bytes_waiting, 0)])
+        self.packet.append(lib.computeCRC8(self.packet))
+
+        # Send said packet
+        self.sendRequest(self.packet)
 
 
 
@@ -516,9 +533,6 @@ def main():
 
     # Get state of radio transmitter side of stick
     my_stick.getRFState()
-
-    # Get data waiting in radio buffer
-    my_stick.getData()
 
     # Stop my stick
     my_stick.stop()

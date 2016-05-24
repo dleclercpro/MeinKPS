@@ -39,16 +39,16 @@ import controlStick
 
 
 # DEFINITIONS
-LOGS_ADDRESS                = "./stickLogs.txt"
-NOW                         = datetime.datetime.now()
+LOGS_ADDRESS    = "./stickLogs.txt"
+NOW             = datetime.datetime.now()
 
 
 
 class pump:
 
     # PUMP CHARACTERISTICS
-    SERIAL_NUMBER           = 574180
-    SLEEP_TIME              = 12
+    SERIAL_NUMBER   = 574180
+    SLEEP_TIME      = 12
 
 
 
@@ -63,7 +63,7 @@ class pump:
         """
 
         # Instanciate a stick
-        stick = controlStick.stick()
+        self.stick = controlStick.stick()
 
 
 
@@ -82,11 +82,11 @@ class pump:
 
         # Evaluate some parts of packet based on input
         self.packet_head = [1, 0, 167, 1]
-        self.packet_serial_number = [ord(x) for x in \
-                                     str(self.SERIAL_NUMBER).decode("hex")]
+        self.packet_serial_number = [ord(x) for x in
+            str(self.SERIAL_NUMBER).decode("hex")]
         self.packet_parameters_info = [128 |
-                                       getByte(len(self.packet_parameters), 1),
-                                       getByte(len(self.packet_parameters), 0)]
+            lib.getByte(len(self.packet_parameters), 1),
+            lib.getByte(len(self.packet_parameters), 0)]
 
         # Build said packet
         self.packet.extend(self.packet_head)
@@ -131,7 +131,7 @@ class pump:
         ...
         """
 
-        # Power up the pump
+        # Specify packet parameters for command
         self.packet_button = 85
         self.packet_attempts = 0
         self.packet_pages = 0
@@ -142,7 +142,34 @@ class pump:
         self.sendPacket()
 
         # Sleep until pump is powered up
+        print "Sleeping until pump is powered up..."
+
         time.sleep(self.SLEEP_TIME)
+
+        # Get data sent back from pump
+        self.stick.getData()
+
+
+
+    def getModel(self):
+
+        """
+        ========================================================================
+        GETMODEL
+        ========================================================================
+
+        ...
+        """
+
+        # Specify packet parameters for command
+        self.packet_button = 85
+        self.packet_attempts = 0
+        self.packet_pages = 0
+        self.packet_code = 93
+        self.packet_parameters = [1, 10]
+
+        # Send packet to pump
+        self.sendPacket()
 
 
 
@@ -159,8 +186,23 @@ def main():
     # Instanciate a pump for me
     my_pump = pump()
 
-    # Start my stick
+    # Instanciate a stick for my pump
+    my_pump.getStick()
+
+    # Start stick
+    my_pump.stick.start()
+
+    # Get state of USB side of stick
+    my_pump.stick.getUSBState()
+
+    # Get state of radio transmitter side of stick
+    my_pump.stick.getRFState()
+
+    # Power up my pump
     my_pump.powerUp()
+
+    # Stop my stick
+    my_pump.stick.stop()
 
     # End of script
     print "Done!"
