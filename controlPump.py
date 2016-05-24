@@ -47,77 +47,33 @@ NOW             = datetime.datetime.now()
 class pump:
 
     # PUMP CHARACTERISTICS
-    SERIAL_NUMBER   = 574180
-    SLEEP_TIME      = 12
+    PUMP_SERIAL_NUMBER  = 574180
+    POWERUP_TIME        = 10
+    SLEEP_TIME          = 0.1
 
 
 
-    def getStick(self):
+    def start(self):
 
         """
         ========================================================================
-        GETSTICK
+        START
         ========================================================================
 
         ...
         """
 
-        # Instanciate a stick
+        # Instanciate a stick to communicate with the pump
         self.stick = controlStick.stick()
 
+        # Start stick
+        self.stick.start()
 
+        # Get state of USB side of stick
+        self.stick.getState()
 
-    def preparePacket(self):
-
-        """
-        ========================================================================
-        PREPAREPACKET
-        ========================================================================
-
-        ...
-        """
-
-        # Initialize packet to send to pump
-        self.packet = []
-
-        # Evaluate some parts of packet based on input
-        self.packet_head = [1, 0, 167, 1]
-        self.packet_serial_number = [ord(x) for x in
-            str(self.SERIAL_NUMBER).decode("hex")]
-        self.packet_parameters_info = [128 |
-            lib.getByte(len(self.packet_parameters), 1),
-            lib.getByte(len(self.packet_parameters), 0)]
-
-        # Build said packet
-        self.packet.extend(self.packet_head)
-        self.packet.extend(self.packet_serial_number)
-        self.packet.extend(self.packet_parameters_info)
-        self.packet.append(self.packet_button)
-        self.packet.append(self.packet_attempts)
-        self.packet.append(self.packet_pages)
-        self.packet.append(0)
-        self.packet.append(self.packet_code)
-        self.packet.append(lib.computeCRC8(self.packet))
-        self.packet.extend(self.packet_parameters)
-        self.packet.append(lib.computeCRC8(self.packet_parameters))
-
-
-
-    def sendPacket(self):
-
-        """
-        ========================================================================
-        SENDPACKET
-        ========================================================================
-
-        ...
-        """
-
-        # Prepare packet to send to pump
-        self.preparePacket()
-
-        # Send packet through stick
-        self.stick.sendRequest(self.packet)
+        # Power up my pump
+        self.powerUp()
 
 
 
@@ -132,22 +88,19 @@ class pump:
         """
 
         # Specify packet parameters for command
-        self.packet_button = 85
-        self.packet_attempts = 0
-        self.packet_pages = 0
-        self.packet_code = 93
-        self.packet_parameters = [1, 10]
+        self.stick.packet_button = 85
+        self.stick.packet_attempts = 0
+        self.stick.packet_pages = 0
+        self.stick.packet_code = 93
+        self.stick.packet_parameters = [1, 10]
 
         # Send packet to pump
-        self.sendPacket()
+        self.stick.sendPumpPacket()
 
-        # Sleep until pump is powered up
-        print "Sleeping until pump is powered up..."
-
-        time.sleep(self.SLEEP_TIME)
-
-        # Get data sent back from pump
-        self.stick.getData()
+        # Wait for response from pump
+        print "Sleep until pump is powered up... " + \
+              "(" + str(self.POWERUP_TIME) + "s)"
+        time.sleep(self.POWERUP_TIME)
 
 
 
@@ -162,14 +115,22 @@ class pump:
         """
 
         # Specify packet parameters for command
-        self.packet_button = 85
-        self.packet_attempts = 0
-        self.packet_pages = 0
-        self.packet_code = 93
-        self.packet_parameters = [1, 10]
+        self.stick.packet_button = 0
+        self.stick.packet_attempts = 2
+        self.stick.packet_pages = 1
+        self.stick.packet_code = 141
+        self.stick.packet_parameters = []
 
         # Send packet to pump
-        self.sendPacket()
+        self.stick.sendPumpPacket()
+
+        # Wait for response from pump
+        print "Sleep until pump responds... " + \
+              "(" + str(self.SLEEP_TIME) + "s)"
+        time.sleep(self.SLEEP_TIME)
+
+        # Get data sent back from pump
+        self.stick.getPumpData()
 
 
 
@@ -184,15 +145,42 @@ class pump:
         """
 
         # Specify packet parameters for command
-        self.packet_button = 0
-        self.packet_attempts = 2
-        self.packet_pages = 1
-        self.packet_code = 66
-        self.packet_parameters = [bolus * 10] # Bolus are sent in 0.1 units
+        self.stick.packet_button = 0
+        self.stick.packet_attempts = 0
+        self.stick.packet_pages = 1
+        self.stick.packet_code = 66
+        self.stick.packet_parameters = [
+            int(bolus * 10) # Bolus are 0.1 units
+            ]
 
         # Send packet to pump
-        self.sendPacket()
-        
+        self.stick.sendPumpPacket()
+
+
+
+    def setTemporaryBasalPercent(self, rate, duration):
+
+        """
+        ========================================================================
+        SETTEMPORARYBASALPERCENT
+        ========================================================================
+
+        ...
+        """
+
+        # Specify packet parameters for command
+        self.stick.packet_button = 0
+        self.stick.packet_attempts = 0
+        self.stick.packet_pages = 1
+        self.stick.packet_code = 105
+        self.stick.packet_parameters = [
+            int(rate),          # Rate is set in percentage
+            int(duration / 30)  # Duration is splitted in blocks of 30 minutes
+            ]
+
+        # Send packet to pump
+        self.stick.sendPumpPacket()
+
 
 
 def main():
@@ -208,23 +196,15 @@ def main():
     # Instanciate a pump for me
     my_pump = pump()
 
-    # Instanciate a stick for my pump
-    my_pump.getStick()
+    # Start pump
+    my_pump.start()
 
-    # Start stick
-    my_pump.stick.start()
-
-    # Get state of USB side of stick
-    my_pump.stick.getUSBState()
-
-    # Get state of radio transmitter side of stick
-    my_pump.stick.getRFState()
-
-    # Power up my pump
-    my_pump.powerUp()
+    # Read pump model
+    my_pump.readModel()
 
     # Send bolus to pump
-    my_pump.sendBolus(3)
+    #my_pump.sendBolus(0.5)
+    my_pump.setTemporaryBasalPercent(50, 90)
 
     # Stop my stick
     my_pump.stick.stop()
