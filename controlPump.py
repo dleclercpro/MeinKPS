@@ -151,11 +151,11 @@ class pump:
 
 
 
-    def getModel(self):
+    def readModel(self):
 
         """
         ========================================================================
-        GETMODEL
+        READMODEL
         ========================================================================
 
         ...
@@ -171,6 +171,28 @@ class pump:
         # Send packet to pump
         self.sendPacket()
 
+
+
+    def sendBolus(self, bolus):
+
+        """
+        ========================================================================
+        SENDBOLUS
+        ========================================================================
+
+        ...
+        """
+
+        # Specify packet parameters for command
+        self.packet_button = 0
+        self.packet_attempts = 2
+        self.packet_pages = 1
+        self.packet_code = 66
+        self.packet_parameters = [bolus * 10] # Bolus are sent in 0.1 units
+
+        # Send packet to pump
+        self.sendPacket()
+        
 
 
 def main():
@@ -200,6 +222,9 @@ def main():
 
     # Power up my pump
     my_pump.powerUp()
+
+    # Send bolus to pump
+    my_pump.sendBolus(3)
 
     # Stop my stick
     my_pump.stick.stop()
