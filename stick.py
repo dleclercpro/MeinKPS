@@ -51,7 +51,7 @@ class Stick:
     SLEEP            = 0.1
     FREQUENCIES      = {0:916.5, 1:868.35, 255:916.5}
     INTERFACES       = {1:"Paradigm RF", 3:"USB"}
-    TALKATIVE        = False
+    TALKATIVE        = True
 
 
 

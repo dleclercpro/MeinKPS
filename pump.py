@@ -44,7 +44,20 @@ class PumpRequest:
     HEAD                  = [1, 0, 167, 1]
     SERIAL_NUMBER         = 574180
     ENCODED_SERIAL_NUMBER = lib.encodeSerialNumber(SERIAL_NUMBER)
-    TALKATIVE             = False
+    TALKATIVE             = True
+
+
+
+    def link(self, stick):
+
+        """
+        ========================================================================
+        LINK
+        ========================================================================
+        """
+
+        # Link pump request with previously generated stick instance
+        self.stick = stick
 
 
 
@@ -55,8 +68,6 @@ class PumpRequest:
         ========================================================================
         DEFINE
         ========================================================================
-
-        Define pump request
         """
 
         # Store input definition of pump request
@@ -80,14 +91,12 @@ class PumpRequest:
         ========================================================================
         BUILD
         ========================================================================
-
-        Build pump request corresponding packet
         """
 
-        # Initialize packet
+        # Initialize pump request corresponding packet
         self.packet = []
 
-        # Build packet
+        # Build said packet
         self.packet.extend(self.HEAD)
         self.packet.extend(self.ENCODED_SERIAL_NUMBER)
         self.packet.extend(self.parameter_count)
@@ -99,21 +108,6 @@ class PumpRequest:
         self.packet.append(lib.computeCRC8(self.packet))
         self.packet.extend(self.parameters)
         self.packet.append(lib.computeCRC8(self.parameters))
-
-
-
-    def link(self, stick):
-
-        """
-        ========================================================================
-        LINK
-        ========================================================================
-
-        Link pump request with previously generated stick instance
-        """
-
-        # Link pump request with stick
-        self.stick = stick
 
 
 
@@ -138,8 +132,6 @@ class PumpRequest:
         ========================================================================
         ASK
         ========================================================================
-
-        Ask stick if pump data is ready
         """
 
         # Reset number of bytes received
@@ -148,7 +140,7 @@ class PumpRequest:
         # Define asking attempt variable
         n = 0
 
-        # Ask until a number of bytes is received
+        # Ask stick if pump data is ready
         while self.n_bytes_received == 0:
 
             # Update attempt variable
@@ -172,12 +164,15 @@ class PumpRequest:
         ========================================================================
         VERIFY
         ========================================================================
-
-        Verify if received data is as expected
         """
 
-        # If not, resend pump request until data is correct
+        # Verify if received data is as expected. If not, resend pump request
+        # until data it is
         while self.n_bytes_received != self.n_bytes_expected:
+
+            # Verify connection with pump, quit if inexistent
+            if self.n_bytes_received == 14:
+                sys.exit("Pump seems out of range... :-(")
 
             # Give user info
             if self.TALKATIVE:
@@ -202,8 +197,6 @@ class PumpRequest:
         ========================================================================
         RETRIEVE
         ========================================================================
-
-        Retrieve pump data on stick
         """
 
         # Ask for pump data
@@ -212,7 +205,11 @@ class PumpRequest:
         # Verify pump data
         self.verify()
 
-        # Send request to get pump data on stick
+        # Give user info
+        if self.TALKATIVE:
+            print "Retrieving pump data on stick..."
+
+        # Send request to retrieve pump data on stick
         self.stick.sendRequest([12,
                                 0,
                                 lib.getByte(self.n_bytes_received, 1),
@@ -231,8 +228,6 @@ class PumpRequest:
         ========================================================================
         MAKE
         ========================================================================
-
-        Make pump request
         """
 
         # Print pump request info
@@ -265,7 +260,7 @@ class Pump:
 
     # PUMP CHARACTERISTICS
     POWERUP_TIME        = 10     # Time (s) needed for pump to go online
-    SESSION_TIME        = 15     # Time (m) for which pump will listen to RFs
+    SESSION_TIME        = 10     # Time (m) for which pump will listen to RFs
     EXECUTION_TIME      = 5      # Time (s) needed for pump command execution
     BASAL_STROKES       = 10.0   # Size of basal strokes
     BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basal rates
@@ -417,6 +412,48 @@ class Pump:
 
 
 
+    def readBatteryLevel(self):
+
+        """
+        ========================================================================
+        READBATTERYLEVEL
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = PumpRequest()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading battery level...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 114,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract battery level from received data
+        # Voltages are not very reliable, rounding is necessary!
+        self.battery_status = self.BATTERY_STATUS[self.request.response[3]]
+        self.battery_level = round((
+            lib.getByte(self.request.response[4], 0) * 256 |
+            lib.getByte(self.request.response[5], 0)) *
+            self.VOLTAGE_FACTOR, 1)
+
+        # Give user info
+        print "Battery status: " + self.battery_status # FIXME
+        print "Battery level: " + str(self.battery_level) + "V" # FIXME
+
+
+
     def readTime(self):
 
         """
@@ -464,11 +501,11 @@ class Pump:
 
 
 
-    def readBatteryLevel(self):
+    def readReservoir(self):
 
         """
         ========================================================================
-        READBATTERYLEVEL
+        READRESERVOIR
         ========================================================================
         """
 
@@ -479,11 +516,11 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Reading battery level...",
+        self.request.define(info = "Reading amount of insulin left...",
                             power = 0,
                             attempts = 2,
                             pages = 1,
-                            code = 114,
+                            code = 115,
                             parameters = [],
                             n_bytes_expected = 78,
                             sleep = 0,
@@ -492,17 +529,14 @@ class Pump:
         # Make pump request
         self.request.make()
 
-        # Extract battery level from received data
-        # Voltages are not very reliable, rounding is necessary!
-        self.battery_status = self.BATTERY_STATUS[self.request.response[3]]
-        self.battery_level = round((
-            lib.getByte(self.request.response[4], 0) * 256 |
-            lib.getByte(self.request.response[5], 0)) *
-            self.VOLTAGE_FACTOR, 1)
+        # Extract remaining amout of insulin
+        self.reservoir = ((lib.getByte(self.request.response[13], 0) * 256 |
+                         lib.getByte(self.request.response[14], 0)) /
+                         self.BASAL_STROKES)
 
         # Give user info
-        print "Battery status: " + self.battery_status # FIXME
-        print "Battery level: " + str(self.battery_level) + "V" # FIXME
+        print "Amount of insulin left in reservoir: " + \
+              str(self.reservoir) + "U"
 
 
 
@@ -655,8 +689,8 @@ class Pump:
 
         # Define pump request
         self.request.define(info = "Set temporary basal rate: " + \
-                                   str(rate) + "U/H for " + \
-                                   str(duration) + "m",
+                                   str(rate) + "U/H (" + \
+                                   str(duration) + "m)",
                             power = 0,
                             attempts = 0,
                             pages = 1,
@@ -710,45 +744,6 @@ class Pump:
 
         # Make pump request
         self.request.make()
-
-
-
-    def readReservoir(self):
-
-        """
-        ========================================================================
-        READRESERVOIR
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = PumpRequest()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Reading amount of insulin left...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code = 115,
-                            parameters = [],
-                            n_bytes_expected = 78,
-                            sleep = 0,
-                            sleep_reason = None)
-
-        # Make pump request
-        self.request.make()
-
-        # Extract remaining amout of insulin
-        self.reservoir = ((lib.getByte(self.request.response[13], 0) * 256 |
-                         lib.getByte(self.request.response[14], 0)) /
-                         self.BASAL_STROKES)
-
-        # Give user info
-        print "Amount of insulin left in reservoir: " + \
-              str(self.reservoir) + "U"
 
 
 
