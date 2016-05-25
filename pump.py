@@ -48,9 +48,16 @@ class PumpRequest:
 
 
 
-    # Define pump request
     def define(self, info, power, attempts, pages, code, parameters,
                n_bytes_expected, sleep, sleep_reason):
+
+        """
+        ========================================================================
+        DEFINE
+        ========================================================================
+
+        Define pump request
+        """
 
         # Store input definition of pump request
         self.info = info
@@ -67,8 +74,15 @@ class PumpRequest:
 
 
 
-    # Build pump request corresponding packet
     def build(self):
+
+        """
+        ========================================================================
+        BUILD
+        ========================================================================
+
+        Build pump request corresponding packet
+        """
 
         # Initialize packet
         self.packet = []
@@ -88,24 +102,45 @@ class PumpRequest:
 
 
 
-    # Link pump request with previously generated stick instance
     def link(self, stick):
+
+        """
+        ========================================================================
+        LINK
+        ========================================================================
+
+        Link pump request with previously generated stick instance
+        """
 
         # Link pump request with stick
         self.stick = stick
 
 
 
-    # Send request to pump
     def send(self):
+
+        """
+        ========================================================================
+        SEND
+        ========================================================================
+
+        Send request to pump
+        """
 
         # Send pump request over stick
         self.stick.sendRequest(self.packet)
 
 
 
-    # Ask stick if pump data is ready
     def ask(self):
+
+        """
+        ========================================================================
+        ASK
+        ========================================================================
+
+        Ask stick if pump data is ready
+        """
 
         # Reset number of bytes received
         self.n_bytes_received = 0
@@ -131,8 +166,15 @@ class PumpRequest:
 
 
 
-    # Verify if received data is as expected
     def verify(self):
+
+        """
+        ========================================================================
+        VERIFY
+        ========================================================================
+
+        Verify if received data is as expected
+        """
 
         # If not, resend pump request until data is correct
         while self.n_bytes_received != self.n_bytes_expected:
@@ -154,8 +196,15 @@ class PumpRequest:
 
 
 
-    # Retrieve pump data on stick
     def retrieve(self):
+
+        """
+        ========================================================================
+        RETRIEVE
+        ========================================================================
+
+        Retrieve pump data on stick
+        """
 
         # Ask for pump data
         self.ask()
@@ -176,8 +225,15 @@ class PumpRequest:
 
 
 
-    # Make pump request
     def make(self):
+
+        """
+        ========================================================================
+        MAKE
+        ========================================================================
+
+        Make pump request
+        """
 
         # Print pump request info
         print self.info
@@ -229,8 +285,6 @@ class Pump:
         ========================================================================
         START
         ========================================================================
-
-        ...
         """
 
         # Instanciate a stick to communicate with the pump
@@ -250,8 +304,6 @@ class Pump:
         ========================================================================
         STOP
         ========================================================================
-
-        ...
         """
 
         # Stop my stick
@@ -265,8 +317,6 @@ class Pump:
         ========================================================================
         POWERUP
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -299,8 +349,6 @@ class Pump:
         ========================================================================
         READMODEL
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -337,8 +385,6 @@ class Pump:
         ========================================================================
         READFIRMWAREVERSION
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -377,8 +423,6 @@ class Pump:
         ========================================================================
         READTIME
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -426,8 +470,6 @@ class Pump:
         ========================================================================
         READBATTERYLEVEL
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -470,8 +512,6 @@ class Pump:
         ========================================================================
         SUSPEND
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -504,8 +544,6 @@ class Pump:
         ========================================================================
         RESUME
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -538,8 +576,6 @@ class Pump:
         ========================================================================
         PUSHBUTTON
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -571,8 +607,6 @@ class Pump:
         ========================================================================
         DELIVERBOLUS
         ========================================================================
-
-        ...
         """
 
         # Evaluating time required for bolus to be delivered (giving it some
@@ -685,8 +719,6 @@ class Pump:
         ========================================================================
         READRESERVOIR
         ========================================================================
-
-        ...
         """
 
         # Create pump request
@@ -726,8 +758,6 @@ def main():
     ============================================================================
     MAIN
     ============================================================================
-
-    This is the main loop to be executed by the script.
     """
 
     # Instanciate a pump for me
