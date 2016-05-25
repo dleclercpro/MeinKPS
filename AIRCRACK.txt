@@ -1,4 +1,0 @@
-sudo airmon-ng check kill
-sudo airmon-ng start wlp2s0
-sudo airodump-ng mon0
-sudo service network-manager start
