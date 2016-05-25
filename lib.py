@@ -29,25 +29,25 @@ import numpy as np
 
 
 
-def encodePumpSerialNumber(x):
+def encodeSerialNumber(x):
 
         """
         ========================================================================
-        ENCODEPUMPSERIALNUMBER
+        ENCODESERIALNUMBER
         ========================================================================
 
         ...
         """
 
-        return [ord(i) for i in str(x).decode("hex")]
+        return [ord(i) for i in str(x).decode("HEX")]
 
 
 
-def padHexadecimalString(x):
+def padHexadecimal(x):
 
         """
         ========================================================================
-        PADHEXADECIMALSTRING
+        PADHEXADECIMAL
         ========================================================================
 
         Pad an hexadecimal string with zeros
@@ -57,11 +57,11 @@ def padHexadecimalString(x):
 
 
 
-def convertBytesDecimal(x):
+def convertBytes(x):
 
         """
         ========================================================================
-        CONVERTBYTESDECIMAL
+        CONVERTBYTES
         ========================================================================
 
         This is a function that converts a number expressed in bytes to its
@@ -80,6 +80,7 @@ def getByte(x, N):
         ========================================================================
 
         This is a function that extracts the Nth byte of a number x.
+        1 byte = 8 bits = 256 states
         """
 
         return x / 256 ** N % 256
