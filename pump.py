@@ -243,6 +243,21 @@ class Pump:
 
 
 
+    def stop(self):
+
+        """
+        ========================================================================
+        START
+        ========================================================================
+
+        ...
+        """
+
+        # Stop my stick
+        pump.stick.stop()
+
+
+
     def powerUp(self):
 
         """
@@ -751,8 +766,8 @@ def main():
     # Read remaining amount of insulin in pump
     pump.readReservoir()
 
-    # Stop my stick
-    pump.stick.stop()
+    # Stop pump
+    pump.stop()
 
     # End of script
     print "Done!"
