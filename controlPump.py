@@ -48,9 +48,9 @@ class pump:
 
     # PUMP CHARACTERISTICS
     SERIAL_NUMBER       = 574180
-    POWERUP_TIME        = 10     # Time (s) it takes for the pump to go online
+    POWERUP_TIME        = 10     # Time (s) needed for pump to go online
     SESSION_TIME        = 15     # Time (m) for which pump will listen to RFs
-    SUSPENSION_TIME     = 5      # Time (s) it takes to suspend pump activity
+    SLEEP               = 5      # Time (s) needed for pump commands
     TIME_BLOCK          = 30     # Time block (m) for temporary basal rates
     BOLUS_DELIVERY_RATE = 40     # Bolus delivery rate (s/U)
     BOLUS_BLOCK         = 10     # Bolus are splitted in blocks of 0.1U
@@ -59,7 +59,7 @@ class pump:
     BASAL_STROKES       = 10.0   # Size of basal strokes
     VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
     BUTTONS             = {"EASY":0, "ESC":1, "ACT":2, "UP":3, "DOWN":4}
-    BATTERY_STATUS      = {0:"NORMAL", 1:"LOW"}
+    BATTERY_STATUS      = {0:"Normal", 1:"Low"}
 
 
 
@@ -214,6 +214,57 @@ class pump:
 
 
 
+    def readTime(self):
+
+        """
+        ========================================================================
+        READTIME
+        ========================================================================
+
+        ...
+        """
+
+        # Print empty line to make output easier to read
+        print
+
+        # Give user info
+        print "Reading pump time..."
+
+        # Specify request parameters for command
+        self.stick.pump_request_power = 0
+        self.stick.pump_request_attempts = 2
+        self.stick.pump_request_pages = 1
+        self.stick.pump_request_code = 112
+        self.stick.pump_request_parameters = []
+
+        # Specify expected number of bytes as a response
+        self.stick.expected_bytes = 78
+
+        # Send request to pump
+        self.stick.sendPumpRequest()
+
+        # Get pump data
+        self.stick.getPumpData()
+
+        # Extract pump time from received data
+        self.second = self.stick.response[15]
+        self.minute = self.stick.response[14]
+        self.hour = self.stick.response[13]
+        self.day = self.stick.response[19]
+        self.month = self.stick.response[18]
+        self.year = (lib.getByte(self.stick.response[16], 0) * 256 |
+                     lib.getByte(self.stick.response[17], 0))
+
+        # Give user info
+        print "Pump time: " + str(self.day).zfill(2) + "." + \
+                              str(self.month).zfill(2) + "." + \
+                              str(self.year).zfill(2) + " " + \
+                              str(self.hour).zfill(2) + ":" + \
+                              str(self.minute).zfill(2) + ":" + \
+                              str(self.second).zfill(2)
+
+
+
     def readBatteryLevel(self):
 
         """
@@ -238,7 +289,7 @@ class pump:
         self.stick.pump_request_parameters = []
 
         # Specify expected number of bytes as a response
-        self.stick.expected_bytes = 15
+        self.stick.expected_bytes = 78
 
         # Send request to pump
         self.stick.sendPumpRequest()
@@ -250,9 +301,9 @@ class pump:
         # rounding is necessary)
         self.battery_status = self.BATTERY_STATUS[self.stick.response[3]]
         self.battery_level = round(
-            (lib.getByte(self.stick.response[4], 0) * 256
-            | lib.getByte(self.stick.response[5], 0)) * self.VOLTAGE_FACTOR,
-            1)
+            (lib.getByte(self.stick.response[4], 0) * 256 |
+             lib.getByte(self.stick.response[5], 0)) *
+             self.VOLTAGE_FACTOR, 1)
 
         # Give user info
         print "Battery status: " + self.battery_status # FIXME
@@ -291,10 +342,10 @@ class pump:
 
         # Give user info
         print "Waiting for pump activity to be completely suspended... " + \
-              "(" + str(self.SUSPENSION_TIME) + "s)"
+              "(" + str(self.SLEEP) + "s)"
 
         # Wait
-        time.sleep(self.SUSPENSION_TIME)
+        time.sleep(self.SLEEP)
 
         # Give user info
         print "Pump activity suspended."
@@ -331,6 +382,13 @@ class pump:
         self.stick.sendPumpRequest()
 
         # Give user info
+        print "Waiting for pump activity to be resumed... " + \
+              "(" + str(self.SLEEP) + "s)"
+
+        # Wait
+        time.sleep(self.SLEEP)
+
+        # Give user info
         print "Pump activity resumed."
 
 
@@ -363,6 +421,13 @@ class pump:
 
         # Send request to pump
         self.stick.sendPumpRequest()
+
+        # Give user info
+        print "Waiting for button to be pushed... (" + \
+              str(self.SLEEP) + "s)"
+
+        # Wait
+        time.sleep(self.SLEEP)
 
         # Give user info
         print "Button pushed."
@@ -448,6 +513,13 @@ class pump:
         self.stick.sendPumpRequest()
 
         # Give user info
+        print "Waiting for temporary basal rate to be set... (" + \
+              str(self.SLEEP) + "s)"
+
+        # Wait
+        time.sleep(self.SLEEP)
+
+        # Give user info
         print "Temporary basal rate set."
 
 
@@ -486,15 +558,22 @@ class pump:
         self.stick.sendPumpRequest()
 
         # Give user info
+        print "Waiting for temporary basal rate to be set... (" + \
+              str(self.SLEEP) + "s)"
+
+        # Wait
+        time.sleep(self.SLEEP)
+
+        # Give user info
         print "Temporary basal rate set."
 
 
 
-    def readRemainingInsulin(self):
+    def readReservoir(self):
 
         """
         ========================================================================
-        READREMAININGINSULIN
+        READRESERVOIR
         ========================================================================
 
         ...
@@ -523,53 +602,13 @@ class pump:
         self.stick.getPumpData()
 
         # Extract remaining amout of insulin
-        self.insulin = ((lib.getByte(self.stick.response[13], 0) * 256
-            | lib.getByte(self.stick.response[14], 0)) / self.BASAL_STROKES)
+        self.reservoir = ((lib.getByte(self.stick.response[13], 0) * 256 |
+                         lib.getByte(self.stick.response[14], 0)) /
+                         self.BASAL_STROKES)
 
         # Give user info
-        print "Amount of insulin left: " + str(self.insulin) + "U"
-
-
-
-    def readBolusHistory(self):
-
-        """
-        ========================================================================
-        READBOLUSHISTORY
-        ========================================================================
-
-        ...
-        """
-
-        # Print empty line to make output easier to read
-        print
-
-        # Give user info
-        print "Reading bolus history..."
-
-        # Specify request parameters for command
-        self.stick.pump_request_power = 0
-        self.stick.pump_request_attempts = 2
-        self.stick.pump_request_pages = 1
-        self.stick.pump_request_code = 39
-        self.stick.pump_request_parameters = []
-
-        # Specify expected number of bytes as a response
-        self.stick.expected_bytes = 15
-
-        # Send request to pump
-        self.stick.sendPumpRequest()
-
-        # Get pump data
-        self.stick.getPumpData()
-
-        # Extract pump bolus history from received data
-        #self.bolus_history = "".join(self.stick.response_str[17:21]) + \
-        #                     " " + \
-        #                     "".join(self.stick.response_str[21:24])
-
-        # Give user info
-        #print "Pump firmware version: " + self.bolus_history
+        print "Amount of insulin left in reservoir: " + \
+              str(self.reservoir) + "U"
 
 
 
@@ -595,11 +634,17 @@ def main():
     # Read pump firmware version
     my_pump.readFirmwareVersion()
 
+    # Read bolus history of pump
+    my_pump.readTime()
+
+    # Read battery level of pump
+    my_pump.readBatteryLevel()
+
     # Send bolus to pump
     my_pump.deliverBolus(0.3)
 
     # Send temporary basal rate to pump
-    #my_pump.setTemporaryBasalRate(2, 60)
+    my_pump.setTemporaryBasalRate(2, 60)
     #my_pump.setTemporaryBasalRatePercentage(50, 90)
 
     # Suspend pump activity
@@ -611,14 +656,8 @@ def main():
     # Push button on pump
     my_pump.pushButton("DOWN")
 
-    # Read battery level of pump
-    my_pump.readBatteryLevel()
-
     # Read remaining amount of insulin in pump
-    my_pump.readRemainingInsulin()
-
-    # Read bolus history of pump
-    my_pump.readBolusHistory()
+    my_pump.readReservoir()
 
     # Stop my stick
     my_pump.stick.stop()

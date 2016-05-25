@@ -54,6 +54,7 @@ class stick:
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
     READ_BYTES       = 64
+    SLEEP            = 0.1
     FREQUENCIES      = {0: 916.5, 1: 868.35, 255: 916.5}
     INTERFACES       = {1: "Paradigm RF", 3: "USB"}
 
@@ -193,6 +194,9 @@ class stick:
 
             # Keep track of number of attempts
             print "Request attempt: " + str(n) + "/-"
+
+            # Wait a minimum of time before sending request
+            time.sleep(self.SLEEP)
 
             # Send stick request
             self.handle.write(bytearray(self.request))
@@ -507,6 +511,9 @@ class stick:
             print "Number of bytes found: " + str(self.bytes_ready)
             print "Expected number of bytes: " + str(self.expected_bytes)
 
+            # Empty buffer after asking repeatedly if data was ready
+            self.emptyBuffer()
+
             # Give user info
             print "Resending pump request..."
 
@@ -518,9 +525,6 @@ class stick:
 
             # Ask pump if data is ready to be read
             self.askPumpData()
-
-        # Empty buffer after asking repeatedly if data was ready
-        self.emptyBuffer()
 
         # Give user info
         print "Number of bytes ready to be read: " + \
