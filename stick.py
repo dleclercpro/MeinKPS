@@ -49,8 +49,9 @@ class Stick:
     SIGNAL_THRESHOLD = 150
     READ_BYTES       = 64
     SLEEP            = 0.1
-    FREQUENCIES      = {0: 916.5, 1: 868.35, 255: 916.5}
-    INTERFACES       = {1: "Paradigm RF", 3: "USB"}
+    FREQUENCIES      = {0:916.5, 1:868.35, 255:916.5}
+    INTERFACES       = {1:"Paradigm RF", 3:"USB"}
+    TALKATIVE        = False
 
 
 
@@ -65,7 +66,7 @@ class Stick:
         """
 
         # Generate serial port
-        os.system("sudo modprobe --first-time usbserial"
+        os.system("sudo modprobe --quiet --first-time usbserial"
             + " vendor=" + str(self.VENDOR)
             + " product=" + str(self.PRODUCT))
 
@@ -115,14 +116,11 @@ class Stick:
         ...
         """
 
-        # Print empty line to make output easier to read
-        print
-
         # Close serial port
         self.handle.close()
 
         # Remove serial port
-        os.system("sudo modprobe -r usbserial")
+        os.system("sudo modprobe --quiet --remove usbserial")
 
 
 
@@ -137,7 +135,8 @@ class Stick:
         """
 
         # Tell user the buffer is going to be emptied
-        print "Emptying buffer..."
+        if self.TALKATIVE:
+            print "Emptying buffer..."
 
         # Define emptying buffer attempt variable
         n = 0
@@ -150,7 +149,9 @@ class Stick:
             # Read buffer
             self.raw_response = self.handle.read(self.READ_BYTES)
 
-        print "Buffer emptied after " + str(n - 1) + " attempt(s)."
+        # Give user info
+        if self.TALKATIVE:
+            print "Buffer emptied after " + str(n - 1) + " attempt(s)."
 
 
 
@@ -165,7 +166,8 @@ class Stick:
         """
 
         # Print request to send to stick
-        print "Sending request: " + str(request)
+        if self.TALKATIVE:
+            print "Sending request: " + str(request)
 
         # Initialize stick raw response
         self.raw_response = ""
@@ -180,7 +182,8 @@ class Stick:
             n += 1
 
             # Keep track of number of attempts
-            print "Request attempt: " + str(n) + "/-"
+            if self.TALKATIVE:
+                print "Request attempt: " + str(n) + "/-"
 
             # Wait a minimum of time before sending request
             time.sleep(self.SLEEP)
@@ -247,13 +250,15 @@ class Stick:
         n_rows = len(self.response) / 8 + int(len(self.response) % 8 != 0)
 
         # Print response
-        #print self.response
+        if self.TALKATIVE:
+            print self.response
 
         # Print hexadecimal and string responses
-        for i in range(n_rows):
-            print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
-                  "\t" + \
-                  "".join(self.response_str[i * 8 : (i + 1) * 8])
+        if self.TALKATIVE:
+            for i in range(n_rows):
+                print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
+                      "\t" + \
+                      "".join(self.response_str[i * 8 : (i + 1) * 8])
 
 
 
@@ -292,13 +297,14 @@ class Stick:
         self.interfaces = np.trim_zeros(self.response[22:64], "b")
 
         # Print infos
-        print "ACK: " + str(self.ack)
-        print "Status: " + self.status
-        print "Serial: " + self.serial
-        print "Radiofrequency: " + str(self.frequency) + " MHz"
-        print "Description: " + self.description
-        print "Version: " + str(self.version)
-        print "Interfaces: " + str(self.interfaces)
+        if self.TALKATIVE:
+            print "ACK: " + str(self.ack)
+            print "Status: " + self.status
+            print "Serial: " + self.serial
+            print "Radiofrequency: " + str(self.frequency) + " MHz"
+            print "Description: " + self.description
+            print "Version: " + str(self.version)
+            print "Interfaces: " + str(self.interfaces)
 
 
 
@@ -324,7 +330,8 @@ class Stick:
             n += 1
 
             # Keep track of attempts reading signal strength
-            print "Look for sufficient signal strength: " + str(n) + "/-"
+            if self.TALKATIVE:
+                print "Look for sufficient signal strength: " + str(n) + "/-"
 
             # Send request for stick signal strength
             self.sendRequest([6, 0, 0])
@@ -333,9 +340,10 @@ class Stick:
             self.signal = self.response[3]
 
             # Print signal strength
-            print "Signal strength found: " + str(self.signal)
-            print "Expected minimal signal strength: " + \
-                  str(self.SIGNAL_THRESHOLD)
+            if self.TALKATIVE:
+                print "Signal strength found: " + str(self.signal)
+                print "Expected minimal signal strength: " + \
+                      str(self.SIGNAL_THRESHOLD)
 
 
 
@@ -361,12 +369,13 @@ class Stick:
         self.usb_packets_sent = lib.convertBytes(self.response[11:15])
 
         # Print USB state
-        print "USB Bad CRCs: " + str(self.usb_errors_crc)
-        print "USB Sequential errors: " + str(self.usb_errors_seq)
-        print "USB NAKs: " + str(self.usb_errors_nak)
-        print "USB Timeout errors: " + str(self.usb_errors_timeout)
-        print "USB Packets received: " + str(self.usb_packets_received)
-        print "USB Packets sent: " + str(self.usb_packets_sent)
+        if self.TALKATIVE:
+            print "USB Bad CRCs: " + str(self.usb_errors_crc)
+            print "USB Sequential errors: " + str(self.usb_errors_seq)
+            print "USB NAKs: " + str(self.usb_errors_nak)
+            print "USB Timeout errors: " + str(self.usb_errors_timeout)
+            print "USB Packets received: " + str(self.usb_packets_received)
+            print "USB Packets sent: " + str(self.usb_packets_sent)
 
         # Send request for stick RF state
         self.sendRequest([5, 0, 0])
@@ -380,12 +389,13 @@ class Stick:
         self.rf_packets_sent = lib.convertBytes(self.response[11:15])
 
         # Print RF state
-        print "RF Bad CRCs: " + str(self.rf_errors_crc)
-        print "RF Sequential errors: " + str(self.rf_errors_seq)
-        print "RF NAKs: " + str(self.rf_errors_nak)
-        print "RF Timeout errors: " + str(self.rf_errors_timeout)
-        print "RF Packets received: " + str(self.rf_packets_received)
-        print "RF Packets sent: " + str(self.rf_packets_sent)
+        if self.TALKATIVE:
+            print "RF Bad CRCs: " + str(self.rf_errors_crc)
+            print "RF Sequential errors: " + str(self.rf_errors_seq)
+            print "RF NAKs: " + str(self.rf_errors_nak)
+            print "RF Timeout errors: " + str(self.rf_errors_timeout)
+            print "RF Packets received: " + str(self.rf_packets_received)
+            print "RF Packets sent: " + str(self.rf_packets_sent)
 
 
 

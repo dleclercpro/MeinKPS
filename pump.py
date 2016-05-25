@@ -44,6 +44,7 @@ class PumpRequest:
     HEAD                  = [1, 0, 167, 1]
     SERIAL_NUMBER         = 574180
     ENCODED_SERIAL_NUMBER = lib.encodeSerialNumber(SERIAL_NUMBER)
+    TALKATIVE             = False
 
 
 
@@ -119,7 +120,8 @@ class PumpRequest:
             n += 1
 
             # Keep track of attempts
-            print "Ask if data from pump was received: " + str(n) + "/-"
+            if self.TALKATIVE:
+                print "Ask if data from pump was received: " + str(n) + "/-"
 
             # Send request
             self.stick.sendRequest([3, 0, 0])
@@ -136,7 +138,8 @@ class PumpRequest:
         while self.n_bytes_received != self.n_bytes_expected:
 
             # Give user info
-            print "Resending pump request..."
+            if self.TALKATIVE:
+                print "Resending pump request..."
 
             # Resend pump request to stick
             self.send()
@@ -145,8 +148,9 @@ class PumpRequest:
             self.ask()
 
             # Give user info
-            print "Number of bytes found: " + str(self.n_bytes_received)
-            print "Expected number of bytes: " + str(self.n_bytes_expected)
+            if self.TALKATIVE:
+                print "Number of bytes found: " + str(self.n_bytes_received)
+                print "Expected number of bytes: " + str(self.n_bytes_expected)
 
 
 
@@ -174,9 +178,6 @@ class PumpRequest:
 
     # Make pump request
     def make(self):
-
-        # Print empty line to make output easier to read
-        print
 
         # Print pump request info
         print self.info
@@ -247,14 +248,14 @@ class Pump:
 
         """
         ========================================================================
-        START
+        STOP
         ========================================================================
 
         ...
         """
 
         # Stop my stick
-        pump.stick.stop()
+        self.stick.stop()
 
 
 
@@ -620,7 +621,7 @@ class Pump:
 
         # Define pump request
         self.request.define(info = "Set temporary basal rate: " + \
-                                   str(rate) + "U/H " + \
+                                   str(rate) + "U/H for " + \
                                    str(duration) + "m",
                             power = 0,
                             attempts = 0,
