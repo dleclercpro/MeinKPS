@@ -44,6 +44,7 @@ NOW          = datetime.datetime.now()
 class Stick:
 
     # STICK CHARACTERISTICS
+    TALKATIVE        = True
     VENDOR           = 0x0a21
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
@@ -51,7 +52,6 @@ class Stick:
     SLEEP            = 0.1
     FREQUENCIES      = {0:916.5, 1:868.35, 255:916.5}
     INTERFACES       = {1:"Paradigm RF", 3:"USB"}
-    TALKATIVE        = True
 
 
 

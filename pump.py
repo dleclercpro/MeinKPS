@@ -41,10 +41,10 @@ NOW          = datetime.datetime.now()
 class PumpRequest:
 
     # PUMP REQUEST CONSTANTS
+    TALKATIVE             = True
     HEAD                  = [1, 0, 167, 1]
     SERIAL_NUMBER         = 574180
     ENCODED_SERIAL_NUMBER = lib.encodeSerialNumber(SERIAL_NUMBER)
-    TALKATIVE             = True
 
 
 
@@ -209,11 +209,18 @@ class PumpRequest:
         if self.TALKATIVE:
             print "Retrieving pump data on stick..."
 
-        # Send request to retrieve pump data on stick
-        self.stick.sendRequest([12,
-                                0,
-                                lib.getByte(self.n_bytes_received, 1),
-                                lib.getByte(self.n_bytes_received, 0)])
+        # Initialize packet to retrieve pump data on stick
+        self.packet = []
+
+        # Build said packet
+        self.packet.extend([12,
+                            0,
+                            lib.getByte(self.n_bytes_received, 1),
+                            lib.getByte(self.n_bytes_received, 0)])
+        self.packet.append(lib.computeCRC8(self.packet))
+
+        # Send request
+        self.stick.sendRequest(self.packet)
 
         # Store pump data in all formats
         self.response = self.stick.response
@@ -266,7 +273,7 @@ class Pump:
     BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basal rates
     BOLUS_DELIVERY_RATE = 40     # Bolus delivery rate (s/U)
     BOLUS_BLOCK         = 10     # Bolus are splitted in blocks of 0.1U
-    BOLUS_RATE_FACTOR   = 40     # Conversion of bolus rate to bytes
+    BOLUS_RATE_FACTOR   = 40.0   # Conversion of bolus rate to bytes
     BOLUS_EXTRA_TIME    = 7.5    # Ensure bolus was completely given
     VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
     BUTTONS             = {"EASY":0, "ESC":1, "ACT":2, "UP":3, "DOWN":4}
@@ -321,7 +328,7 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Powering up the pump for: " + \
+        self.request.define(info = "Powering up the pump for: " +
                                    str(self.SESSION_TIME) + "m",
                             power = 85,
                             attempts = 0,
@@ -330,8 +337,9 @@ class Pump:
                             parameters = [1, self.SESSION_TIME],
                             n_bytes_expected = 0,
                             sleep = self.POWERUP_TIME,
-                            sleep_reason = "Sleeping until pump is powered " + \
-                                "up... " + "(" + str(self.POWERUP_TIME) + "s)")
+                            sleep_reason = "Sleeping until pump is powered " +
+                                           "up... " + "(" +
+                                           str(self.POWERUP_TIME) + "s)")
 
         # Make pump request
         self.request.make()
@@ -403,9 +411,9 @@ class Pump:
         self.request.make()
 
         # Extract pump firmware from received data
-        self.firmware = "".join(self.request.response_str[17:21]) + \
-                        " " + \
-                        "".join(self.request.response_str[21:24])
+        self.firmware = ("".join(self.request.response_str[17:21]) +
+                         " " +
+                         "".join(self.request.response_str[21:24]))
 
         # Give user info
         print "Pump firmware version: " + self.firmware
@@ -441,16 +449,17 @@ class Pump:
         self.request.make()
 
         # Extract battery level from received data
-        # Voltages are not very reliable, rounding is necessary!
         self.battery_status = self.BATTERY_STATUS[self.request.response[3]]
-        self.battery_level = round((
-            lib.getByte(self.request.response[4], 0) * 256 |
-            lib.getByte(self.request.response[5], 0)) *
-            self.VOLTAGE_FACTOR, 1)
+        self.battery_level = ((lib.getByte(self.request.response[4], 0) * 256 |
+                               lib.getByte(self.request.response[5], 0)) *
+                               self.VOLTAGE_FACTOR)
+
+        # Voltages are not very reliable, rounding is necessary! # FIXME
+        self.battery_level = round(self.battery_level, 1)
 
         # Give user info
-        print "Battery status: " + self.battery_status # FIXME
-        print "Battery level: " + str(self.battery_level) + "V" # FIXME
+        print "Battery status: " + self.battery_status
+        print "Battery level: " + str(self.battery_level) + "V"
 
 
 
@@ -492,12 +501,12 @@ class Pump:
                      lib.getByte(self.request.response[17], 0))
 
         # Give user info
-        print "Pump time: " + str(self.day).zfill(2) + "." + \
-                              str(self.month).zfill(2) + "." + \
-                              str(self.year).zfill(2) + " " + \
-                              str(self.hour).zfill(2) + ":" + \
-                              str(self.minute).zfill(2) + ":" + \
-                              str(self.second).zfill(2)
+        print "Pump time: " + (str(self.day).zfill(2) + "." +
+                               str(self.month).zfill(2) + "." +
+                               str(self.year).zfill(2) + " " +
+                               str(self.hour).zfill(2) + ":" +
+                               str(self.minute).zfill(2) + ":" +
+                               str(self.second).zfill(2))
 
 
 
@@ -535,8 +544,62 @@ class Pump:
                          self.BASAL_STROKES)
 
         # Give user info
-        print "Amount of insulin left in reservoir: " + \
-              str(self.reservoir) + "U"
+        print "Amount of insulin in reservoir: " + str(self.reservoir) + "U"
+
+
+
+    def readTemporaryBasalRate(self):
+
+        """
+        ========================================================================
+        READTEMPORARYBASALRATE
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = PumpRequest()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading temporary basal rate...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 152,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract type of temporary basal rate (TBR)
+        self.read_TBR_type = self.request.response[13]
+
+        # Extract absolute TBR
+        if self.read_TBR_type == 0:
+            self.read_TBR_units = "U/H"
+            self.TBR = (
+                (lib.getByte(self.request.response[15], 0) * 256 |
+                 lib.getByte(self.request.response[16], 0)) /
+                 self.BOLUS_RATE_FACTOR)
+
+        # Extract percent TBR
+        elif self.read_TBR_type == 1:
+            self.read_TBR_units = "%"
+            self.TBR = self.request.response[14]
+
+        # Extract TBR remaining time
+        self.read_TBR_duration = (
+            (lib.getByte(self.request.response[17], 0) * 256 |
+             lib.getByte(self.request.response[18], 0)))
+
+        # Give user info
+        print ("Temporary basal rate: " + str(self.TBR) + " " +
+               self.read_TBR_units + " (" + str(self.read_TBR_duration) + "m)")
 
 
 
@@ -563,9 +626,9 @@ class Pump:
                             parameters = [1],
                             n_bytes_expected = 0,
                             sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for pump activity to " + \
-                                "be completely suspended... " + \
-                                "(" + str(self.EXECUTION_TIME) + "s)")
+                            sleep_reason = "Waiting for pump activity to be " +
+                                           "completely suspended... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
 
         # Make pump request
         self.request.make()
@@ -595,9 +658,9 @@ class Pump:
                             parameters = [0],
                             n_bytes_expected = 0,
                             sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for pump activity to " + \
-                                "be resumed... " + \
-                                "(" + str(self.EXECUTION_TIME) + "s)")
+                            sleep_reason = "Waiting for pump activity to " +
+                                           "be resumed... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
 
         # Make pump request
         self.request.make()
@@ -627,8 +690,9 @@ class Pump:
                             parameters = [int(self.BUTTONS[button])],
                             n_bytes_expected = 0,
                             sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for button to be " + \
-                                "pushed... (" + str(self.EXECUTION_TIME) + "s)")
+                            sleep_reason = "Waiting for button to be " +
+                                           "pushed... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
 
         # Make pump request
         self.request.make()
@@ -662,24 +726,30 @@ class Pump:
                             parameters = [int(bolus * self.BOLUS_BLOCK)],
                             n_bytes_expected = 0,
                             sleep = bolus_time,
-                            sleep_reason = "Waiting for bolus to be " + \
-                                "delivered... (" + str(bolus_time) + "s)")
+                            sleep_reason = "Waiting for bolus to be " +
+                                           "delivered... (" + str(bolus_time) +
+                                           "s)")
 
         # Make pump request
         self.request.make()
 
 
 
-    def setTemporaryBasalRate(self, rate, duration):
+    def setTemporaryBasalRate(self, units, rate, duration):
 
         """
         ========================================================================
         SETTEMPORARYBASALRATE
         ========================================================================
 
-        Note: Make sure the temporary basal option is set to absolute (U/H) on
-              the pump, or this command will not work!
+        Note: Make sure the temporary basal option is correctly set on the pump,
+              or this command will not work!
         """
+
+        # Store infos of the temporary basal rate (TBR) that will be set
+        self.set_TBR_units = units
+        self.set_TBR_rate = rate
+        self.set_TBR_duration = duration
 
         # Create pump request
         self.request = PumpRequest()
@@ -687,60 +757,34 @@ class Pump:
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
 
-        # Define pump request
-        self.request.define(info = "Set temporary basal rate: " + \
-                                   str(rate) + "U/H (" + \
-                                   str(duration) + "m)",
+        # If request is for absolute temporary basal rate
+        if self.set_TBR_units == "U/H":
+            code = 76
+            parameters = [0,
+                          int(rate * self.BOLUS_RATE_FACTOR),
+                          int(duration / self.BASAL_TIME_BLOCK)]
+
+        # If request is for temporary basal rate in percentage
+        elif self.set_TBR_units == "%":
+            code = 105
+            parameters = [int(rate),
+                          int(duration / self.BASAL_TIME_BLOCK)]
+
+        # Define rest of pump request
+        self.request.define(info = "Set temporary basal rate: " +
+                                   str(self.set_TBR_rate) + " " +
+                                   self.set_TBR_units + " (" +
+                                   str(self.set_TBR_duration) + "m)",
                             power = 0,
                             attempts = 0,
                             pages = 1,
-                            code = 76,
-                            parameters = [0,
-                                int(rate * self.BOLUS_RATE_FACTOR),
-                                int(duration / self.BASAL_TIME_BLOCK)],
+                            code = code,
+                            parameters = parameters,
                             n_bytes_expected = 0,
                             sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for temporary basal " + \
-                                "rate to be set... (" + \
-                                str(self.EXECUTION_TIME) + "s)")
-
-        # Make pump request
-        self.request.make()
-
-
-
-    def setTemporaryBasalRatePercentage(self, rate, duration):
-
-        """
-        ========================================================================
-        SETTEMPORARYBASALRATEPERCENTAGE
-        ========================================================================
-
-        Note: Make sure the temporary basal option is set to percentage on the
-              pump, or this command will not work!
-        """
-
-        # Create pump request
-        self.request = PumpRequest()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Set temporary basal rate (in " + \
-                                   "percentage): " + str(rate) + "%, " + \
-                                   str(duration) + "m",
-                            power = 0,
-                            attempts = 0,
-                            pages = 1,
-                            code = 105,
-                            parameters = [int(rate),
-                                int(duration / self.BASAL_TIME_BLOCK)],
-                            n_bytes_expected = 0,
-                            sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for temporary basal " + \
-                                "rate to be set... (" + \
-                                str(self.EXECUTION_TIME) + "s)")
+                            sleep_reason = "Waiting for temporary basal " +
+                                           "rate to be set... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
 
         # Make pump request
         self.request.make()
@@ -765,32 +809,35 @@ def main():
     pump.readModel()
 
     # Read pump firmware version
-    pump.readFirmwareVersion()
+    #pump.readFirmwareVersion()
 
     # Read bolus history of pump
-    pump.readTime()
+    #pump.readTime()
 
     # Read battery level of pump
-    pump.readBatteryLevel()
+    #pump.readBatteryLevel()
 
     # Send bolus to pump
-    pump.deliverBolus(0.3)
+    #pump.deliverBolus(0.2)
 
     # Send temporary basal rate to pump
-    pump.setTemporaryBasalRate(2, 60)
-    #pump.setTemporaryBasalRatePercentage(50, 90)
+    pump.setTemporaryBasalRate("U/H", 2, 60)
+    #pump.setTemporaryBasalRate("%", 50, 90)
+
+    # Read temporary basal rate
+    pump.readTemporaryBasalRate()
 
     # Suspend pump activity
-    pump.suspend()
+    #pump.suspend()
 
     # Resume pump activity
-    pump.resume()
+    #pump.resume()
 
     # Push button on pump
-    pump.pushButton("DOWN")
+    #pump.pushButton("DOWN")
 
     # Read remaining amount of insulin in pump
-    pump.readReservoir()
+    #pump.readReservoir()
 
     # Stop pump
     pump.stop()
