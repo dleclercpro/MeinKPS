@@ -5,16 +5,24 @@
 """
 ================================================================================
 Title:    stick
+
 Author:   David Leclerc
+
 Version:  1.0
+
 Date:     27.05.2016
+
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
+
 Overview: This is a script that allows to retrieve informations from a MiniMed
           insulin pump, using the CareLink USB stick of Medtronic. It is based
           on the PySerial library and is a work of reverse-engineering the USB
           communication protocols of said USB stick.
-Notes:    ...
+
+Notes:    It is important to not interact with the pump while this script
+          communicates with it, otherwise some commands could not be actually
+          performed!
 ================================================================================
 """
 
@@ -24,6 +32,7 @@ Notes:    ...
 import serial
 import os
 import sys
+import time
 import numpy as np
 
 
@@ -36,7 +45,7 @@ import lib
 class Stick:
 
     # STICK CHARACTERISTICS
-    TALKATIVE        = True
+    TALKATIVE        = False
     VENDOR           = 0x0a21
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
