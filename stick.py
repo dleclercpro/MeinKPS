@@ -6,8 +6,8 @@
 ================================================================================
 Title:    stick
 Author:   David Leclerc
-Version:  0.1
-Date:     25.05.2016
+Version:  1.0
+Date:     27.05.2016
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
 Overview: This is a script that allows to retrieve informations from a MiniMed
@@ -24,20 +24,12 @@ Notes:    ...
 import serial
 import os
 import sys
-import time
-import datetime
 import numpy as np
 
 
 
 # USER LIBRARIES
 import lib
-
-
-
-# DEFINITIONS
-LOGS_ADDRESS = "./stickLogs.txt"
-NOW          = datetime.datetime.now()
 
 
 
