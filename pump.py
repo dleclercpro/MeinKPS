@@ -148,13 +148,18 @@ class Request:
 
             # Keep track of attempts
             if self.TALKATIVE:
-                print "Ask if data from pump was received: " + str(n) + "/-"
+                print "Ask if pump data was received: " + str(n) + "/-"
 
             # Send request
             self.stick.sendRequest([3, 0, 0])
 
             # Get size of response waiting in radio buffer
             self.n_bytes_received = self.stick.response[7]
+
+            # Give user info
+            if self.TALKATIVE:
+                print "Number of bytes found: " + str(self.n_bytes_received)
+                print "Expected number of bytes: " + str(self.n_bytes_expected)
 
 
 
@@ -167,7 +172,7 @@ class Request:
         """
 
         # Verify if received data is as expected. If not, resend pump request
-        # until data it is
+        # until it is
         while self.n_bytes_received != self.n_bytes_expected:
 
             # Verify connection with pump, quit if inexistent
@@ -176,6 +181,7 @@ class Request:
 
             # Give user info
             if self.TALKATIVE:
+                print "Data does not correspond to expectations."
                 print "Resending pump request..."
 
             # Resend pump request to stick
@@ -184,10 +190,9 @@ class Request:
             # Ask pump if data is now ready to be read
             self.ask()
 
-            # Give user info
-            if self.TALKATIVE:
-                print "Number of bytes found: " + str(self.n_bytes_received)
-                print "Expected number of bytes: " + str(self.n_bytes_expected)
+        # Give user info
+        if self.TALKATIVE:
+            print "Data corresponds to expectations."
 
 
 
@@ -267,7 +272,7 @@ class Pump:
 
     # PUMP CHARACTERISTICS
     POWERUP_TIME        = 10     # Time (s) needed for pump to go online
-    SESSION_TIME        = 10     # Time (m) for which pump will listen to RFs
+    SESSION_TIME        = 5      # Time (m) for which pump will listen to RFs
     EXECUTION_TIME      = 5      # Time (s) needed for pump command execution
     BASAL_STROKES       = 10.0   # Size of basal strokes
     BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basal rates
@@ -809,16 +814,16 @@ def main():
     pump.readModel()
 
     # Read pump firmware version
-    #pump.readFirmwareVersion()
+    pump.readFirmwareVersion()
 
     # Read bolus history of pump
-    #pump.readTime()
+    pump.readTime()
 
     # Read battery level of pump
-    #pump.readBatteryLevel()
+    pump.readBatteryLevel()
 
     # Send bolus to pump
-    #pump.deliverBolus(0.2)
+    pump.deliverBolus(0.2)
 
     # Send temporary basal rate to pump
     pump.setTemporaryBasalRate("U/H", 2, 60)
@@ -828,16 +833,16 @@ def main():
     pump.readTemporaryBasalRate()
 
     # Suspend pump activity
-    #pump.suspend()
+    pump.suspend()
 
     # Resume pump activity
-    #pump.resume()
+    pump.resume()
 
     # Push button on pump
-    #pump.pushButton("DOWN")
+    pump.pushButton("DOWN")
 
     # Read remaining amount of insulin in pump
-    #pump.readReservoir()
+    pump.readReservoir()
 
     # Stop pump
     pump.stop()

@@ -50,8 +50,8 @@ class Stick:
     SIGNAL_THRESHOLD = 150
     READ_BYTES       = 64
     SLEEP            = 0.1
-    FREQUENCIES      = {0:916.5, 1:868.35, 255:916.5}
-    INTERFACES       = {1:"Paradigm RF", 3:"USB"}
+    FREQUENCIES      = {0 : 916.5, 1 : 868.35, 255 : 916.5}
+    INTERFACES       = {1 : "Paradigm RF", 3 : "USB"}
 
 
 
@@ -181,6 +181,10 @@ class Stick:
             # Send stick request
             self.handle.write(bytearray(request))
 
+            # Give user info
+            if self.TALKATIVE:
+                print "Storing raw response..."
+
             # Read stick response
             self.raw_response = self.handle.read(self.READ_BYTES)
 
@@ -206,6 +210,10 @@ class Stick:
         PARSERESPONSE
         ========================================================================
         """
+
+        # Give user info
+        if self.TALKATIVE:
+            print "Parsing raw response..."
 
         # Vectorize raw response
         self.response = [x for x in self.raw_response]
@@ -237,7 +245,7 @@ class Stick:
 
         # Print response
         if self.TALKATIVE:
-            print self.response
+            print "Response: " + str(self.response)
 
         # Print hexadecimal and string responses
         if self.TALKATIVE:
