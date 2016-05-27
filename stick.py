@@ -407,9 +407,6 @@ def main():
     # Stop my stick
     stick.stop()
 
-    # End of script
-    print "Done!"
-
 
 
 # Run this when script is called from terminal
