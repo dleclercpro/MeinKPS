@@ -21,7 +21,6 @@ Notes:    ...
 import os
 import sys
 import time
-import datetime
 import numpy as np
 
 
@@ -35,7 +34,6 @@ import profile
 
 
 # DEFINITIONS
-LOGS_ADDRESS = "./stickLogs.txt"
 NOW          = datetime.datetime.now()
 
 
