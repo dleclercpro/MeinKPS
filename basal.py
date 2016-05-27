@@ -45,21 +45,24 @@ class Calculator:
     TALKATIVE        = True
     BG_TIME_INTERVAL = 5
     BG_MAX_RATE      = 0
-    BG_MMOL_L_SCALE = {"Extreme Low"  : 1.5,
-                       "Huge Low"     : 2.0,
-                       "Big Low"      : 2.5,
-                       "Low"          : 3.0,
-                       "Little Low"   : 3.5,
-                       "Tiny Low"     : 3.8,
-                       "Target Low"   : 4.0,
-                       "Target High"  : 7.0,
-                       "Tiny High"    : 8.0,
-                       "Little High"  : 10.0,
-                       "High"         : 12.0,
-                       "Big High"     : 15.0,
-                       "Huge High"    : 18.0,
-                       "Extreme High" : 20.0}
-    BG_MG_DL_SCALE = {i : int(18 * BG_MMOL_L_SCALE[i]) for i in BG_MMOL_L_SCALE}
+    BG_SCALE_MMOL_L  = {"Extreme Low"  : 1.5,
+                        "Huge Low"     : 2.0,
+                        "Big Low"      : 2.5,
+                        "Low"          : 3.0,
+                        "Little Low"   : 3.5,
+                        "Tiny Low"     : 3.8,
+                        "Target Low"   : 4.0,
+                        "Target High"  : 7.0,
+                        "Tiny High"    : 8.0,
+                        "Little High"  : 10.0,
+                        "High"         : 12.0,
+                        "Big High"     : 15.0,
+                        "Huge High"    : 18.0,
+                        "Extreme High" : 20.0}
+    BG_SCALE_MG_DL = {i : int(18.0 * BG_MMOL_L_SCALE[i])
+                      for i in BG_SCALE_MMOL_L}
+    BG_SCALE = {"mmol/l":BG_SCALE_MMOL_L,
+                "mg/dl":BG_SCALE_MG_DL}
 
 
 
