@@ -34,14 +34,14 @@ import profile
 
 
 # DEFINITIONS
-NOW          = datetime.datetime.now()
+NOW = datetime.datetime.now()
 
 
 
 class Calculator:
 
     # BASAL CALCULATOR CHARACTERISTICS
-    TALKATIVE        = True
+    TALKATIVE = True
 
 
 
