@@ -38,7 +38,7 @@ NOW          = datetime.datetime.now()
 
 
 
-class PumpRequest:
+class Request:
 
     # PUMP REQUEST CONSTANTS
     TALKATIVE             = True
@@ -322,7 +322,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -355,7 +355,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -391,7 +391,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -429,7 +429,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -472,7 +472,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -519,7 +519,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -557,7 +557,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -612,7 +612,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -644,7 +644,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -676,7 +676,7 @@ class Pump:
         """
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -712,7 +712,7 @@ class Pump:
         bolus_time = self.BOLUS_DELIVERY_RATE * bolus + self.BOLUS_EXTRA_TIME
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
@@ -752,7 +752,7 @@ class Pump:
         self.set_TBR_duration = duration
 
         # Create pump request
-        self.request = PumpRequest()
+        self.request = Request()
 
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
