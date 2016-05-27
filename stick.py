@@ -64,7 +64,7 @@ class Stick:
         """
 
         # Generate serial port
-        os.system("sudo modprobe --quiet --first-time usbserial"
+        os.system("modprobe --quiet --first-time usbserial"
             + " vendor=" + str(self.VENDOR)
             + " product=" + str(self.PRODUCT))
 
@@ -114,7 +114,7 @@ class Stick:
         self.handle.close()
 
         # Remove serial port
-        os.system("sudo modprobe --quiet --remove usbserial")
+        os.system("modprobe --quiet --remove usbserial")
 
 
 
