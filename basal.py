@@ -30,6 +30,7 @@ import numpy as np
 import lib
 import stick
 import pump
+import profile
 
 
 
@@ -43,26 +44,6 @@ class Calculator:
 
     # BASAL CALCULATOR CHARACTERISTICS
     TALKATIVE        = True
-    BG_TIME_INTERVAL = 5
-    BG_MAX_RATE      = 0
-    BG_SCALE_MMOL_L  = {"Extreme Low"  : 1.5,
-                        "Huge Low"     : 2.0,
-                        "Big Low"      : 2.5,
-                        "Low"          : 3.0,
-                        "Little Low"   : 3.5,
-                        "Tiny Low"     : 3.8,
-                        "Target Low"   : 4.0,
-                        "Target High"  : 7.0,
-                        "Tiny High"    : 8.0,
-                        "Little High"  : 10.0,
-                        "High"         : 12.0,
-                        "Big High"     : 15.0,
-                        "Huge High"    : 18.0,
-                        "Extreme High" : 20.0}
-    BG_SCALE_MG_DL = {i : int(18.0 * BG_MMOL_L_SCALE[i])
-                      for i in BG_SCALE_MMOL_L}
-    BG_SCALE = {"mmol/l":BG_SCALE_MMOL_L,
-                "mg/dl":BG_SCALE_MG_DL}
 
 
 
@@ -86,7 +67,7 @@ class Calculator:
 
 
 
-    def inform(self, t, BG, TBR, IOB, IS, CB):
+    def inform(self, t, BG, TBR, IOB, COB):
 
         """
         ========================================================================
@@ -95,12 +76,17 @@ class Calculator:
         """
 
         # Store input
-        self.t = t                      # Times
-        self.BG = BG                    # Blood glucose values
-        self.TBR = TBR                  # Temporary basal rates
-        self.IOB = IOB                  # Insulin on board
-        self.IS = IS                    # Insulin sensitivities (based on time)
-        self.CB = CB                    # Carbs taken
+        self.t = t                              # Times of BG readings
+        self.dt = profile.BG_TIME_INTERVAL      # See user profile
+        self.BG = BG                            # Blood glucose readings
+        self.BG_scale = profile.BG_SCALE        # See user profile
+        self.dBG_dt_max = profile.BG_MAX_RATE   # See user profile
+        self.TBR = TBR                          # Temporary basal rates
+        self.IOB = IOB                          # Insulin on board
+        self.IC = profile.IC                    # See user profile
+        self.ISF = profile.ISF                  # See user profile
+        self.DIA = profile.DIA                  # See user profile
+        self.COB = COB                          # Carbs on board
 
 
 
@@ -115,7 +101,7 @@ class Calculator:
         # Compute time-derivative of BG
         self.dBG_dt = lib.derivate(self.BG, self.BG_TIME_INTERVAL)
 
-        # Compute expected BG based on dBG/dt
+        # Compute expected BG based on BG time-rate
         self.expected_BG = 0
 
         # Reset TBR recommendation
