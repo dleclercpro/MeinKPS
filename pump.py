@@ -912,6 +912,30 @@ class Pump:
 
 
 
+    def snoozeTemporaryBasalRate(self, snooze):
+
+        """
+        ========================================================================
+        SNOOZETEMPORARYBASALRATE
+        ========================================================================
+        """
+
+        self.setTemporaryBasalRate("U/h", 0, snooze)
+
+
+
+    def cancelTemporaryBasalRate(self):
+
+        """
+        ========================================================================
+        CANCELTEMPORARYBASALRATE
+        ========================================================================
+        """
+
+        self.setTemporaryBasalRate("U/h", 0, 0)
+
+
+
 def main():
 
     """
