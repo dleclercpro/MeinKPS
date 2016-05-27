@@ -23,6 +23,29 @@ import numpy as np
 
 
 
+def derivate(x_s, dt):
+
+        """
+        ========================================================================
+        DERIVATE
+        ========================================================================
+
+        ...
+        """
+
+        # Vectorize input
+        x_s = np.array(x_s)
+
+        # Make sure the derivative is a float at the end
+        dt = float(dt)
+
+        # Evaluate derivative
+        dx_dt = (x_s[1:] - x_s[:-1]) / dt
+
+        return dx_dt
+
+
+
 def encodeSerialNumber(x):
 
         """
@@ -51,18 +74,21 @@ def padHexadecimal(x):
 
 
 
-def convertBytes(x):
+def convertBytes(x_s):
 
         """
         ========================================================================
         CONVERTBYTES
         ========================================================================
 
-        This is a function that converts a number expressed in bytes to its
-        decimal equivalent.
+        This is a function that converts a number expressed in an array of bytes
+        to its decimal equivalent.
         """
 
-        return sum(x * 256 ** np.arange(len(x) - 1, -1, -1))
+        # Vectorize input
+        x_s = np.array(x_s)
+
+        return sum(x_s * 256 ** np.arange(len(x_s) - 1, -1, -1))
 
 
 
