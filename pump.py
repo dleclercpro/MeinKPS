@@ -7,10 +7,12 @@
 Title:    pump
 Author:   David Leclerc
 Version:  0.1
-Date:     25.05.2016
+Date:     27.05.2016
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
-Overview: ...
+Overview: This is a script that contains a handful of commands that can be sent
+          wirelessly to a Medtronic RF Paradigm pump through a Carelink USB
+          stick. Please use carefully!
 Notes:    ...
 ================================================================================
 """
@@ -21,7 +23,6 @@ Notes:    ...
 import os
 import sys
 import time
-import datetime
 import numpy as np
 
 
@@ -32,16 +33,10 @@ import stick
 
 
 
-# DEFINITIONS
-LOGS_ADDRESS = "./stickLogs.txt"
-NOW          = datetime.datetime.now()
-
-
-
 class Request:
 
     # PUMP REQUEST CONSTANTS
-    TALKATIVE             = True
+    TALKATIVE             = False
     HEAD                  = [1, 0, 167, 1]
     SERIAL_NUMBER         = 574180
     ENCODED_SERIAL_NUMBER = lib.encodeSerialNumber(SERIAL_NUMBER)
@@ -281,8 +276,13 @@ class Pump:
     BOLUS_RATE_FACTOR   = 40.0   # Conversion of bolus rate to bytes
     BOLUS_EXTRA_TIME    = 7.5    # Ensure bolus was completely given
     VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
-    BUTTONS             = {"EASY":0, "ESC":1, "ACT":2, "UP":3, "DOWN":4}
-    BATTERY_STATUS      = {0:"Normal", 1:"Low"}
+    BUTTONS             = {"EASY" : 0,
+                           "ESC"  : 1,
+                           "ACT"  : 2,
+                           "UP"   : 3,
+                           "DOWN" : 4}
+    BATTERY_STATUS      = {0 : "Normal",
+                           1 : "Low"}
 
 
 
@@ -293,6 +293,9 @@ class Pump:
         START
         ========================================================================
         """
+
+        # Give user info
+        print "Starting dialogue with pump..."
 
         # Instanciate a stick to communicate with the pump
         self.stick = stick.Stick()
@@ -312,6 +315,9 @@ class Pump:
         STOP
         ========================================================================
         """
+
+        # Give user info
+        print "Stopping dialogue with the pump..."
 
         # Stop my stick
         self.stick.stop()
@@ -333,7 +339,7 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Powering up the pump for: " +
+        self.request.define(info = "Powering pump radiotransmitter for: " + 
                                    str(self.SESSION_TIME) + "m",
                             power = 85,
                             attempts = 0,
@@ -342,9 +348,10 @@ class Pump:
                             parameters = [1, self.SESSION_TIME],
                             n_bytes_expected = 0,
                             sleep = self.POWERUP_TIME,
-                            sleep_reason = "Sleeping until pump is powered " +
-                                           "up... " + "(" +
-                                           str(self.POWERUP_TIME) + "s)")
+                            sleep_reason = "Sleeping until pump " +
+                                           "radiotransmitter is powered " +
+                                           "up... (" + str(self.POWERUP_TIME) +
+                                           "s)")
 
         # Make pump request
         self.request.make()
@@ -553,61 +560,6 @@ class Pump:
 
 
 
-    def readTemporaryBasalRate(self):
-
-        """
-        ========================================================================
-        READTEMPORARYBASALRATE
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Reading temporary basal rate...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code = 152,
-                            parameters = [],
-                            n_bytes_expected = 78,
-                            sleep = 0,
-                            sleep_reason = None)
-
-        # Make pump request
-        self.request.make()
-
-        # Extract type of temporary basal rate (TBR)
-        self.read_TBR_type = self.request.response[13]
-
-        # Extract absolute TBR
-        if self.read_TBR_type == 0:
-            self.read_TBR_units = "U/H"
-            self.TBR = (
-                (lib.getByte(self.request.response[15], 0) * 256 |
-                 lib.getByte(self.request.response[16], 0)) /
-                 self.BOLUS_RATE_FACTOR)
-
-        # Extract percent TBR
-        elif self.read_TBR_type == 1:
-            self.read_TBR_units = "%"
-            self.TBR = self.request.response[14]
-
-        # Extract TBR remaining time
-        self.read_TBR_duration = (
-            (lib.getByte(self.request.response[17], 0) * 256 |
-             lib.getByte(self.request.response[18], 0)))
-
-        # Give user info
-        print ("Temporary basal rate: " + str(self.TBR) + " " +
-               self.read_TBR_units + " (" + str(self.read_TBR_duration) + "m)")
-
-
-
     def suspend(self):
 
         """
@@ -714,7 +666,8 @@ class Pump:
 
         # Evaluating time required for bolus to be delivered (giving it some
         # additional seconds to be safe)
-        bolus_time = self.BOLUS_DELIVERY_RATE * bolus + self.BOLUS_EXTRA_TIME
+        bolus_delivery_time = (self.BOLUS_DELIVERY_RATE * bolus +
+                               self.BOLUS_EXTRA_TIME)
 
         # Create pump request
         self.request = Request()
@@ -730,30 +683,172 @@ class Pump:
                             code = 66,
                             parameters = [int(bolus * self.BOLUS_BLOCK)],
                             n_bytes_expected = 0,
-                            sleep = bolus_time,
+                            sleep = bolus_delivery_time,
                             sleep_reason = "Waiting for bolus to be " +
-                                           "delivered... (" + str(bolus_time) +
-                                           "s)")
+                                           "delivered... (" + 
+                                           str(bolus_delivery_time) + "s)")
 
         # Make pump request
         self.request.make()
 
 
 
-    def setTemporaryBasalRate(self, units, rate, duration):
+    def readTemporaryBasalRate(self):
+
+        """
+        ========================================================================
+        READTEMPORARYBASALRATE
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading temporary basal rate...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 152,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract absolute TBR
+        if self.request.response[13] == 0:
+            self.read_TBR_units = "U/h"
+            self.read_TBR = (
+                (lib.getByte(self.request.response[15], 0) * 256 |
+                 lib.getByte(self.request.response[16], 0)) /
+                 self.BOLUS_RATE_FACTOR)
+
+        # Extract percent TBR
+        elif self.request.response[13] == 1:
+            self.read_TBR_units = "%"
+            self.read_TBR = self.request.response[14]
+
+        # Extract TBR remaining time
+        self.read_TBR_duration = (
+            (lib.getByte(self.request.response[17], 0) * 256 |
+             lib.getByte(self.request.response[18], 0)))
+
+        # Give user info
+        print ("Temporary basal rate: " + str(self.read_TBR) + " " +
+               self.read_TBR_units + " (" + str(self.read_TBR_duration) + "m)")
+
+
+
+    def setTemporaryBasalRateUnits(self, units):
+
+        """
+        ========================================================================
+        SETTEMPORARYBASALRATEUNITS
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # If request is for absolute temporary basal rate
+        if units == "U/h":
+            parameters = [0]
+
+        # If request is for temporary basal rate in percentage
+        elif units == "%":
+            parameters = [1]
+
+        # Define rest of pump request
+        self.request.define(info = "Setting temporary basal rate units: " +
+                                   units,
+                            power = 0,
+                            attempts = 0,
+                            pages = 1,
+                            code = 104,
+                            parameters = parameters,
+                            n_bytes_expected = 0,
+                            sleep = self.EXECUTION_TIME,
+                            sleep_reason = "Waiting for temporary basal " +
+                                           "rate type to be set... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
+
+        # Make pump request
+        self.request.make()
+
+
+
+    def setTemporaryBasalRate(self, units, rate, duration, recursive = False):
 
         """
         ========================================================================
         SETTEMPORARYBASALRATE
         ========================================================================
 
-        Note: Make sure the temporary basal option is correctly set on the pump,
-              or this command will not work!
+        Note: The recursive parameter does not need to be given as input - it is
+              only there for the sake of output clarity when recursively calling
+              this very function in order to cancel an already enacted TBR.
         """
 
-        # Store infos of the temporary basal rate (TBR) that will be set
+        # Before issuing any TBR, find out if one was already set (not done when
+        # the function is called recursively to cancel an already existing TBR)
+        if recursive == False:
+
+            # Give user info
+            print "Trying to set temporary basal rate: " + str(rate) + " " + \
+                  units + " (" + str(duration) + "m)"
+
+            self.readTemporaryBasalRate()
+
+        # If no TBR was found, go ahead
+        if (self.read_TBR == 0) & (self.read_TBR_duration == 0):
+
+            # Give user info
+            print "No precedent temporary basal rate was found. The new " + \
+                  "one can be enacted."
+
+            pass
+
+        # If this is a cancel TBR order, go ahead
+        elif (rate == 0) & (duration == 0):
+
+            # Give user info
+            print "Canceling temporary basal rate..."
+
+            pass
+
+        # Otherwise, the previously set TBR needs to be canceled before we can
+        # order a new one
+        else:
+
+            # Give user info
+            print "Temporary basal rate needs to be canceled."
+
+            # Cancel the TBR by recursivity (we make sure the units are the same
+            # as the last active TBR, otherwise it would not work)
+            self.setTemporaryBasalRate(units = self.read_TBR_units,
+                                       rate = 0,
+                                       duration = 0,
+                                       recursive = True)
+
+        # In case of recursive cancel TBR call, no need to reset TBR units
+        if recursive == False:
+
+            # Adjust temporary basal rate units based on user request (otherwise
+            # it won't work)
+            self.setTemporaryBasalRateUnits(units)
+
+        # Store temporary basal rate (TBR) that will be set
         self.set_TBR_units = units
-        self.set_TBR_rate = rate
+        self.set_TBR = rate
         self.set_TBR_duration = duration
 
         # Create pump request
@@ -763,23 +858,23 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # If request is for absolute temporary basal rate
-        if self.set_TBR_units == "U/H":
+        if units == "U/h":
             code = 76
             parameters = [0,
                           int(rate * self.BOLUS_RATE_FACTOR),
                           int(duration / self.BASAL_TIME_BLOCK)]
 
         # If request is for temporary basal rate in percentage
-        elif self.set_TBR_units == "%":
+        elif units == "%":
             code = 105
             parameters = [int(rate),
                           int(duration / self.BASAL_TIME_BLOCK)]
 
         # Define rest of pump request
-        self.request.define(info = "Set temporary basal rate: " +
-                                   str(self.set_TBR_rate) + " " +
-                                   self.set_TBR_units + " (" +
-                                   str(self.set_TBR_duration) + "m)",
+        self.request.define(info = "Setting temporary basal rate: " +
+                                   str(rate) + " " +
+                                   units + " (" +
+                                   str(duration) + "m)",
                             power = 0,
                             attempts = 0,
                             pages = 1,
@@ -794,6 +889,25 @@ class Pump:
         # Make pump request
         self.request.make()
 
+        # Give user info
+        print "Verifying that the new temporary basal rate was correctly " + \
+              "enacted..."
+
+        # Verify that the TBR was correctly issued by reading current TBR on
+        # pump
+        self.readTemporaryBasalRate()
+
+        # Compare to expectedly set TBR
+        if self.read_TBR == self.set_TBR:
+
+            # Give user info
+            print "New temporary basal rate correctly enacted!"
+
+        # Otherwise, quit
+        else:
+            sys.exit("New temporary basal rate could not be correctly " +
+                     "enacted. :-(")
+
 
 
 def main():
@@ -807,48 +921,43 @@ def main():
     # Instanciate a pump for me
     pump = Pump()
 
-    # Start pump
+    # Start dialogue pump
     pump.start()
 
     # Read pump model
     pump.readModel()
 
     # Read pump firmware version
-    pump.readFirmwareVersion()
+    #pump.readFirmwareVersion()
 
     # Read bolus history of pump
     pump.readTime()
 
     # Read battery level of pump
-    pump.readBatteryLevel()
+    #pump.readBatteryLevel()
 
     # Send bolus to pump
-    pump.deliverBolus(0.2)
+    #pump.deliverBolus(0.2)
 
     # Send temporary basal rate to pump
-    pump.setTemporaryBasalRate("U/H", 2, 60)
-    #pump.setTemporaryBasalRate("%", 50, 90)
-
-    # Read temporary basal rate
+    pump.setTemporaryBasalRate("U/h", 4.2, 120)
+    pump.setTemporaryBasalRate("%", 33, 90)
     pump.readTemporaryBasalRate()
 
     # Suspend pump activity
-    pump.suspend()
+    #pump.suspend()
 
     # Resume pump activity
-    pump.resume()
+    #pump.resume()
 
     # Push button on pump
-    pump.pushButton("DOWN")
+    #pump.pushButton("DOWN")
 
     # Read remaining amount of insulin in pump
-    pump.readReservoir()
+    #pump.readReservoir()
 
-    # Stop pump
+    # Stop dialogue with pump
     pump.stop()
-
-    # End of script
-    print "Done!"
 
 
 
