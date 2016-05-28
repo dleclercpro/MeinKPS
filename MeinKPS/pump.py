@@ -822,7 +822,7 @@ class Pump:
 
             # In case the user wants to set the TB to zero in other units
             elif (rate == 0) & (self.TB_rate == 0) & \
-                 (units == 0) & (self.TB_duration == 0):
+                 (duration == 0) & (self.TB_duration == 0):
 
                 # Give user info
                 print "There is no point in reissuing a zero TB in " + \
