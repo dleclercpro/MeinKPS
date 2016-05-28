@@ -916,7 +916,9 @@ class Pump:
         self.readTemporaryBasalRate()
 
         # Compare to expectedly set TBR
-        if self.read_TBR == self.set_TBR:
+        if (self.read_TBR_units == self.set_TBR_units) & \
+           (self.read_TBR == self.set_TBR) & \
+           (self.read_TBR_duration == self.set_TBR_duration):
 
             # Give user info
             print "New temporary basal rate correctly set!"
@@ -983,7 +985,7 @@ def main():
 
     # Send temporary basal rate to pump
     pump.setTemporaryBasalRate("%", 50, 60)
-    pump.setTemporaryBasalRate("%", 50, 28)
+    pump.setTemporaryBasalRate("%", 50, 30)
     #pump.setTemporaryBasalRate("%", 0, 0)
 
     # Suspend pump activity
