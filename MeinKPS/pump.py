@@ -792,9 +792,6 @@ class Pump:
         ========================================================================
         SETTEMPORARYBASALRATE
         ========================================================================
-
-        Note: The recursive parameter "first_run" is there to make sure the TBR
-              units are correctly set before issuing a new TBR request. 
         """
 
         # Give user info regarding the next TBR that will be set
@@ -804,65 +801,61 @@ class Pump:
         # First run
         if first_run == True:
 
-            # Before issuing any TBR, find out if one is already set
+            # Before issuing any TBR, read the current one
             self.readTemporaryBasalRate()
 
-            # Look if units match
+            # Look if a non-zero TBR is already set
+            if (self.read_TBR != 0) | (self.read_TBR_duration != 0):
+
+                # Give user info
+                print "Temporary basal rate needs to be canceled before " + \
+                      "going further..."
+
+                # Set TBR to zero (it is crucial here to use the precedent
+                # units, otherwise it would not work!)
+                self.setTemporaryBasalRate(units = self.read_TBR_units,
+                                           rate = 0,
+                                           duration = 0,
+                                           first_run = False)
+
+            # If units do not match, they must be changed
             if units != self.read_TBR_units:
 
                 # Give user info
                 print "Old and new temporary basal rate units mismatch."
 
-                # If a TBR is already set, it needs to be canceled in order to
-                # modify the TBR units
-                if (self.read_TBR != 0) | (self.read_TBR_duration != 0):
-
-                    # Give user info
-                    print "Setting temporary basal rate and duration to " + \
-                          "zero, in order to change units..."
-
-                    # Set TBR to zero (it is crucial here to use the precedent
-                    # units, otherwise it would not work!)
-                    self.setTemporaryBasalRate(units = self.read_TBR_units,
-                                               rate = 0,
-                                               duration = 0,
-                                               first_run = False)
-
                 # Modify units as wished by the user
                 self.setTemporaryBasalRateUnits(units)
 
-            # If the user wants to issue the same TBR rate
-            elif rate == self.read_TBR:
+            # If user only wishes to extend/shorten the length of the already
+            # set TBR
+            elif duration != self.read_TBR_duration:
 
-                # Look if the user only wishes to extend/shorten the length of
-                # the already set TBR
-                if duration != self.read_TBR_duration:
+                # Evaluate time difference
+                dt = duration - self.read_TBR_duration
 
-                    # Evaluate time difference
-                    dt = duration - self.read_TBR_duration
-
-                    # For a shortened TBR
-                    if dt < 0:
-
-                        # Give user info
-                        print "The temporary basal rate will be shortened " + \
-                              "by: " + str(-dt) + "m"
-
-                    # For an extended TBR
-                    elif dt > 0:
-
-                        # Give user info
-                        print "The temporary basal rate will be extended " + \
-                              "by: " + str(dt) + "m"
-
-                # In case the user wants to reset the same TBR, just ignore it
-                else:
+                # For a shortened TBR
+                if dt < 0:
 
                     # Give user info
-                    print "There is no point in reissuing the exact same " + \
-                          "temporary basal rate: ignoring."
+                    print "The temporary basal rate will be shortened " + \
+                          "by: " + str(-dt) + "m"
 
-                    return
+                # For an extended TBR
+                elif dt > 0:
+
+                    # Give user info
+                    print "The temporary basal rate will be extended " + \
+                          "by: " + str(dt) + "m"
+
+            # In case the user wants to reset the same TBR, just ignore it
+            else:
+
+                # Give user info
+                print "There is no point in reissuing the exact same " + \
+                      "temporary basal rate: ignoring."
+
+                return
 
         # Store temporary basal rate that will be set
         self.set_TBR_units = units
