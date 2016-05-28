@@ -339,7 +339,7 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Powering pump radiotransmitter for: " + 
+        self.request.define(info = "Powering pump radio transmitter for: " + 
                                    str(self.SESSION_TIME) + "m",
                             power = 85,
                             attempts = 0,
@@ -349,7 +349,7 @@ class Pump:
                             n_bytes_expected = 0,
                             sleep = self.POWERUP_TIME,
                             sleep_reason = "Sleeping until pump " +
-                                           "radiotransmitter is powered " +
+                                           "radio transmitter is powered " +
                                            "up... (" + str(self.POWERUP_TIME) +
                                            "s)")
 
@@ -792,6 +792,9 @@ class Pump:
         ========================================================================
         SETTEMPORARYBASALRATE
         ========================================================================
+
+        Note: The recursive parameter "first_run" is there to make sure the TBR
+              units are correctly set before issuing a new TBR request. 
         """
 
         # Give user info regarding the next TBR that will be set
@@ -828,26 +831,38 @@ class Pump:
                 # Modify units as wished by the user
                 self.setTemporaryBasalRateUnits(units)
 
-            # Look if the user only wishes to extend/shorten the length of the
-            # already set TBR
-            elif (rate == self.read_TBR) & (duration != self.read_TBR_duration):
+            # If the user wants to issue the same TBR rate
+            elif rate == self.read_TBR:
 
-                # Evaluate time difference
-                dt = duration - self.read_TBR_duration
+                # Look if the user only wishes to extend/shorten the length of
+                # the already set TBR
+                if duration != self.read_TBR_duration:
 
-                # For a shortened TBR
-                if dt < 0:
+                    # Evaluate time difference
+                    dt = duration - self.read_TBR_duration
+
+                    # For a shortened TBR
+                    if dt < 0:
+
+                        # Give user info
+                        print "The temporary basal rate will be shortened " + \
+                              "by: " + str(-dt) + "m"
+
+                    # For an extended TBR
+                    elif dt > 0:
+
+                        # Give user info
+                        print "The temporary basal rate will be extended " + \
+                              "by: " + str(dt) + "m"
+
+                # In case the user wants to reset the same TBR, just ignore it
+                else:
 
                     # Give user info
-                    print "The temporary basal rate will be shortened by: " + \
-                          str(-dt) + "m"
+                    print "There is no point in reissuing the exact same " + \
+                          "temporary basal rate: ignoring."
 
-                # For an extended TBR
-                elif dt > 0:
-
-                    # Give user info
-                    print "The temporary basal rate will be extended by: " + \
-                          str(dt) + "m"
+                    return
 
         # Store temporary basal rate that will be set
         self.set_TBR_units = units
