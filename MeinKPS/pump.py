@@ -820,22 +820,12 @@ class Pump:
 
                 return
 
-            # In case the user wants to set the TB to zero in other units
-            elif (rate == 0) & (self.TB_rate == 0) & \
-                 (duration == 0) & (self.TB_duration == 0):
-
-                # Give user info
-                print "There is no point in reissuing a zero TB in " + \
-                      "different units: ignoring."
-
-                return
-
             # Look if a non-zero TB is already set
             elif (last_rate != 0) | (last_duration != 0):
 
                 # Give user info
-                print "Temporary basal rate needs to be canceled before " + \
-                      "going further..."
+                print "Temporary basal rate needs to be set to zero before " + \
+                      "issuing a new one..."
 
                 # Set TB to zero (it is crucial here to use the precedent
                 # units, otherwise it would not work!)
@@ -844,8 +834,20 @@ class Pump:
                                            duration = 0,
                                            first_run = False)
 
+            # In case the user wants to set the TB to zero in other units, more
+            # specifically when it has already been canceled (this is why the
+            # call is done to self.TB and not last)
+            if (rate == 0) & (duration == 0) & \
+               (self.TB_rate == 0) & (self.TB_duration == 0):
+
+                # Give user info
+                print "There is no point in reissuing a zero TB in " + \
+                      "different units: ignoring."
+
+                return
+
             # If units do not match, they must be changed
-            if units != last_units:
+            elif units != last_units:
 
                 # Give user info
                 print "Old and new temporary basal rate units mismatch."
