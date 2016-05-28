@@ -786,67 +786,43 @@ class Pump:
 
 
 
-    def setTemporaryBasalRate(self, units, rate, duration, new = True):
+    def setTemporaryBasalRate(self, units, rate, duration, first_run = True):
 
         """
         ========================================================================
         SETTEMPORARYBASALRATE
         ========================================================================
-
-        Note: The recursive parameter does not need to be given as input - it is
-              only there for the sake of output clarity when recursively calling
-              this very function in order to cancel an already enacted TBR.
         """
 
-        # Before issuing any TBR, find out if one was already set
-        if new == True:
+        # Give user info regarding the next TBR that will be set
+        print "Trying to set new temporary basal rate: " + str(rate) + \
+              " " + units + " (" + str(duration) + "m)"
 
-            # Give user info
-            print "Trying to set new temporary basal rate: " + str(rate) + \
-                  " " + units + " (" + str(duration) + "m)"
+        # First run
+        if first_run == True:
 
-            # Look for previously set temporary basal rate
+            # Before issuing any TBR, find out if one is already set
             self.readTemporaryBasalRate()
 
-        # If no TBR was found, go ahead
-        if (self.read_TBR == 0) & (self.read_TBR_duration == 0):
+            # Look if units match
+            if units != self.read_TBR_units:
 
-            # Give user info
-            print "No temporary basal rate was found. The new one can be set."
+                # Give user info
+                print "Old and new temporary basal rate units mismatch."
 
-            pass
+                # If a TBR is already set, it needs to be canceled in order to
+                # modify the TBR units
+                if (self.read_TBR != 0) | (self.read_TBR_duration != 0):
 
-        # Otherwise, the previously set TBR needs to be canceled before we can
-        # issue a new one
-        elif new == True:
+                    # Set TBR to zero (it is crucial here to use the precedent
+                    # units, otherwise it would not work!)
+                    self.setTemporaryBasalRate(units = self.read_TBR_units,
+                                               rate = 0,
+                                               duration = 0,
+                                               first_run = False)
 
-            # Give user info
-            print "Temporary basal rate needs to be canceled."
-
-            # Cancel the TBR by recursivity (we need to make sure the units are
-            # the same as the last active TBR, otherwise the command would not
-            # work!)
-            self.setTemporaryBasalRate(units = self.read_TBR_units,
-                                       rate = 0,
-                                       duration = 0,
-                                       new = False)
-
-        # There is no point in reissuing a zero temporary basal rate command
-        # when the last one has already been canceled
-        if ((rate == 0) & (self.read_TBR == 0) &
-            (duration == 0) & (self.read_TBR_duration == 0)):
-
-            # Give user info
-            print "No need to cancel a temporary basal rate of 0 with " + \
-                  "duration 0."
-
-            return
-
-        # If old and new units mismatch
-        if units != self.read_TBR_units:
-
-            # Adjust temporary basal rate units (otherwise it won't work)
-            self.setTemporaryBasalRateUnits(units)
+                # Modify units as wished by the user
+                self.setTemporaryBasalRateUnits(units)
 
         # Store temporary basal rate (TBR) that will be set
         self.set_TBR_units = units
