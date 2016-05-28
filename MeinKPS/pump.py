@@ -721,27 +721,27 @@ class Pump:
         # Make pump request
         self.request.make()
 
-        # Extract absolute TBR
+        # Extract absolute TB
         if self.request.response[13] == 0:
-            self.TBR_units = "U/h"
-            self.TBR = (
+            self.TB_units = "U/h"
+            self.TB_rate = (
                 (lib.getByte(self.request.response[15], 0) * 256 |
                  lib.getByte(self.request.response[16], 0)) /
                  self.BOLUS_RATE_FACTOR)
 
-        # Extract percent TBR
+        # Extract percent TB
         elif self.request.response[13] == 1:
-            self.TBR_units = "%"
-            self.TBR = self.request.response[14]
+            self.TB_units = "%"
+            self.TB_rate = self.request.response[14]
 
-        # Extract TBR remaining time
-        self.TBR_duration = (
+        # Extract TB remaining time
+        self.TB_duration = (
             (lib.getByte(self.request.response[17], 0) * 256 |
              lib.getByte(self.request.response[18], 0)))
 
         # Give user info
-        print ("Temporary basal rate: " + str(self.TBR) + " " +
-               self.TBR_units + " (" + str(self.TBR_duration) + "m)")
+        print ("Temporary basal rate: " + str(self.TB_rate) + " " +
+               self.TB_units + " (" + str(self.TB_duration) + "m)")
 
 
 
@@ -794,29 +794,40 @@ class Pump:
         ========================================================================
         """
 
-        # Give user info regarding the next TBR that will be set
+        # In case the user wants to reset the same TB, just ignore it
+        if (rate == self.TB_rate) & \
+           (units == self.TB_units) & \
+           (duration == self.TB_duration):
+
+            # Give user info
+            print "There is no point in reissuing the exact same " + \
+                  "temporary basal rate: ignoring."
+
+            return
+
+        # Give user info regarding the next TB that will be set
         print "Trying to set new temporary basal rate: " + str(rate) + \
               " " + units + " (" + str(duration) + "m)"
 
         # First run
         if first_run == True:
 
-            # Before issuing any TBR, read the current one
+            # Before issuing any TB, read the current one
             self.readTemporaryBasalRate()
 
-            # Store last TBR values
-            last_rate = self.TBR
-            last_units = self.TBR_units
-            last_duration = self.TBR_duration
+            # Store last TB values
+            last_rate = self.TB_rate
+            last_units = self.TB_units
+            last_duration = self.TB_duration
 
-            # Look if a non-zero TBR is already set
+            # Look if a non-zero TB is already set
             if (last_rate != 0) | (last_duration != 0):
 
                 # Give user info
                 print "Temporary basal rate needs to be canceled before " + \
                       "going further..."
 
-                # Set TBR to zero (it is crucial here to use the precedent
+                # Set TB to zero (it is crucial here to use the precedent
                 # units, otherwise it would not work!)
                 self.setTemporaryBasalRate(rate = 0,
                                            units = last_units,
@@ -833,34 +844,25 @@ class Pump:
                 self.setTemporaryBasalRateUnits(units)
 
             # If user only wishes to extend/shorten the length of the already
-            # set TBR
+            # set TB
             elif duration != last_duration:
 
                 # Evaluate time difference
                 dt = duration - last_duration
 
-                # For a shortened TBR
+                # For a shortened TB
                 if dt < 0:
 
                     # Give user info
                     print "The temporary basal rate will be shortened " + \
                           "by: " + str(-dt) + "m"
 
-                # For an extended TBR
+                # For an extended TB
                 elif dt > 0:
 
                     # Give user info
                     print "The temporary basal rate will be extended " + \
                           "by: " + str(dt) + "m"
-
-            # In case the user wants to reset the same TBR, just ignore it
-            else:
-
-                # Give user info
-                print "There is no point in reissuing the exact same " + \
-                      "temporary basal rate: ignoring."
-
-                return
 
         # Create pump request
         self.request = Request()
@@ -904,14 +906,14 @@ class Pump:
         print "Verifying that the new temporary basal rate was correctly " + \
               "set..."
 
-        # Verify that the TBR was correctly issued by reading current TBR on
+        # Verify that the TB was correctly issued by reading current TB on
         # pump
         self.readTemporaryBasalRate()
 
-        # Compare to expectedly set TBR
-        if (self.TBR == rate) & \
-           (self.TBR_units == units) & \
-           (self.TBR_duration == duration):
+        # Compare to expectedly set TB
+        if (self.TB_rate == rate) & \
+           (self.TB_units == units) & \
+           (self.TB_duration == duration):
 
             # Give user info
             print "New temporary basal rate correctly set!"
