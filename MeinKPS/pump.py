@@ -810,9 +810,9 @@ class Pump:
             last_duration = self.TB_duration
 
             # In case the user wants to set the exact same TB, just ignore it
-            if (rate == self.TB_rate) & \
-               (units == self.TB_units) & \
-               (duration == self.TB_duration):
+            if (rate == last_rate) & \
+               (units == last_units) & \
+               (duration == last_duration):
 
                 # Give user info
                 print "There is no point in reissuing the exact same " + \
@@ -841,8 +841,7 @@ class Pump:
                (self.TB_rate == 0) & (self.TB_duration == 0):
 
                 # Give user info
-                print "There is no point in reissuing a zero TB in " + \
-                      "different units: ignoring."
+                print "There is no point in reissuing a zero TB: ignoring."
 
                 return
 
