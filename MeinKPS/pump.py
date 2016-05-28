@@ -794,17 +794,6 @@ class Pump:
         ========================================================================
         """
 
-        # In case the user wants to reset the same TB, just ignore it
-        if (rate == self.TB_rate) & \
-           (units == self.TB_units) & \
-           (duration == self.TB_duration):
-
-            # Give user info
-            print "There is no point in reissuing the exact same " + \
-                  "temporary basal rate: ignoring."
-
-            return
-
         # Give user info regarding the next TB that will be set
         print "Trying to set new temporary basal rate: " + str(rate) + \
               " " + units + " (" + str(duration) + "m)"
@@ -820,8 +809,19 @@ class Pump:
             last_units = self.TB_units
             last_duration = self.TB_duration
 
+            # In case the user wants to reset the same TB, just ignore it
+            if (rate == self.TB_rate) & \
+               (units == self.TB_units) & \
+               (duration == self.TB_duration):
+
+                # Give user info
+                print "There is no point in reissuing the exact same " + \
+                      "temporary basal rate: ignoring."
+
+                return
+
             # Look if a non-zero TB is already set
-            if (last_rate != 0) | (last_duration != 0):
+            elif (last_rate != 0) | (last_duration != 0):
 
                 # Give user info
                 print "Temporary basal rate needs to be canceled before " + \
