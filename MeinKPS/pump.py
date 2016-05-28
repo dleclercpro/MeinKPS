@@ -814,6 +814,10 @@ class Pump:
                 # modify the TBR units
                 if (self.read_TBR != 0) | (self.read_TBR_duration != 0):
 
+                    # Give user info
+                    print "Setting temporary basal rate and duration to " + \
+                          "zero, in order to change units..."
+
                     # Set TBR to zero (it is crucial here to use the precedent
                     # units, otherwise it would not work!)
                     self.setTemporaryBasalRate(units = self.read_TBR_units,
@@ -824,7 +828,28 @@ class Pump:
                 # Modify units as wished by the user
                 self.setTemporaryBasalRateUnits(units)
 
-        # Store temporary basal rate (TBR) that will be set
+            # Look if the user only wishes to extend/shorten the length of the
+            # already set TBR
+            elif (rate == self.read_TBR) & (duration != self.read_TBR_duration):
+
+                # Evaluate time difference
+                dt = duration - self.read_TBR_duration
+
+                # For a shortened TBR
+                if dt < 0:
+
+                    # Give user info
+                    print "The temporary basal rate will be shortened by: " + \
+                          str(-dt) + "m"
+
+                # For an extended TBR
+                elif dt > 0:
+
+                    # Give user info
+                    print "The temporary basal rate will be extended by: " + \
+                          str(dt) + "m"
+
+        # Store temporary basal rate that will be set
         self.set_TBR_units = units
         self.set_TBR = rate
         self.set_TBR_duration = duration
