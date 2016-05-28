@@ -983,10 +983,8 @@ def main():
 
     # Send temporary basal rate to pump
     pump.setTemporaryBasalRate("%", 50, 60)
-    pump.setTemporaryBasalRate("U/h", 4.2, 120)
-    pump.setTemporaryBasalRate("U/h", 4.2, 120)
-    pump.setTemporaryBasalRate("U/h", 0, 0)
-    pump.setTemporaryBasalRate("%", 0, 0)
+    pump.setTemporaryBasalRate("%", 50, 28)
+    #pump.setTemporaryBasalRate("%", 0, 0)
 
     # Suspend pump activity
     #pump.suspend()
