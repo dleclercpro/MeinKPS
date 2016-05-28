@@ -809,7 +809,7 @@ class Pump:
             last_units = self.TB_units
             last_duration = self.TB_duration
 
-            # In case the user wants to reset the same TB, just ignore it
+            # In case the user wants to set the exact same TB, just ignore it
             if (rate == self.TB_rate) & \
                (units == self.TB_units) & \
                (duration == self.TB_duration):
@@ -817,6 +817,16 @@ class Pump:
                 # Give user info
                 print "There is no point in reissuing the exact same " + \
                       "temporary basal rate: ignoring."
+
+                return
+
+            # In case the user wants to set the TB to zero in other units
+            elif (rate == 0) & (self.TB_rate == 0)\
+                 (units == 0) & (self.TB_duration == 0):
+
+                # Give user info
+                print "There is no point in reissuing a zero TB in " + \
+                      "different units: ignoring."
 
                 return
 
