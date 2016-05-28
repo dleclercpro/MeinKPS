@@ -965,9 +965,12 @@ def main():
     #pump.deliverBolus(0.2)
 
     # Send temporary basal rate to pump
+    pump.setTemporaryBasalRate("U/h", 4.1, 150)
     pump.setTemporaryBasalRate("%", 50, 60)
     pump.setTemporaryBasalRate("%", 50, 30)
-    #pump.setTemporaryBasalRate("%", 0, 0)
+    pump.setTemporaryBasalRate("%", 50, 30)
+    pump.setTemporaryBasalRate("%", 0, 0)
+    pump.setTemporaryBasalRate("U/h", 0, 0)
 
     # Suspend pump activity
     #pump.suspend()
