@@ -723,25 +723,25 @@ class Pump:
 
         # Extract absolute TBR
         if self.request.response[13] == 0:
-            self.read_TBR_units = "U/h"
-            self.read_TBR = (
+            self.TBR_units = "U/h"
+            self.TBR = (
                 (lib.getByte(self.request.response[15], 0) * 256 |
                  lib.getByte(self.request.response[16], 0)) /
                  self.BOLUS_RATE_FACTOR)
 
         # Extract percent TBR
         elif self.request.response[13] == 1:
-            self.read_TBR_units = "%"
-            self.read_TBR = self.request.response[14]
+            self.TBR_units = "%"
+            self.TBR = self.request.response[14]
 
         # Extract TBR remaining time
-        self.read_TBR_duration = (
+        self.TBR_duration = (
             (lib.getByte(self.request.response[17], 0) * 256 |
              lib.getByte(self.request.response[18], 0)))
 
         # Give user info
-        print ("Temporary basal rate: " + str(self.read_TBR) + " " +
-               self.read_TBR_units + " (" + str(self.read_TBR_duration) + "m)")
+        print ("Temporary basal rate: " + str(self.TBR) + " " +
+               self.TBR_units + " (" + str(self.TBR_duration) + "m)")
 
 
 
@@ -786,7 +786,7 @@ class Pump:
 
 
 
-    def setTemporaryBasalRate(self, units, rate, duration, first_run = True):
+    def setTemporaryBasalRate(self, rate, units, duration, first_run = True):
 
         """
         ========================================================================
@@ -804,8 +804,13 @@ class Pump:
             # Before issuing any TBR, read the current one
             self.readTemporaryBasalRate()
 
+            # Store last TBR values
+            last_rate = self.TBR
+            last_units = self.TBR_units
+            last_duration = self.TBR_duration
+
             # Look if a non-zero TBR is already set
-            if (self.read_TBR != 0) | (self.read_TBR_duration != 0):
+            if (last_rate != 0) | (last_duration != 0):
 
                 # Give user info
                 print "Temporary basal rate needs to be canceled before " + \
@@ -813,13 +818,13 @@ class Pump:
 
                 # Set TBR to zero (it is crucial here to use the precedent
                 # units, otherwise it would not work!)
-                self.setTemporaryBasalRate(units = self.read_TBR_units,
-                                           rate = 0,
+                self.setTemporaryBasalRate(rate = 0,
+                                           units = last_units,
                                            duration = 0,
                                            first_run = False)
 
             # If units do not match, they must be changed
-            if units != self.read_TBR_units:
+            if units != last_units:
 
                 # Give user info
                 print "Old and new temporary basal rate units mismatch."
@@ -829,10 +834,10 @@ class Pump:
 
             # If user only wishes to extend/shorten the length of the already
             # set TBR
-            elif duration != self.read_TBR_duration:
+            elif duration != last_duration:
 
                 # Evaluate time difference
-                dt = duration - self.read_TBR_duration
+                dt = duration - last_duration
 
                 # For a shortened TBR
                 if dt < 0:
@@ -856,11 +861,6 @@ class Pump:
                       "temporary basal rate: ignoring."
 
                 return
-
-        # Store temporary basal rate that will be set
-        self.set_TBR_units = units
-        self.set_TBR = rate
-        self.set_TBR_duration = duration
 
         # Create pump request
         self.request = Request()
@@ -909,9 +909,9 @@ class Pump:
         self.readTemporaryBasalRate()
 
         # Compare to expectedly set TBR
-        if (self.read_TBR_units == self.set_TBR_units) & \
-           (self.read_TBR == self.set_TBR) & \
-           (self.read_TBR_duration == self.set_TBR_duration):
+        if (self.TBR == rate) & \
+           (self.TBR_units == units) & \
+           (self.TBR_duration == duration):
 
             # Give user info
             print "New temporary basal rate correctly set!"
@@ -932,18 +932,6 @@ class Pump:
         """
 
         self.setTemporaryBasalRate("U/h", 0, snooze)
-
-
-
-    def cancelTemporaryBasalRate(self):
-
-        """
-        ========================================================================
-        CANCELTEMPORARYBASALRATE
-        ========================================================================
-        """
-
-        self.setTemporaryBasalRate("U/h", 0, 0)
 
 
 
