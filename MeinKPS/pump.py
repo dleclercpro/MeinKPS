@@ -855,7 +855,7 @@ class Pump:
 
             # If user only wishes to extend/shorten the length of the already
             # set TB
-            elif duration != last_duration:
+            elif (rate == last_rate) & (duration != last_duration):
 
                 # Evaluate time difference
                 dt = duration - last_duration
