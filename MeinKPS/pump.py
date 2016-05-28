@@ -821,7 +821,7 @@ class Pump:
                 return
 
             # In case the user wants to set the TB to zero in other units
-            elif (rate == 0) & (self.TB_rate == 0)\
+            elif (rate == 0) & (self.TB_rate == 0) & \
                  (units == 0) & (self.TB_duration == 0):
 
                 # Give user info
