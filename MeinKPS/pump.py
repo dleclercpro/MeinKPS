@@ -686,7 +686,6 @@ class Pump:
 
         # Extract pump status from received data
         self.status = {"Normal" : self.request.response[13] == 3,
-                       "Error" : self.request.response[13] != 3,
                        "Bolusing" : self.request.response[14] == 1,
                        "Suspended" : self.request.response[15] == 1}
 
