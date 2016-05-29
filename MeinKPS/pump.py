@@ -690,15 +690,16 @@ class Pump:
         # Make pump request
         self.request.make()
 
-        # Extract bolus issued today
-        today_bolus = ((lib.getByte(self.request.response[14], 0) * 256 |
-                        lib.getByte(self.request.response[15], 0)) / 10.0)
-        yesterday_bolus = ((lib.getByte(self.request.response[16], 0) * 256 |
-                            lib.getByte(self.request.response[17], 0)) / 10.0)
+        for i in range(10, 20):
+            # Extract bolus issued today
+            today_bolus = ((lib.getByte(self.request.response[i], 0) * 256 |
+                            lib.getByte(self.request.response[i + 1], 0)) / 10.0)
+            yesterday_bolus = ((lib.getByte(self.request.response[i + 2], 0) * 256 |
+                                lib.getByte(self.request.response[i + 3], 0)) / 10.0)
 
-        # Give user info
-        print "Total today: " + str(today_bolus)
-        print "Total yesterday: " + str(yesterday_bolus)
+            # Give user info
+            print "Total today: " + str(today_bolus)
+            print "Total yesterday: " + str(yesterday_bolus)
 
 
 
