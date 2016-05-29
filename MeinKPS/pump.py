@@ -693,7 +693,7 @@ class Pump:
         self.daily_total_today = (
             (lib.getByte(self.request.response[13], 0) * 256 |
              lib.getByte(self.request.response[14], 0)) / 10.0)
-        self.daily_total_today = (
+        self.daily_total_yesterday = (
             (lib.getByte(self.request.response[15], 0) * 256 |
              lib.getByte(self.request.response[16], 0)) / 10.0)
 
