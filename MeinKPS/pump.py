@@ -7,7 +7,7 @@
 Title:    pump
 Author:   David Leclerc
 Version:  0.1
-Date:     28.05.2016
+Date:     30.05.2016
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
 Overview: This is a script that contains a handful of commands that can be sent
@@ -272,15 +272,14 @@ class Request:
 class Pump:
 
     # PUMP CHARACTERISTICS
-    POWERUP_TIME        = 10     # Time (s) needed for pump to go online
+    POWER_TIME          = 10     # Time (s) needed for pump to go online
     SESSION_TIME        = 5      # Time (m) for which pump will listen to RFs
     EXECUTION_TIME      = 5      # Time (s) needed for pump command execution
-    BASAL_STROKES       = 10.0   # Size of basal strokes
-    BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basals
-    BOLUS_DELIVERY_RATE = 40     # Bolus delivery rate (s/U)
-    BOLUS_BLOCK         = 10     # Bolus are splitted in blocks of 0.1U
-    BOLUS_RATE_FACTOR   = 40.0   # Conversion of bolus rate to bytes
+    STROKE_SIZE         = 0.1    # Pump stroke (U)
+    BOLUS_DELIVERY_RATE = 40.0   # Bolus delivery rate (s/U)
     BOLUS_EXTRA_TIME    = 7.5    # Ensure bolus was completely given
+    BASAL_FACTOR        = 40.0   # Conversion of bolus rate to bytes
+    BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basals
     VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
     BUTTONS             = {"EASY" : 0,
                            "ESC"  : 1,
@@ -310,7 +309,7 @@ class Pump:
         self.stick.start()
 
         # Power up pump's RF transmitter
-        self.powerUp()
+        self.power()
 
 
 
@@ -330,11 +329,11 @@ class Pump:
 
 
 
-    def powerUp(self):
+    def power(self):
 
         """
         ========================================================================
-        POWERUP
+        POWER
         ========================================================================
         """
 
@@ -353,10 +352,10 @@ class Pump:
                             code = 93,
                             parameters = [1, self.SESSION_TIME],
                             n_bytes_expected = 0,
-                            sleep = self.POWERUP_TIME,
+                            sleep = self.POWER_TIME,
                             sleep_reason = "Sleeping until pump " +
                                            "radio transmitter is powered " +
-                                           "up... (" + str(self.POWERUP_TIME) +
+                                           "up... (" + str(self.POWER_TIME) +
                                            "s)")
 
         # Make pump request
@@ -457,6 +456,53 @@ class Pump:
 
         # Make pump request
         self.request.make()
+
+
+
+    def readTime(self):
+
+        """
+        ========================================================================
+        READTIME
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading pump time...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 112,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract pump time from received data
+        self.second = self.request.response[15]
+        self.minute = self.request.response[14]
+        self.hour = self.request.response[13]
+        self.day = self.request.response[19]
+        self.month = self.request.response[18]
+        self.year = (lib.getByte(self.request.response[16], 0) * 256 |
+                     lib.getByte(self.request.response[17], 0))
+
+        # Give user info
+        print "Pump time: " + (str(self.day).zfill(2) + "." +
+                               str(self.month).zfill(2) + "." +
+                               str(self.year).zfill(2) + " " +
+                               str(self.hour).zfill(2) + ":" +
+                               str(self.minute).zfill(2) + ":" +
+                               str(self.second).zfill(2))
 
 
 
@@ -577,11 +623,11 @@ class Pump:
 
 
 
-    def readReservoir(self):
+    def readReservoirLevel(self):
 
         """
         ========================================================================
-        READRESERVOIR
+        READRESERVOIRLEVEL
         ========================================================================
         """
 
@@ -607,52 +653,11 @@ class Pump:
 
         # Extract remaining amout of insulin
         self.reservoir = ((lib.getByte(self.request.response[13], 0) * 256 |
-                         lib.getByte(self.request.response[14], 0)) /
-                         self.BASAL_STROKES)
+                         lib.getByte(self.request.response[14], 0)) *
+                         self.STROKE_SIZE)
 
         # Give user info
         print "Amount of insulin in reservoir: " + str(self.reservoir) + "U"
-
-
-
-    def readSettings(self):
-
-        """
-        ========================================================================
-        READSETTINGS
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Reading pump settings...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code = 192,
-                            parameters = [],
-                            n_bytes_expected = 78,
-                            sleep = 0,
-                            sleep_reason = None)
-
-        # Make pump request
-        self.request.make()
-
-        # Extract pump settings from received data
-        self.settings = {
-            "Max Bolus" : self.request.response[18] / 10.0,
-            "Max Basal" : (lib.getByte(self.request.response[19], 0) * 256 |
-                           lib.getByte(self.request.response[20], 0)) /
-                           self.BOLUS_RATE_FACTOR,
-            "Insulin Action Curve" : self.request.response[30]}
-
-        # Give user info
-        print "Pump settings: " + str(self.settings)
 
 
 
@@ -694,11 +699,11 @@ class Pump:
 
 
 
-    def readTime(self):
+    def readSettings(self):
 
         """
         ========================================================================
-        READTIME
+        READSETTINGS
         ========================================================================
         """
 
@@ -709,11 +714,11 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Reading pump time...",
+        self.request.define(info = "Reading pump settings...",
                             power = 0,
                             attempts = 2,
                             pages = 1,
-                            code = 112,
+                            code = 192,
                             parameters = [],
                             n_bytes_expected = 78,
                             sleep = 0,
@@ -722,22 +727,16 @@ class Pump:
         # Make pump request
         self.request.make()
 
-        # Extract pump time from received data
-        self.second = self.request.response[15]
-        self.minute = self.request.response[14]
-        self.hour = self.request.response[13]
-        self.day = self.request.response[19]
-        self.month = self.request.response[18]
-        self.year = (lib.getByte(self.request.response[16], 0) * 256 |
-                     lib.getByte(self.request.response[17], 0))
+        # Extract pump settings from received data
+        self.settings = {
+            "Max Bolus" : self.request.response[18] * self.STROKE_SIZE,
+            "Max Basal" : (lib.getByte(self.request.response[19], 0) * 256 |
+                           lib.getByte(self.request.response[20], 0)) /
+                           self.BASAL_FACTOR,
+            "Insulin Action Curve" : self.request.response[30]}
 
         # Give user info
-        print "Pump time: " + (str(self.day).zfill(2) + "." +
-                               str(self.month).zfill(2) + "." +
-                               str(self.year).zfill(2) + " " +
-                               str(self.hour).zfill(2) + ":" +
-                               str(self.minute).zfill(2) + ":" +
-                               str(self.second).zfill(2))
+        print "Pump settings: " + str(self.settings)
 
 
 
@@ -772,10 +771,10 @@ class Pump:
         # Extract daily totals of today and yesterday
         self.daily_total_today = (
             (lib.getByte(self.request.response[13], 0) * 256 |
-             lib.getByte(self.request.response[14], 0)) / 10.0)
+             lib.getByte(self.request.response[14], 0)) * self.STROKE_SIZE)
         self.daily_total_yesterday = (
             (lib.getByte(self.request.response[15], 0) * 256 |
-             lib.getByte(self.request.response[16], 0)) / 10.0)
+             lib.getByte(self.request.response[16], 0)) * self.STROKE_SIZE)
 
         # Give user info
         print "Daily total of today: " + \
@@ -820,7 +819,7 @@ class Pump:
                             attempts = 0,
                             pages = 1,
                             code = 66,
-                            parameters = [int(bolus * self.BOLUS_BLOCK)],
+                            parameters = [int(bolus / self.STROKE_SIZE)],
                             n_bytes_expected = 0,
                             sleep = bolus_delivery_time,
                             sleep_reason = "Waiting for bolus to be " +
@@ -866,7 +865,7 @@ class Pump:
             self.TB_rate = (
                 (lib.getByte(self.request.response[15], 0) * 256 |
                  lib.getByte(self.request.response[16], 0)) /
-                 self.BOLUS_RATE_FACTOR)
+                 self.BASAL_FACTOR)
 
         # Extract percent TB
         elif self.request.response[13] == 1:
@@ -1024,7 +1023,7 @@ class Pump:
         if units == "U/h":
             code = 76
             parameters = [0,
-                          int(rate * self.BOLUS_RATE_FACTOR),
+                          int(rate * self.BASAL_FACTOR),
                           int(duration / self.BASAL_TIME_BLOCK)]
 
         # If request is for temporary basal in percentage
@@ -1102,22 +1101,22 @@ def main():
     pump.start()
 
     # Read pump model
-    #pump.readModel()
+    pump.readModel()
 
     # Read pump firmware version
-    #pump.readFirmwareVersion()
+    pump.readFirmwareVersion()
 
     # Read bolus history of pump
-    #pump.readTime()
+    pump.readTime()
 
     # Read battery level of pump
-    #pump.readBatteryLevel()
+    pump.readBatteryLevel()
 
     # Read remaining amount of insulin in pump
-    #pump.readReservoir()
+    pump.readReservoirLevel()
 
     # Send bolus to pump
-    #pump.deliverBolus(0.5)
+    pump.deliverBolus(0.5)
 
     # Read daily totals on pump
     pump.readDailyTotals()
@@ -1129,27 +1128,17 @@ def main():
     pump.readSettings()
 
     # Send temporary basal to pump
-    #pump.setTemporaryBasal(4.1, "U/h", 150)
-    #print
-    #pump.setTemporaryBasal(50, "%", 60)
-    #print
-    #pump.setTemporaryBasal(50, "%", 30)
-    #print
-    #pump.setTemporaryBasal(50, "%", 30)
-    #print
-    #pump.setTemporaryBasal(0, "U/h", 0)
-    #print
-    #pump.setTemporaryBasal(0, "%", 0)
-    #print
+    pump.setTemporaryBasal(4.1, "U/h", 150)
+    pump.setTemporaryBasal(50, "%", 60)
 
     # Suspend pump activity
-    #pump.suspend()
+    pump.suspend()
 
     # Resume pump activity
-    #pump.resume()
+    pump.resume()
 
     # Push button on pump
-    #pump.pushButton("DOWN")
+    pump.pushButton("DOWN")
 
     # Stop dialogue with pump
     pump.stop()
