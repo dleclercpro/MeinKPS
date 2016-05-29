@@ -733,11 +733,11 @@ class Pump:
         # Make pump request
         self.request.make()
 
-        for i in range (13, 64):
+        for i in range (0, 14):
             # Extract bolus history
             bolus_history = (
-                (lib.getByte(self.request.response[13], 0) * 256 |
-                 lib.getByte(self.request.response[14], 0)) / 10.0)
+                (lib.getByte(self.request.response[i], 0) * 256 |
+                 lib.getByte(self.request.response[i + 1], 0)) / 40.0)
 
             # Give user info
             print "Bolus history: " + str(bolus_history) + "U (" + str(i) + ")"
