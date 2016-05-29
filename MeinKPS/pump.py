@@ -1030,7 +1030,7 @@ def main():
     #pump.deliverBolus(0.5)
 
     # Read bolus history
-    pump.readBolus()
+    pump.readDailyTotals()
 
     # Send temporary basal to pump
     #pump.setTemporaryBasal(4.1, "U/h", 150)
