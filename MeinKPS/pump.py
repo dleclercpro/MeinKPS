@@ -17,6 +17,11 @@ Notes:    ...
 ================================================================================
 """
 
+# TODO: - Make sure the maximal temporary basal rate and bolus are correctly
+#         set, that is higher than or equal to the TB and/or bolus that will be
+#         issued.
+#       - 
+
 
 
 # LIBRARIES
@@ -675,7 +680,8 @@ class Pump:
                             power = 0,
                             attempts = 2,
                             pages = 1,
-                            code = 39,
+                            #code = 39,
+                            code  = 121,
                             parameters = [],
                             n_bytes_expected = 78,
                             sleep = 0,
