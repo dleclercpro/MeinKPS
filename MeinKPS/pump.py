@@ -364,6 +364,102 @@ class Pump:
 
 
 
+    def suspend(self):
+
+        """
+        ========================================================================
+        SUSPEND
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Suspending pump activity...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 77,
+                            parameters = [1],
+                            n_bytes_expected = 0,
+                            sleep = self.EXECUTION_TIME,
+                            sleep_reason = "Waiting for pump activity to be " +
+                                           "completely suspended... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
+
+        # Make pump request
+        self.request.make()
+
+
+
+    def resume(self):
+
+        """
+        ========================================================================
+        RESUME
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Resuming pump activity...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 77,
+                            parameters = [0],
+                            n_bytes_expected = 0,
+                            sleep = self.EXECUTION_TIME,
+                            sleep_reason = "Waiting for pump activity to " +
+                                           "be resumed... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
+
+        # Make pump request
+        self.request.make()
+
+
+
+    def pushButton(self, button):
+
+        """
+        ========================================================================
+        PUSHBUTTON
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Pushing button: " + button,
+                            power = 0,
+                            attempts = 1,
+                            pages = 0,
+                            code = 91,
+                            parameters = [int(self.BUTTONS[button])],
+                            n_bytes_expected = 0,
+                            sleep = self.EXECUTION_TIME,
+                            sleep_reason = "Waiting for button to be " +
+                                           "pushed... (" +
+                                           str(self.EXECUTION_TIME) + "s)")
+
+        # Make pump request
+        self.request.make()
+
+
+
     def readModel(self):
 
         """
@@ -519,45 +615,6 @@ class Pump:
 
 
 
-    def readStatus(self):
-
-        """
-        ========================================================================
-        READSTATUS
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Reading pump status...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code = 206,
-                            parameters = [],
-                            n_bytes_expected = 78,
-                            sleep = 0,
-                            sleep_reason = None)
-
-        # Make pump request
-        self.request.make()
-
-        # Extract pump status from received data
-        self.status = {"Normal" : self.request.response[13] == 3,
-                       "Error" : self.request.response[13] != 3,
-                       "Bolusing" : self.request.response[14] == 1,
-                       "Suspended" : self.request.response[15] == 1}
-
-        # Give user info
-        print "Pump status: " + str(self.status)
-
-
-
     def readSettings(self):
 
         """
@@ -596,6 +653,45 @@ class Pump:
 
         # Give user info
         print "Pump settings: " + str(self.settings)
+
+
+
+    def readStatus(self):
+
+        """
+        ========================================================================
+        READSTATUS
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading pump status...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 206,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract pump status from received data
+        self.status = {"Normal" : self.request.response[13] == 3,
+                       "Error" : self.request.response[13] != 3,
+                       "Bolusing" : self.request.response[14] == 1,
+                       "Suspended" : self.request.response[15] == 1}
+
+        # Give user info
+        print "Pump status: " + str(self.status)
 
 
 
@@ -643,102 +739,6 @@ class Pump:
                                str(self.hour).zfill(2) + ":" +
                                str(self.minute).zfill(2) + ":" +
                                str(self.second).zfill(2))
-
-
-
-    def suspend(self):
-
-        """
-        ========================================================================
-        SUSPEND
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Suspending pump activity...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code = 77,
-                            parameters = [1],
-                            n_bytes_expected = 0,
-                            sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for pump activity to be " +
-                                           "completely suspended... (" +
-                                           str(self.EXECUTION_TIME) + "s)")
-
-        # Make pump request
-        self.request.make()
-
-
-
-    def resume(self):
-
-        """
-        ========================================================================
-        RESUME
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Resuming pump activity...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code = 77,
-                            parameters = [0],
-                            n_bytes_expected = 0,
-                            sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for pump activity to " +
-                                           "be resumed... (" +
-                                           str(self.EXECUTION_TIME) + "s)")
-
-        # Make pump request
-        self.request.make()
-
-
-
-    def pushButton(self, button):
-
-        """
-        ========================================================================
-        PUSHBUTTON
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Pushing button: " + button,
-                            power = 0,
-                            attempts = 1,
-                            pages = 0,
-                            code = 91,
-                            parameters = [int(self.BUTTONS[button])],
-                            n_bytes_expected = 0,
-                            sleep = self.EXECUTION_TIME,
-                            sleep_reason = "Waiting for button to be " +
-                                           "pushed... (" +
-                                           str(self.EXECUTION_TIME) + "s)")
-
-        # Make pump request
-        self.request.make()
 
 
 
