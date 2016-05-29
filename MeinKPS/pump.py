@@ -270,7 +270,7 @@ class Pump:
     SESSION_TIME        = 5      # Time (m) for which pump will listen to RFs
     EXECUTION_TIME      = 5      # Time (s) needed for pump command execution
     BASAL_STROKES       = 10.0   # Size of basal strokes
-    BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basal rates
+    BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basals
     BOLUS_DELIVERY_RATE = 40     # Bolus delivery rate (s/U)
     BOLUS_BLOCK         = 10     # Bolus are splitted in blocks of 0.1U
     BOLUS_RATE_FACTOR   = 40.0   # Conversion of bolus rate to bytes
@@ -656,6 +656,58 @@ class Pump:
 
 
 
+    def readBolus(self):
+
+        """
+        ========================================================================
+        READBOLUS
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading bolus history...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 39,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract absolute TB
+        #if self.request.response[13] == 0:
+        #    self.TB_units = "U/h"
+        #    self.TB_rate = (
+        #        (lib.getByte(self.request.response[15], 0) * 256 |
+        #         lib.getByte(self.request.response[16], 0)) /
+        #         self.BOLUS_RATE_FACTOR)
+
+        # Extract percent TB
+        #elif self.request.response[13] == 1:
+        #    self.TB_units = "%"
+        #    self.TB_rate = self.request.response[14]
+
+        # Extract TB remaining time
+        #self.TB_duration = (
+        #    (lib.getByte(self.request.response[17], 0) * 256 |
+        #     lib.getByte(self.request.response[18], 0)))
+
+        # Give user info
+        #print ("Temporary basal: " + str(self.TB_rate) + " " +
+               self.TB_units + " (" + str(self.TB_duration) + "m)")
+
+
+
     def deliverBolus(self, bolus):
 
         """
@@ -693,11 +745,11 @@ class Pump:
 
 
 
-    def readTemporaryBasalRate(self):
+    def readTemporaryBasal(self):
 
         """
         ========================================================================
-        READTEMPORARYBASALRATE
+        READTEMPORARYBASAL
         ========================================================================
         """
 
@@ -708,7 +760,7 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Reading current temporary basal rate...",
+        self.request.define(info = "Reading current temporary basal...",
                             power = 0,
                             attempts = 2,
                             pages = 1,
@@ -740,16 +792,16 @@ class Pump:
              lib.getByte(self.request.response[18], 0)))
 
         # Give user info
-        print ("Temporary basal rate: " + str(self.TB_rate) + " " +
+        print ("Temporary basal: " + str(self.TB_rate) + " " +
                self.TB_units + " (" + str(self.TB_duration) + "m)")
 
 
 
-    def setTemporaryBasalRateUnits(self, units):
+    def setTemporaryBasalUnits(self, units):
 
         """
         ========================================================================
-        SETTEMPORARYBASALRATEUNITS
+        SETTEMPORARYBASALUNITS
         ========================================================================
         """
 
@@ -759,16 +811,16 @@ class Pump:
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
 
-        # If request is for absolute temporary basal rate
+        # If request is for absolute temporary basal
         if units == "U/h":
             parameters = [0]
 
-        # If request is for temporary basal rate in percentage
+        # If request is for temporary basal in percentage
         elif units == "%":
             parameters = [1]
 
         # Define rest of pump request
-        self.request.define(info = "Setting temporary basal rate units: " +
+        self.request.define(info = "Setting temporary basal units: " +
                                    units,
                             power = 0,
                             attempts = 0,
@@ -786,23 +838,23 @@ class Pump:
 
 
 
-    def setTemporaryBasalRate(self, rate, units, duration, first_run = True):
+    def setTemporaryBasal(self, rate, units, duration, first_run = True):
 
         """
         ========================================================================
-        SETTEMPORARYBASALRATE
+        SETTEMPORARYBASAL
         ========================================================================
         """
 
         # Give user info regarding the next TB that will be set
-        print "Trying to set new temporary basal rate: " + str(rate) + \
+        print "Trying to set new temporary basal: " + str(rate) + \
               " " + units + " (" + str(duration) + "m)"
 
         # First run
         if first_run == True:
 
             # Before issuing any TB, read the current one
-            self.readTemporaryBasalRate()
+            self.readTemporaryBasal()
 
             # Store last TB values
             last_rate = self.TB_rate
@@ -816,7 +868,7 @@ class Pump:
 
                 # Give user info
                 print "There is no point in reissuing the exact same " + \
-                      "temporary basal rate: ignoring."
+                      "temporary basal: ignoring."
 
                 return
 
@@ -824,12 +876,12 @@ class Pump:
             elif (last_rate != 0) | (last_duration != 0):
 
                 # Give user info
-                print "Temporary basal rate needs to be set to zero before " + \
+                print "Temporary basal needs to be set to zero before " + \
                       "issuing a new one..."
 
                 # Set TB to zero (it is crucial here to use the precedent
                 # units, otherwise it would not work!)
-                self.setTemporaryBasalRate(rate = 0,
+                self.setTemporaryBasal(rate = 0,
                                            units = last_units,
                                            duration = 0,
                                            first_run = False)
@@ -849,10 +901,10 @@ class Pump:
             elif units != last_units:
 
                 # Give user info
-                print "Old and new temporary basal rate units mismatch."
+                print "Old and new temporary basal units mismatch."
 
                 # Modify units as wished by the user
-                self.setTemporaryBasalRateUnits(units)
+                self.setTemporaryBasalUnits(units)
 
             # If user only wishes to extend/shorten the length of the already
             # set TB
@@ -865,14 +917,14 @@ class Pump:
                 if dt < 0:
 
                     # Give user info
-                    print "The temporary basal rate will be shortened " + \
+                    print "The temporary basal will be shortened " + \
                           "by: " + str(-dt) + "m"
 
                 # For an extended TB
                 elif dt > 0:
 
                     # Give user info
-                    print "The temporary basal rate will be extended " + \
+                    print "The temporary basal will be extended " + \
                           "by: " + str(dt) + "m"
 
         # Create pump request
@@ -881,21 +933,21 @@ class Pump:
         # Give pump request a link to stick
         self.request.link(stick = self.stick)
 
-        # If request is for absolute temporary basal rate
+        # If request is for absolute temporary basal
         if units == "U/h":
             code = 76
             parameters = [0,
                           int(rate * self.BOLUS_RATE_FACTOR),
                           int(duration / self.BASAL_TIME_BLOCK)]
 
-        # If request is for temporary basal rate in percentage
+        # If request is for temporary basal in percentage
         elif units == "%":
             code = 105
             parameters = [int(rate),
                           int(duration / self.BASAL_TIME_BLOCK)]
 
         # Define rest of pump request
-        self.request.define(info = "Setting temporary basal rate: " +
+        self.request.define(info = "Setting temporary basal: " +
                                    str(rate) + " " +
                                    units + " (" +
                                    str(duration) + "m)",
@@ -914,12 +966,12 @@ class Pump:
         self.request.make()
 
         # Give user info
-        print "Verifying that the new temporary basal rate was correctly " + \
+        print "Verifying that the new temporary basal was correctly " + \
               "set..."
 
         # Verify that the TB was correctly issued by reading current TB on
         # pump
-        self.readTemporaryBasalRate()
+        self.readTemporaryBasal()
 
         # Compare to expectedly set TB
         if (self.TB_rate == rate) & \
@@ -927,24 +979,24 @@ class Pump:
            (self.TB_duration == duration):
 
             # Give user info
-            print "New temporary basal rate correctly set!"
+            print "New temporary basal correctly set!"
 
         # Otherwise, quit
         else:
-            sys.exit("New temporary basal rate could not be correctly " +
+            sys.exit("New temporary basal could not be correctly " +
                      "set. :-(")
 
 
 
-    def snoozeTemporaryBasalRate(self, snooze):
+    def snoozeTemporaryBasal(self, snooze):
 
         """
         ========================================================================
-        SNOOZETEMPORARYBASALRATE
+        SNOOZETEMPORARYBASAL
         ========================================================================
         """
 
-        self.setTemporaryBasalRate("U/h", 0, snooze)
+        self.setTemporaryBasal("U/h", 0, snooze)
 
 
 
@@ -977,19 +1029,22 @@ def main():
     # Send bolus to pump
     #pump.deliverBolus(0.2)
 
-    # Send temporary basal rate to pump
-    pump.setTemporaryBasalRate(4.1, "U/h", 150)
-    print
-    pump.setTemporaryBasalRate(50, "%", 60)
-    print
-    pump.setTemporaryBasalRate(50, "%", 30)
-    print
-    pump.setTemporaryBasalRate(50, "%", 30)
-    print
-    pump.setTemporaryBasalRate(0, "U/h", 0)
-    print
-    pump.setTemporaryBasalRate(0, "%", 0)
-    print
+    # Read bolus history
+    pump.readBolus()
+
+    # Send temporary basal to pump
+    #pump.setTemporaryBasal(4.1, "U/h", 150)
+    #print
+    #pump.setTemporaryBasal(50, "%", 60)
+    #print
+    #pump.setTemporaryBasal(50, "%", 30)
+    #print
+    #pump.setTemporaryBasal(50, "%", 30)
+    #print
+    #pump.setTemporaryBasal(0, "U/h", 0)
+    #print
+    #pump.setTemporaryBasal(0, "%", 0)
+    #print
 
     # Suspend pump activity
     #pump.suspend()
