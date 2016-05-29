@@ -41,7 +41,7 @@ import stick
 class Request:
 
     # PUMP REQUEST CONSTANTS
-    TALKATIVE             = False
+    TALKATIVE             = True
     HEAD                  = [1, 0, 167, 1]
     SERIAL_NUMBER         = 574180
     ENCODED_SERIAL_NUMBER = lib.encodeSerialNumber(SERIAL_NUMBER)
@@ -690,27 +690,15 @@ class Pump:
         # Make pump request
         self.request.make()
 
-        # Extract absolute TB
-        #if self.request.response[13] == 0:
-        #    self.TB_units = "U/h"
-        #    self.TB_rate = (
-        #        (lib.getByte(self.request.response[15], 0) * 256 |
-        #         lib.getByte(self.request.response[16], 0)) /
-        #         self.BOLUS_RATE_FACTOR)
-
-        # Extract percent TB
-        #elif self.request.response[13] == 1:
-        #    self.TB_units = "%"
-        #    self.TB_rate = self.request.response[14]
-
-        # Extract TB remaining time
-        #self.TB_duration = (
-        #    (lib.getByte(self.request.response[17], 0) * 256 |
-        #     lib.getByte(self.request.response[18], 0)))
+        # Extract bolus issued today
+        today_bolus = ((lib.getByte(self.request.response[14], 0) * 256 |
+                        lib.getByte(self.request.response[15], 0)) / 10.0)
+        yesterday_bolus = ((lib.getByte(self.request.response[16], 0) * 256 |
+                            lib.getByte(self.request.response[17], 0)) / 10.0)
 
         # Give user info
-        #print ("Temporary basal: " + str(self.TB_rate) + " " +
-        #       self.TB_units + " (" + str(self.TB_duration) + "m)")
+        print ("Total today: " + str(today_bolus)
+        print ("Total yesterday: " + str(yesterday_bolus)
 
 
 

@@ -45,7 +45,7 @@ import lib
 class Stick:
 
     # STICK CHARACTERISTICS
-    TALKATIVE        = False
+    TALKATIVE        = True
     VENDOR           = 0x0a21
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
