@@ -697,8 +697,8 @@ class Pump:
                             lib.getByte(self.request.response[17], 0)) / 10.0)
 
         # Give user info
-        print ("Total today: " + str(today_bolus)
-        print ("Total yesterday: " + str(yesterday_bolus)
+        print "Total today: " + str(today_bolus)
+        print "Total yesterday: " + str(yesterday_bolus)
 
 
 
@@ -1009,27 +1009,30 @@ def main():
     pump.start()
 
     # Read pump model
-    pump.readModel()
+    #pump.readModel()
 
     # Read pump firmware version
-    pump.readFirmwareVersion()
+    #pump.readFirmwareVersion()
 
     # Read bolus history of pump
-    pump.readTime()
+    #pump.readTime()
 
     # Read battery level of pump
-    pump.readBatteryLevel()
+    #pump.readBatteryLevel()
+
+    # Read remaining amount of insulin in pump
+    #pump.readReservoir()
 
     # Send bolus to pump
-    pump.deliverBolus(0.5)
+    #pump.deliverBolus(0.5)
 
     # Read bolus history
-    #pump.readBolus()
+    pump.readBolus()
 
     # Send temporary basal to pump
-    pump.setTemporaryBasal(4.1, "U/h", 150)
+    #pump.setTemporaryBasal(4.1, "U/h", 150)
     #print
-    pump.setTemporaryBasal(50, "%", 60)
+    #pump.setTemporaryBasal(50, "%", 60)
     #print
     #pump.setTemporaryBasal(50, "%", 30)
     #print
@@ -1041,16 +1044,13 @@ def main():
     #print
 
     # Suspend pump activity
-    pump.suspend()
+    #pump.suspend()
 
     # Resume pump activity
-    pump.resume()
+    #pump.resume()
 
     # Push button on pump
-    pump.pushButton("DOWN")
-
-    # Read remaining amount of insulin in pump
-    pump.readReservoir()
+    #pump.pushButton("DOWN")
 
     # Stop dialogue with pump
     pump.stop()
