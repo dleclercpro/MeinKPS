@@ -661,11 +661,11 @@ class Pump:
 
 
 
-    def readBolus(self):
+    def readDailyTotals(self):
 
         """
         ========================================================================
-        READBOLUS
+        READDAILYTOTALS
         ========================================================================
         """
 
@@ -676,11 +676,10 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Reading bolus history...",
+        self.request.define(info = "Reading daily totals...",
                             power = 0,
                             attempts = 2,
                             pages = 1,
-                            #code = 39,
                             code  = 121,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -690,16 +689,19 @@ class Pump:
         # Make pump request
         self.request.make()
 
-        for i in range(10, 20):
-            # Extract bolus issued today
-            today_bolus = ((lib.getByte(self.request.response[i], 0) * 256 |
-                            lib.getByte(self.request.response[i + 1], 0)) / 10.0)
-            yesterday_bolus = ((lib.getByte(self.request.response[i + 2], 0) * 256 |
-                                lib.getByte(self.request.response[i + 3], 0)) / 10.0)
+        # Extract daily totals of today and yesterday
+        self.daily_total_today = (
+            (lib.getByte(self.request.response[13], 0) * 256 |
+             lib.getByte(self.request.response[14], 0)) / 10.0)
+        self.daily_total_today = (
+            (lib.getByte(self.request.response[15], 0) * 256 |
+             lib.getByte(self.request.response[16], 0)) / 10.0)
 
-            # Give user info
-            print "Total today: " + str(today_bolus)
-            print "Total yesterday: " + str(yesterday_bolus)
+        # Give user info
+        print "Daily total of today: " + \
+              str(self.daily_total_today) + "U"
+        print "Daily total of yesterday: " + \
+              str(self.daily_total_yesterday) + "U"
 
 
 
