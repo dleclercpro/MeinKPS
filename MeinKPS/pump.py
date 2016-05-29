@@ -558,6 +558,47 @@ class Pump:
 
 
 
+    def readSettings(self):
+
+        """
+        ========================================================================
+        READSETTINGS
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading pump settings...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 192,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract pump settings from received data
+        self.settings = {
+            "Max Bolus" : self.request.response[18] / 10.0,
+            "Max Basal" : (lib.getByte(self.request.response[19], 0) * 256 |
+                           lib.getByte(self.request.response[20], 0)) /
+                           self.BOLUS_RATE_FACTOR,
+            "Insulin Action Curve" : self.request.response[30]}
+
+        # Give user info
+        print "Pump settings: " + str(self.settings)
+
+
+
     def readTime(self):
 
         """
@@ -1079,12 +1120,14 @@ def main():
     # Send bolus to pump
     #pump.deliverBolus(0.5)
 
-    # Read bolus history
+    # Read daily totals on pump
     pump.readDailyTotals()
 
+    # Read pump status
     pump.readStatus()
-    time.sleep(10)
-    pump.readStatus()
+
+    # Read pump settings
+    pump.readSettings()
 
     # Send temporary basal to pump
     #pump.setTemporaryBasal(4.1, "U/h", 150)
