@@ -705,6 +705,45 @@ class Pump:
 
 
 
+    def readBolusHistory(self):
+
+        """
+        ========================================================================
+        READBOLUSHISTORY
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading bolus history...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code  = 39,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        for i in range (13, 64):
+            # Extract bolus history
+            bolus_history = (
+                (lib.getByte(self.request.response[13], 0) * 256 |
+                 lib.getByte(self.request.response[14], 0)) / 10.0)
+
+            # Give user info
+            print "Bolus history: " + str(bolus_history) + "U (" + str(i) + ")"
+
+
+
     def deliverBolus(self, bolus):
 
         """
@@ -1031,6 +1070,7 @@ def main():
 
     # Read bolus history
     pump.readDailyTotals()
+    pump.readBolusHistory()
 
     # Send temporary basal to pump
     #pump.setTemporaryBasal(4.1, "U/h", 150)
