@@ -20,7 +20,8 @@ Notes:    ...
 # TODO: - Make sure the maximal temporary basal rate and bolus are correctly
 #         set, that is higher than or equal to the TB and/or bolus that will be
 #         issued.
-#       - 
+#       - Get manually issued bolus, in order for the loop to know when to stop/
+#         restart.
 
 
 
@@ -480,6 +481,83 @@ class Pump:
 
 
 
+    def readReservoir(self):
+
+        """
+        ========================================================================
+        READRESERVOIR
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading amount of insulin left...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 115,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract remaining amout of insulin
+        self.reservoir = ((lib.getByte(self.request.response[13], 0) * 256 |
+                         lib.getByte(self.request.response[14], 0)) /
+                         self.BASAL_STROKES)
+
+        # Give user info
+        print "Amount of insulin in reservoir: " + str(self.reservoir) + "U"
+
+
+
+    def readStatus(self):
+
+        """
+        ========================================================================
+        READSTATUS
+        ========================================================================
+        """
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading pump status...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1,
+                            code = 206,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract pump status from received data
+        self.status = {"Normal" : self.response[13] == 3,
+                       "Error" : self.response[13] != 3,
+                       "Bolusing" : self.response[14] == 1,
+                       "Suspended" : self.response[15] == 1}
+
+        # Give user info
+        print "Pump status: " + str(self.status)
+
+
+
     def readTime(self):
 
         """
@@ -524,44 +602,6 @@ class Pump:
                                str(self.hour).zfill(2) + ":" +
                                str(self.minute).zfill(2) + ":" +
                                str(self.second).zfill(2))
-
-
-
-    def readReservoir(self):
-
-        """
-        ========================================================================
-        READRESERVOIR
-        ========================================================================
-        """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Reading amount of insulin left...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code = 115,
-                            parameters = [],
-                            n_bytes_expected = 78,
-                            sleep = 0,
-                            sleep_reason = None)
-
-        # Make pump request
-        self.request.make()
-
-        # Extract remaining amout of insulin
-        self.reservoir = ((lib.getByte(self.request.response[13], 0) * 256 |
-                         lib.getByte(self.request.response[14], 0)) /
-                         self.BASAL_STROKES)
-
-        # Give user info
-        print "Amount of insulin in reservoir: " + str(self.reservoir) + "U"
 
 
 
@@ -705,42 +745,13 @@ class Pump:
 
 
 
-    def readBolusHistory(self):
+    def readBolus(self):
 
         """
         ========================================================================
-        READBOLUSHISTORY
+        READBOLUS
         ========================================================================
         """
-
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Reading bolus history...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 1,
-                            code  = 39,
-                            parameters = [],
-                            n_bytes_expected = 78,
-                            sleep = 0,
-                            sleep_reason = None)
-
-        # Make pump request
-        self.request.make()
-
-        for i in range (0, 14):
-            # Extract bolus history
-            bolus_history = (
-                (lib.getByte(self.request.response[i], 0) * 256 |
-                 lib.getByte(self.request.response[i + 1], 0)) / 40.0)
-
-            # Give user info
-            print "Bolus history: " + str(bolus_history) + "U (" + str(i) + ")"
 
 
 
@@ -1070,7 +1081,10 @@ def main():
 
     # Read bolus history
     pump.readDailyTotals()
-    pump.readBolusHistory()
+
+    pump.readStatus()
+    time.sleep(10)
+    pump.readStatus()
 
     # Send temporary basal to pump
     #pump.setTemporaryBasal(4.1, "U/h", 150)
