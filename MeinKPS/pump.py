@@ -704,7 +704,7 @@ class Pump:
 
         # Give user info
         #print ("Temporary basal: " + str(self.TB_rate) + " " +
-               self.TB_units + " (" + str(self.TB_duration) + "m)")
+        #       self.TB_units + " (" + str(self.TB_duration) + "m)")
 
 
 
@@ -1018,24 +1018,24 @@ def main():
     pump.readModel()
 
     # Read pump firmware version
-    #pump.readFirmwareVersion()
+    pump.readFirmwareVersion()
 
     # Read bolus history of pump
-    #pump.readTime()
+    pump.readTime()
 
     # Read battery level of pump
-    #pump.readBatteryLevel()
+    pump.readBatteryLevel()
 
     # Send bolus to pump
-    #pump.deliverBolus(0.2)
+    pump.deliverBolus(0.5)
 
     # Read bolus history
-    pump.readBolus()
+    #pump.readBolus()
 
     # Send temporary basal to pump
-    #pump.setTemporaryBasal(4.1, "U/h", 150)
+    pump.setTemporaryBasal(4.1, "U/h", 150)
     #print
-    #pump.setTemporaryBasal(50, "%", 60)
+    pump.setTemporaryBasal(50, "%", 60)
     #print
     #pump.setTemporaryBasal(50, "%", 30)
     #print
@@ -1047,16 +1047,16 @@ def main():
     #print
 
     # Suspend pump activity
-    #pump.suspend()
+    pump.suspend()
 
     # Resume pump activity
-    #pump.resume()
+    pump.resume()
 
     # Push button on pump
-    #pump.pushButton("DOWN")
+    pump.pushButton("DOWN")
 
     # Read remaining amount of insulin in pump
-    #pump.readReservoir()
+    pump.readReservoir()
 
     # Stop dialogue with pump
     pump.stop()
