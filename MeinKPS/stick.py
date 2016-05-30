@@ -142,6 +142,12 @@ class Stick:
             # Read buffer
             self.raw_response = self.handle.read(self.READ_BYTES)
 
+            # FIXME
+            if len(self.raw_response) != 0:
+                if self.TALKATIVE:
+                    print "Buffer content (" + str(n) + "/-):" + \
+                          str([ord(x) for x in self.raw_response])
+
         # Give user info
         if self.TALKATIVE:
             print "Buffer emptied after " + str(n - 1) + " attempt(s)."
