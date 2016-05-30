@@ -89,7 +89,7 @@ class Stick:
         ========================================================================
         """
 
-        # Generate handle for the stick
+        # Generate USB serial handle for the stick
         self.getHandle()
 
         # Ask for stick infos
@@ -142,6 +142,12 @@ class Stick:
             # Read buffer
             self.raw_response = self.handle.read(self.READ_BYTES)
 
+            # FIXME
+            if len(self.raw_response) != 0:
+                if self.TALKATIVE:
+                    print "Buffer content (" + str(n) + "/-):" + \
+                          str([ord(x) for x in self.raw_response])
+
         # Give user info
         if self.TALKATIVE:
             print "Buffer emptied after " + str(n - 1) + " attempt(s)."
@@ -161,37 +167,61 @@ class Stick:
             print "Sending request: " + str(request)
 
         # Initialize stick raw response
-        self.raw_response = ""
+        self.raw_response = []
 
         # Initialize reading attempt variable
         n = 0
 
         # Ask for response from stick until we get one
-        while len(self.raw_response) == 0:
+        while True:
 
-            # Update attempt variable
+            # Update reading attempt variable
             n += 1
 
             # Keep track of number of attempts
             if self.TALKATIVE:
-                print "Request attempt: " + str(n) + "/-"
-
-            # Wait a minimum of time before sending request
-            time.sleep(self.SLEEP)
+                print "Attempt to read from stick: " + str(n) + "/-"
 
             # Send stick request
             self.handle.write(bytearray(request))
+
+            # Wait a minimum of time before asking for response to request
+            time.sleep(self.SLEEP)
 
             # Give user info
             if self.TALKATIVE:
                 print "Storing raw response..."
 
-            # Read stick response
-            self.raw_response = self.handle.read(self.READ_BYTES)
+            # Read stick buffer and append its content to raw response vector
+            self.raw_response.append(self.handle.read(self.READ_BYTES))
 
-        # If no response at all was received, quit
-        if len(self.raw_response) == 0:
-            sys.exit("Unable to read from stick. :-(")
+            # Once we get the first response, we can exit the loop
+            if len(self.raw_response[-1]) != 0:
+
+                break
+
+        # Look for a potential rest of response (response will sometimes exceed
+        # 64 bytes, for instance when downloading data from pump)
+        while True:
+
+            # Update reading attempt variable
+            n += 1
+
+            # Give user info
+            if self.TALKATIVE:
+                print "Storing rest of raw response..."
+
+            # Read stick buffer and append its content to raw response vector
+            self.raw_response.append(self.handle.read(self.READ_BYTES))
+
+            # Once we got all of the response, we can exit the loop
+            if len(self.raw_response[-1]) == 0:
+
+                break
+
+        # Give user info
+        if self.TALKATIVE:
+            print "Read data from stick in " + str(n) + " attempt(s)."
 
         # Parse response of stick
         self.parseResponse()
@@ -215,6 +245,9 @@ class Stick:
         # Give user info
         if self.TALKATIVE:
             print "Parsing raw response..."
+
+        # Purge raw response vector of empty responses
+        # FIXME
 
         # Vectorize raw response
         self.response = [x for x in self.raw_response]

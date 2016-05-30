@@ -24,6 +24,11 @@ Notes:    ...
 #         restart.
 #       - Test with alarm set on pump
 #       - Test with pump reservoir empty
+#       - Simplify pump request structure
+#       - When the battery is low, the stick will not be able to communicate
+#         with the pump anymore; the script will say the pump does not appear
+#         to be in range (what is the use of readBatteryLevel then?)
+#       - Add all of the data in the buffer to the stick response
 
 
 
@@ -143,7 +148,8 @@ class Request:
         # Define asking attempt variable
         n = 0
 
-        # Ask stick if pump data is ready
+        # Ask stick if pump data is ready until it says a certain number of
+        # bytes are waiting in buffer
         while self.n_bytes_received == 0:
 
             # Update attempt variable
@@ -151,7 +157,7 @@ class Request:
 
             # Keep track of attempts
             if self.TALKATIVE:
-                print "Ask if pump data was received: " + str(n) + "/-"
+                print "Asking if pump data was received: " + str(n) + "/-"
 
             # Send request
             self.stick.sendRequest([3, 0, 0])
@@ -178,9 +184,11 @@ class Request:
         # until it is
         while self.n_bytes_received != self.n_bytes_expected:
 
-            # Verify connection with pump, quit if inexistent
+            # Verify connection with pump, quit if inexistent (this number of
+            # bytes means no data was received from pump)
             if self.n_bytes_received == 14:
-                sys.exit("Pump seems out of range... :-(")
+                sys.exit("Pump is either out of range, or will not take "
+                         "commands anymore because of low battery level... :-(")
 
             # Give user info
             if self.TALKATIVE:
@@ -206,11 +214,11 @@ class Request:
         RETRIEVE
         ========================================================================
         """
-
-        # Ask for pump data
+        
+        # Ask if some pump data was received
         self.ask()
 
-        # Verify pump data
+        # Verify if pump data corresponds to expectations
         self.verify()
 
         # Give user info
@@ -223,17 +231,39 @@ class Request:
         # Build said packet
         self.packet.extend([12,
                             0,
-                            lib.getByte(self.n_bytes_received, 1),
-                            lib.getByte(self.n_bytes_received, 0)])
+                            lib.getByte(self.n_bytes_expected, 1),
+                            lib.getByte(self.n_bytes_expected, 0)])
         self.packet.append(lib.computeCRC8(self.packet))
 
-        # Send request
-        self.stick.sendRequest(self.packet)
+        # Initialize pump response vectors for all formats
+        self.response = []
+        self.response_hex = []
+        self.response_str = []
 
-        # Store pump data in all formats
-        self.response = self.stick.response
-        self.response_hex = self.stick.response_hex
-        self.response_str = self.stick.response_str
+        # Download pump data on stick until the buffer has been emptied
+        # FIXME Do not hardcode!
+        for i in range(3):
+
+            # Download pump data by sending packet to stick
+            self.send()
+
+            # Fill the pump response vectors with the new response
+            self.response.append(self.stick.response)
+            self.response_hex.append(self.stick.response_hex)
+            self.response_str.append(self.stick.response_str)
+
+        # If user is looking to download pump history, there will be more
+        #if self.n_bytes_expected == 206:
+
+            #for i in range(2):
+
+                # Resend download request
+                #self.send()
+
+                # Store pump data in all formats
+                #self.response = self.stick.response
+                #self.response_hex = self.stick.response_hex
+                #self.response_str = self.stick.response_str
 
 
 
@@ -254,7 +284,7 @@ class Request:
         # Send said packet over stick to pump
         self.send()
 
-        # If data was request, retrieve it
+        # If data was requested, retrieve it
         if self.n_bytes_expected > 0:
 
             # Retrieve pump data
@@ -798,7 +828,7 @@ class Pump:
         #code_size = 1
         #head_size = 4
         #date_size = 5
-        #body_size = 64 - code_size - head_size - date_size
+        #body_size = 15 - code_size - head_size - date_size
 
         # Create pump request
         self.request = Request()
@@ -810,10 +840,10 @@ class Pump:
         self.request.define(info = "Reading bolus history...",
                             power = 0,
                             attempts = 2,
-                            pages = 1, #16
+                            pages = 2, # 2 means larger data exchange
                             code = 128,
-                            parameters = [],
-                            n_bytes_expected = 78,
+                            parameters = [0], # 0 equals most recent page
+                            n_bytes_expected = 206,
                             sleep = 0,
                             sleep_reason = None)
 
@@ -821,9 +851,23 @@ class Pump:
         self.request.make()
 
         # Extract boluses from pump history
-        bolus = {"Programmed" : self.request.response[14] / self.STROKE_SIZE,
-                 "Amount" : self.request.response[15] / self.STROKE_SIZE,
-                 "Duration" : self.request.response[16] * self.TIME_BLOCK}
+        bolus = {"Programmed" : self.request.response[1] / self.STROKE_SIZE,
+                 "Amount" : self.request.response[2] / self.STROKE_SIZE,
+                 "Duration" : self.request.response[3] * self.TIME_BLOCK}
+
+        #second = self.request.response.date[0] & 63
+        #minute = self.request.response.date[1] & 63
+        #hour = self.request.response.date[2] & 31
+        #day = self.request.response.date[3] & 31
+        #month = ((self.request.response.date[0] & 192) >> 4) | ((self.request.response.date[1] & 192) >> 6)
+        #year = (self.request.response.date[4] & 127) + 2000
+
+        #second = x[0] & 63
+        #minute = x[1] & 63
+        #hour = x[2] & 31
+        #day = x[3] & 31
+        #month = ((x[0] & 192) >> 4) | ((x[1] & 192) >> 6)
+        #year = (x[4] & 127) + 2000
 
         # Give user info
         print "Bolus: " + str(bolus)
@@ -1136,45 +1180,48 @@ def main():
     # Start dialogue pump
     pump.start()
 
+    # Read bolus history of pump
+    #pump.readTime()
+
     # Read pump model
-    pump.readModel()
+    #pump.readModel()
 
     # Read pump firmware version
-    pump.readFirmwareVersion()
-
-    # Read bolus history of pump
-    pump.readTime()
+    #pump.readFirmwareVersion()
 
     # Read battery level of pump
     pump.readBatteryLevel()
 
     # Read remaining amount of insulin in pump
-    pump.readReservoirLevel()
-
-    # Send bolus to pump
-    pump.deliverBolus(0.5)
-
-    # Read daily totals on pump
-    pump.readDailyTotals()
+    #pump.readReservoirLevel()
 
     # Read pump status
-    pump.readStatus()
+    #pump.readStatus()
 
     # Read pump settings
-    pump.readSettings()
+    #pump.readSettings()
+
+    # Read daily totals on pump
+    #pump.readDailyTotals()
+
+    # Read bolus history on pump
+    pump.readBolusHistory()
+
+    # Send bolus to pump
+    #pump.deliverBolus(0.5)
 
     # Send temporary basal to pump
-    pump.setTemporaryBasal(4.1, "U/h", 150)
-    pump.setTemporaryBasal(50, "%", 60)
+    #pump.setTemporaryBasal(4.1, "U/h", 150)
+    #pump.setTemporaryBasal(50, "%", 60)
 
     # Suspend pump activity
-    pump.suspend()
+    #pump.suspend()
 
     # Resume pump activity
-    pump.resume()
+    #pump.resume()
 
     # Push button on pump
-    pump.pushButton("DOWN")
+    #pump.pushButton("DOWN")
 
     # Stop dialogue with pump
     pump.stop()
