@@ -22,6 +22,8 @@ Notes:    ...
 #         issued.
 #       - Get manually issued bolus, in order for the loop to know when to stop/
 #         restart.
+#       - Test with alarm set on pump
+#       - Test with pump reservoir empty
 
 
 
@@ -276,10 +278,10 @@ class Pump:
     SESSION_TIME        = 5      # Time (m) for which pump will listen to RFs
     EXECUTION_TIME      = 5      # Time (s) needed for pump command execution
     STROKE_SIZE         = 0.1    # Pump stroke (U)
+    TIME_BLOCK          = 30     # Time block (m) used by pump
     BOLUS_DELIVERY_RATE = 40.0   # Bolus delivery rate (s/U)
     BOLUS_EXTRA_TIME    = 7.5    # Ensure bolus was completely given
     BASAL_FACTOR        = 40.0   # Conversion of bolus rate to bytes
-    BASAL_TIME_BLOCK    = 30     # Time block (m) for temporary basals
     VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
     BUTTONS             = {"EASY" : 0,
                            "ESC"  : 1,
@@ -784,13 +786,47 @@ class Pump:
 
 
 
-    def readBolus(self):
+    def readBolusHistory(self):
 
         """
         ========================================================================
-        READBOLUS
+        READBOLUSHISTORY
         ========================================================================
         """
+
+        #code = 1
+        #code_size = 1
+        #head_size = 4
+        #date_size = 5
+        #body_size = 64 - code_size - head_size - date_size
+
+        # Create pump request
+        self.request = Request()
+
+        # Give pump request a link to stick
+        self.request.link(stick = self.stick)
+
+        # Define pump request
+        self.request.define(info = "Reading bolus history...",
+                            power = 0,
+                            attempts = 2,
+                            pages = 1, #16
+                            code = 128,
+                            parameters = [],
+                            n_bytes_expected = 78,
+                            sleep = 0,
+                            sleep_reason = None)
+
+        # Make pump request
+        self.request.make()
+
+        # Extract boluses from pump history
+        bolus = {"Programmed" : self.request.response[14] / self.STROKE_SIZE,
+                 "Amount" : self.request.response[15] / self.STROKE_SIZE,
+                 "Duration" : self.request.response[16] * self.TIME_BLOCK}
+
+        # Give user info
+        print "Bolus: " + str(bolus)
 
 
 
@@ -1024,13 +1060,13 @@ class Pump:
             code = 76
             parameters = [0,
                           int(rate * self.BASAL_FACTOR),
-                          int(duration / self.BASAL_TIME_BLOCK)]
+                          int(duration / self.TIME_BLOCK)]
 
         # If request is for temporary basal in percentage
         elif units == "%":
             code = 105
             parameters = [int(rate),
-                          int(duration / self.BASAL_TIME_BLOCK)]
+                          int(duration / self.TIME_BLOCK)]
 
         # Define rest of pump request
         self.request.define(info = "Setting temporary basal: " +
