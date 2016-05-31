@@ -869,6 +869,8 @@ class Pump:
         # Download pump history
         self.readHistory(n_pages = n_pages)
 
+        print self.history
+
         # Define parameters to parse history pages when looking for boluses
         payload_code = 1
         payload_size = 9
@@ -888,7 +890,7 @@ class Pump:
                 # Extract time at which bolus was delivered
                 bolus_time = lib.parseTime(self.history[i + 4 : i + 9])
 
-                # Test proof the bolus by looking closer at its time of delivery
+                # Test proof the bolus by looking closer at its delivery time
                 try:
 
                     # Build datetime object
@@ -904,7 +906,8 @@ class Pump:
                                  bolus_time, "%Y.%m.%d - %H:%M:%S")
 
                     # Give user info
-                    print "Bolus read: " + str(bolus) + " @ " + str(bolus_time)
+                    print ("Bolus read: " + str(bolus) +
+                           "U (" + str(bolus_time) + ")")
 
                     # Add bolus to insulin report
                     self.reporter.addBolusEntry(bolus = bolus,

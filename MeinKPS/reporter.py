@@ -107,7 +107,7 @@ class Reporter:
             insulin_report = json.load(f)
 
         # Look if entry is already in report
-        if bolus_time in insulin_report:
+        if bolus_time in insulin_report["Boluses"]:
 
             # Give user info
             print "Bolus already saved."
@@ -116,7 +116,7 @@ class Reporter:
         else:
 
             # Give user info
-            print "New bolus: " + str(bolus) + " @ " + str(bolus_time)
+            print "New bolus: " + str(bolus) + "U (" + str(bolus_time) + ")"
             print "Saving bolus..."
 
             insulin_report["Boluses"][bolus_time] = bolus
