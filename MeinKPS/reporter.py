@@ -88,6 +88,40 @@ class Reporter:
 
 
 
+    def getEntry(self, report_name, entry_type, entry_key):
+
+        """
+        ========================================================================
+        GETENTRY
+        ========================================================================
+        """
+
+        # Load report
+        with open("Reports/" + report_name + ".json", "r") as f:
+            report = json.load(f)
+
+        # Look if entry exists
+        if entry_key in report[entry_type]:
+
+            # Get entry matching the key
+            entry = report[entry_type][entry_key]
+
+            # Give user info
+            print ("Entry found in '" + report_name + ".json': " +
+                   str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
+
+            # Return entry for external access
+            return entry
+
+        # Otherwise
+        else:
+
+            # Give user info
+            print ("No matching entry found in '" + report_name + ".json': " +
+                   str(entry_type) + ", " + str(entry_key) + ", ?")
+
+
+
     def printEntries(self, report):
 
         """
