@@ -20,6 +20,19 @@ Notes:    ...
 
 
 
+# TERMINOLOGY
+# - BG: Blood glucose [mmol/l]
+# - TB: Temporary basal (rate) [U/h]
+# - ICF: Insulin to carbs factors [U/(15g)]
+# - ISF: Insulin sensitivity factors [(mmol/l)/U]
+# - DIA: Duration of insulin action [h]
+# - IOB: Insulin on board [U]
+# - COB: Carbs on board [g]
+# - BG Maximal Rate: Maximal allowed BG rate [(mmol/l)/h]
+# - BG Time Interval: Time interval between two BG readings [m]
+
+
+
 # LIBRARIES
 import os
 import sys
@@ -37,7 +50,7 @@ class Reporter:
 
 
 
-    def addEntry(self):
+    def addEntry(self, report_name, entry_type, entry_key, entry):
 
         """
         ========================================================================
@@ -45,9 +58,37 @@ class Reporter:
         ========================================================================
         """
 
+        # Load report
+        with open("Reports/" + report_name + ".json", "r") as f:
+            report = json.load(f)
+
+        # Look if entry is not already in report
+        if entry_key in report[entry_type]:
+
+            # Give user info
+            print ("Entry already exists in '" + report_name + ".json':" +
+                   str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
+
+        # If not, write it down
+        else:
+
+            # Give user info
+            print ("New entry for '" + report_name + ".json':" +
+                   str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
+
+            # Add entry to report
+            report[entry_type][entry_key] = entry
+
+            # Rewrite report
+            with open("Reports/" + report_name + ".json", "w") as f:
+                json.dump(report, f,
+                          indent = 4,
+                          separators = (",", ": "),
+                          sort_keys = True)
 
 
-    def printEntries(self):
+
+    def printEntries(self, report):
 
         """
         ========================================================================
@@ -55,112 +96,54 @@ class Reporter:
         ========================================================================
         """
 
-        # Load reports
-        with open("Reports/insulin.json", "r") as f:
-            insulin_report = json.load(f)
+        # Load report
+        with open("Reports/" + report + ".json", "r") as f:
+            report = json.load(f)
 
         # Print report entries
-        print insulin_report
+        print report
 
 
 
-    def addReservoirLevelEntry(self):
-
-        """
-        ========================================================================
-        ADDRESERVOIRLEVELENTRY
-        ========================================================================
-        """
-
-        # Load report
-        with open("Reports/pump.json", "r") as f:
-            insulin_report = json.load(f)
-
-        # ...
-        for i in range(4):
-            time.sleep(1)
-
-            now = datetime.datetime.now()
-            now_str = datetime.datetime.strftime(now, "%Y.%m.%d - %H:%M:%S")
-
-            level = i * 4.5
-
-            insulin_report["Reservoir Levels"][now_str] = level
-
-        # Save to file
-        with open("Reports/pump.json", "w") as f:
-            json.dump(insulin_report, f,
-                      indent = 4, separators = (",", ": "), sort_keys = True)
-
-
-
-    def addBolusEntry(self, bolus, bolus_time):
+    def addReservoirLevel(self):
 
         """
         ========================================================================
-        ADDBOLUSENTRY
+        ADDRESERVOIRLEVEL
         ========================================================================
         """
 
-        # Load report
-        with open("Reports/insulin.json", "r") as f:
-            insulin_report = json.load(f)
-
-        # Look if entry is already in report
-        if bolus_time in insulin_report["Boluses"]:
-
-            # Give user info
-            print "Bolus already saved."
-
-        # If not, write it down
-        else:
-
-            # Give user info
-            print "New bolus: " + str(bolus) + "U (" + str(bolus_time) + ")"
-            print "Saving bolus..."
-
-            insulin_report["Boluses"][bolus_time] = bolus
-
-        # Save to file
-        with open("Reports/insulin.json", "w") as f:
-            json.dump(insulin_report, f,
-                      indent = 4,
-                      separators = (",", ": "),
-                      sort_keys = True)
+        # Add temporary basal entry
+        self.addEntry("pump", "Reservoir Levels",
+                      time, level)
 
 
 
-    def addTemporaryBasalEntry(self):
+    def addBolus(self, time, bolus):
 
         """
         ========================================================================
-        ADDTEMPORARYBASALENTRY
+        ADDBOLUS
         ========================================================================
         """
 
-        # Load report
-        with open("Reports/insulin.json", "r") as f:
-            insulin_report = json.load(f)
+        # Add bolus entry
+        self.addEntry("insulin", "Boluses",
+                      time, bolus)
 
-        # ...
-        for i in range(4):
-            time.sleep(1)
 
-            now = datetime.datetime.now()
-            now_str = datetime.datetime.strftime(now, "%Y.%m.%d - %H:%M:%S")
 
-            rate = i * 1.5
-            units = "U/h"
-            duration = i * 30
+    def addTemporaryBasal(self, time, rate, units, duration):
 
-            insulin_report["Temporary Basals"][now_str] = [rate,
-                                                           units,
-                                                           duration]
+        """
+        ========================================================================
+        ADDTEMPORARYBASAL
+        ========================================================================
+        """
 
-        # Save to file
-        with open("Reports/insulin.json", "w") as f:
-            json.dump(insulin_report, f,
-                      indent = 4, separators = (",", ": "), sort_keys = True)
+        # Add temporary basal entry
+        self.addEntry("insulin", "Temporary Basals",
+                      time, [rate, units, duration])
 
 
 
@@ -174,11 +157,6 @@ def main():
 
     # Instanciate a reporter for me
     reporter = Reporter()
-
-    # Add entries to reports
-    reporter.addReservoirLevelEntry()
-    reporter.addBolusEntry()
-    reporter.addTemporaryBasalEntry()
 
 
 
