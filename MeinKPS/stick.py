@@ -8,7 +8,7 @@ Title:    stick
 
 Author:   David Leclerc
 
-Version:  1.0
+Version:  1.1
 
 Date:     31.05.2016
 
@@ -33,7 +33,6 @@ import serial
 import os
 import sys
 import time
-import numpy as np
 
 
 
@@ -52,7 +51,6 @@ class Stick:
     N_BYTES          = 64
     SLEEP            = 0.1
     FREQUENCIES      = {0 : 916.5, 1 : 868.35, 255 : 916.5}
-    INTERFACES       = {1 : "Paradigm RF", 3 : "USB"}
 
 
 
@@ -114,6 +112,8 @@ class Stick:
         ========================================================================
         """
 
+        print
+
         # Store request
         self.request = request
 
@@ -165,38 +165,38 @@ class Stick:
         # Initialize reading attempt variable
         n = 0
 
-        # Ask for response from stick until we get a complete one
+        # Ask for response from stick until we get a full one
         while True:
 
             # Update reading attempt variable
             n += 1
 
-            # Give the stick a bit of time to breathe
-            time.sleep(self.SLEEP)
-
             # Keep track of number of attempts
             if self.TALKATIVE:
                 print "Attempt to read from stick: " + str(n) + "/-"
 
-            # Read response in stick buffer and append a vectorized a version of
-            # it to the stick response vector
-            self.response.append([x for x in self.handle.read(self.N_BYTES)])
+            # Read response in stick buffer, vectorize it, transform its
+            # bytes to decimal values, and store them
+            self.response.append([ord(x) for x in 
+                                  self.handle.read(self.N_BYTES)])
 
-            # Transform response bytes to decimals
-            self.response[-1] = [ord(x) for x in self.response[-1]]
+            # When response is full, exit loop
+            if ((sum([sum(x) for x in self.response]) != 0) &
+                (len(self.response[-1]) == 0)):
 
-            # Loop until we get all of response
-            if (sum([sum(x) for x in self.response]) != 0) & \
-               (sum(self.response[-1]) == 0):
-
-                # Give user info
-                if self.TALKATIVE:
-                    print "Read data from stick in " + str(n) + " attempt(s)."
-
-                # Exit loop
                 break
 
-        # Merge responses
+            # Otherwise, try again
+            else:
+
+                # Give the stick a bit of time to breathe before reading again
+                time.sleep(self.SLEEP)
+
+        # Give user info
+        if self.TALKATIVE:
+            print "Read data from stick in " + str(n) + " attempt(s)."
+
+        # Flatten full response
         self.response = [x for y in self.response for x in y]
 
 
@@ -243,7 +243,7 @@ class Stick:
         if self.TALKATIVE:
 
             # Print response
-            print "Response:"
+            print "Response: " + str(self.response)
 
             # Print formatted response
             for i in range(n_rows):
@@ -256,24 +256,20 @@ class Stick:
                 line_chr = "".join(self.response_chr[i * n_bytes :
                                                      (i + 1) * n_bytes])
 
-                # Define decimal line
-                line_dec = str(self.response[i * n_bytes : (i + 1) * n_bytes])
-
                 # On last line, some extra space may be needed
                 if (n_exceeding_bytes != 0) & (i == n_rows - 1):
 
                     # Define line
-                    line = (line_hex + (n_bytes - n_exceeding_bytes) * 5 * " " +
+                    line = (line_hex +
+                           (n_bytes - n_exceeding_bytes) * 5 * " " +
                             " " +
-                            line_chr + (n_bytes - n_exceeding_bytes) * " " +
-                            " " +
-                            line_dec)
+                            line_chr)
 
                 # First lines don't need extra space
                 else:
 
                     # Define line
-                    line = line_hex + " " + line_chr + " " + line_dec
+                    line = line_hex + " " + line_chr
 
                 # Print line
                 print line
@@ -310,9 +306,6 @@ class Stick:
         self.version = 1.00 * self.response[19:21][0] + \
                        0.01 * self.response[19:21][1]
 
-        # Extract interfaces used by stick from response
-        self.interfaces = np.trim_zeros(self.response[22:64], "b")
-
         # Print infos
         if self.TALKATIVE:
             print "ACK: " + str(self.ack)
@@ -321,7 +314,6 @@ class Stick:
             print "Radiofrequency: " + str(self.frequency) + " MHz"
             print "Description: " + self.description
             print "Version: " + str(self.version)
-            print "Interfaces: " + str(self.interfaces)
 
 
 
@@ -347,7 +339,7 @@ class Stick:
 
             # Keep track of attempts reading signal strength
             if self.TALKATIVE:
-                print "Look for sufficient signal strength: " + str(n) + "/-"
+                print "Looking for sufficient signal strength: " + str(n) + "/-"
 
             # Send request for stick signal strength
             self.sendRequest([6, 0, 0])
