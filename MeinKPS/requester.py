@@ -61,8 +61,15 @@ class Requester:
 
 
 
-    def define(self, info, power, attempts, pages, code, parameters,
-                     n_bytes_expected, sleep, sleep_reason):
+    def define(self, info = None,
+                     sleep = None,
+                     sleep_reason = None,
+                     n_bytes_expected = None,
+                     power = None,
+                     attempts = None,
+                     size = None,
+                     code = None,
+                     parameters = None):
 
         """
         ========================================================================
@@ -87,16 +94,14 @@ class Requester:
 
             # Store definition of request
             self.info = info
-            self.power = power
-            self.attempts = attempts
-            self.pages = pages
-            self.code = code
-            self.parameters = parameters
-            self.parameter_count = [128 | lib.getByte(len(parameters), 1),
-                                          lib.getByte(len(parameters), 0)]
-            self.n_bytes_expected = n_bytes_expected
             self.sleep = sleep
             self.sleep_reason = sleep_reason
+            self.n_bytes_expected = n_bytes_expected
+            self.power = power
+            self.attempts = attempts
+            self.size = size
+            self.code = code
+            self.parameters = parameters
 
         # If recipient is CGM
         elif self.recipient == "CGM":
@@ -137,10 +142,11 @@ class Requester:
             self.packet = []
             self.packet.extend(self.HEAD)
             self.packet.extend(self.ENCODED_SERIAL_NUMBER)
-            self.packet.extend(self.parameter_count)
+            self.packet.append(128 | lib.getByte(len(self.parameters), 1))
+            self.packet.append(lib.getByte(len(self.parameters), 0))
             self.packet.append(self.power)
             self.packet.append(self.attempts)
-            self.packet.append(self.pages)
+            self.packet.append(self.size)
             self.packet.append(0)
             self.packet.append(self.code)
             self.packet.append(lib.computeCRC8(self.packet))
@@ -155,13 +161,16 @@ class Requester:
 
 
 
-    def send(self):
+    def send(self, packet):
 
         """
         ========================================================================
         SEND
         ========================================================================
         """
+
+        # Store packet
+        self.packet = packet
 
         # Transform request packet to bytes
         self.packet = bytearray(self.packet)
@@ -185,47 +194,44 @@ class Requester:
         # Define asking attempt variable
         n = 0
 
-        # If recipient is stick
-        if self.recipient == "Stick":
+        # Ask recipient if data is ready
+        while self.n_bytes_received == 0:
 
-            pass
+            # Update attempt variable
+            n += 1
 
-        # If recipient is buffer
-        elif self.recipient == "Buffer":
+            # Keep track of attempts
+            if self.TALKATIVE:
+                print "Asking if data was received: " + str(n) + "/-"
 
-            # Ask stick if pump data is ready until it says a certain number of
-            # bytes are waiting in buffer
-            while self.n_bytes_received == 0:
+            # If recipient is stick
+            if self.recipient == "Stick":
 
-                # Update attempt variable
-                n += 1
+                pass
 
-                # Keep track of attempts
-                if self.TALKATIVE:
-                    print "Asking if pump data was received: " + str(n) + "/-"
+            # If recipient is buffer
+            elif self.recipient == "Buffer":
 
                 # Send request
-                self.stick.sendRequest([3, 0, 0])
+                self.send([3, 0, 0])
 
                 # Get size of response waiting in radio buffer
-                self.n_bytes_received = self.stick.response[7]
+                self.n_bytes_received = self.response[7] # FIXME
 
-                # Give user info
-                if self.TALKATIVE:
-                    print "Number of bytes found: " + \
-                          str(self.n_bytes_received)
-                    print "Expected number of bytes: " + \
-                          str(self.n_bytes_expected)
+            # If recipient is pump
+            elif self.recipient == "Pump":
 
-        # If recipient is pump
-        elif self.recipient == "Pump":
+                pass
 
-            pass
+            # If recipient is CGM
+            elif self.recipient == "CGM":
 
-        # If recipient is CGM
-        elif self.recipient == "CGM":
+                pass
 
-            pass
+        # Give user info
+        if self.TALKATIVE:
+            print "Number of bytes found: " + str(self.n_bytes_received)
+            print "Expected number of bytes: " + str(self.n_bytes_expected)
 
 
 
