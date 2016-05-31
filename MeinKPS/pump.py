@@ -229,41 +229,32 @@ class Request:
         self.packet = []
 
         # Build said packet
-        self.packet.extend([12,
-                            0,
-                            lib.getByte(self.n_bytes_expected, 1),
-                            lib.getByte(self.n_bytes_expected, 0)])
+        self.packet.extend([12, 0])
+        self.packet.append(lib.getByte(self.n_bytes_expected, 1))
+        self.packet.append(lib.getByte(self.n_bytes_expected, 0))
         self.packet.append(lib.computeCRC8(self.packet))
 
-        # Initialize pump response vectors for all formats
+        # Initialize pump response vectors
         self.response = []
         self.response_hex = []
-        self.response_str = []
+        self.response_chr = []
 
-        # Download pump data on stick until the buffer has been emptied
-        # FIXME Do not hardcode!
-        for i in range(3):
+        # Retrieve data until the end of it
+        while True:
 
             # Download pump data by sending packet to stick
             self.send()
 
-            # Fill the pump response vectors with the new response
-            self.response.append(self.stick.response)
-            self.response_hex.append(self.stick.response_hex)
-            self.response_str.append(self.stick.response_str)
+            # Store pump response in vectors
+            self.response.extend(self.stick.response)
+            self.response_hex.extend(self.stick.response_hex)
+            self.response_chr.extend(self.stick.response_chr)
 
-        # If user is looking to download pump history, there will be more
-        #if self.n_bytes_expected == 206:
+            # If the last digits, excluding the very last one, are zeros, then
+            # the download is complete
+            if sum(self.stick.response[-10:-1]) == 0:
 
-            #for i in range(2):
-
-                # Resend download request
-                #self.send()
-
-                # Store pump data in all formats
-                #self.response = self.stick.response
-                #self.response_hex = self.stick.response_hex
-                #self.response_str = self.stick.response_str
+                break
 
 
 
@@ -567,7 +558,7 @@ class Pump:
         self.request.make()
 
         # Extract pump model from received data
-        self.model = int("".join(self.request.response_str[14:17]))
+        self.model = int("".join(self.request.response_chr[14:17]))
 
         # Give user info
         print "Pump model: " + str(self.model)
@@ -603,9 +594,9 @@ class Pump:
         self.request.make()
 
         # Extract pump firmware from received data
-        self.firmware = ("".join(self.request.response_str[17:21]) +
+        self.firmware = ("".join(self.request.response_chr[17:21]) +
                          " " +
-                         "".join(self.request.response_str[21:24]))
+                         "".join(self.request.response_chr[21:24]))
 
         # Give user info
         print "Pump firmware version: " + self.firmware
@@ -824,11 +815,12 @@ class Pump:
         ========================================================================
         """
 
-        #code = 1
-        #code_size = 1
-        #head_size = 4
-        #date_size = 5
-        #body_size = 15 - code_size - head_size - date_size
+        # Define parameters to parse history pages when looking for boluses
+        bolus_code_size = 1
+        bolus_date_size = 5
+        bolus_body_size = 0
+
+        bolus_code = 1
 
         # Create pump request
         self.request = Request()
@@ -837,7 +829,7 @@ class Pump:
         self.request.link(stick = self.stick)
 
         # Define pump request
-        self.request.define(info = "Reading bolus history...",
+        self.request.define(info = "Reading pump history...",
                             power = 0,
                             attempts = 2,
                             pages = 2, # 2 means larger data exchange
@@ -850,27 +842,16 @@ class Pump:
         # Make pump request
         self.request.make()
 
+        # PARSING
+        
+
         # Extract boluses from pump history
-        bolus = {"Programmed" : self.request.response[1] / self.STROKE_SIZE,
-                 "Amount" : self.request.response[2] / self.STROKE_SIZE,
-                 "Duration" : self.request.response[3] * self.TIME_BLOCK}
-
-        #second = self.request.response.date[0] & 63
-        #minute = self.request.response.date[1] & 63
-        #hour = self.request.response.date[2] & 31
-        #day = self.request.response.date[3] & 31
-        #month = ((self.request.response.date[0] & 192) >> 4) | ((self.request.response.date[1] & 192) >> 6)
-        #year = (self.request.response.date[4] & 127) + 2000
-
-        #second = x[0] & 63
-        #minute = x[1] & 63
-        #hour = x[2] & 31
-        #day = x[3] & 31
-        #month = ((x[0] & 192) >> 4) | ((x[1] & 192) >> 6)
-        #year = (x[4] & 127) + 2000
+        #bolus = {"Programmed" : self.request.response[1] / self.STROKE_SIZE,
+        #         "Amount" : self.request.response[2] / self.STROKE_SIZE,
+        #         "Duration" : self.request.response[3] * self.TIME_BLOCK}
 
         # Give user info
-        print "Bolus: " + str(bolus)
+        #print "Bolus: " + str(bolus)
 
 
 
@@ -1190,7 +1171,7 @@ def main():
     #pump.readFirmwareVersion()
 
     # Read battery level of pump
-    pump.readBatteryLevel()
+    #pump.readBatteryLevel()
 
     # Read remaining amount of insulin in pump
     #pump.readReservoirLevel()
@@ -1204,7 +1185,7 @@ def main():
     # Read daily totals on pump
     #pump.readDailyTotals()
 
-    # Read bolus history on pump
+    # Read history on pump
     pump.readBolusHistory()
 
     # Send bolus to pump
