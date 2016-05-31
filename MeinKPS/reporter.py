@@ -72,7 +72,7 @@ class Reporter:
         ========================================================================
         """
 
-        # Load reports
+        # Load report
         with open("Reports/pump.json", "r") as f:
             insulin_report = json.load(f)
 
@@ -94,7 +94,7 @@ class Reporter:
 
 
 
-    def addBolusEntry(self):
+    def addBolusEntry(self, bolus, bolus_time):
 
         """
         ========================================================================
@@ -102,25 +102,31 @@ class Reporter:
         ========================================================================
         """
 
-        # Load reports
+        # Load report
         with open("Reports/insulin.json", "r") as f:
             insulin_report = json.load(f)
 
-        # ...
-        for i in range(4):
-            time.sleep(1)
+        # Look if entry is already in report
+        if bolus_time in insulin_report:
 
-            now = datetime.datetime.now()
-            now_str = datetime.datetime.strftime(now, "%Y.%m.%d - %H:%M:%S")
+            # Give user info
+            print "Bolus already saved."
 
-            bolus = i * 5.0
+        # If not, write it down
+        else:
 
-            insulin_report["Boluses"][now_str] = bolus
+            # Give user info
+            print "New bolus: " + str(bolus) + " @ " + str(bolus_time)
+            print "Saving bolus..."
+
+            insulin_report["Boluses"][bolus_time] = bolus
 
         # Save to file
         with open("Reports/insulin.json", "w") as f:
             json.dump(insulin_report, f,
-                      indent = 4, separators = (",", ": "), sort_keys = True)
+                      indent = 4,
+                      separators = (",", ": "),
+                      sort_keys = True)
 
 
 
@@ -132,7 +138,7 @@ class Reporter:
         ========================================================================
         """
 
-        # Load reports
+        # Load report
         with open("Reports/insulin.json", "r") as f:
             insulin_report = json.load(f)
 

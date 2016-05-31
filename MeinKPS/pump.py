@@ -43,6 +43,7 @@ import datetime
 # USER LIBRARIES
 import lib
 import stick
+import reporter
 
 
 
@@ -322,6 +323,9 @@ class Pump:
 
         # Give user info
         print "Starting dialogue with pump..."
+
+        # Give the pump a reporter
+        self.reporter = reporter.Reporter()
 
         # Instanciate a stick to communicate with the pump
         self.stick = stick.Stick()
@@ -859,9 +863,8 @@ class Pump:
         ========================================================================
         """
 
-        # Download the most recent boluses on following number of pump history
-        # pages
-        n_pages = 2
+        # Download most recent boluses on first pump history page
+        n_pages = 1
 
         # Download pump history
         self.readHistory(n_pages = n_pages)
@@ -901,8 +904,11 @@ class Pump:
                                  bolus_time, "%Y.%m.%d - %H:%M:%S")
 
                     # Give user info
-                    print "Time: " + str(bolus_time)
-                    print "Bolus: " + str(bolus)
+                    print "Bolus read: " + str(bolus) + " @ " + str(bolus_time)
+
+                    # Add bolus to insulin report
+                    self.reporter.addBolusEntry(bolus = bolus,
+                                                bolus_time = bolus_time)
 
                 except ValueError:
 
