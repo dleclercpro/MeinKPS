@@ -29,8 +29,6 @@ def derivate(x_s, dt):
         ========================================================================
         DERIVATE
         ========================================================================
-
-        ...
         """
 
         # Vectorize input
@@ -46,14 +44,31 @@ def derivate(x_s, dt):
 
 
 
+def parseTime(x):
+
+        """
+        ========================================================================
+        PARSETIME
+        ========================================================================
+        """
+
+        second = x[0] & 63
+        minute = x[1] & 63
+        hour = x[2] & 31
+        day = x[3] & 31
+        month = ((x[0] & 192) >> 4) | ((x[1] & 192) >> 6)
+        year = (x[4] & 127) + 2000
+
+        return [year, month, day, hour, minute, second]
+
+
+
 def encodeSerialNumber(x):
 
         """
         ========================================================================
         ENCODESERIALNUMBER
         ========================================================================
-
-        ...
         """
 
         return [ord(i) for i in str(x).decode("HEX")]
@@ -67,7 +82,7 @@ def padHex(x):
         PADHEX
         ========================================================================
 
-        Pad an hexadecimal string with zeros
+        Pad an hexadecimal string with zeros.
         """
 
         return "0x" + x[2:].zfill(2)
@@ -99,8 +114,8 @@ def getByte(x, N):
         GETBYTE
         ========================================================================
 
-        This is a function that extracts the Nth byte of a number x.
-        1 byte = 8 bits = 256 states
+        This is a function that extracts the Nth byte of a number x (1 byte =
+        8 bits = 256 states).
         """
 
         return x / 256 ** N % 256
@@ -113,8 +128,6 @@ def computeCRC8(x):
         ========================================================================
         COMPUTECRC8
         ========================================================================
-
-        ...
         """
 
         # Define CRC8 lookup table
