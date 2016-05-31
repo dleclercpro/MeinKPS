@@ -230,20 +230,53 @@ class Stick:
         ========================================================================
         """
 
-        # Define number of rows [of 8 bytes] to be printed 
-        n_rows = len(self.response) / 8 + int(len(self.response) % 8 != 0)
+        # Define number of bytes to be printed in a row
+        n_bytes = 8
+
+        # Define exceeding bytes
+        n_exceeding_bytes = len(self.response) % n_bytes
+
+        # Define number of rows to be printed 
+        n_rows = len(self.response) / n_bytes + int(n_exceeding_bytes != 0)
 
         # Give user info
         if self.TALKATIVE:
 
             # Print response
-            print "Response: " + str(self.response)
+            print "Response:"
 
             # Print formatted response
             for i in range(n_rows):
-                print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
-                      "\t" + \
-                      "".join(self.response_chr[i * 8 : (i + 1) * 8])
+
+                # Define hexadecimal line
+                line_hex = " ".join(self.response_hex[i * n_bytes :
+                                                     (i + 1) * n_bytes])
+
+                # Define character line
+                line_chr = "".join(self.response_chr[i * n_bytes :
+                                                     (i + 1) * n_bytes])
+
+                # Define decimal line
+                line_dec = str(self.response[i * n_bytes : (i + 1) * n_bytes])
+
+                # On last line, some extra space may be needed
+                if (n_exceeding_bytes != 0) & (i == n_rows - 1):
+
+                    # Define line
+                    line = (line_hex + (n_bytes - n_exceeding_bytes) * 5 * " " +
+                            " " +
+                            line_chr + (n_bytes - n_exceeding_bytes) * " " +
+                            " " +
+                            line_dec)
+
+                # First lines don't need extra space
+                else:
+
+                    # Define line
+                    line = line_hex + " " + line_chr + " " + line_dec
+
+                # Print line
+                print line
 
 
 
