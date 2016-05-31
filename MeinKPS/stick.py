@@ -56,15 +56,15 @@ class Stick:
 
 
 
-    def getHandle(self):
+    def start(self):
 
         """
         ========================================================================
-        GETHANDLE
+        START
         ========================================================================
         """
 
-        # Generate serial port
+        # Add serial port
         os.system("modprobe --quiet --first-time usbserial"
             + " vendor=" + str(self.VENDOR)
             + " product=" + str(self.PRODUCT))
@@ -78,19 +78,6 @@ class Stick:
 
         # Open serial port
         self.handle.open()
-
-
-
-    def start(self):
-
-        """
-        ========================================================================
-        START
-        ========================================================================
-        """
-
-        # Generate USB serial handle for the stick
-        self.getHandle()
 
         # Ask for stick infos
         self.getInfos()
@@ -119,41 +106,6 @@ class Stick:
 
 
 
-    def emptyBuffer(self):
-
-        """
-        ========================================================================
-        EMPTYBUFFER
-        ========================================================================
-        """
-
-        # Tell user the buffer is going to be emptied
-        if self.TALKATIVE:
-            print "Emptying buffer..."
-
-        # Define emptying buffer attempt variable
-        n = 0
-
-        while len(self.raw_response) != 0:
-
-            # Update attempt variable
-            n += 1
-
-            # Read buffer
-            self.raw_response = self.handle.read(self.READ_BYTES)
-
-            # FIXME
-            if len(self.raw_response) != 0:
-                if self.TALKATIVE:
-                    print "Buffer content (" + str(n) + "/-):" + \
-                          str([ord(x) for x in self.raw_response])
-
-        # Give user info
-        if self.TALKATIVE:
-            print "Buffer emptied after " + str(n - 1) + " attempt(s)."
-
-
-
     def sendRequest(self, request):
 
         """
@@ -162,9 +114,31 @@ class Stick:
         ========================================================================
         """
 
+        # Store request
+        self.request = request
+
         # Print request to send to stick
         if self.TALKATIVE:
-            print "Sending request: " + str(request)
+            print "Sending request: " + str(self.request)
+
+        # Convert request to bytes for the stick
+        self.request = bytearray(self.request)
+
+        # Send request
+        self.handle.write(self.request)
+
+        # Read request response
+        self.readResponse()
+
+
+
+    def readResponse(self):
+
+        """
+        ========================================================================
+        READRESPONSE
+        ========================================================================
+        """
 
         # Initialize stick raw response
         self.raw_response = []
@@ -172,65 +146,38 @@ class Stick:
         # Initialize reading attempt variable
         n = 0
 
-        # Ask for response from stick until we get one
+        # Ask for response from stick until we get a complete one
         while True:
 
             # Update reading attempt variable
             n += 1
+
+            # Give the stick a bit of time to breathe
+            time.sleep(self.SLEEP)
 
             # Keep track of number of attempts
             if self.TALKATIVE:
                 print "Attempt to read from stick: " + str(n) + "/-"
 
-            # Send stick request
-            self.handle.write(bytearray(request))
-
-            # Wait a minimum of time before asking for response to request
-            time.sleep(self.SLEEP)
-
-            # Give user info
-            if self.TALKATIVE:
-                print "Storing raw response..."
-
-            # Read stick buffer and append its content to raw response vector
-            self.raw_response.append(self.handle.read(self.READ_BYTES))
-
-            # Once we get the first response, we can exit the loop
-            if len(self.raw_response[-1]) != 0:
-
-                break
-
-        # Look for a potential rest of response (response will sometimes exceed
-        # 64 bytes, for instance when downloading data from pump)
-        while True:
-
-            # Update reading attempt variable
-            n += 1
-
-            # Give user info
-            if self.TALKATIVE:
-                print "Storing rest of raw response..."
-
-            # Read stick buffer and append its content to raw response vector
+            # Read stick buffer and append its content to raw response
+            # vector
             self.raw_response.append(self.handle.read(self.READ_BYTES))
 
             # Once we got all of the response, we can exit the loop
-            if len(self.raw_response[-1]) == 0:
+            if (sum(np.sum(self.raw_response)) != 0) & \
+               (sum(self.raw_response[-1]) == 0)
+
+                # Give user info
+                if self.TALKATIVE:
+                    print "Read data from stick in " + str(n) + " attempt(s)."
 
                 break
-
-        # Give user info
-        if self.TALKATIVE:
-            print "Read data from stick in " + str(n) + " attempt(s)."
 
         # Parse response of stick
         self.parseResponse()
 
         # Print stick response in readable formats
         self.printResponse()
-
-        # Empty buffer for the next request
-        self.emptyBuffer()
 
 
 
@@ -301,26 +248,14 @@ class Stick:
         # Send request for stick infos
         self.sendRequest([4, 0, 0])
 
-        # Extract ACK
+        # Extract stick infos from response
         self.ack = self.response[0]
-
-        # Extract status
         self.status = self.response_str[1]
-
-        # Extract serial number
         self.serial = "".join(x[2:] for x in self.response_hex[3:6])
-
-        # Extract radiofrequency
         self.frequency = self.FREQUENCIES[self.response[8]]
-
-        # Extract description of communication protocol
         self.description = "".join(self.response_str[9:19])
-
-        # Extract software version
         self.version = 1.00 * self.response[19:21][0] + \
                        0.01 * self.response[19:21][1]
-
-        # Extract interfaces
         self.interfaces = np.trim_zeros(self.response[22:64], "b")
 
         # Print infos
