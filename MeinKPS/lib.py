@@ -60,11 +60,11 @@ def encodeSerialNumber(x):
 
 
 
-def padHexadecimal(x):
+def padHex(x):
 
         """
         ========================================================================
-        PADHEXADECIMAL
+        PADHEX
         ========================================================================
 
         Pad an hexadecimal string with zeros

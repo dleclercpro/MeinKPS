@@ -10,7 +10,7 @@ Author:   David Leclerc
 
 Version:  1.0
 
-Date:     27.05.2016
+Date:     31.05.2016
 
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -49,7 +49,7 @@ class Stick:
     VENDOR           = 0x0a21
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
-    READ_BYTES       = 64
+    N_BYTES          = 64
     SLEEP            = 0.1
     FREQUENCIES      = {0 : 916.5, 1 : 868.35, 255 : 916.5}
     INTERFACES       = {1 : "Paradigm RF", 3 : "USB"}
@@ -128,7 +128,26 @@ class Stick:
         self.handle.write(self.request)
 
         # Read request response
+        self.getResponse()
+
+
+
+    def getResponse(self):
+
+        """
+        ========================================================================
+        GETRESPONSE
+        ========================================================================
+        """
+
+        # Read response on stick
         self.readResponse()
+
+        # Format response
+        self.formatResponse()
+
+        # Print response in readable formats
+        self.printResponse()
 
 
 
@@ -140,8 +159,8 @@ class Stick:
         ========================================================================
         """
 
-        # Initialize stick raw response
-        self.raw_response = []
+        # Initialize stick response vector
+        self.response = []
 
         # Initialize reading attempt variable
         n = 0
@@ -159,57 +178,47 @@ class Stick:
             if self.TALKATIVE:
                 print "Attempt to read from stick: " + str(n) + "/-"
 
-            # Read stick buffer and append its content to raw response
-            # vector
-            self.raw_response.append(self.handle.read(self.READ_BYTES))
+            # Read response in stick buffer and append a vectorized a version of
+            # it to the stick response vector
+            self.response.append([x for x in self.handle.read(self.N_BYTES)])
 
-            # Once we got all of the response, we can exit the loop
-            if (sum(np.sum(self.raw_response)) != 0) & \
-               (sum(self.raw_response[-1]) == 0)
+            # Transform response bytes to decimals
+            self.response[-1] = [ord(x) for x in self.response[-1]]
+
+            # Loop until we get all of response
+            if (sum([sum(x) for x in self.response]) != 0) & \
+               (sum(self.response[-1]) == 0):
 
                 # Give user info
                 if self.TALKATIVE:
                     print "Read data from stick in " + str(n) + " attempt(s)."
 
+                # Exit loop
                 break
 
-        # Parse response of stick
-        self.parseResponse()
-
-        # Print stick response in readable formats
-        self.printResponse()
+        # Merge responses
+        self.response = [x for y in self.response for x in y]
 
 
 
-    def parseResponse(self):
+    def formatResponse(self):
 
         """
         ========================================================================
-        PARSERESPONSE
+        FORMATRESPONSE
         ========================================================================
         """
 
         # Give user info
         if self.TALKATIVE:
-            print "Parsing raw response..."
+            print "Formatting response..."
 
-        # Purge raw response vector of empty responses
-        # FIXME
+        # Format response to padded hexadecimals
+        self.response_hex = [lib.padHex(hex(x)) for x in self.response]
 
-        # Vectorize raw response
-        self.response = [x for x in self.raw_response]
-
-        # Convert stick response to various formats for more convenience
-        self.response = np.vectorize(ord)(self.response)
-        self.response_hex = np.vectorize(hex)(self.response)
-        self.response_str = np.vectorize(chr)(self.response)
-
-        # Pad hexadecimal formatted response
-        self.response_hex = np.vectorize(lib.padHexadecimal)(self.response_hex)
-
-        # Correct unreadable characters in string stick response
-        self.response_str[self.response < 32] = "."
-        self.response_str[self.response > 126] = "."
+        # Format response to readable characters
+        self.response_chr = ["." if (x < 32) | (x > 126)
+                                 else chr(x) for x in self.response]
 
 
 
@@ -224,16 +233,17 @@ class Stick:
         # Define number of rows [of 8 bytes] to be printed 
         n_rows = len(self.response) / 8 + int(len(self.response) % 8 != 0)
 
-        # Print response
+        # Give user info
         if self.TALKATIVE:
+
+            # Print response
             print "Response: " + str(self.response)
 
-        # Print hexadecimal and string responses
-        if self.TALKATIVE:
+            # Print formatted response
             for i in range(n_rows):
                 print " ".join(self.response_hex[i * 8 : (i + 1) * 8]) + \
                       "\t" + \
-                      "".join(self.response_str[i * 8 : (i + 1) * 8])
+                      "".join(self.response_chr[i * 8 : (i + 1) * 8])
 
 
 
@@ -248,14 +258,26 @@ class Stick:
         # Send request for stick infos
         self.sendRequest([4, 0, 0])
 
-        # Extract stick infos from response
+        # Extract response ACK
         self.ack = self.response[0]
-        self.status = self.response_str[1]
+
+        # Extract response status
+        self.status = self.response_chr[1]
+
+        # Extract stick serial from response
         self.serial = "".join(x[2:] for x in self.response_hex[3:6])
+
+        # Extract frequency used by stick from response
         self.frequency = self.FREQUENCIES[self.response[8]]
-        self.description = "".join(self.response_str[9:19])
+
+        # Extract description of stick from response
+        self.description = "".join(self.response_chr[9:19])
+
+        # Extract firmware version of stick from response
         self.version = 1.00 * self.response[19:21][0] + \
                        0.01 * self.response[19:21][1]
+
+        # Extract interfaces used by stick from response
         self.interfaces = np.trim_zeros(self.response[22:64], "b")
 
         # Print infos
@@ -281,7 +303,7 @@ class Stick:
         # Initialize signal strength
         self.signal = 0
 
-        # Define reading signal strength attempt variable
+        # Initialize reading signal strength attempt variable
         n = 0
 
         # Loop until signal found is sufficiently strong
