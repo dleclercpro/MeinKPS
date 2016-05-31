@@ -33,6 +33,7 @@ import serial
 import os
 import sys
 import time
+import datetime
 
 
 
@@ -104,7 +105,7 @@ class Stick:
 
 
 
-    def sendRequest(self, request):
+    def sendRequest(self, packet):
 
         """
         ========================================================================
@@ -112,18 +113,18 @@ class Stick:
         ========================================================================
         """
 
-        # Store request
-        self.request = request
+        # Store request packet
+        self.packet = packet
 
-        # Print request to send to stick
+        # Print request packet to send to stick
         if self.TALKATIVE:
-            print "Sending request: " + str(self.request)
+            print "Sending request: " + str(self.packet)
 
-        # Convert request to bytes for the stick
-        self.request = bytearray(self.request)
+        # Convert request packet to bytes for the stick
+        self.packet = bytearray(self.packet)
 
-        # Send request
-        self.handle.write(self.request)
+        # Send request packet
+        self.handle.write(self.packet)
 
         # Read request response
         self.getResponse()
@@ -171,7 +172,7 @@ class Stick:
 
             # Keep track of number of attempts
             if self.TALKATIVE:
-                print "Attempt to read from stick: " + str(n) + "/-"
+                print "Reading from stick: " + str(n) + "/-"
 
             # Read response in stick buffer, vectorize it, transform its
             # bytes to decimal values, and store them

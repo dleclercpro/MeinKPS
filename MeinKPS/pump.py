@@ -13,7 +13,9 @@ License:  GNU General Public License, Version 3
 Overview: This is a script that contains a handful of commands that can be sent
           wirelessly to a Medtronic RF Paradigm pump through a Carelink USB
           stick. Please use carefully!
-Notes:    ...
+Notes:    - When the battery is low, the stick will not be able to communicate
+            with the pump anymore; the script will say the pump does not appear
+            to be in range
 ================================================================================
 """
 
@@ -24,11 +26,9 @@ Notes:    ...
 #         restart.
 #       - Test with alarm set on pump
 #       - Test with pump reservoir empty
-#       - Simplify pump request structure
-#       - When the battery is low, the stick will not be able to communicate
-#         with the pump anymore; the script will say the pump does not appear
-#         to be in range (what is the use of readBatteryLevel then?)
+#       - Simplify pump request structure (see requester.py)
 #       - Add all of the data in the buffer to the stick response
+#       - Deal with timezones, DST, year switch
 
 
 
@@ -36,7 +36,7 @@ Notes:    ...
 import os
 import sys
 import time
-import numpy as np
+import datetime
 
 
 
@@ -69,7 +69,7 @@ class Request:
 
 
 
-    def define(self, info, power, attempts, pages, code, parameters,
+    def define(self, info, power, attempts, size, code, parameters,
                n_bytes_expected, sleep, sleep_reason):
 
         """
@@ -82,7 +82,7 @@ class Request:
         self.info = info
         self.power = power
         self.attempts = attempts
-        self.pages = pages
+        self.size = size
         self.code = code
         self.parameters = parameters
         self.parameter_count = [128 | lib.getByte(len(parameters), 1),
@@ -110,7 +110,7 @@ class Request:
         self.packet.extend(self.parameter_count)
         self.packet.append(self.power)
         self.packet.append(self.attempts)
-        self.packet.append(self.pages)
+        self.packet.append(self.size)
         self.packet.append(0)
         self.packet.append(self.code)
         self.packet.append(lib.computeCRC8(self.packet))
@@ -125,8 +125,6 @@ class Request:
         ========================================================================
         SEND
         ========================================================================
-
-        Send request to pump
         """
 
         # Send pump request over stick
@@ -251,8 +249,8 @@ class Request:
             self.response_chr.extend(self.stick.response_chr)
 
             # If the last digits, excluding the very last one, are zeros, then
-            # the download is complete
-            if sum(self.stick.response[-10:-1]) == 0:
+            # the requested data has been downloaded
+            if sum(self.stick.response[-6:-1]) == 0:
 
                 break
 
@@ -371,7 +369,7 @@ class Pump:
                                    str(self.SESSION_TIME) + "m",
                             power = 85,
                             attempts = 0,
-                            pages = 0,
+                            size = 0,
                             code = 93,
                             parameters = [1, self.SESSION_TIME],
                             n_bytes_expected = 0,
@@ -404,7 +402,7 @@ class Pump:
         self.request.define(info = "Suspending pump activity...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 77,
                             parameters = [1],
                             n_bytes_expected = 0,
@@ -436,7 +434,7 @@ class Pump:
         self.request.define(info = "Resuming pump activity...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 77,
                             parameters = [0],
                             n_bytes_expected = 0,
@@ -468,7 +466,7 @@ class Pump:
         self.request.define(info = "Pushing button: " + button,
                             power = 0,
                             attempts = 1,
-                            pages = 0,
+                            size = 0,
                             code = 91,
                             parameters = [int(self.BUTTONS[button])],
                             n_bytes_expected = 0,
@@ -500,7 +498,7 @@ class Pump:
         self.request.define(info = "Reading pump time...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 112,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -511,21 +509,22 @@ class Pump:
         self.request.make()
 
         # Extract pump time from received data
-        self.second = self.request.response[15]
-        self.minute = self.request.response[14]
-        self.hour = self.request.response[13]
-        self.day = self.request.response[19]
-        self.month = self.request.response[18]
-        self.year = (lib.getByte(self.request.response[16], 0) * 256 |
+        second = self.request.response[15]
+        minute = self.request.response[14]
+        hour = self.request.response[13]
+        day = self.request.response[19]
+        month = self.request.response[18]
+        year = (lib.getByte(self.request.response[16], 0) * 256 |
                      lib.getByte(self.request.response[17], 0))
 
+        # Generate time object
+        time = datetime.datetime(year, month, day, hour, minute, second)
+
+        # Store formatted time
+        self.time = datetime.datetime.strftime(time, "%Y.%m.%d - %H:%M:%S")
+
         # Give user info
-        print "Pump time: " + (str(self.day).zfill(2) + "." +
-                               str(self.month).zfill(2) + "." +
-                               str(self.year).zfill(2) + " " +
-                               str(self.hour).zfill(2) + ":" +
-                               str(self.minute).zfill(2) + ":" +
-                               str(self.second).zfill(2))
+        print "Pump time: " + self.time
 
 
 
@@ -547,7 +546,7 @@ class Pump:
         self.request.define(info = "Reading pump model...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 141,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -583,7 +582,7 @@ class Pump:
         self.request.define(info = "Reading pump firmware version...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 116,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -609,6 +608,9 @@ class Pump:
         ========================================================================
         READBATTERYLEVEL
         ========================================================================
+
+        Note: not very useful, since the pump won't respond anymore when the
+              battery level is considered to be low...
         """
 
         # Create pump request
@@ -621,7 +623,7 @@ class Pump:
         self.request.define(info = "Reading battery level...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 114,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -664,7 +666,7 @@ class Pump:
         self.request.define(info = "Reading amount of insulin left...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 115,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -702,7 +704,7 @@ class Pump:
         self.request.define(info = "Reading pump status...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 206,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -740,7 +742,7 @@ class Pump:
         self.request.define(info = "Reading pump settings...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 192,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -763,6 +765,48 @@ class Pump:
 
 
 
+    def readHistory(self, n_pages):
+
+        """
+        ========================================================================
+        READHISTORY
+        ========================================================================
+        """
+
+        # Initialize pump history vector
+        self.history = []
+
+        # Download user-defined number of most recent pages of pump history
+        for i in range(n_pages):
+
+            # Give user info
+            print "Reading pump history page: " + str(i)
+
+            # Create pump request
+            self.request = Request()
+
+            # Give pump request a link to stick
+            self.request.link(stick = self.stick)
+
+            # Define pump request
+            self.request.define(info = "Reading pump history...",
+                                power = 0,
+                                attempts = 2,
+                                size = 2, # 2 means larger data exchange
+                                code = 128,
+                                parameters = [i], # 0 equals most recent page
+                                n_bytes_expected = 206,
+                                sleep = 0,
+                                sleep_reason = None)
+
+            # Make pump request
+            self.request.make()
+
+            # Extend known history of pump
+            self.history.extend(self.request.response)
+
+
+
     def readDailyTotals(self):
 
         """
@@ -781,7 +825,7 @@ class Pump:
         self.request.define(info = "Reading daily totals...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code  = 121,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -800,58 +844,71 @@ class Pump:
              lib.getByte(self.request.response[16], 0)) * self.STROKE_SIZE)
 
         # Give user info
-        print "Daily total of today: " + \
-              str(self.daily_total_today) + "U"
-        print "Daily total of yesterday: " + \
-              str(self.daily_total_yesterday) + "U"
+        print ("Daily totals of today: " +
+               str(self.daily_total_today) + "U")
+        print ("Daily totals of yesterday: " +
+               str(self.daily_total_yesterday) + "U")
 
 
 
-    def readBolusHistory(self):
+    def readBolus(self):
 
         """
         ========================================================================
-        READBOLUSHISTORY
+        READBOLUS
         ========================================================================
         """
+
+        # Download the most recent boluses on following number of pump history
+        # pages
+        n_pages = 2
+
+        # Download pump history
+        self.readHistory(n_pages = n_pages)
 
         # Define parameters to parse history pages when looking for boluses
-        bolus_code_size = 1
-        bolus_date_size = 5
-        bolus_body_size = 0
+        payload_code = 1
+        payload_size = 9
+        now = datetime.datetime.now()
 
-        bolus_code = 1
+        # Parse history page to find boluses
+        for i in range(len(self.history) - 1 - payload_size):
 
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
-        # Define pump request
-        self.request.define(info = "Reading pump history...",
-                            power = 0,
-                            attempts = 2,
-                            pages = 2, # 2 means larger data exchange
-                            code = 128,
-                            parameters = [0], # 0 equals most recent page
-                            n_bytes_expected = 206,
-                            sleep = 0,
-                            sleep_reason = None)
-
-        # Make pump request
-        self.request.make()
-
-        # PARSING
+            # Define bolus criteria
+            if ((self.history[i] == payload_code) &
+                (self.history[i + 1] == self.history[i + 2]) &
+                (self.history[i + 3] == 0)):
         
+                # Extract bolus from pump history
+                bolus = round(self.history[i + 1] * self.STROKE_SIZE, 1)
 
-        # Extract boluses from pump history
-        #bolus = {"Programmed" : self.request.response[1] / self.STROKE_SIZE,
-        #         "Amount" : self.request.response[2] / self.STROKE_SIZE,
-        #         "Duration" : self.request.response[3] * self.TIME_BLOCK}
+                # Extract time at which bolus was delivered
+                bolus_time = lib.parseTime(self.history[i + 4 : i + 9])
 
-        # Give user info
-        #print "Bolus: " + str(bolus)
+                # Test proof the bolus by looking closer at its time of delivery
+                try:
+
+                    # Build datetime object
+                    bolus_time = datetime.datetime(bolus_time[0],
+                                                   bolus_time[1],
+                                                   bolus_time[2],
+                                                   bolus_time[3],
+                                                   bolus_time[4],
+                                                   bolus_time[5])
+
+                    # Format bolus time
+                    bolus_time = datetime.datetime.strftime(
+                                 bolus_time, "%Y.%m.%d - %H:%M:%S")
+
+                    # Give user info
+                    print "Time: " + str(bolus_time)
+                    print "Bolus: " + str(bolus)
+
+                except ValueError:
+
+                    # Error with bolus time (probably bad CRC)
+                    print "Erroneous bolus time: " + str(bolus_time)
+                    print "Not saving bolus."
 
 
 
@@ -878,7 +935,7 @@ class Pump:
         self.request.define(info = "Sending bolus: " + str(bolus) + "U",
                             power = 0,
                             attempts = 0,
-                            pages = 1,
+                            size = 1,
                             code = 66,
                             parameters = [int(bolus / self.STROKE_SIZE)],
                             n_bytes_expected = 0,
@@ -910,7 +967,7 @@ class Pump:
         self.request.define(info = "Reading current temporary basal...",
                             power = 0,
                             attempts = 2,
-                            pages = 1,
+                            size = 1,
                             code = 152,
                             parameters = [],
                             n_bytes_expected = 78,
@@ -971,7 +1028,7 @@ class Pump:
                                    units,
                             power = 0,
                             attempts = 0,
-                            pages = 1,
+                            size = 1,
                             code = 104,
                             parameters = parameters,
                             n_bytes_expected = 0,
@@ -1100,7 +1157,7 @@ class Pump:
                                    str(duration) + "m)",
                             power = 0,
                             attempts = 0,
-                            pages = 1,
+                            size = 1,
                             code = code,
                             parameters = parameters,
                             n_bytes_expected = 0,
@@ -1162,7 +1219,7 @@ def main():
     pump.start()
 
     # Read bolus history of pump
-    #pump.readTime()
+    pump.readTime()
 
     # Read pump model
     #pump.readModel()
@@ -1186,7 +1243,7 @@ def main():
     #pump.readDailyTotals()
 
     # Read history on pump
-    pump.readBolusHistory()
+    pump.readBolus()
 
     # Send bolus to pump
     #pump.deliverBolus(0.5)
