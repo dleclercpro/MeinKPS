@@ -112,8 +112,6 @@ class Stick:
         ========================================================================
         """
 
-        print
-
         # Store request
         self.request = request
 
