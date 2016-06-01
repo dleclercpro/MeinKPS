@@ -4,21 +4,24 @@
 
 """
 ================================================================================
-Title:    pump
+Title:    requester
+
 Author:   David Leclerc
+
 Version:  0.1
-Date:     30.05.2016
+
+Date:     31.05.2016
+
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
+
 Overview: This is a script that defines the requester object, which is
           responsible for dealing with device requests, that is sending over
           or retrieving data from said devices.
+
 Notes:    ...
 ================================================================================
 """
-
-# TODO
-#   - "Prepare requester to send request to device X..."
 
 
 
@@ -26,30 +29,38 @@ Notes:    ...
 import os
 import sys
 import time
-import numpy as np
 
 
 
 # USER LIBRARIES
 import lib
-import stick
 
 
 
 class Requester:
 
     # REQUESTER CONSTANTS
-    TALKATIVE = True
+    VERBOSE = True
+    SLEEP   = 0.1
+    N_BYTES = 64
 
 
 
-    def link(self, recipient, handle):
+    def prepare(self, recipient = None,
+                      handle = None):
 
         """
         ========================================================================
-        LINK
+        PREPARE
         ========================================================================
         """
+
+        # Verify if requester can be properly prepared
+        if (recipient == None) | (handle == None):
+
+            # If user forgot to give required input, quit
+            sys.exit("Please define a request recipient as well as a handle " +
+                     "for the requester.")
 
         # Give requester the future recipient of its requests, that is the
         # device
@@ -62,9 +73,12 @@ class Requester:
 
 
     def define(self, info = None,
-                     sleep = None,
+                     packet = None,
+                     n_bytes_expected = 0,
+                     sleep = 0,
                      sleep_reason = None,
-                     n_bytes_expected = None,
+                     head = None,
+                     serial = None,
                      power = None,
                      attempts = None,
                      size = None,
@@ -77,41 +91,23 @@ class Requester:
         ========================================================================
         """
 
-        # If recipient is stick
-        if self.recipient == "Stick":
-
-            # Store definition of request
-            pass
-
-        # If recipient is buffer
-        elif self.recipient == "Buffer":
-
-            # Store definition of request
-            pass
-
-        # If recipient is pump
-        elif self.recipient == "Pump":
-
-            # Store definition of request
-            self.info = info
-            self.sleep = sleep
-            self.sleep_reason = sleep_reason
-            self.n_bytes_expected = n_bytes_expected
-            self.power = power
-            self.attempts = attempts
-            self.size = size
-            self.code = code
-            self.parameters = parameters
-
-        # If recipient is CGM
-        elif self.recipient == "CGM":
-
-            # Store definition of request
-            pass
+        # Store definition of request
+        self.info = info
+        self.packet = packet
+        self.n_bytes_expected = n_bytes_expected
+        self.sleep = sleep
+        self.sleep_reason = sleep_reason
+        self.head = head
+        self.serial = serial
+        self.power = power
+        self.attempts = attempts
+        self.size = size
+        self.code = code
+        self.parameters = parameters
 
 
 
-    def build(self):
+    def build(self, packet_type = None):
 
         """
         ========================================================================
@@ -119,49 +115,67 @@ class Requester:
         ========================================================================
         """
 
-        # If recipient is stick
-        if recipient == "Stick":
+        # If packet is normal
+        if packet_type == "Normal":
 
-            # Build request packet
-            pass
+            # If recipient is stick
+            if recipient == "Stick":
 
-        # If recipient is buffer
-        elif recipient == "Buffer":
+                # Build request packet
+                pass
 
-            # Build request packet
-            self.packet = []
-            self.packet.extend([12, 0])
-            self.packet.append(lib.getByte(self.n_bytes_expected, 1))
-            self.packet.append(lib.getByte(self.n_bytes_expected, 0))
-            self.packet.append(lib.computeCRC8(self.packet))
+            # If recipient is pump
+            elif recipient == "Pump":
 
-        # If recipient is pump
-        elif recipient == "Pump":
+                # Build request packet
+                self.packet = []
+                self.packet.extend(self.head)
+                self.packet.extend(self.serial)
+                self.packet.append(128 | lib.getByte(len(self.parameters), 1))
+                self.packet.append(lib.getByte(len(self.parameters), 0))
+                self.packet.append(self.power)
+                self.packet.append(self.attempts)
+                self.packet.append(self.size)
+                self.packet.append(0)
+                self.packet.append(self.code)
+                self.packet.append(lib.computeCRC8(self.packet))
+                self.packet.extend(self.parameters)
+                self.packet.append(lib.computeCRC8(self.parameters))
 
-            # Build request packet
-            self.packet = []
-            self.packet.extend(self.HEAD)
-            self.packet.extend(self.ENCODED_SERIAL_NUMBER)
-            self.packet.append(128 | lib.getByte(len(self.parameters), 1))
-            self.packet.append(lib.getByte(len(self.parameters), 0))
-            self.packet.append(self.power)
-            self.packet.append(self.attempts)
-            self.packet.append(self.size)
-            self.packet.append(0)
-            self.packet.append(self.code)
-            self.packet.append(lib.computeCRC8(self.packet))
-            self.packet.extend(self.parameters)
-            self.packet.append(lib.computeCRC8(self.parameters))
+            # If recipient is CGM
+            elif recipient == "CGM":
 
-        # If recipient is CGM
-        elif recipient == "CGM":
+                # Build request packet
+                pass
 
-            # Build request packet
-            pass
+        # If packet is meant for data downloading from device
+        elif packet_type == "Download":
+
+            # If recipient is stick
+            if recipient == "Stick":
+
+                # Build request packet
+                pass
+
+            # If recipient is pump
+            elif recipient == "Pump":
+
+                # Build request packet
+                self.packet = []
+                self.packet.extend([12, 0])
+                self.packet.append(lib.getByte(self.n_bytes_expected, 1))
+                self.packet.append(lib.getByte(self.n_bytes_expected, 0))
+                self.packet.append(lib.computeCRC8(self.packet))
+
+            # If recipient is CGM
+            elif recipient == "CGM":
+
+                # Build request packet
+                pass
 
 
 
-    def send(self, packet):
+    def send(self, packet = None):
 
         """
         ========================================================================
@@ -169,14 +183,168 @@ class Requester:
         ========================================================================
         """
 
-        # Store packet
-        self.packet = packet
+        # To pass a packet directly to device
+        if packet != None:
+
+            # Store packet
+            self.packet = packet
 
         # Transform request packet to bytes
         self.packet = bytearray(self.packet)
 
         # Send request packet to device
         self.handle.write(self.packet)
+
+
+
+    def get(self):
+
+        """
+        ========================================================================
+        GET
+        ========================================================================
+        """
+
+        # Read response on stick
+        self.read()
+
+        # Format response
+        self.format()
+
+        # Print response in readable formats (lines of 8 bytes)
+        self.show(n_bytes = 8)
+
+
+
+    def read(self):
+
+        """
+        ========================================================================
+        READ
+        ========================================================================
+        """
+
+        # Initialize response vector
+        self.response = []
+
+        # Initialize reading attempt variable
+        n = 0
+
+        # Ask for response from device until we get a full one
+        while True:
+
+            # Update reading attempt variable
+            n += 1
+
+            # Keep track of number of attempts
+            if self.VERBOSE:
+                print "Reading data from device: " + str(n) + "/-"
+
+            # Read raw request response from device
+            self.raw_response = self.handle.read(self.N_BYTES)
+
+            # Vectorize raw request response, transform its bytes to decimal
+            # values, and store them
+            self.response.append([ord(x) for x in self.raw_response])
+
+            # When response is full, exit loop # FIXME
+            if ((sum([sum(x) for x in self.response]) != 0) &
+                (len(self.response[-1]) == 0)):
+
+                break
+
+            # Otherwise, try again
+            else:
+
+                # Give the stick a bit of time to breathe before reading again
+                time.sleep(self.SLEEP)
+
+        # Give user info
+        if self.VERBOSE:
+            print "Read data from device in " + str(n) + " attempt(s)."
+
+        # Flatten full response
+        self.response = [x for y in self.response for x in y]
+
+
+
+    def format(self):
+
+        """
+        ========================================================================
+        FORMAT
+        ========================================================================
+        """
+
+        # Give user info
+        if self.VERBOSE:
+            print "Formatting response..."
+
+        # Format response to padded hexadecimals
+        self.response_hex = [lib.padHex(hex(x)) for x in self.response]
+
+        # Format response to readable characters
+        self.response_chr = ["." if (x < 32) | (x > 126)
+                                 else chr(x)
+                                 for x in self.response]
+
+
+
+    def show(self, n_bytes = 8):
+
+        """
+        ========================================================================
+        SHOW
+        ========================================================================
+        """
+
+        # Define exceeding bytes
+        n_exceeding_bytes = len(self.response) % n_bytes
+
+        # Define number of rows to be printed 
+        n_rows = len(self.response) / n_bytes + int(n_exceeding_bytes != 0)
+
+        # Give user info
+        if self.VERBOSE:
+
+            # Print response
+            print "Device response to precedent request: "
+
+            # Print formatted response
+            for i in range(n_rows):
+
+                # Define hexadecimal line
+                line_hex = " ".join(self.response_hex[i * n_bytes :
+                                                     (i + 1) * n_bytes])
+
+                # Define character line
+                line_chr = "".join(self.response_chr[i * n_bytes :
+                                                    (i + 1) * n_bytes])
+
+                # Define decimal line
+                line_dec = "".join(self.response[i * n_bytes :
+                                                (i + 1) * n_bytes])
+
+                # On last line, some extra space may be needed
+                if (i == n_rows - 1) & (n_exceeding_bytes != 0):
+
+                    # Define line
+                    line = (line_hex +
+                           (n_bytes - n_exceeding_bytes) * 5 * " " +
+                            " " +
+                            line_chr +
+                           (n_bytes - n_exceeding_bytes) * " " +
+                            " " +
+                            line_dec)
+
+                # First lines don't need extra space
+                else:
+
+                    # Define line
+                    line = line_hex + " " + line_chr + " " + line_dec
+
+                # Print line
+                print line
 
 
 
@@ -201,16 +369,16 @@ class Requester:
             n += 1
 
             # Keep track of attempts
-            if self.TALKATIVE:
+            if self.VERBOSE:
                 print "Asking if data was received: " + str(n) + "/-"
 
             # If recipient is stick
             if self.recipient == "Stick":
 
-                pass
+                break
 
-            # If recipient is buffer
-            elif self.recipient == "Buffer":
+            # If recipient is pump
+            elif self.recipient == "Pump":
 
                 # Send request
                 self.send([3, 0, 0])
@@ -218,18 +386,13 @@ class Requester:
                 # Get size of response waiting in radio buffer
                 self.n_bytes_received = self.response[7] # FIXME
 
-            # If recipient is pump
-            elif self.recipient == "Pump":
-
-                pass
-
             # If recipient is CGM
             elif self.recipient == "CGM":
 
-                pass
+                break
 
         # Give user info
-        if self.TALKATIVE:
+        if self.VERBOSE:
             print "Number of bytes found: " + str(self.n_bytes_received)
             print "Expected number of bytes: " + str(self.n_bytes_expected)
 
@@ -243,20 +406,34 @@ class Requester:
         ========================================================================
         """
 
-        # Verify if received data is as expected. If not, resend pump request
-        # until it is
+        # Verify if received data is as expected. If not, resend request until
+        # it is
         while self.n_bytes_received != self.n_bytes_expected:
 
-            # Verify connection with pump, quit if inexistent (this number of
-            # bytes means no data was received from pump)
-            if self.n_bytes_received == 14:
-                sys.exit("Pump is either out of range, or will not take "
-                         "commands anymore because of low battery level... :-(")
+            # If recipient is stick
+            if self.recipient == "Stick":
+
+                break
+
+            # If recipient is pump
+            elif self.recipient = "Pump":
+
+                # Verify connection with pump, quit if inexistent (this number
+                # of bytes means no data was received from pump)
+                if self.n_bytes_received == 14:
+                    sys.exit("Pump is either out of range, or will not take "
+                             "commands anymore because of low battery level... "
+                             ":-(")
+
+            # If recipient is CGM
+            elif self.recipient = "CGM":
+
+                break
 
             # Give user info
-            if self.TALKATIVE:
+            if self.VERBOSE:
                 print "Data does not correspond to expectations."
-                print "Resending pump request..."
+                print "Resending request..."
 
             # Resend pump request to stick
             self.send()
@@ -265,68 +442,49 @@ class Requester:
             self.ask()
 
         # Give user info
-        if self.TALKATIVE:
+        if self.VERBOSE:
             print "Data corresponds to expectations."
 
 
 
-    def retrieve(self):
+    def download(self):
 
         """
         ========================================================================
-        RETRIEVE
+        DOWNLOAD
         ========================================================================
         """
         
-        # Ask if some pump data was received
+        # Ask if some data was received
         self.ask()
 
-        # Verify if pump data corresponds to expectations
+        # Verify if data corresponds to expectations
         self.verify()
 
         # Give user info
-        if self.TALKATIVE:
-            print "Retrieving pump data on stick..."
+        if self.VERBOSE:
+            print "Downloading data from device..."
 
-        # Initialize packet to retrieve pump data on stick
-        self.packet = []
+        # Initialize data vector
+        self.data = []
 
-        # Build said packet
-        self.packet.extend([12,
-                            0,
-                            lib.getByte(self.n_bytes_expected, 1),
-                            lib.getByte(self.n_bytes_expected, 0)])
-        self.packet.append(lib.computeCRC8(self.packet))
+        # Build data request packet
+        self.build(packet_type = "Download")
 
-        # Initialize pump response vectors for all formats
-        self.response = []
-        self.response_hex = []
-        self.response_str = []
+        # Download data on device until its buffer is empty
+        while True:
 
-        # Download pump data on stick until the buffer has been emptied
-        # FIXME Do not hardcode!
-        for i in range(3):
-
-            # Download pump data by sending packet to stick
+            # Download data by sending request packet
             self.send()
 
-            # Fill the pump response vectors with the new response
-            self.response.append(self.stick.response)
-            self.response_hex.append(self.stick.response_hex)
-            self.response_str.append(self.stick.response_str)
+            # Store device request response
+            self.data.extend(self.response)
 
-        # If user is looking to download pump history, there will be more
-        #if self.n_bytes_expected == 206:
+            # If the last digits, excluding the very last one, are zeros, then
+            # the requested data has been downloaded # FIXME
+            if sum(self.response[-6:-1]) == 0:
 
-            #for i in range(2):
-
-                # Resend download request
-                #self.send()
-
-                # Store pump data in all formats
-                #self.response = self.stick.response
-                #self.response_hex = self.stick.response_hex
-                #self.response_str = self.stick.response_str
+                break
 
 
 
@@ -338,22 +496,25 @@ class Requester:
         ========================================================================
         """
 
-        # Print pump request info
+        # Print request info
         print self.info
 
-        # Build request associated packet
-        self.build()
+        # Build packet associated with request
+        self.build(packet_type = "Normal")
 
-        # Send said packet over stick to pump
+        # Send request to device
         self.send()
 
-        # If data was requested, retrieve it
+        # Get device response to request
+        self.get()
+
+        # If data was requested, download it
         if self.n_bytes_expected > 0:
 
-            # Retrieve pump data
-            self.retrieve()
+            # Download data
+            self.download()
 
-        # Give pump time to execute request if needed
+        # Give device time to execute request if needed
         if self.sleep > 0:
 
             # Give sleep reason
@@ -372,8 +533,33 @@ def main():
     ============================================================================
     """
 
+    # Instanciate a stick for me
+    stick = stick.Stick()
+
+    # Instanciate a pump for me
+    pump = pump.Pump()
+
+    # Instanciate a CGM for me
+    # ...
+
     # Instanciate a requester for me
     requester = Requester()
+
+    # Prepare requester to send requests to a specific device (stick)
+    requester.prepare(recipient = "Stick", handle = stick.handle)
+
+    # Define request
+    requester.define(info = "Reading signal strength...",
+                     packet = [6, 0, 0])
+
+    # Prepare requester to send requests to a specific device (pump)
+    requester.prepare(recipient = "Pump", handle = stick.handle)
+
+    # Define request
+    requester.define(info = "")
+
+    # Make request
+    requester.make()
 
 
 
