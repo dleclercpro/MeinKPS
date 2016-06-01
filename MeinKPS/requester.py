@@ -558,6 +558,8 @@ def main():
                      sleep = 10,
                      sleep_reason = "Sleeping until pump radio transmitter " +
                                     "is powered up... (10s)",
+                     head = [1, 0, 167, 1],
+                     serial = lib.encodeSerialNumber(574180),
                      power = 85,
                      attempts = 0,
                      size = 0,
@@ -570,6 +572,8 @@ def main():
     # Define new request
     requester.define(info = "Reading pump model...",
                      n_bytes_expected = 78,
+                     head = [1, 0, 167, 1],
+                     serial = lib.encodeSerialNumber(574180),
                      power = 0,
                      attempts = 2,
                      size = 1,
