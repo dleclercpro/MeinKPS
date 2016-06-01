@@ -123,6 +123,11 @@ class Requester:
                         "Ask": None,
                         "Download": None}
 
+        # Initialize packets
+        packet_normal = []
+        packet_ask = []
+        packet_download = []
+
         # If packet was passed as a defining argument to the parser, it is the
         # normal packet
         if self.packet != None:
@@ -139,7 +144,6 @@ class Requester:
         elif self.recipient == "Pump":
 
             # Build normal request packet
-            packet_normal = []
             packet_normal.extend(self.head)
             packet_normal.extend(self.serial)
             packet_normal.append(128 | lib.getByte(len(self.parameters), 1))
@@ -149,20 +153,18 @@ class Requester:
             packet_normal.append(self.size)
             packet_normal.append(0)
             packet_normal.append(self.code)
-            packet_normal.append(lib.computeCRC8(self.packet))
+            packet_normal.append(lib.computeCRC8(packet_normal))
             packet_normal.extend(self.parameters)
             packet_normal.append(lib.computeCRC8(self.parameters))
 
             # Build ask request packet
-            packet_ask = []
             packet_ask = [3, 0, 0]
 
             # Build download request packet
-            packet_download = []
             packet_download.extend([12, 0])
             packet_download.append(lib.getByte(self.n_bytes_expected, 1))
             packet_download.append(lib.getByte(self.n_bytes_expected, 0))
-            packet_download.append(lib.computeCRC8(self.packet))
+            packet_download.append(lib.computeCRC8(packet_download))
 
         # If recipient is CGM
         elif self.recipient == "CGM":
@@ -187,11 +189,11 @@ class Requester:
         # Give user info
         print "Sending packet: " + str(self.packets[packet_type])
 
-        # Transform request packet to bytes
-        packet = bytearray(self.packets[packet_type])
+        # Send request packet as bytes to device
+        self.handle.write(bytearray(self.packets[packet_type]))
 
-        # Send request packet to device
-        self.handle.write(packet)
+        # Get device response to request
+        self.get()
 
 
 
@@ -370,24 +372,12 @@ class Requester:
             if self.VERBOSE:
                 print "Asking if data was received: " + str(n) + "/-"
 
-            # If recipient is stick
-            if self.recipient == "Stick":
+            # Send ask request packet
+            self.send(packet_type = "Ask")
 
-                break
-
-            # If recipient is pump
-            elif self.recipient == "Pump":
-
-                # Send request
-                self.send()
-
-                # Get size of response waiting in radio buffer
-                self.n_bytes_received = self.response[7] # FIXME
-
-            # If recipient is CGM
-            elif self.recipient == "CGM":
-
-                break
+            # Get size of response waiting in radio buffer
+            # FIXME for all devices
+            self.n_bytes_received = self.response[7]
 
         # Give user info
         if self.VERBOSE:
@@ -408,33 +398,21 @@ class Requester:
         # it is
         while self.n_bytes_received != self.n_bytes_expected:
 
-            # If recipient is stick
-            if self.recipient == "Stick":
-
-                break
-
-            # If recipient is pump
-            elif self.recipient == "Pump":
-
-                # Verify connection with pump, quit if inexistent (this number
-                # of bytes means no data was received from pump)
-                if self.n_bytes_received == 14:
-                    sys.exit("Pump is either out of range, or will not take "
-                             "commands anymore because of low battery level... "
-                             ":-(")
-
-            # If recipient is CGM
-            elif self.recipient == "CGM":
-
-                break
+            # Verify connection with pump, quit if inexistent (this number of
+            # bytes means no data was received from pump)
+            # FIXME for all devices
+            if self.n_bytes_received == 14:
+                sys.exit("Pump is either out of range, or will not take "
+                         "commands anymore because of low battery level... "
+                         ":-(")
 
             # Give user info
             if self.VERBOSE:
                 print "Data does not correspond to expectations."
                 print "Resending request..."
 
-            # Resend pump request to stick
-            self.send()
+            # Resend request packet to device
+            self.send(packet_type = "Normal")
 
             # Ask pump if data is now ready to be read
             self.ask()
@@ -466,14 +444,11 @@ class Requester:
         # Initialize data vector
         self.data = []
 
-        # Build data download request packet
-        self.build(packet_type = "Download")
-
         # Download data on device until its buffer is empty
         while True:
 
             # Download data by sending request packet
-            self.send()
+            self.send(packet_type = "Download")
 
             # Store device request response
             self.data.extend(self.response)
@@ -497,14 +472,11 @@ class Requester:
         # Print request info
         print self.info
 
-        # Build packet associated with request
-        self.build(packet_type = "Normal")
+        # Build packets associated with request
+        self.build()
 
         # Send request to device
-        self.send()
-
-        # Get device response to request
-        self.get()
+        self.send(packet_type = "Normal")
 
         # If data was requested, download it
         if self.n_bytes_expected > 0:
