@@ -5,12 +5,18 @@
 """
 ================================================================================
 Title:    reporter
+
 Author:   David Leclerc
+
 Version:  0.1
+
 Date:     30.05.2016
+
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
+
 Overview: ...
+
 Notes:    ...
 ================================================================================
 """

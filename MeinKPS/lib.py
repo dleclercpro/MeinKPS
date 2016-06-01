@@ -5,13 +5,19 @@
 """
 ================================================================================
 Title:    lib
+
 Author:   David Leclerc
+
 Version:  0.1
+
 Date:     24.05.2016
+
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
+
 Overview: This is a script that contains user-defined functions to make the
           communications with the CareLink stick easier.
+
 Notes:    ...
 ================================================================================
 """

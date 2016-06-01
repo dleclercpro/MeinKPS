@@ -5,19 +5,27 @@
 """
 ================================================================================
 Title:    pump
+
 Author:   David Leclerc
+
 Version:  0.1
+
 Date:     30.05.2016
+
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
+
 Overview: This is a script that contains a handful of commands that can be sent
           wirelessly to a Medtronic RF Paradigm pump through a Carelink USB
           stick. Please use carefully!
+
 Notes:    - When the battery is low, the stick will not be able to communicate
             with the pump anymore; the script will say the pump does not appear
             to be in range
 ================================================================================
 """
+
+
 
 # TODO: - Make sure the maximal temporary basal rate and bolus are correctly
 #         set, that is higher than or equal to the TB and/or bolus that will be
