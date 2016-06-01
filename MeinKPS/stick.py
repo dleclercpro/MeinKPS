@@ -31,9 +31,6 @@ Notes:    It is important to not interact with the pump while this script
 # LIBRARIES
 import serial
 import os
-import sys
-import time
-import datetime
 import json
 
 
