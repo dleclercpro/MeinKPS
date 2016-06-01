@@ -305,11 +305,11 @@ class Pump:
     POWER_TIME          = 10     # Time (s) needed for pump to go online
     SESSION_TIME        = 5      # Time (m) for which pump will listen to RFs
     EXECUTION_TIME      = 5      # Time (s) needed for pump command execution
-    STROKE_SIZE         = 0.1    # Pump stroke (U)
+    BOLUS_STROKE        = 0.1    # Pump bolus stroke (U)
+    BASAL_STROKE        = 0.05   # Pump basal stroke rate (U/h)
     TIME_BLOCK          = 30     # Time block (m) used by pump
     BOLUS_DELIVERY_RATE = 40.0   # Bolus delivery rate (s/U)
     BOLUS_EXTRA_TIME    = 7.5    # Ensure bolus was completely given
-    BASAL_FACTOR        = 40.0   # Conversion of bolus rate to bytes
     VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
     BUTTONS             = {"EASY" : 0,
                            "ESC"  : 1,
@@ -691,7 +691,7 @@ class Pump:
         # Extract remaining amout of insulin
         self.reservoir = ((lib.getByte(self.request.response[13], 0) * 256 |
                          lib.getByte(self.request.response[14], 0)) *
-                         self.STROKE_SIZE)
+                         self.BOLUS_STROKE)
 
         # Give user info
         print "Amount of insulin in reservoir: " + str(self.reservoir) + "U"
@@ -766,10 +766,10 @@ class Pump:
 
         # Extract pump settings from received data
         self.settings = {
-            "Max Bolus" : self.request.response[18] * self.STROKE_SIZE,
+            "Max Bolus" : self.request.response[18] * self.BOLUS_STROKE,
             "Max Basal" : (lib.getByte(self.request.response[19], 0) * 256 |
-                           lib.getByte(self.request.response[20], 0)) /
-                           self.BASAL_FACTOR,
+                           lib.getByte(self.request.response[20], 0)) *
+                           self.BASAL_STROKE / 2.0,
             "Insulin Action Curve" : self.request.response[30]}
 
         # Give user info
@@ -850,10 +850,10 @@ class Pump:
         # Extract daily totals of today and yesterday
         self.daily_total_today = (
             (lib.getByte(self.request.response[13], 0) * 256 |
-             lib.getByte(self.request.response[14], 0)) * self.STROKE_SIZE)
+             lib.getByte(self.request.response[14], 0)) * self.BOLUS_STROKE)
         self.daily_total_yesterday = (
             (lib.getByte(self.request.response[15], 0) * 256 |
-             lib.getByte(self.request.response[16], 0)) * self.STROKE_SIZE)
+             lib.getByte(self.request.response[16], 0)) * self.BOLUS_STROKE)
 
         # Give user info
         print ("Daily totals of today: " +
@@ -893,7 +893,7 @@ class Pump:
                 (self.history[i + 3] == 0)):
         
                 # Extract bolus from pump history
-                bolus = round(self.history[i + 1] * self.STROKE_SIZE, 1)
+                bolus = round(self.history[i + 1] * self.BOLUS_STROKE, 1)
 
                 # Extract time at which bolus was delivered
                 bolus_time = lib.parseTime(self.history[i + 4 : i + 9])
@@ -954,7 +954,7 @@ class Pump:
                             attempts = 0,
                             size = 1,
                             code = 66,
-                            parameters = [int(bolus / self.STROKE_SIZE)],
+                            parameters = [int(bolus / self.BOLUS_STROKE)],
                             n_bytes_expected = 0,
                             sleep = bolus_delivery_time,
                             sleep_reason = "Waiting for bolus to be " +
@@ -999,8 +999,8 @@ class Pump:
             self.TB_units = "U/h"
             self.TB_rate = (
                 (lib.getByte(self.request.response[15], 0) * 256 |
-                 lib.getByte(self.request.response[16], 0)) /
-                 self.BASAL_FACTOR)
+                 lib.getByte(self.request.response[16], 0)) *
+                 self.BASAL_STROKE / 2.0)
 
         # Extract percent TB
         elif self.request.response[13] == 1:
@@ -1158,7 +1158,7 @@ class Pump:
         if units == "U/h":
             code = 76
             parameters = [0,
-                          int(rate * self.BASAL_FACTOR),
+                          int(rate / self.BASAL_STROKE * 2.0),
                           int(duration / self.TIME_BLOCK)]
 
         # If request is for temporary basal in percentage
