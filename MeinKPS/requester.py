@@ -29,6 +29,7 @@ Notes:    ...
 import os
 import sys
 import time
+import serial
 
 
 
@@ -109,7 +110,7 @@ class Requester:
 
 
 
-    def build(self, packet_type = None):
+    def build(self):
 
         """
         ========================================================================
@@ -117,67 +118,65 @@ class Requester:
         ========================================================================
         """
 
-        # If packet is normal
-        if packet_type == "Normal":
+        # Initialize a packet dictionary for the requester
+        self.packets = {"Normal": None,
+                        "Ask": None,
+                        "Download": None}
 
-            # If recipient is stick
-            if recipient == "Stick":
+        # If packet was passed as a defining argument to the parser, it is the
+        # normal packet
+        if self.packet != None:
 
-                # Build request packet
-                pass
+            # Assign input packet to normal request packet
+            packet_normal = self.packet
 
-            # If recipient is pump
-            elif recipient == "Pump":
+        # If recipient is stick
+        if self.recipient == "Stick":
 
-                # Build request packet
-                self.packet = []
-                self.packet.extend(self.head)
-                self.packet.extend(self.serial)
-                self.packet.append(128 | lib.getByte(len(self.parameters), 1))
-                self.packet.append(lib.getByte(len(self.parameters), 0))
-                self.packet.append(self.power)
-                self.packet.append(self.attempts)
-                self.packet.append(self.size)
-                self.packet.append(0)
-                self.packet.append(self.code)
-                self.packet.append(lib.computeCRC8(self.packet))
-                self.packet.extend(self.parameters)
-                self.packet.append(lib.computeCRC8(self.parameters))
+            pass
 
-            # If recipient is CGM
-            elif recipient == "CGM":
+        # If recipient is pump
+        elif self.recipient == "Pump":
 
-                # Build request packet
-                pass
+            # Build normal request packet
+            packet_normal = []
+            packet_normal.extend(self.head)
+            packet_normal.extend(self.serial)
+            packet_normal.append(128 | lib.getByte(len(self.parameters), 1))
+            packet_normal.append(lib.getByte(len(self.parameters), 0))
+            packet_normal.append(self.power)
+            packet_normal.append(self.attempts)
+            packet_normal.append(self.size)
+            packet_normal.append(0)
+            packet_normal.append(self.code)
+            packet_normal.append(lib.computeCRC8(self.packet))
+            packet_normal.extend(self.parameters)
+            packet_normal.append(lib.computeCRC8(self.parameters))
 
-        # If packet is meant for data downloading from device
-        elif packet_type == "Download":
+            # Build ask request packet
+            packet_ask = []
+            packet_ask = [3, 0, 0]
 
-            # If recipient is stick
-            if recipient == "Stick":
+            # Build download request packet
+            packet_download = []
+            packet_download.extend([12, 0])
+            packet_download.append(lib.getByte(self.n_bytes_expected, 1))
+            packet_download.append(lib.getByte(self.n_bytes_expected, 0))
+            packet_download.append(lib.computeCRC8(self.packet))
 
-                # Build request packet
-                pass
+        # If recipient is CGM
+        elif self.recipient == "CGM":
 
-            # If recipient is pump
-            elif recipient == "Pump":
+            pass
 
-                # Build request packet
-                self.packet = []
-                self.packet.extend([12, 0])
-                self.packet.append(lib.getByte(self.n_bytes_expected, 1))
-                self.packet.append(lib.getByte(self.n_bytes_expected, 0))
-                self.packet.append(lib.computeCRC8(self.packet))
-
-            # If recipient is CGM
-            elif recipient == "CGM":
-
-                # Build request packet
-                pass
+        # Add packets to requester packet dictionary
+        self.packets["Normal"] = packet_normal
+        self.packets["Ask"] = packet_ask
+        self.packets["Download"] = packet_download
 
 
 
-    def send(self):
+    def send(self, packet_type = None):
 
         """
         ========================================================================
@@ -185,11 +184,14 @@ class Requester:
         ========================================================================
         """
 
+        # Give user info
+        print "Sending packet: " + str(self.packets[packet_type])
+
         # Transform request packet to bytes
-        self.packet = bytearray(self.packet)
+        packet = bytearray(self.packets[packet_type])
 
         # Send request packet to device
-        self.handle.write(self.packet)
+        self.handle.write(packet)
 
 
 
@@ -318,8 +320,8 @@ class Requester:
                                                     (i + 1) * n_bytes])
 
                 # Define decimal line
-                line_dec = "".join(self.response[i * n_bytes :
-                                                (i + 1) * n_bytes])
+                line_dec = "".join(str(self.response[i * n_bytes :
+                                                    (i + 1) * n_bytes]))
 
                 # On last line, some extra space may be needed
                 if (i == n_rows - 1) & (n_exceeding_bytes != 0):
@@ -377,7 +379,7 @@ class Requester:
             elif self.recipient == "Pump":
 
                 # Send request
-                self.send([3, 0, 0])
+                self.send()
 
                 # Get size of response waiting in radio buffer
                 self.n_bytes_received = self.response[7] # FIXME
@@ -412,7 +414,7 @@ class Requester:
                 break
 
             # If recipient is pump
-            elif self.recipient = "Pump":
+            elif self.recipient == "Pump":
 
                 # Verify connection with pump, quit if inexistent (this number
                 # of bytes means no data was received from pump)
@@ -422,7 +424,7 @@ class Requester:
                              ":-(")
 
             # If recipient is CGM
-            elif self.recipient = "CGM":
+            elif self.recipient == "CGM":
 
                 break
 
@@ -464,7 +466,7 @@ class Requester:
         # Initialize data vector
         self.data = []
 
-        # Build data request packet
+        # Build data download request packet
         self.build(packet_type = "Download")
 
         # Download data on device until its buffer is empty
@@ -531,10 +533,24 @@ def main():
     """
 
     # Instanciate a stick for me
-    stick = stick.Stick()
+    my_stick = stick.Stick()
+
+    # Add serial port
+    os.system("modprobe --quiet --first-time usbserial"
+        + " vendor=0x0a21 product=0x8001")
+
+    # Generate serial port handle
+    my_stick.handle = serial.Serial()
+    my_stick.handle.port = "/dev/ttyUSB0"
+    my_stick.handle.timeout = 0.5
+    my_stick.handle.rtscts = True
+    my_stick.handle.dsrdtr = True
+
+    # Open serial port
+    my_stick.handle.open()
 
     # Instanciate a pump for me
-    pump = pump.Pump()
+    my_pump = pump.Pump()
 
     # Instanciate a CGM for me
     # ...
@@ -543,7 +559,7 @@ def main():
     requester = Requester()
 
     # Prepare requester to send requests to a specific device (stick)
-    requester.prepare(recipient = "Stick", handle = stick.handle)
+    requester.prepare(recipient = "Stick", handle = my_stick.handle)
 
     # Define request
     requester.define(info = "Reading signal strength...",
@@ -553,7 +569,7 @@ def main():
     requester.make()
 
     # Prepare requester to send requests to a specific device (pump)
-    requester.prepare(recipient = "Pump", handle = stick.handle)
+    requester.prepare(recipient = "Pump", handle = my_stick.handle)
 
     # Define request
     requester.define(info = "Powering pump radio transmitter for: 10m",
