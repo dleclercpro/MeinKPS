@@ -108,6 +108,9 @@ class Requester:
         self.code = code
         self.parameters = parameters
 
+        # Build packets associated with request
+        self.build()
+
 
 
     def build(self):
@@ -471,9 +474,6 @@ class Requester:
 
         # Print request info
         print self.info
-
-        # Build packets associated with request
-        self.build()
 
         # Send request to device
         self.send(packet_type = "Normal")
