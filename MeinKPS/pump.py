@@ -25,8 +25,6 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 ================================================================================
 """
 
-
-
 # TODO: - Make sure the maximal temporary basal rate and bolus are correctly
 #         set, that is higher than or equal to the TB and/or bolus that will be
 #         issued.
@@ -41,7 +39,6 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 
 
 # LIBRARIES
-import os
 import sys
 import time
 import datetime
@@ -50,9 +47,9 @@ import datetime
 
 # USER LIBRARIES
 import lib
-import stick
-import requester
 import reporter
+import requester
+import stick
 
 
 
@@ -60,11 +57,11 @@ class Pump:
 
     # PUMP CHARACTERISTICS
     VERBOSE               = True
-    HEAD                  = [1, 0, 167, 1]
+    PACKETS_HEAD          = [1, 0, 167, 1]
     SERIAL_NUMBER         = 574180
     SERIAL_NUMBER_ENCODED = lib.encodeSerialNumber(SERIAL_NUMBER)
     POWER_TIME            = 10     # Time (s) needed for pump to go online
-    SESSION_TIME          = 5      # Time (m) for which pump will listen to RFs
+    SESSION_TIME          = 10     # Time (m) for which pump will listen to RFs
     EXECUTION_TIME        = 5      # Time (s) needed for pump command execution
     BOLUS_STROKE          = 0.1    # Pump bolus stroke (U)
     BASAL_STROKE          = 0.05   # Pump basal stroke rate (U/h)
@@ -96,6 +93,9 @@ class Pump:
         # Give the pump a reporter
         self.reporter = reporter.Reporter()
 
+        # Give the pump a requester
+        self.requester = requester.Requester()
+
         # Instanciate a stick to communicate with the pump
         self.stick = stick.Stick()
 
@@ -103,7 +103,7 @@ class Pump:
         self.stick.start()
 
         # Prepare requester to send requests to the pump
-        requester.prepare(recipient = "Pump", handle = my_stick.handle)
+        self.requester.prepare(recipient = "Pump", handle = self.stick.handle)
 
         # Power up pump's RF transmitter
         self.power()
@@ -121,7 +121,7 @@ class Pump:
         # Give user info
         print "Stopping dialogue with the pump..."
 
-        # Stop my stick
+        # Stop stick
         self.stick.stop()
 
 
@@ -134,29 +134,24 @@ class Pump:
         ========================================================================
         """
 
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
         # Define pump request
-        self.request.define(info = "Powering pump radio transmitter for: " + 
-                                   str(self.SESSION_TIME) + "m",
-                            power = 85,
-                            attempts = 0,
-                            size = 0,
-                            code = 93,
-                            parameters = [1, self.SESSION_TIME],
-                            n_bytes_expected = 0,
-                            sleep = self.POWER_TIME,
-                            sleep_reason = "Sleeping until pump " +
-                                           "radio transmitter is powered " +
-                                           "up... (" + str(self.POWER_TIME) +
-                                           "s)")
+        self.requester.define(info = "Powering pump radio transmitter for: " + 
+                                     str(self.SESSION_TIME) + "m",
+                              sleep = self.POWER_TIME,
+                              sleep_reason = "Sleeping until pump " +
+                                             "radio transmitter is powered " +
+                                             "up... (" + str(self.POWER_TIME) +
+                                             "s)",
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 85,
+                              attempts = 0,
+                              size = 0,
+                              code = 93,
+                              parameters = [1, self.SESSION_TIME])
 
         # Make pump request
-        self.request.make()
+        self.requester.make()
 
 
 
@@ -312,28 +307,22 @@ class Pump:
         ========================================================================
         """
 
-        # Create pump request
-        self.request = Request()
-
-        # Give pump request a link to stick
-        self.request.link(stick = self.stick)
-
         # Define pump request
-        self.request.define(info = "Reading pump model...",
-                            power = 0,
-                            attempts = 2,
-                            size = 1,
-                            code = 141,
-                            parameters = [],
-                            n_bytes_expected = 78,
-                            sleep = 0,
-                            sleep_reason = None)
+        self.requester.define(info = "Reading pump model...",
+                              n_bytes_expected = 78,
+                              head = [1, 0, 167, 1],
+                              serial = lib.encodeSerialNumber(574180),
+                              power = 0,
+                              attempts = 2,
+                              size = 1,
+                              code = 141,
+                              parameters = [])
 
         # Make pump request
-        self.request.make()
+        self.requester.make()
 
         # Extract pump model from received data
-        self.model = int("".join(self.request.response_chr[14:17]))
+        self.model = int("".join([chr(x) for x in self.requester.data[14:17]]))
 
         # Give user info
         print "Pump model: " + str(self.model)
@@ -1000,10 +989,10 @@ def main():
     pump.start()
 
     # Read bolus history of pump
-    pump.readTime()
+    #pump.readTime()
 
     # Read pump model
-    #pump.readModel()
+    pump.readModel()
 
     # Read pump firmware version
     #pump.readFirmwareVersion()
@@ -1024,7 +1013,7 @@ def main():
     #pump.readDailyTotals()
 
     # Read history on pump
-    pump.readBolus()
+    #pump.readBolus()
 
     # Send bolus to pump
     #pump.deliverBolus(0.5)

@@ -8,9 +8,9 @@ Title:    stick
 
 Author:   David Leclerc
 
-Version:  1.1
+Version:  1.2
 
-Date:     31.05.2016
+Date:     01.06.2016
 
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -25,6 +25,9 @@ Notes:    It is important to not interact with the pump while this script
           performed!
 ================================================================================
 """
+
+# TODO
+#   - Create report entries for stick infos and state?
 
 
 
