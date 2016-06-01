@@ -8,7 +8,7 @@ Title:    requester
 
 Author:   David Leclerc
 
-Version:  0.2
+Version:  1.0
 
 Date:     01.06.2016
 
@@ -35,8 +35,6 @@ import serial
 
 # USER LIBRARIES
 import lib
-import stick
-import pump
 
 
 
@@ -503,81 +501,6 @@ def main():
     MAIN
     ============================================================================
     """
-
-    # Instanciate a stick for me
-    my_stick = stick.Stick()
-
-    # Add serial port
-    os.system("modprobe --quiet --first-time usbserial"
-        + " vendor=0x0a21 product=0x8001")
-
-    # Generate serial port handle
-    my_stick.handle = serial.Serial()
-    my_stick.handle.port = "/dev/ttyUSB0"
-    my_stick.handle.timeout = 0.5
-    my_stick.handle.rtscts = True
-    my_stick.handle.dsrdtr = True
-
-    # Open serial port
-    my_stick.handle.open()
-
-    # Instanciate a pump for me
-    my_pump = pump.Pump()
-
-    # Instanciate a CGM for me
-    # ...
-
-    # Instanciate a requester for me
-    requester = Requester()
-
-    # Prepare requester to send requests to a specific device (stick)
-    requester.prepare(recipient = "Stick", handle = my_stick.handle)
-
-    # Define request
-    requester.define(info = "Reading signal strength...",
-                     packet = [6, 0, 0])
-
-    # Make request
-    requester.make()
-
-    # Prepare requester to send requests to a specific device (pump)
-    requester.prepare(recipient = "Pump", handle = my_stick.handle)
-
-    # Define request
-    requester.define(info = "Powering pump radio transmitter for: 10m",
-                     sleep = 10,
-                     sleep_reason = "Sleeping until pump radio transmitter " +
-                                    "is powered up... (10s)",
-                     head = [1, 0, 167, 1],
-                     serial = lib.encodeSerialNumber(574180),
-                     power = 85,
-                     attempts = 0,
-                     size = 0,
-                     code = 93,
-                     parameters = [1, 10])
-
-    # Make request
-    requester.make()
-
-    # Define new request
-    requester.define(info = "Reading pump model...",
-                     n_bytes_expected = 78,
-                     head = [1, 0, 167, 1],
-                     serial = lib.encodeSerialNumber(574180),
-                     power = 0,
-                     attempts = 2,
-                     size = 1,
-                     code = 141,
-                     parameters = [])
-
-    # Make request
-    requester.make()
-
-    # Extract pump model from received data
-    model = int("".join([chr(x) for x in requester.data[14:17]]))
-
-    # Give user info
-    print "Pump model: " + str(model)
 
 
 

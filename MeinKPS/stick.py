@@ -32,9 +32,9 @@ Notes:    It is important to not interact with the pump while this script
 
 
 # LIBRARIES
-import serial
-import os
 import json
+import os
+import serial
 
 
 
@@ -48,7 +48,7 @@ import requester
 class Stick:
 
     # STICK CHARACTERISTICS
-    TALKATIVE        = True
+    VERBOSE          = True
     VENDOR           = 0x0a21
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
@@ -152,7 +152,7 @@ class Stick:
                                  0.01 * self.requester.response[19:21][1])
 
         # Print infos
-        if self.TALKATIVE:
+        if self.VERBOSE:
             print "Stick infos:"
             print json.dumps(self.infos, indent = 2,
                                          separators = (",", ": "),
@@ -185,7 +185,7 @@ class Stick:
             n += 1
 
             # Keep track of attempts reading signal strength
-            if self.TALKATIVE:
+            if self.VERBOSE:
                 print "Looking for sufficient signal strength: " + str(n) + "/-"
 
             # Make request
@@ -195,7 +195,7 @@ class Stick:
             self.signal = self.requester.response[3]
 
             # Print signal strength
-            if self.TALKATIVE:
+            if self.VERBOSE:
                 print "Signal strength found: " + str(self.signal)
                 print ("Expected minimal signal strength: " +
                        str(self.SIGNAL_THRESHOLD))
@@ -256,7 +256,7 @@ class Stick:
             lib.convertBytes(self.requester.response[11:15]))
 
         # Give user info
-        if self.TALKATIVE:
+        if self.VERBOSE:
 
             # Print current stick state
             print "Stick state:"
