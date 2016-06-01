@@ -67,14 +67,14 @@ class Reporter:
         if entry_key in report[entry_type]:
 
             # Give user info
-            print ("Entry already exists in '" + report_name + ".json':" +
+            print ("Entry already exists in '" + report_name + ".json': " +
                    str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
 
         # If not, write it down
         else:
 
             # Give user info
-            print ("New entry for '" + report_name + ".json':" +
+            print ("New entry for '" + report_name + ".json': " +
                    str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
 
             # Add entry to report

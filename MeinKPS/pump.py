@@ -463,7 +463,7 @@ class Pump:
             self.requester.make()
 
             # Extend known history of pump
-            self.history.extend(self.requester.response)
+            self.history.extend(self.requester.data)
 
         # Give user info
         if self.VERBOSE:
@@ -528,8 +528,8 @@ class Pump:
         ========================================================================
         """
 
-        # Download most recent boluses on first pump history page
-        n_pages = 2
+        # Download most recent boluses on first pump history pages
+        n_pages = 3
 
         # Download pump history
         self.readHistory(n_pages = n_pages)

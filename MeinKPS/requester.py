@@ -26,8 +26,7 @@ Notes:    ...
 
 
 # LIBRARIES
-import os
-import serial
+import numpy as np
 import sys
 import time
 
@@ -445,8 +444,15 @@ class Requester:
         # Initialize data vector
         self.data = []
 
-        # Download data on device until its buffer is empty
-        while True:
+        # Initialize download attempt variable
+        n = 0
+
+        # Download whole data on device based on a predefined number of entries
+        # that have to be retrieved
+        while len(self.data) < 1110:
+
+            # Update download attempt variable
+            n += 1
 
             # Download data by sending request packet
             self.send(packet_type = "Download")
@@ -454,11 +460,8 @@ class Requester:
             # Store device request response
             self.data.extend(self.response)
 
-            # If the last digits, excluding the very last one, are zeros, then
-            # the requested data has been downloaded # FIXME
-            if sum(self.data[-6:-1]) == 0:
-
-                break
+        # Give user info
+        print "Downloaded data in " + str(n) + " attempt(s)."
 
 
 
