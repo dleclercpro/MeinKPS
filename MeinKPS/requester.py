@@ -8,9 +8,9 @@ Title:    requester
 
 Author:   David Leclerc
 
-Version:  0.1
+Version:  0.2
 
-Date:     31.05.2016
+Date:     01.06.2016
 
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -175,19 +175,13 @@ class Requester:
 
 
 
-    def send(self, packet = None):
+    def send(self):
 
         """
         ========================================================================
         SEND
         ========================================================================
         """
-
-        # To pass a packet directly to device
-        if packet != None:
-
-            # Store packet
-            self.packet = packet
 
         # Transform request packet to bytes
         self.packet = bytearray(self.packet)
@@ -482,7 +476,7 @@ class Requester:
 
             # If the last digits, excluding the very last one, are zeros, then
             # the requested data has been downloaded # FIXME
-            if sum(self.response[-6:-1]) == 0:
+            if sum(self.data[-6:-1]) == 0:
 
                 break
 
@@ -514,7 +508,8 @@ class Requester:
             # Download data
             self.download()
 
-        # Give device time to execute request if needed
+        # Wait before next request if needed (give device time to fully execute
+        # last request)
         if self.sleep > 0:
 
             # Give sleep reason
@@ -552,14 +547,43 @@ def main():
     requester.define(info = "Reading signal strength...",
                      packet = [6, 0, 0])
 
+    # Make request
+    requester.make()
+
     # Prepare requester to send requests to a specific device (pump)
     requester.prepare(recipient = "Pump", handle = stick.handle)
 
     # Define request
-    requester.define(info = "")
+    requester.define(info = "Powering pump radio transmitter for: 10m",
+                     sleep = 10,
+                     sleep_reason = "Sleeping until pump radio transmitter " +
+                                    "is powered up... (10s)",
+                     power = 85,
+                     attempts = 0,
+                     size = 0,
+                     code = 93,
+                     parameters = [1, 10])
 
     # Make request
     requester.make()
+
+    # Define new request
+    requester.define(info = "Reading pump model...",
+                     n_bytes_expected = 78,
+                     power = 0,
+                     attempts = 2,
+                     size = 1,
+                     code = 141,
+                     parameters = [])
+
+    # Make request
+    requester.make()
+
+    # Extract pump model from received data
+    model = int("".join([chr(x) for x in requester.data[14:17]]))
+
+    # Give user info
+    print "Pump model: " + str(model)
 
 
 
