@@ -27,9 +27,9 @@ Notes:    ...
 
 # LIBRARIES
 import os
+import serial
 import sys
 import time
-import serial
 
 
 
@@ -41,9 +41,9 @@ import lib
 class Requester:
 
     # REQUESTER CONSTANTS
-    VERBOSE = True
-    SLEEP   = 0.1
-    N_BYTES = 64
+    VERBOSE        = True
+    BREATHE_TIME   = 0.1
+    N_BYTES        = 64
 
 
 
@@ -206,7 +206,7 @@ class Requester:
         ========================================================================
         """
 
-        # Read response on stick
+        # Read response on device
         self.read()
 
         # Format response
@@ -257,8 +257,8 @@ class Requester:
             # Otherwise, try again
             else:
 
-                # Give the stick a bit of time to breathe before reading again
-                time.sleep(self.SLEEP)
+                # Give the device a bit of time to breathe before reading again
+                time.sleep(self.BREATHE_TIME)
 
         # Give user info
         if self.VERBOSE:

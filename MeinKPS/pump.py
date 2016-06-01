@@ -35,10 +35,9 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 
 
 # LIBRARIES
-import json
 import datetime
+import json
 import sys
-import time
 
 
 
@@ -325,8 +324,8 @@ class Pump:
         self.requester.make()
 
         # Extract pump firmware from received data
-        self.firmware = (" ".join("".join(self.request.response_chr[17:21]),
-                                  "".join(self.request.response_chr[21:24])))
+        self.firmware = ("".join(self.requester.response_chr[17:21]) + " " +
+                         "".join(self.requester.response_chr[21:24]))
 
         # Give user info
         print "Pump firmware version: " + self.firmware
@@ -466,6 +465,13 @@ class Pump:
             # Extend known history of pump
             self.history.extend(self.requester.response)
 
+        # Give user info
+        if self.VERBOSE:
+
+            # Print collected history pages
+            print "First " + str(n_pages) + " pages of pump history:"
+            print self.history
+
 
 
     def readDailyTotals(self):
@@ -495,14 +501,16 @@ class Pump:
         self.requester.make()
 
         # Extract daily totals of today and yesterday
-        self.daily_totals["Today"] = (
+        self.daily_totals["Today"] = round(
             (lib.getByte(self.requester.response[13], 0) * 256 |
-             lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE)
+             lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE,
+             2)
 
         # Extract daily totals of yesterday
-        self.daily_totals["Yesterday"] = (
+        self.daily_totals["Yesterday"] = round(
             (lib.getByte(self.requester.response[15], 0) * 256 |
-             lib.getByte(self.requester.response[16], 0)) * self.BOLUS_STROKE)
+             lib.getByte(self.requester.response[16], 0)) * self.BOLUS_STROKE,
+             2)
 
         # Give user info
         print "Daily totals:"
@@ -521,7 +529,7 @@ class Pump:
         """
 
         # Download most recent boluses on first pump history page
-        n_pages = 1
+        n_pages = 2
 
         # Download pump history
         self.readHistory(n_pages = n_pages)
@@ -565,8 +573,8 @@ class Pump:
                            "U (" + str(bolus_time) + ")")
 
                     # Add bolus to insulin report
-                    self.reporter.addBolusEntry(bolus = bolus,
-                                                bolus_time = bolus_time)
+                    self.reporter.addBolus(time = bolus_time,
+                                           bolus = bolus)
 
                 except ValueError:
 
@@ -640,22 +648,22 @@ class Pump:
 
             # Extract TB characteristics
             self.TB["Units"] = "U/h"
-            self.TB["Rate"] = (
+            self.TB["Rate"] = round(
                 (lib.getByte(self.requester.response[15], 0) * 256 |
                  lib.getByte(self.requester.response[16], 0)) *
-                 self.BASAL_STROKE / 2.0)
+                 self.BASAL_STROKE / 2.0, 2)
 
         # Extract TB [%]
         elif self.requester.response[13] == 1:
 
             # Extract TB characteristics
             self.TB["Units"] = "%"
-            self.TB["Rate"] = self.requester.response[14]
+            self.TB["Rate"] = round(self.requester.response[14], 2)
 
         # Extract TB remaining time
-        self.TB["Duration"] = (
+        self.TB["Duration"] = round(
             (lib.getByte(self.requester.response[17], 0) * 256 |
-             lib.getByte(self.requester.response[18], 0)))
+             lib.getByte(self.requester.response[18], 0)), 0)
 
         # Give user info
         print "Temporary basal:"
@@ -793,13 +801,13 @@ class Pump:
         if units == "U/h":
             code = 76
             parameters = [0,
-                          int(rate / self.BASAL_STROKE * 2.0),
+                          int(round(rate / self.BASAL_STROKE * 2.0)),
                           int(duration / self.TIME_BLOCK)]
 
         # If request is for temporary basal in percentage
         elif units == "%":
             code = 105
-            parameters = [int(rate),
+            parameters = [int(round(rate)),
                           int(duration / self.TIME_BLOCK)]
 
         # Define pump request
@@ -872,44 +880,44 @@ def main():
     pump.start()
 
     # Read bolus history of pump
-    pump.readTime()
+    #pump.readTime()
 
     # Read pump model
-    pump.readModel()
+    #pump.readModel()
 
     # Read pump firmware version
-    pump.readFirmwareVersion()
+    #pump.readFirmwareVersion()
 
     # Read remaining amount of insulin in pump
-    pump.readReservoirLevel()
+    #pump.readReservoirLevel()
 
     # Read pump status
-    pump.readStatus()
+    #pump.readStatus()
 
     # Read pump settings
-    pump.readSettings()
+    #pump.readSettings()
 
     # Read daily totals on pump
-    pump.readDailyTotals()
+    #pump.readDailyTotals()
 
     # Read history on pump
-    #pump.readBolus()
+    pump.readBolus()
 
     # Send bolus to pump
-    pump.deliverBolus(0.5)
+    #pump.deliverBolus(0.5)
 
     # Send temporary basal to pump
-    pump.setTemporaryBasal(4.1, "U/h", 150)
-    pump.setTemporaryBasal(50, "%", 60)
+    #pump.setTemporaryBasal(4.1, "U/h", 150)
+    #pump.setTemporaryBasal(50, "%", 60)
 
     # Suspend pump activity
-    pump.suspend()
+    #pump.suspend()
 
     # Resume pump activity
-    pump.resume()
+    #pump.resume()
 
     # Push button on pump
-    pump.pushButton("DOWN")
+    #pump.pushButton("DOWN")
 
     # Stop dialogue with pump
     pump.stop()

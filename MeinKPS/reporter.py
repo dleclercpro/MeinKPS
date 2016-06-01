@@ -40,11 +40,6 @@ Notes:    ...
 
 
 # LIBRARIES
-import os
-import sys
-import time
-import datetime as datetime
-import numpy as np
 import json
 
 
