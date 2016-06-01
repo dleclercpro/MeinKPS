@@ -34,6 +34,8 @@ import time
 
 # USER LIBRARIES
 import lib
+import stick
+import pump
 
 
 
