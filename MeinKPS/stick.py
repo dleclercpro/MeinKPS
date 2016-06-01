@@ -34,11 +34,14 @@ import os
 import sys
 import time
 import datetime
+import json
 
 
 
 # USER LIBRARIES
 import lib
+import reporter
+import requester
 
 
 
@@ -78,6 +81,15 @@ class Stick:
         # Open serial port
         self.handle.open()
 
+        # Give the stick a reporter
+        self.reporter = reporter.Reporter()
+
+        # Give the stick a requester
+        self.requester = requester.Requester()
+
+        # Prepare requester to send requests to the stick
+        self.requester.prepare(recipient = "Stick", handle = self.handle)
+
         # Ask for stick infos
         self.getInfos()
 
@@ -105,176 +117,6 @@ class Stick:
 
 
 
-    def sendRequest(self, packet):
-
-        """
-        ========================================================================
-        SENDREQUEST
-        ========================================================================
-        """
-
-        # Store request packet
-        self.packet = packet
-
-        # Print request packet to send to stick
-        if self.TALKATIVE:
-            print "Sending request: " + str(self.packet)
-
-        # Convert request packet to bytes for the stick
-        self.packet = bytearray(self.packet)
-
-        # Send request packet
-        self.handle.write(self.packet)
-
-        # Read request response
-        self.getResponse()
-
-
-
-    def getResponse(self):
-
-        """
-        ========================================================================
-        GETRESPONSE
-        ========================================================================
-        """
-
-        # Read response on stick
-        self.readResponse()
-
-        # Format response
-        self.formatResponse()
-
-        # Print response in readable formats
-        self.printResponse()
-
-
-
-    def readResponse(self):
-
-        """
-        ========================================================================
-        READRESPONSE
-        ========================================================================
-        """
-
-        # Initialize stick response vector
-        self.response = []
-
-        # Initialize reading attempt variable
-        n = 0
-
-        # Ask for response from stick until we get a full one
-        while True:
-
-            # Update reading attempt variable
-            n += 1
-
-            # Keep track of number of attempts
-            if self.TALKATIVE:
-                print "Reading from stick: " + str(n) + "/-"
-
-            # Read response in stick buffer, vectorize it, transform its
-            # bytes to decimal values, and store them
-            self.response.append([ord(x) for x in 
-                                  self.handle.read(self.N_BYTES)])
-
-            # When response is full, exit loop
-            if ((sum([sum(x) for x in self.response]) != 0) &
-                (len(self.response[-1]) == 0)):
-
-                break
-
-            # Otherwise, try again
-            else:
-
-                # Give the stick a bit of time to breathe before reading again
-                time.sleep(self.SLEEP)
-
-        # Give user info
-        if self.TALKATIVE:
-            print "Read data from stick in " + str(n) + " attempt(s)."
-
-        # Flatten full response
-        self.response = [x for y in self.response for x in y]
-
-
-
-    def formatResponse(self):
-
-        """
-        ========================================================================
-        FORMATRESPONSE
-        ========================================================================
-        """
-
-        # Give user info
-        if self.TALKATIVE:
-            print "Formatting response..."
-
-        # Format response to padded hexadecimals
-        self.response_hex = [lib.padHex(hex(x)) for x in self.response]
-
-        # Format response to readable characters
-        self.response_chr = ["." if (x < 32) | (x > 126)
-                                 else chr(x) for x in self.response]
-
-
-
-    def printResponse(self):
-
-        """
-        ========================================================================
-        PRINTRESPONSE
-        ========================================================================
-        """
-
-        # Define number of bytes to be printed in a row
-        n_bytes = 8
-
-        # Define exceeding bytes
-        n_exceeding_bytes = len(self.response) % n_bytes
-
-        # Define number of rows to be printed 
-        n_rows = len(self.response) / n_bytes + int(n_exceeding_bytes != 0)
-
-        # Give user info
-        if self.TALKATIVE:
-
-            # Print response
-            print "Response: " + str(self.response)
-
-            # Print formatted response
-            for i in range(n_rows):
-
-                # Define hexadecimal line
-                line_hex = " ".join(self.response_hex[i * n_bytes :
-                                                     (i + 1) * n_bytes])
-
-                # Define character line
-                line_chr = "".join(self.response_chr[i * n_bytes :
-                                                     (i + 1) * n_bytes])
-
-                # On last line, some extra space may be needed
-                if (n_exceeding_bytes != 0) & (i == n_rows - 1):
-
-                    # Define line
-                    line = (line_hex +
-                           (n_bytes - n_exceeding_bytes) * 5 * " " +
-                            " " +
-                            line_chr)
-
-                # First lines don't need extra space
-                else:
-
-                    # Define line
-                    line = line_hex + " " + line_chr
-
-                # Print line
-                print line
-
-
-
     def getInfos(self):
 
         """
@@ -283,36 +125,38 @@ class Stick:
         ========================================================================
         """
 
-        # Send request for stick infos
-        self.sendRequest([4, 0, 0])
+        # Define stick infos dictionary
+        self.infos = {"ACK": None,
+                      "Status": None,
+                      "Serial": None,
+                      "Frequency": None,
+                      "Description": None,
+                      "Version": None}
 
-        # Extract response ACK
-        self.ack = self.response[0]
+        # Define request
+        self.requester.define(info = "Reading stick infos...",
+                              packet = [4, 0, 0])
 
-        # Extract response status
-        self.status = self.response_chr[1]
+        # Make request
+        self.requester.make()
 
-        # Extract stick serial from response
-        self.serial = "".join(x[2:] for x in self.response_hex[3:6])
-
-        # Extract frequency used by stick from response
-        self.frequency = self.FREQUENCIES[self.response[8]]
-
-        # Extract description of stick from response
-        self.description = "".join(self.response_chr[9:19])
-
-        # Extract firmware version of stick from response
-        self.version = 1.00 * self.response[19:21][0] + \
-                       0.01 * self.response[19:21][1]
+        # Extract infos
+        self.infos["ACK"] = self.requester.response[0]
+        self.infos["Status"] = self.requester.response_chr[1]
+        self.infos["Serial"] = "".join(x[2:] for x in
+                                       self.requester.response_hex[3:6])
+        self.infos["Frequency"] = (str(self.FREQUENCIES[
+                                       self.requester.response[8]]) + " MHz")
+        self.infos["Description"] = "".join(self.requester.response_chr[9:19])
+        self.infos["Version"] = (1.00 * self.requester.response[19:21][0] +
+                                 0.01 * self.requester.response[19:21][1])
 
         # Print infos
         if self.TALKATIVE:
-            print "ACK: " + str(self.ack)
-            print "Status: " + self.status
-            print "Serial: " + self.serial
-            print "Radiofrequency: " + str(self.frequency) + " MHz"
-            print "Description: " + self.description
-            print "Version: " + str(self.version)
+            print "Stick infos:"
+            print json.dumps(self.infos, indent = 2,
+                                         separators = (",", ": "),
+                                         sort_keys = True)
 
 
 
@@ -323,6 +167,10 @@ class Stick:
         GETSIGNALSTRENGTH
         ========================================================================
         """
+
+        # Define request
+        self.requester.define(info = "Reading stick signal strength...",
+                              packet = [6, 0, 0])
 
         # Initialize signal strength
         self.signal = 0
@@ -340,17 +188,17 @@ class Stick:
             if self.TALKATIVE:
                 print "Looking for sufficient signal strength: " + str(n) + "/-"
 
-            # Send request for stick signal strength
-            self.sendRequest([6, 0, 0])
+            # Make request
+            self.requester.make()
 
             # Extract signal strength from response
-            self.signal = self.response[3]
+            self.signal = self.requester.response[3]
 
             # Print signal strength
             if self.TALKATIVE:
                 print "Signal strength found: " + str(self.signal)
-                print "Expected minimal signal strength: " + \
-                      str(self.SIGNAL_THRESHOLD)
+                print ("Expected minimal signal strength: " +
+                       str(self.SIGNAL_THRESHOLD))
 
 
 
@@ -362,45 +210,59 @@ class Stick:
         ========================================================================
         """
 
-        # Send request for stick USB state
-        self.sendRequest([5, 1, 0])
+        # Define state indicators
+        state_indicators = {"Errors": {"CRC": None,
+                                       "SEQ": None,
+                                       "NAK": None,
+                                       "Timeout": None},
+                            "Packets": {"Received": None,
+                                        "Sent": None}}
 
-        # Extract errors
-        self.usb_errors_crc = self.response[3]
-        self.usb_errors_seq = self.response[4]
-        self.usb_errors_nak = self.response[5]
-        self.usb_errors_timeout = self.response[6]
-        self.usb_packets_received = lib.convertBytes(self.response[7:11])
-        self.usb_packets_sent = lib.convertBytes(self.response[11:15])
+        # Define state dictionary for USB and RF interfaces
+        self.state = {"USB": state_indicators, "RF": state_indicators}
 
-        # Print USB state
+        # Define request
+        self.requester.define(info = "Reading stick USB state...",
+                              packet = [5, 1, 0])
+
+        # Make request
+        self.requester.make()
+
+        # Extract state
+        self.state["USB"]["Errors"]["CRC"] = self.requester.response[3]
+        self.state["USB"]["Errors"]["SEQ"] = self.requester.response[4]
+        self.state["USB"]["Errors"]["NAK"] = self.requester.response[5]
+        self.state["USB"]["Errors"]["Timeout"] = self.requester.response[6]
+        self.state["USB"]["Packets"]["Received"] = (
+            lib.convertBytes(self.requester.response[7:11]))
+        self.state["USB"]["Packets"]["Sent"] = (
+            lib.convertBytes(self.requester.response[11:15]))
+
+        # Define request
+        self.requester.define(info = "Reading stick RF state...",
+                              packet = [5, 0, 0])
+
+        # Make request
+        self.requester.make()
+
+        # Extract state
+        self.state["RF"]["Errors"]["CRC"] = self.requester.response[3]
+        self.state["RF"]["Errors"]["SEQ"] = self.requester.response[4]
+        self.state["RF"]["Errors"]["NAK"] = self.requester.response[5]
+        self.state["RF"]["Errors"]["Timeout"] = self.requester.response[6]
+        self.state["RF"]["Packets"]["Received"] = (
+            lib.convertBytes(self.requester.response[7:11]))
+        self.state["RF"]["Packets"]["Sent"] = (
+            lib.convertBytes(self.requester.response[11:15]))
+
+        # Give user info
         if self.TALKATIVE:
-            print "USB Bad CRCs: " + str(self.usb_errors_crc)
-            print "USB Sequential errors: " + str(self.usb_errors_seq)
-            print "USB NAKs: " + str(self.usb_errors_nak)
-            print "USB Timeout errors: " + str(self.usb_errors_timeout)
-            print "USB Packets received: " + str(self.usb_packets_received)
-            print "USB Packets sent: " + str(self.usb_packets_sent)
 
-        # Send request for stick RF state
-        self.sendRequest([5, 0, 0])
-
-        # Extract errors
-        self.rf_errors_crc = self.response[3]
-        self.rf_errors_seq = self.response[4]
-        self.rf_errors_nak = self.response[5]
-        self.rf_errors_timeout = self.response[6]
-        self.rf_packets_received = lib.convertBytes(self.response[7:11])
-        self.rf_packets_sent = lib.convertBytes(self.response[11:15])
-
-        # Print RF state
-        if self.TALKATIVE:
-            print "RF Bad CRCs: " + str(self.rf_errors_crc)
-            print "RF Sequential errors: " + str(self.rf_errors_seq)
-            print "RF NAKs: " + str(self.rf_errors_nak)
-            print "RF Timeout errors: " + str(self.rf_errors_timeout)
-            print "RF Packets received: " + str(self.rf_packets_received)
-            print "RF Packets sent: " + str(self.rf_packets_sent)
+            # Print current stick state
+            print "Stick state:"
+            print json.dumps(self.state, indent = 2,
+                                         separators = (",", ": "),
+                                         sort_keys = True)
 
 
 
