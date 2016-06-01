@@ -8,9 +8,9 @@ Title:    pump
 
 Author:   David Leclerc
 
-Version:  0.1
+Version:  0.2
 
-Date:     30.05.2016
+Date:     01.06.2016
 
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -51,273 +51,34 @@ import datetime
 # USER LIBRARIES
 import lib
 import stick
+import requester
 import reporter
-
-
-
-class Request:
-
-    # PUMP REQUEST CONSTANTS
-    TALKATIVE             = True
-    HEAD                  = [1, 0, 167, 1]
-    SERIAL_NUMBER         = 574180
-    ENCODED_SERIAL_NUMBER = lib.encodeSerialNumber(SERIAL_NUMBER)
-
-
-
-    def link(self, stick):
-
-        """
-        ========================================================================
-        LINK
-        ========================================================================
-        """
-
-        # Link pump request with previously generated stick instance
-        self.stick = stick
-
-
-
-    def define(self, info, power, attempts, size, code, parameters,
-               n_bytes_expected, sleep, sleep_reason):
-
-        """
-        ========================================================================
-        DEFINE
-        ========================================================================
-        """
-
-        # Store input definition of pump request
-        self.info = info
-        self.power = power
-        self.attempts = attempts
-        self.size = size
-        self.code = code
-        self.parameters = parameters
-        self.parameter_count = [128 | lib.getByte(len(parameters), 1),
-                                      lib.getByte(len(parameters), 0)]
-        self.n_bytes_expected = n_bytes_expected
-        self.sleep = sleep
-        self.sleep_reason = sleep_reason
-
-
-
-    def build(self):
-
-        """
-        ========================================================================
-        BUILD
-        ========================================================================
-        """
-
-        # Initialize pump request corresponding packet
-        self.packet = []
-
-        # Build said packet
-        self.packet.extend(self.HEAD)
-        self.packet.extend(self.ENCODED_SERIAL_NUMBER)
-        self.packet.extend(self.parameter_count)
-        self.packet.append(self.power)
-        self.packet.append(self.attempts)
-        self.packet.append(self.size)
-        self.packet.append(0)
-        self.packet.append(self.code)
-        self.packet.append(lib.computeCRC8(self.packet))
-        self.packet.extend(self.parameters)
-        self.packet.append(lib.computeCRC8(self.parameters))
-
-
-
-    def send(self):
-
-        """
-        ========================================================================
-        SEND
-        ========================================================================
-        """
-
-        # Send pump request over stick
-        self.stick.sendRequest(self.packet)
-
-
-
-    def ask(self):
-
-        """
-        ========================================================================
-        ASK
-        ========================================================================
-        """
-
-        # Reset number of bytes received
-        self.n_bytes_received = 0
-
-        # Define asking attempt variable
-        n = 0
-
-        # Ask stick if pump data is ready until it says a certain number of
-        # bytes are waiting in buffer
-        while self.n_bytes_received == 0:
-
-            # Update attempt variable
-            n += 1
-
-            # Keep track of attempts
-            if self.TALKATIVE:
-                print "Asking if pump data was received: " + str(n) + "/-"
-
-            # Send request
-            self.stick.sendRequest([3, 0, 0])
-
-            # Get size of response waiting in radio buffer
-            self.n_bytes_received = self.stick.response[7]
-
-            # Give user info
-            if self.TALKATIVE:
-                print "Number of bytes found: " + str(self.n_bytes_received)
-                print "Expected number of bytes: " + str(self.n_bytes_expected)
-
-
-
-    def verify(self):
-
-        """
-        ========================================================================
-        VERIFY
-        ========================================================================
-        """
-
-        # Verify if received data is as expected. If not, resend pump request
-        # until it is
-        while self.n_bytes_received != self.n_bytes_expected:
-
-            # Verify connection with pump, quit if inexistent (this number of
-            # bytes means no data was received from pump)
-            if self.n_bytes_received == 14:
-                sys.exit("Pump is either out of range, or will not take "
-                         "commands anymore because of low battery level... :-(")
-
-            # Give user info
-            if self.TALKATIVE:
-                print "Data does not correspond to expectations."
-                print "Resending pump request..."
-
-            # Resend pump request to stick
-            self.send()
-
-            # Ask pump if data is now ready to be read
-            self.ask()
-
-        # Give user info
-        if self.TALKATIVE:
-            print "Data corresponds to expectations."
-
-
-
-    def retrieve(self):
-
-        """
-        ========================================================================
-        RETRIEVE
-        ========================================================================
-        """
-        
-        # Ask if some pump data was received
-        self.ask()
-
-        # Verify if pump data corresponds to expectations
-        self.verify()
-
-        # Give user info
-        if self.TALKATIVE:
-            print "Retrieving pump data on stick..."
-
-        # Initialize packet to retrieve pump data on stick
-        self.packet = []
-
-        # Build said packet
-        self.packet.extend([12, 0])
-        self.packet.append(lib.getByte(self.n_bytes_expected, 1))
-        self.packet.append(lib.getByte(self.n_bytes_expected, 0))
-        self.packet.append(lib.computeCRC8(self.packet))
-
-        # Initialize pump response vectors
-        self.response = []
-        self.response_hex = []
-        self.response_chr = []
-
-        # Retrieve data until the end of it
-        while True:
-
-            # Download pump data by sending packet to stick
-            self.send()
-
-            # Store pump response in vectors
-            self.response.extend(self.stick.response)
-            self.response_hex.extend(self.stick.response_hex)
-            self.response_chr.extend(self.stick.response_chr)
-
-            # If the last digits, excluding the very last one, are zeros, then
-            # the requested data has been downloaded
-            if sum(self.stick.response[-6:-1]) == 0:
-
-                break
-
-
-
-    def make(self):
-
-        """
-        ========================================================================
-        MAKE
-        ========================================================================
-        """
-
-        # Print pump request info
-        print self.info
-
-        # Build request associated packet
-        self.build()
-
-        # Send said packet over stick to pump
-        self.send()
-
-        # If data was requested, retrieve it
-        if self.n_bytes_expected > 0:
-
-            # Retrieve pump data
-            self.retrieve()
-
-        # Give pump time to execute request if needed
-        if self.sleep > 0:
-
-            # Give sleep reason
-            print self.sleep_reason
-
-            # Sleep
-            time.sleep(self.sleep)
 
 
 
 class Pump:
 
     # PUMP CHARACTERISTICS
-    POWER_TIME          = 10     # Time (s) needed for pump to go online
-    SESSION_TIME        = 5      # Time (m) for which pump will listen to RFs
-    EXECUTION_TIME      = 5      # Time (s) needed for pump command execution
-    BOLUS_STROKE        = 0.1    # Pump bolus stroke (U)
-    BASAL_STROKE        = 0.05   # Pump basal stroke rate (U/h)
-    TIME_BLOCK          = 30     # Time block (m) used by pump
-    BOLUS_DELIVERY_RATE = 40.0   # Bolus delivery rate (s/U)
-    BOLUS_EXTRA_TIME    = 7.5    # Ensure bolus was completely given
-    VOLTAGE_FACTOR      = 0.0001 # Conversion of battery voltage
-    BUTTONS             = {"EASY" : 0,
-                           "ESC"  : 1,
-                           "ACT"  : 2,
-                           "UP"   : 3,
-                           "DOWN" : 4}
-    BATTERY_STATUS      = {0 : "Normal",
-                           1 : "Low"}
+    VERBOSE               = True
+    HEAD                  = [1, 0, 167, 1]
+    SERIAL_NUMBER         = 574180
+    SERIAL_NUMBER_ENCODED = lib.encodeSerialNumber(SERIAL_NUMBER)
+    POWER_TIME            = 10     # Time (s) needed for pump to go online
+    SESSION_TIME          = 5      # Time (m) for which pump will listen to RFs
+    EXECUTION_TIME        = 5      # Time (s) needed for pump command execution
+    BOLUS_STROKE          = 0.1    # Pump bolus stroke (U)
+    BASAL_STROKE          = 0.05   # Pump basal stroke rate (U/h)
+    TIME_BLOCK            = 30     # Time block (m) used by pump
+    BOLUS_DELIVERY_RATE   = 40.0   # Bolus delivery rate (s/U)
+    BOLUS_EXTRA_TIME      = 7.5    # Ensure bolus was completely given
+    VOLTAGE_FACTOR        = 0.0001 # Conversion of battery voltage
+    BUTTONS               = {"EASY" : 0,
+                             "ESC"  : 1,
+                             "ACT"  : 2,
+                             "UP"   : 3,
+                             "DOWN" : 4}
+    BATTERY_STATUS        = {0 : "Normal",
+                             1 : "Low"}
 
 
 
@@ -338,8 +99,11 @@ class Pump:
         # Instanciate a stick to communicate with the pump
         self.stick = stick.Stick()
 
-        # Start stick and give it the pump serial number
+        # Start stick
         self.stick.start()
+
+        # Prepare requester to send requests to the pump
+        requester.prepare(recipient = "Pump", handle = my_stick.handle)
 
         # Power up pump's RF transmitter
         self.power()
