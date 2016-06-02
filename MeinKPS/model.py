@@ -145,18 +145,21 @@ def plotIAC(t, IAC, IOB, PIA, DIA):
     sub = plt.subplot(111)
 
     # Define plot title
-    plt.title("Insulin action curve for PIA = " + str(PIA) + " and DIA = " +
-              str(DIA), weight = "semibold")
+    plt.title("Insulin activity (IAC and IOB) for " +
+              "PIA = " + str(PIA) + " and DIA = " + str(DIA),
+              weight = "semibold")
 
     # Define plot axis
     plt.xlabel("Time (h)", weight = "semibold")
-    plt.ylabel("Insulin Action Curve (-)", weight = "semibold")
+    plt.ylabel("Insulin Activity (-)", weight = "semibold")
 
     # Add IAC and its integral to plot
     plt.plot(t, IAC, ls = "-", lw = 1.5, c = "grey",
+        #label = "IAC")
         label = r"$\int_{" + str(0) + "}^{" + str(int(DIA)) + "}" +
-        "a \cdot x^b \cdot e^{-c * x} \cdot dt = 1$")
+        "a \cdot t^b \cdot e^{-c \cdot t} \cdot dt = 1$")
     plt.plot(t, IOB, ls = "-", lw = 1.5, c = "red")
+        #label = "IOB")
 
     # Define plot legend
     legend = plt.legend(title = "Optimization conditions", loc = 1,
