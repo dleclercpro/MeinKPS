@@ -449,16 +449,18 @@ class Requester:
 
         # Download whole data on device based on a predefined number of entries
         # that have to be retrieved
-        while len(self.data) < 1110:
+        # FIXME
+        # Condition only works when downloading pump history
+        #while len(self.data) < 1110:
 
-            # Update download attempt variable
-            n += 1
+        # Update download attempt variable
+        n += 1
 
-            # Download data by sending request packet
-            self.send(packet_type = "Download")
+        # Download data by sending request packet
+        self.send(packet_type = "Download")
 
-            # Store device request response
-            self.data.extend(self.response)
+        # Store device request response
+        self.data.extend(self.response)
 
         # Give user info
         print "Downloaded data in " + str(n) + " attempt(s)."
