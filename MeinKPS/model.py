@@ -49,8 +49,9 @@ def integrateSimpson(f, p, a, b, N):
     h = (b - a) / float(N)
     i = np.sum((f(t, p) + 4 * f(t + h/2, p) + f(t + h, p)) * h/6)
 
-    print ("Integral of IAC from a = " + str(a) + " to b = " + str(b) + " is " +
-          str(i))
+    #print ("Integral of IAC from a = " + str(a) + " to b = " + str(b) +
+    #       " is " + str(i) + ".")
+
     return i
 
 
@@ -73,28 +74,34 @@ def generateIAC(t, p):
 
 
 
-def findIACParameters(PIA = 1.25, DIA = 4.0):
+def optimizeIAC(PIA = 1.25, DIA = 4.0):
 
     """
     ============================================================================
-    FINDIACPARAMETERS
+    OPTIMIZEIAC
     ============================================================================
     """
 
     t = np.linspace(0, DIA, 500, endpoint = False)
 
-    load = lambda x:(abs(t[np.argmax(generateIAC(t = t, p = [x[0], x[1], x[2]]))] - PIA) +
-                     10000 * abs(generateIAC(t = t, p = [x[0], x[1], x[2]])[DIA]) +
-                     abs(1.0 - integrateSimpson(f = generateIAC,
-                                                p = [x[0], x[1], x[2]],
-                                                a = 0,
-                                                b = DIA,
-                                                N = 500)))
+    load = lambda x:(
+           t[np.argmax(generateIAC(t = t, p = [x[0], x[1], x[2]]))] - PIA +
+           10000 * abs(generateIAC(t = t, p = [x[0], x[1], x[2]])[DIA]) +
+           abs(1.0 - integrateSimpson(f = generateIAC,
+                                      p = [x[0], x[1], x[2]],
+                                      a = 0,
+                                      b = DIA,
+                                      N = 500)))
 
-    optimized_parameters = scipy.optimize.fmin(func = load, x0 = [15.0, 4.0, 3.0], maxiter = 5000, maxfun = 5000)
-    print optimized_parameters
+    p = scipy.optimize.fmin(func = load, x0 = [15.0, 4.0, 3.0],
+                            maxiter = 5000, maxfun = 5000)
 
-    return optimized_parameters
+    print "Optimized parameters:"
+    print "a ~ " + str(round(p[0], 3))
+    print "b ~ " + str(round(p[1], 3))
+    print "c ~ " + str(round(p[2], 3))
+
+    return p
 
 
 
@@ -107,7 +114,7 @@ def plotIAC(t, IAC, PIA, DIA):
     """
 
     # Initialize plot
-    mpl.rc("font", size = 11, family = "Ubuntu")
+    mpl.rc("font", size = 11)
     fig = plt.figure(0, figsize = (10, 8))
     sub = plt.subplot(111)
 
@@ -130,31 +137,6 @@ def plotIAC(t, IAC, PIA, DIA):
 
 
 
-#n = 1000
-#
-#for i in range(n):
-#
-#    b += 0.1
-#    c = 1.0
-#
-#    for j in range(n):
-#
-#        c += 0.1
-#
-#        IAC = a * t**b * np.exp(-c * t)
-#
-#        f_1 = np.absolute(t[np.argmax(IAC)] - PIA)
-#        f_2 = np.absolute(IAC[DIA])
-#
-#        print [f_1, f_2]
-#
-#        if (f_1 < 0.01) & (f_2 < 0.01):
-#
-#            print [a, b, c]
-#            break
-
-
-
 def main():
 
     """
@@ -168,7 +150,7 @@ def main():
     DIA = 4.0
 
     t = np.linspace(0, DIA, 500, endpoint = False)
-    parameters = findIACParameters(PIA = PIA, DIA = DIA)
+    parameters = optimizeIAC(PIA = PIA, DIA = DIA)
     IAC = generateIAC(t = t, p = parameters)
     plotIAC(t, IAC, PIA = PIA, DIA = DIA)
 
