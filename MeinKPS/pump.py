@@ -584,38 +584,6 @@ class Pump:
 
 
 
-    def deliverBolus(self, bolus):
-
-        """
-        ========================================================================
-        DELIVERBOLUS
-        ========================================================================
-        """
-
-        # Evaluating time required for bolus to be delivered (giving it some
-        # additional seconds to be safe)
-        bolus_delivery_time = (self.BOLUS_DELIVERY_RATE * bolus +
-                               self.BOLUS_EXTRA_TIME)
-
-        # Define pump request
-        self.requester.define(info = "Sending bolus: " + str(bolus) + "U",
-                              sleep = bolus_delivery_time,
-                              sleep_reason = "Waiting for bolus to be " +
-                                             "delivered... (" + 
-                                             str(bolus_delivery_time) + "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
-                              attempts = 0,
-                              size = 1,
-                              code = 66,
-                              parameters = [int(bolus / self.BOLUS_STROKE)])
-
-        # Make pump request
-        self.requester.make()
-
-
-
     def readTemporaryBasal(self):
 
         """
@@ -670,6 +638,38 @@ class Pump:
         print json.dumps(self.TB, indent = 2,
                                   separators = (",", ": "),
                                   sort_keys = True)
+
+
+
+    def deliverBolus(self, bolus):
+
+        """
+        ========================================================================
+        DELIVERBOLUS
+        ========================================================================
+        """
+
+        # Evaluating time required for bolus to be delivered (giving it some
+        # additional seconds to be safe)
+        bolus_delivery_time = (self.BOLUS_DELIVERY_RATE * bolus +
+                               self.BOLUS_EXTRA_TIME)
+
+        # Define pump request
+        self.requester.define(info = "Sending bolus: " + str(bolus) + "U",
+                              sleep = bolus_delivery_time,
+                              sleep_reason = "Waiting for bolus to be " +
+                                             "delivered... (" + 
+                                             str(bolus_delivery_time) + "s)",
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 0,
+                              attempts = 0,
+                              size = 1,
+                              code = 66,
+                              parameters = [int(bolus / self.BOLUS_STROKE)])
+
+        # Make pump request
+        self.requester.make()
 
 
 
