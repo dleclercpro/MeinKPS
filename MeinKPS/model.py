@@ -25,6 +25,7 @@ Notes:    ...
 
 # TERMINOLOGY
 #   - IAC: insulin action curve
+#   - IOB: insulin-on-board
 #   - PIA: peak of insulin action
 #   - DIA: duration of insulin action
 
@@ -35,31 +36,33 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
+import scipy.special
 
 
 
-def integrateSimpson(f, p, a, b, N):
+def integrateSimpson(f, p, t, a, b, N):
 
     """
+    ============================================================================
+    INTEGRATESIMPSON
+    ============================================================================
+
     This is a module that approximates the integral i of a given function f from
     a to b. In order to do that, it uses the Simpson method, with N intervals.
     """
 
-    t = np.linspace(a, b, N, False)
     h = (b - a) / float(N)
     i = np.sum((f(t, p) + 4 * f(t + h/2, p) + f(t + h, p)) * h/6)
 
-    print ("Integral of IAC from a = " + str(a) + " to b = " + str(b) + " is " +
-          str(i))
     return i
 
 
 
-def generateIAC(t, p):
+def IAC(t, p):
 
     """
     ============================================================================
-    GENERATEIAC
+    IAC
     ============================================================================
     """
 
@@ -73,32 +76,62 @@ def generateIAC(t, p):
 
 
 
-def findIACParameters(PIA = 1.25, DIA = 4.0):
+def IOB(t, p):
 
     """
     ============================================================================
-    FINDIACPARAMETERS
+    IOB
     ============================================================================
     """
 
-    t = np.linspace(0, DIA, 500, endpoint = False)
+    a = p[0]
+    b = p[1]
+    c = p[2]
 
-    load = lambda x:(abs(t[np.argmax(generateIAC(t = t, p = [x[0], x[1], x[2]]))] - PIA) +
-                     10000 * abs(generateIAC(t = t, p = [x[0], x[1], x[2]])[DIA]) +
-                     abs(1.0 - integrateSimpson(f = generateIAC,
-                                                p = [x[0], x[1], x[2]],
-                                                a = 0,
-                                                b = DIA,
-                                                N = 500)))
+    t[0] = 0.000001
 
-    optimized_parameters = scipy.optimize.fmin(func = load, x0 = [15.0, 4.0, 3.0], maxiter = 5000, maxfun = 5000)
-    print optimized_parameters
+    IOB = -a * t**b * (c * t)**(-b) * scipy.special.gammainc(1 + b, c * t) / c
+    IOB = 1 - IOB / IOB[-1]
 
-    return optimized_parameters
+    t[0] = 0
+    IOB[0] = 1
 
+    return IOB
 
 
-def plotIAC(t, IAC, PIA, DIA):
+
+def optimizeIAC(t, N, PIA, DIA):
+
+    """
+    ============================================================================
+    OPTIMIZEIAC
+    ============================================================================
+    """
+
+    load = lambda x:(
+            abs(t[np.argmax(IAC(t = t, p = [x[0], x[1], x[2]]))] - PIA) +
+            abs(IAC(t = t, p = [x[0], x[1], x[2]])[DIA]) +
+            abs(1.0 - integrateSimpson(f = IAC,
+                                       t = t,
+                                       p = [x[0], x[1], x[2]],
+                                       a = 0,
+                                       b = DIA,
+                                       N = N)) +
+            abs(0.5 - integrateSimpson(f = IAC,
+                                       t = t,
+                                       p = [x[0], x[1], x[2]],
+                                       a = 0,
+                                       b = 0.5 * DIA,
+                                       N = N)))
+
+    return scipy.optimize.fmin(func = load,
+                               x0 = [15.0, 2.0, 2.0],
+                               maxiter = 5000,
+                               maxfun = 5000)
+
+
+
+def plotIAC(t, IAC, IOB, PIA, DIA):
 
     """
     ============================================================================
@@ -117,41 +150,25 @@ def plotIAC(t, IAC, PIA, DIA):
 
     # Define plot axis
     plt.xlabel("Time (h)", weight = "semibold")
-    plt.ylabel("Insulin Action Curve (A.U.)", weight = "semibold")
+    plt.ylabel("Insulin Action Curve (-)", weight = "semibold")
 
-    # Add potential to plot
-    plt.plot(t, IAC, ls = "-", lw = 1.5, c = "grey")
+    # Add IAC and its integral to plot
+    plt.plot(t, IAC, ls = "-", lw = 1.5, c = "grey",
+        label = r"$\int_{" + str(0) + "}^{" + str(int(DIA)) + "}" +
+        "a \cdot x^b \cdot e^{-c * x} \cdot dt = 1$")
+    plt.plot(t, IOB, ls = "-", lw = 1.5, c = "red")
+
+    # Define plot legend
+    legend = plt.legend(title = "Optimization conditions", loc = 1,
+        borderaxespad = 1.5, numpoints = 1, markerscale = 2)
+
+    plt.setp(legend.get_title(), fontweight = "semibold")
 
     # Tighten up
     plt.tight_layout()
 
     # Show plot
     plt.show()
-
-
-
-#n = 1000
-#
-#for i in range(n):
-#
-#    b += 0.1
-#    c = 1.0
-#
-#    for j in range(n):
-#
-#        c += 0.1
-#
-#        IAC = a * t**b * np.exp(-c * t)
-#
-#        f_1 = np.absolute(t[np.argmax(IAC)] - PIA)
-#        f_2 = np.absolute(IAC[DIA])
-#
-#        print [f_1, f_2]
-#
-#        if (f_1 < 0.01) & (f_2 < 0.01):
-#
-#            print [a, b, c]
-#            break
 
 
 
@@ -163,14 +180,21 @@ def main():
     ============================================================================
     """
 
-    N = 500
     PIA = 1.25
-    DIA = 4.0
+    DIA = 6.0
+    N = 500
+    t = np.linspace(0, DIA, N, endpoint = False)
 
-    t = np.linspace(0, DIA, 500, endpoint = False)
-    parameters = findIACParameters(PIA = PIA, DIA = DIA)
-    IAC = generateIAC(t = t, p = parameters)
-    plotIAC(t, IAC, PIA = PIA, DIA = DIA)
+    p = optimizeIAC(t = t,
+                    N = N,
+                    PIA = PIA,
+                    DIA = DIA)
+
+    plotIAC(t = t,
+            IAC = IAC(t, p),
+            IOB = IOB(t, p),
+            PIA = PIA,
+            DIA = DIA)
 
 
 
