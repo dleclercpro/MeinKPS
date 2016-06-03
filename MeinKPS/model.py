@@ -10,7 +10,7 @@ Author:   David Leclerc
 
 Version:  0.1
 
-Date:     02.06.2016
+Date:     03.06.2016
 
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -136,16 +136,20 @@ def optimizeIAC(t, PIA, DIA, MID):
     ============================================================================
     """
 
+    # Define importance of right peak time
+    weight_max = 1000
+
     # Define importance of getting the right integral values
-    weight_I = 100
+    weight_I = 1000
 
     load = lambda x:(
-            abs(t[np.argmax(IAC(t = t, f_params = [x[0], x[1], x[2]]))] - PIA) +
+            abs(t[np.argmax(
+                         IAC(t = t, f_params = [x[0], x[1], x[2]]))] - PIA) +
             abs(IAC(t = t, f_params = [x[0], x[1], x[2]])[DIA]) +
-            weight_I * abs(1.0 - integrate(t = t,
+            abs(1.0 - integrate(t = t,
                                            f = IAC,
                                            f_params = [x[0], x[1], x[2]])) +
-            weight_I * abs(0.5 - integrate(t = t[0:(MID * len(t) / DIA)],
+            abs(0.5 - integrate(t = t[0:(MID * len(t) / DIA)],
                                            f = IAC,
                                            f_params = [x[0], x[1], x[2]])))
 
@@ -160,13 +164,24 @@ def optimizeIAC(t, PIA, DIA, MID):
 
 
 
-def plotIAC(t, f_params, PIA, DIA, MID):
+def plotInsulinActivity(t, f_params, PIA, DIA, MID):
 
     """
     ============================================================================
-    PLOTIAC
+    PLOTINSULINACTIVITY
     ============================================================================
     """
+
+    # Define IDC of Animas
+    x_0 = 1.0104
+    x_1 = -0.02203
+    x_2 = -0.2479
+    x_3 = 0.07493
+    x_4 = -0.006623
+
+    t_Animas = t[0:(4.5 * len(t) / DIA)]
+    IDC_Animas = (x_0 + x_1 * t_Animas + x_2 * t_Animas**2 + x_3 * t_Animas**3 +
+                  x_4 * t_Animas**4)
 
     # Extract optimized parameters
     a = f_params[0]
@@ -194,13 +209,18 @@ def plotIAC(t, f_params, PIA, DIA, MID):
              label = "IAC: " + r"$f(t) = a \cdot x^b \cdot e^{-c \cdot t}$, " +
                      "with $[a, b, c]$ = [" + str(round(a, 1)) + ", " +
                      str(round(b, 1)) + ", " + str(round(c, 1)) + "]")
+
     plt.plot(t, IDC(t = t, f_params = f_params),
              ls = "-", lw = 1.5, c = "blue",
-             label = "IDC: " + r"$\int$" + " " + r"$f(t) \cdot dt$")
+             label = "IDC: " + r"$F(t) = \int$" + " " + r"$f(t) \cdot dt$")
+
+    plt.plot(t_Animas, IDC_Animas,
+             ls = "-", lw = 1.5, c = "purple",
+             label = "Animas IDC")
 
     # Define plot legend
     legend = plt.legend(title = "Insulin activity and decay curves", loc = 1,
-        borderaxespad = 1.5, numpoints = 1, markerscale = 2)
+                        borderaxespad = 1.5, numpoints = 1, markerscale = 2)
 
     plt.setp(legend.get_title(), fontweight = "semibold")
 
@@ -232,11 +252,11 @@ def main():
                            DIA = DIA,
                            MID = MID)
 
-    plotIAC(t = t,
-            f_params = f_params,
-            PIA = PIA,
-            DIA = DIA,
-            MID = MID)
+    plotInsulinActivity(t = t,
+                        f_params = f_params,
+                        PIA = PIA,
+                        DIA = DIA,
+                        MID = MID)
 
 
 
