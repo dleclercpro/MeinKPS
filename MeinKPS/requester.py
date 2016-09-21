@@ -460,7 +460,7 @@ class Requester:
 		# Store device request response
 		self.data.extend(self.response)
 
-		# End of downloading condition
+		# End of download condition
 		# XXX
 		if sum(self.response[-6:-1]) == 0:
 
