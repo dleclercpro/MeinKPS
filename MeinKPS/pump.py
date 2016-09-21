@@ -54,7 +54,7 @@ class Pump:
     # PUMP CHARACTERISTICS
     VERBOSE               = True
     PACKETS_HEAD          = [1, 0, 167, 1]
-    SERIAL_NUMBER         = 574180
+    SERIAL_NUMBER         = 799163
     SERIAL_NUMBER_ENCODED = lib.encodeSerialNumber(SERIAL_NUMBER)
     POWER_TIME            = 10     # Time (s) needed for pump to go online
     SESSION_TIME          = 10     # Time (m) for which pump will listen to RFs
@@ -529,7 +529,8 @@ class Pump:
         """
 
         # Download most recent boluses on first pump history pages
-        n_pages = 3
+	# XXX When pump history too short, higher history page do not exist?
+        n_pages = 1
 
         # Download pump history
         self.readHistory(n_pages = n_pages)
@@ -904,7 +905,8 @@ def main():
     pump.readBolus()
 
     # Send bolus to pump
-    #pump.deliverBolus(0.5)
+    # FIXME Make sure the pump is not suspended before sending bolus
+    #pump.deliverBolus(0.2)
 
     # Send temporary basal to pump
     #pump.setTemporaryBasal(4.1, "U/h", 150)

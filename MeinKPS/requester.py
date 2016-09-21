@@ -247,7 +247,8 @@ class Requester:
             # values, and store them
             self.response.append([ord(x) for x in self.raw_response])
 
-            # When response is full, exit loop # FIXME
+            # When response is full, exit loop
+	    # FIXME ?
             if ((sum([sum(x) for x in self.response]) != 0) &
                 (len(self.response[-1]) == 0)):
 
@@ -447,20 +448,23 @@ class Requester:
         # Initialize download attempt variable
         n = 0
 
-        # Download whole data on device based on a predefined number of entries
-        # that have to be retrieved
-        # FIXME
-        # Condition only works when downloading pump history
-        #while len(self.data) < 1110:
+        # Download whole data on device
+	while True:
 
-        # Update download attempt variable
-        n += 1
+		# Update download attempt variable
+		n += 1
 
-        # Download data by sending request packet
-        self.send(packet_type = "Download")
+		# Download data by sending request packet
+		self.send(packet_type = "Download")
 
-        # Store device request response
-        self.data.extend(self.response)
+		# Store device request response
+		self.data.extend(self.response)
+
+		# End of downloading condition
+		# XXX
+		if sum(self.response[-6:-1]) == 0:
+
+			break
 
         # Give user info
         print "Downloaded data in " + str(n) + " attempt(s)."
