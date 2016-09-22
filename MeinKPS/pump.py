@@ -396,6 +396,47 @@ class Pump:
 
 
 
+    def verifyStatus(self):
+
+        """
+        ========================================================================
+        VERIFYSTATUS
+        ========================================================================
+        """
+
+        # Read pump status
+        self.readStatus()
+
+        # Check if pump is ready to take action
+        if self.status["Normal"] == False:
+
+            # Give user info
+            print "There seems to be a problem with the pump. Try again later."
+
+            return False
+
+        elif self.status["Bolusing"] == True:
+
+            # Give user info
+            print "Pump is bolusing. Try again later."
+
+            return False
+
+        elif self.status["Suspended"] == True:
+
+            # Give user info
+            print "Pump is suspended, but will be asked to resume activity."
+
+            # Resume pump activity
+            self.resume()
+
+            # Give user info
+            print "Pump status allow desired course of action."
+
+            return True
+
+
+
     def readSettings(self):
 
         """
@@ -428,6 +469,51 @@ class Pump:
 
         # Give user info
         print "Pump settings: " + str(self.settings)
+
+
+
+    def verifySettings(self, bolus = None, rate = None, units = None):
+
+        """
+        ========================================================================
+        VERIFYSETTINGS
+        ========================================================================
+        """
+
+        # Read pump settings
+        self.readSettings()
+
+        # Check if pump is ready to take action
+        if bolus != None:
+
+            if bolus > self.settings["Max Bolus"]:
+
+                # Give user info
+                print "Pump cannot issue bolus since it is bigger than its " + \
+                      "maximal allowed bolus. Update the latter before " + \
+                      "trying again." 
+
+                return False
+
+        elif (rate != None) & (units != None):
+
+            if ((units == "U/h") & (rate > self.settings["Max Basal"]) |
+                (units == "%") & (rate > 200)):
+
+                # Give user info
+                print "Pump cannot issue temporary basal rate since it is " + \
+                      "bigger than its maximal basal rate. Update the " + \
+                      "latter before trying again." 
+
+                return False
+
+        # Pump settings allow desired action
+        else:
+
+            # Give user info
+            print "Pump settings allow desired course of action."
+
+            return True
 
 
 
@@ -529,7 +615,7 @@ class Pump:
         """
 
         # Download most recent boluses on first pump history pages
-	# XXX When pump history too short, higher history page do not exist?
+	    # XXX When pump history too short, higher history page do not exist?
         n_pages = 1
 
         # Download pump history
@@ -650,6 +736,12 @@ class Pump:
         ========================================================================
         """
 
+        # Verify pump status and settings before doing anything
+        if ((self.verifyStatus() == False) |
+            (self.verifySettings(bolus = bolus) == False)):
+
+            return
+
         # Evaluating time required for bolus to be delivered (giving it some
         # additional seconds to be safe)
         bolus_delivery_time = (self.BOLUS_DELIVERY_RATE * bolus +
@@ -724,6 +816,12 @@ class Pump:
         # First run
         if first_run == True:
 
+            # Verify pump status and settings before doing anything
+            if ((self.verifyStatus() == False) |
+                (self.verifySettings(rate = rate, units = units) == False)):
+
+                return
+
             # Before issuing any TB, read the current one
             self.readTemporaryBasal()
 
@@ -743,6 +841,14 @@ class Pump:
 
                 return
 
+            # In case the user wants to set the TB to zero when it already is
+            elif (last_rate == 0) & (rate == 0):
+
+                # Give user info
+                print "There is no point in reissuing a zero TB: ignoring."
+
+                return
+
             # Look if a non-zero TB is already set
             elif (last_rate != 0) | (last_duration != 0):
 
@@ -757,19 +863,8 @@ class Pump:
                                        duration = 0,
                                        first_run = False)
 
-            # In case the user wants to set the TB to zero in other units, more
-            # specifically when it has already been canceled (this is why the
-            # call is done to self.TB and not last)
-            if (rate == 0) & (duration == 0) & \
-               (self.TB["Rate"] == 0) & (self.TB["Duration"] == 0):
-
-                # Give user info
-                print "There is no point in reissuing a zero TB: ignoring."
-
-                return
-
             # If units do not match, they must be changed
-            elif units != last_units:
+            if units != last_units:
 
                 # Give user info
                 print "Old and new temporary basal units mismatch."
@@ -902,15 +997,14 @@ def main():
     #pump.readDailyTotals()
 
     # Read history on pump
-    pump.readBolus()
+    #pump.readBolus()
 
     # Send bolus to pump
-    # FIXME Make sure the pump is not suspended before sending bolus
-    #pump.deliverBolus(0.2)
+    #pump.deliverBolus(0.1)
 
     # Send temporary basal to pump
-    #pump.setTemporaryBasal(4.1, "U/h", 150)
-    #pump.setTemporaryBasal(50, "%", 60)
+    #pump.setTemporaryBasal(5, "U/h", 30)
+    #pump.setTemporaryBasal(200, "%", 60)
 
     # Suspend pump activity
     #pump.suspend()
