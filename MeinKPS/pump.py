@@ -663,7 +663,7 @@ class Pump:
                     self.reporter.addBolus(time = bolus_time,
                                            bolus = bolus)
 
-                except ValueError:
+                except:
 
                     # Error with bolus time (probably bad CRC)
                     print "Erroneous bolus time: " + str(bolus_time)
@@ -763,6 +763,9 @@ class Pump:
 
         # Make pump request
         self.requester.make()
+
+        # Read issued bolus in order to save it to the reports
+        self.readBolus()
 
 
 
@@ -1021,7 +1024,7 @@ def main():
     #pump.readTemporaryBasal()
 
     # Send temporary basal to pump
-    pump.setTemporaryBasal(5, "U/h", 30)
+    #pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
 
     # Suspend pump activity

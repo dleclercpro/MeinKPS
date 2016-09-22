@@ -35,6 +35,7 @@ Notes:    It is important to not interact with the pump while this script
 import json
 import os
 import serial
+import sys
 
 
 
@@ -78,8 +79,17 @@ class Stick:
         self.handle.rtscts = True
         self.handle.dsrdtr = True
 
-        # Open serial port
-        self.handle.open()
+        # Verify stick is plugged in        
+        try:
+
+            # Open serial port
+            self.handle.open()
+
+        except:
+
+            # Give user info
+            sys.exit("There seems to be a problem with the stick. " + \
+                      "Are you sure it's plugged in?")
 
         # Give the stick a reporter
         self.reporter = reporter.Reporter()

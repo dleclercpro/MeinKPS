@@ -63,7 +63,7 @@ class Reporter:
         with open("Reports/" + report_name + ".json", "r") as f:
             report = json.load(f)
 
-        # Look if entry is not already in report
+        # Look if entry is already in report
         if entry_key in report[entry_type]:
 
             # Give user info
@@ -82,7 +82,8 @@ class Reporter:
 
             # Rewrite report
             with open("Reports/" + report_name + ".json", "w") as f:
-                json.dump(report, f,
+                json.dump(report,
+                          f,
                           indent = 4,
                           separators = (",", ": "),
                           sort_keys = True)

@@ -46,7 +46,7 @@ NOW = datetime.datetime.now()
 class LOOP:
 
     # LOOP CHARACTERISTICS
-    TALKATIVE = True
+    VERBOSE = True
 
 
 
