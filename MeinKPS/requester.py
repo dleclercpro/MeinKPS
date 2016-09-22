@@ -243,19 +243,19 @@ class Requester:
             # Read raw request response from device
             self.raw_response = self.handle.read(self.N_BYTES)
 
-            # Vectorize raw request response, transform its bytes to decimal
-            # values, and store them
-            self.response.append([ord(x) for x in self.raw_response])
-
-            # When response is full, exit loop
-	    # FIXME ?
-            if ((sum([sum(x) for x in self.response]) != 0) &
-                (len(self.response[-1]) == 0)):
+            # When device has given all of response, exit loop
+            if (len(self.raw_response) == 0) & (sum(self.response) != 0):
 
                 break
 
-            # Otherwise, try again
+            # Otherwise, store current response and ask for the rest
             else:
+
+                # Vectorize raw response and transform its bytes to decimals
+                self.raw_response = [ord(x) for x in self.raw_response]
+
+                # Append raw response to final response vector
+                self.response.extend(self.raw_response)
 
                 # Give the device a bit of time to breathe before reading again
                 time.sleep(self.BREATHE_TIME)
@@ -263,9 +263,6 @@ class Requester:
         # Give user info
         if self.VERBOSE:
             print "Read data from device in " + str(n) + " attempt(s)."
-
-        # Flatten full response
-        self.response = [x for y in self.response for x in y]
 
 
 
@@ -363,7 +360,7 @@ class Requester:
         # Define asking attempt variable
         n = 0
 
-        # Ask recipient if data is ready
+        # Ask recipient if data is ready until something is received
         while self.n_bytes_received == 0:
 
             # Update attempt variable
