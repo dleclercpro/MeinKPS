@@ -615,7 +615,7 @@ class Pump:
         """
 
         # Download most recent boluses on first pump history pages
-	    # XXX When pump history too short, higher history page do not exist?
+	    # FIXME When pump history too short, higher history page do not exist?
         n_pages = 1
 
         # Download pump history
@@ -940,7 +940,22 @@ class Pump:
            (self.TB["Duration"] == duration):
 
             # Give user info
-            print "New temporary basal correctly set!"
+            print ("New temporary basal correctly set: " +
+                   str(self.TB["Rate"]) + str(self.TB["Units"]) + " (" +
+                   str(self.TB["Duration"]) + ")")
+
+            # Give user info
+            print "Saving new temporary basal to reports..."
+
+            # Format time at which TB was set
+            time = datetime.datetime.strftime(self.requester.time,
+                                              "%Y.%m.%d - %H:%M:%S")
+
+            # Add bolus to insulin report
+            self.reporter.addTemporaryBasal(time = time,
+                                            rate = rate,
+                                            units = units,
+                                            duration = duration)
 
         # Otherwise, quit
         else:
@@ -1002,8 +1017,11 @@ def main():
     # Send bolus to pump
     #pump.deliverBolus(0.1)
 
+    # Read temporary basal
+    #pump.readTemporaryBasal()
+
     # Send temporary basal to pump
-    #pump.setTemporaryBasal(5, "U/h", 30)
+    pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
 
     # Suspend pump activity

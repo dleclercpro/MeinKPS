@@ -29,6 +29,7 @@ Notes:    ...
 import numpy as np
 import sys
 import time
+import datetime
 
 
 
@@ -188,6 +189,9 @@ class Requester:
 
         # Give user info
         print "Sending packet: " + str(self.packets[packet_type])
+
+        # Save request time
+        self.time = datetime.datetime.now()
 
         # Send request packet as bytes to device
         self.handle.write(bytearray(self.packets[packet_type]))
@@ -446,22 +450,21 @@ class Requester:
         n = 0
 
         # Download whole data on device
-	while True:
+        while True:
 
-		# Update download attempt variable
-		n += 1
+		    # Update download attempt variable
+		    n += 1
 
-		# Download data by sending request packet
-		self.send(packet_type = "Download")
+		    # Download data by sending request packet
+		    self.send(packet_type = "Download")
 
-		# Store device request response
-		self.data.extend(self.response)
+		    # Store device request response
+		    self.data.extend(self.response)
 
-		# End of download condition
-		# XXX
-		if sum(self.response[-6:-1]) == 0:
+		    # End of download condition FIXME ?
+		    if sum(self.response[-6:-1]) == 0:
 
-			break
+			    break
 
         # Give user info
         print "Downloaded data in " + str(n) + " attempt(s)."
