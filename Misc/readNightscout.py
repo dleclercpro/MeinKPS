@@ -24,6 +24,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
+import json
 
 
 
@@ -67,6 +68,18 @@ BG = {"mmol/l" : BG_mmol_l, "mg/dl" : BG_mg_dl}
 
 # Actual number of measurements imported
 count = len(t)
+
+
+
+# Save BG values to JSON file
+report = {}
+
+for i in range(count):
+    T = datetime.datetime.strftime(t[i], "%Y.%m.%d - %H:%M:%S")
+    report[T] = round(BG_mmol_l[i], 1)
+
+with open("BG.json", "w") as f:
+    json.dump(report, f, indent = 4, separators = (",", ": "), sort_keys = True)
 
 
 
