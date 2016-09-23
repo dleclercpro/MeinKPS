@@ -40,9 +40,13 @@ Notes:    ...
 
 
 # LIBRARIES
-import datetime
 import json
 import numpy as np
+
+
+
+# USER LIBRARIES
+import lib
 
 
 
@@ -231,8 +235,7 @@ class Reporter:
 
             # Extend bolus vectors
             boluses[i] = report["Boluses"][entry_key]
-            boluses_t[i] = datetime.datetime.strptime(entry_key,
-                                                      "%Y.%m.%d - %H:%M:%S")
+            boluses_t[i] = lib.getTime(entry_key)
 
             # Update looping variable
             i += 1
@@ -252,8 +255,7 @@ class Reporter:
         for i in range(n):
 
             # Convert datetime object
-            boluses_t[i] = datetime.datetime.strftime(boluses_t[i],
-                                                      "%Y.%m.%d - %H:%M:%S")
+            boluses_t[i] = lib.getTime(boluses_t[i])
 
         # Store last bolus
         self.last_bolus = boluses[-1]
@@ -291,8 +293,7 @@ class Reporter:
 
             # Extend BG vectors
             BG[i] = report[entry_key]
-            BG_t[i] = datetime.datetime.strptime(entry_key,
-                                                 "%Y.%m.%d - %H:%M:%S")
+            BG_t[i] = lib.getTime(entry_key)
 
             # Update looping variable
             i += 1
@@ -312,8 +313,7 @@ class Reporter:
         for i in range(n):
 
             # Convert datetime object
-            BG_t[i] = datetime.datetime.strftime(BG_t[i],
-                                                 "%Y.%m.%d - %H:%M:%S")
+            BG_t[i] = lib.getTime(BG_t[i])
 
         # Store last BG
         self.last_BG = BG[-1]

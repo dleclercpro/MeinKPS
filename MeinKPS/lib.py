@@ -26,6 +26,7 @@ Notes:    ...
 
 # LIBRARIES
 import numpy as np
+import datetime
 
 
 
@@ -66,6 +67,26 @@ def parseTime(x):
         year = (x[4] & 127) + 2000
 
         return [year, month, day, hour, minute, second]
+
+
+
+def getTime(x):
+
+        """
+        ========================================================================
+        GETTIME
+        ========================================================================
+        """
+
+        if type(x) == str:
+
+            t = datetime.datetime.strptime(x, "%Y.%m.%d - %H:%M:%S")
+
+        elif type(x) == datetime.datetime:
+
+            t = datetime.datetime.strftime(x, "%Y.%m.%d - %H:%M:%S")
+
+        return t
 
 
 

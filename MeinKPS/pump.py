@@ -264,7 +264,7 @@ class Pump:
         time = datetime.datetime(year, month, day, hour, minute, second)
 
         # Store formatted time
-        self.time = datetime.datetime.strftime(time, "%Y.%m.%d - %H:%M:%S")
+        self.time = lib.getTime(time)
 
         # Give user info
         print "Pump time: " + self.time
@@ -652,8 +652,7 @@ class Pump:
                                                    bolus_time[5])
 
                     # Format bolus time
-                    bolus_time = datetime.datetime.strftime(
-                                 bolus_time, "%Y.%m.%d - %H:%M:%S")
+                    bolus_time = lib.getTime(bolus_time)
 
                     # Give user info
                     print ("Bolus read: " + str(bolus) +
@@ -953,8 +952,7 @@ class Pump:
             print "Saving new temporary basal to reports..."
 
             # Format time at which TB was set
-            time = datetime.datetime.strftime(self.requester.time,
-                                              "%Y.%m.%d - %H:%M:%S")
+            time = lib.getTime(self.requester.time)
 
             # Add bolus to insulin report
             self.reporter.addTemporaryBasal(time = time,
@@ -1029,16 +1027,16 @@ def main():
     #pump.readDailyTotals()
 
     # Read history on pump
-    pump.readBolus()
+    #pump.readBolus()
 
     # Send bolus to pump
-    pump.deliverBolus(0.5)
+    #pump.deliverBolus(0.5)
 
     # Read temporary basal
     #pump.readTemporaryBasal()
 
     # Send temporary basal to pump
-    #pump.setTemporaryBasal(5, "U/h", 30)
+    pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
 
     # Suspend pump activity
