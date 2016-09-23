@@ -29,7 +29,7 @@ import numpy as np
 
 
 
-def derivate(x_s, dt):
+def derivate(x, dt):
 
         """
         ========================================================================
@@ -38,13 +38,13 @@ def derivate(x_s, dt):
         """
 
         # Vectorize input
-        x_s = np.array(x_s)
+        x = np.array(x)
 
         # Make sure the derivative is a float at the end
         dt = float(dt)
 
         # Evaluate derivative
-        dx_dt = (x_s[1:] - x_s[:-1]) / dt
+        dx_dt = (x[1:] - x[:-1]) / dt
 
         return dx_dt
 
@@ -95,7 +95,7 @@ def padHex(x):
 
 
 
-def convertBytes(x_s):
+def convertBytes(x):
 
         """
         ========================================================================
@@ -107,9 +107,9 @@ def convertBytes(x_s):
         """
 
         # Vectorize input
-        x_s = np.array(x_s)
+        x = np.array(x)
 
-        return sum(x_s * 256 ** np.arange(len(x_s) - 1, -1, -1))
+        return sum(x * 256 ** np.arange(len(x) - 1, -1, -1))
 
 
 

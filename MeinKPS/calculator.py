@@ -43,7 +43,7 @@ import reporter
 class Calculator:
 
     # BASAL CALCULATOR CHARACTERISTICS
-    TALKATIVE = True
+    VERBOSE = True
 
 
 
@@ -70,7 +70,7 @@ class Calculator:
 
 
 
-    def inform(self, t, BG, TB, IOB, COB):
+    def inform(self):
 
         """
         ========================================================================
@@ -78,43 +78,63 @@ class Calculator:
         ========================================================================
         """
 
-        # Store given input about current situation
-        self.t = t
-        self.BG = BG
-        self.TB = TB
-        self.IOB = IOB
-        self.COB = COB
+        # Store input about current situation
+        TB = [0.5, "U/h", 30]
 
         # Read user profile
         # Read time interval between BG readings
-        self.dt = self.reporter.getEntry(report_name = "profile",
+        self.dt = self.reporter.getEntry(report_name = "profile.json",
                                          entry_type = "Settings",
                                          entry_key = "BG Time Interval")
 
         # Read BG scale
-        self.scale = self.reporter.getEntry(report_name = "profile",
+        self.scale = self.reporter.getEntry(report_name = "profile.json",
                                             entry_type = "Settings",
                                             entry_key = "BG Scale")
 
         # Read duration of insulin action
-        self.DIA = self.reporter.getEntry(report_name = "profile",
+        self.DIA = self.reporter.getEntry(report_name = "profile.json",
                                           entry_type = "Settings",
                                           entry_key = "DIA")
 
         # Read insulin to carbs factors
-        self.ICF = self.reporter.getEntry(report_name = "profile",
+        self.ICF = self.reporter.getEntry(report_name = "profile.json",
                                           entry_type = "Settings",
                                           entry_key = "ICF")
 
         # Read insulin sensitivities factors
-        self.ISF = self.reporter.getEntry(report_name = "profile",
+        self.ISF = self.reporter.getEntry(report_name = "profile.json",
                                           entry_type = "Settings",
                                           entry_key = "ISF")
 
         # Read maximal allowed BG time-rate
-        self.max_dBG_dt = self.reporter.getEntry(report_name = "profile",
+        self.max_dBG_dt = self.reporter.getEntry(report_name = "profile.json",
                                                  entry_type = "Settings",
                                                  entry_key = "BG Maximal Rate")
+
+
+
+    def computeIOB(self):
+
+        """
+        ========================================================================
+        COMPUTEIOB
+        ========================================================================
+        """
+
+        IOB = 5
+
+
+
+    def computeCOB(self):
+
+        """
+        ========================================================================
+        COMPUTECOB
+        ========================================================================
+        """
+
+        COB = 5
 
 
 
@@ -128,6 +148,7 @@ class Calculator:
 
         # Compute time-derivative of BG
         self.dBG_dt = lib.derivate(self.BG, self.dt)
+        print len(self.dBG_dt)
 
         # Compute expected BG based on BG time-rate
         self.expected_BG = 0
@@ -155,14 +176,10 @@ def main():
     calculator.start()
 
     # Inform calculator
-    calculator.inform(t = [0, 1, 2, 3],
-                      BG = [5.0, 6.0, 7.0, 8.0],
-                      TB = [0.5, "U/h", 30],
-                      IOB = 5.5,
-                      COB = 0)
+    calculator.inform()
 
     # Run calculator
-    #calculator.run()
+    calculator.run()
 
     # Stop calculator
     #calculator.stop()

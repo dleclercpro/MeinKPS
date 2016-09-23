@@ -1015,10 +1015,10 @@ def main():
     #pump.readDailyTotals()
 
     # Read history on pump
-    #pump.readBolus()
+    pump.readBolus()
 
     # Send bolus to pump
-    #pump.deliverBolus(0.1)
+    pump.deliverBolus(0.5)
 
     # Read temporary basal
     #pump.readTemporaryBasal()

@@ -40,14 +40,16 @@ Notes:    ...
 
 
 # LIBRARIES
+import datetime
 import json
+import numpy as np
 
 
 
 class Reporter:
 
     # REPORTER CHARACTERISTICS
-    TALKATIVE = True
+    VERBOSE = True
 
 
 
@@ -60,28 +62,28 @@ class Reporter:
         """
 
         # Load report
-        with open("Reports/" + report_name + ".json", "r") as f:
+        with open("Reports/" + report_name, "r") as f:
             report = json.load(f)
 
         # Look if entry is already in report
         if entry_key in report[entry_type]:
 
             # Give user info
-            print ("Entry already exists in '" + report_name + ".json': " +
+            print ("Entry already exists in '" + report_name + "': " +
                    str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
 
         # If not, write it down
         else:
 
             # Give user info
-            print ("New entry for '" + report_name + ".json': " +
+            print ("New entry for '" + report_name + "': " +
                    str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
 
             # Add entry to report
             report[entry_type][entry_key] = entry
 
             # Rewrite report
-            with open("Reports/" + report_name + ".json", "w") as f:
+            with open("Reports/" + report_name + "", "w") as f:
                 json.dump(report,
                           f,
                           indent = 4,
@@ -99,7 +101,7 @@ class Reporter:
         """
 
         # Load report
-        with open("Reports/" + report_name + ".json", "r") as f:
+        with open("Reports/" + report_name, "r") as f:
             report = json.load(f)
 
         # Look if entry exists
@@ -109,7 +111,7 @@ class Reporter:
             entry = report[entry_type][entry_key]
 
             # Give user info
-            print ("Entry found in '" + report_name + ".json': " +
+            print ("Entry found in '" + report_name + "': " +
                    str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
 
             # Return entry for external access
@@ -119,21 +121,41 @@ class Reporter:
         else:
 
             # Give user info
-            print ("No matching entry found in '" + report_name + ".json': " +
+            print ("No matching entry found in '" + report_name + "': " +
                    str(entry_type) + ", " + str(entry_key) + ", ?")
 
 
 
-    def printEntries(self, report):
+    def getReport(self, report_name):
 
         """
         ========================================================================
-        PRINTENTRIES
+        GETREPORT
         ========================================================================
         """
 
         # Load report
-        with open("Reports/" + report + ".json", "r") as f:
+        with open("Reports/" + report_name, "r") as f:
+            report = json.load(f)
+
+        # Give user info
+        print "Report '" + report_name + "' loaded."
+
+        # Return entry for external access
+        return report
+
+
+
+    def printReport(self, report_name):
+
+        """
+        ========================================================================
+        PRINTREPORT
+        ========================================================================
+        """
+
+        # Load report
+        with open("Reports/" + report_name, "r") as f:
             report = json.load(f)
 
         # Print report entries
@@ -150,7 +172,7 @@ class Reporter:
         """
 
         # Add temporary basal entry
-        self.addEntry("pump", "Reservoir Levels",
+        self.addEntry("pump.json", "Reservoir Levels",
                       time, level)
 
 
@@ -164,7 +186,7 @@ class Reporter:
         """
 
         # Add bolus entry
-        self.addEntry("insulin", "Boluses",
+        self.addEntry("insulin.json", "Boluses",
                       time, bolus)
 
 
@@ -178,8 +200,128 @@ class Reporter:
         """
 
         # Add temporary basal entry
-        self.addEntry("insulin", "Temporary Basals",
+        self.addEntry("insulin.json", "Temporary Basals",
                       time, [rate, units, duration])
+
+
+
+    def readLastBolus(self):
+
+        """
+        ========================================================================
+        READLASTBOLUS
+        ========================================================================
+        """
+
+        # Load insulin report
+        report = self.getReport("insulin.json")
+
+        # Get number of entries
+        n = len(report["Boluses"])
+
+        # Initialize bolus vectors
+        boluses = [None] * n
+        boluses_t = [None] * n
+
+        # Initialize looping variable
+        i = 0
+
+        # Read bolus report
+        for entry_key in report["Boluses"]:
+
+            # Extend bolus vectors
+            boluses[i] = report["Boluses"][entry_key]
+            boluses_t[i] = datetime.datetime.strptime(entry_key,
+                                                      "%Y.%m.%d - %H:%M:%S")
+
+            # Update looping variable
+            i += 1
+
+        # Convert bolus vectors to numpy arrays
+        boluses = np.array(boluses)
+        boluses_t = np.array(boluses_t)
+
+        # Get sorted index of bolus vectors according to growing time order
+        indices = np.argsort(boluses_t)
+
+        # Sort bolus vectors
+        boluses = boluses[indices]
+        boluses_t = boluses_t[indices]
+
+        # Reconvert bolus time to a string
+        for i in range(n):
+
+            # Convert datetime object
+            boluses_t[i] = datetime.datetime.strftime(boluses_t[i],
+                                                      "%Y.%m.%d - %H:%M:%S")
+
+        # Store last bolus
+        self.last_bolus = boluses[-1]
+        self.last_bolus_t = boluses_t[-1]
+
+        # Give user info
+        print "Last bolus: " + str(self.last_bolus) + "U (" + \
+              self.last_bolus_t + ")"
+
+
+
+    def readLastBG(self):
+
+        """
+        ========================================================================
+        READLASTBG
+        ========================================================================
+        """
+
+        # Load BG report
+        report = self.getReport("BG.json")
+
+        # Get number of entries
+        n = len(report)
+
+        # Initialize BG vectors
+        BG = [None] * n
+        BG_t = [None] * n
+
+        # Initialize looping variable
+        i = 0
+
+        # Read BG report
+        for entry_key in report:
+
+            # Extend BG vectors
+            BG[i] = report[entry_key]
+            BG_t[i] = datetime.datetime.strptime(entry_key,
+                                                 "%Y.%m.%d - %H:%M:%S")
+
+            # Update looping variable
+            i += 1
+
+        # Convert BG vectors to numpy arrays
+        BG = np.array(BG)
+        BG_t = np.array(BG_t)
+
+        # Get sorted index of BG vectors according to growing time order
+        indices = np.argsort(BG_t)
+
+        # Sort BG vectors
+        BG = BG[indices]
+        BG_t = BG_t[indices]
+
+        # Reconvert BG time to a string
+        for i in range(n):
+
+            # Convert datetime object
+            BG_t[i] = datetime.datetime.strftime(BG_t[i],
+                                                 "%Y.%m.%d - %H:%M:%S")
+
+        # Store last BG
+        self.last_BG = BG[-1]
+        self.last_BG_t = BG_t[-1]
+
+        # Give user info
+        print "Last BG: " + str(self.last_BG) + " mmol/l (" + \
+              self.last_BG_t + ")"
 
 
 
@@ -193,6 +335,12 @@ def main():
 
     # Instanciate a reporter for me
     reporter = Reporter()
+
+    # Read last bolus
+    reporter.readLastBolus()
+
+    # Read last BG
+    reporter.readLastBG()
 
 
 

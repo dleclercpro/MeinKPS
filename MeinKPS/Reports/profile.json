@@ -2,8 +2,7 @@
     "User":{
         "First Name": "David",
         "Last Name": "Leclerc",
-        "Age": 24,
-        "Diagnosis Time": "April 2008"
+        "Age": 24
     },
     "Settings":{
         "BG Scale": {
@@ -34,7 +33,7 @@
             "Evening": 1.0,
             "Night": 1.0
         },
-        "DIA": 4.0,
+        "DIA": 3.0,
         "BG Time Interval": 5.0,
         "BG Maximal Rate": 3.0
     }
