@@ -844,15 +844,17 @@ class Pump:
 
                 return
 
-            # In case the user wants to set the TB to zero when it already is
-            elif (last_rate == 0) & (rate == 0):
+            # In case the user wants to cancel a non-existent TB
+            elif ((rate == 0) & (last_rate == 0) &
+                  (duration == 0) & (last_duration == 0)):
 
                 # Give user info
-                print "There is no point in reissuing a zero TB: ignoring."
+                print "There is no point in canceling a non-existent TB: " + \
+                      "ignoring."
 
                 return
 
-            # Look if a non-zero TB is already set
+            # Look if a TB is already set
             elif (last_rate != 0) | (last_duration != 0):
 
                 # Give user info
@@ -976,6 +978,18 @@ class Pump:
         """
 
         self.setTemporaryBasal("U/h", 0, snooze)
+
+
+
+    def cancelTemporaryBasal(self):
+
+        """
+        ========================================================================
+        CANCELTEMPORARYBASAL
+        ========================================================================
+        """
+
+        self.setTemporaryBasal("U/h", 0, 0)
 
 
 
