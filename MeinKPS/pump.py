@@ -747,7 +747,7 @@ class Pump:
                                self.BOLUS_EXTRA_TIME)
 
         # Define pump request
-        self.requester.define(info = "Sending bolus: " + str(bolus) + "U",
+        self.requester.define(info = "Sending bolus: " + str(bolus) + " U",
                               sleep = bolus_delivery_time,
                               sleep_reason = "Waiting for bolus to be " +
                                              "delivered... (" + 
@@ -945,7 +945,7 @@ class Pump:
 
             # Give user info
             print ("New temporary basal correctly set: " +
-                   str(self.TB["Rate"]) + str(self.TB["Units"]) + " (" +
+                   str(self.TB["Rate"]) + " " + str(self.TB["Units"]) + " (" +
                    str(self.TB["Duration"]) + ")")
 
             # Give user info
@@ -975,7 +975,7 @@ class Pump:
         ========================================================================
         """
 
-        self.setTemporaryBasal("U/h", 0, snooze)
+        self.setTemporaryBasal(0, "U/h", snooze)
 
 
 
@@ -987,7 +987,7 @@ class Pump:
         ========================================================================
         """
 
-        self.setTemporaryBasal("U/h", 0, 0)
+        self.setTemporaryBasal(0, "U/h", 0)
 
 
 
@@ -1036,8 +1036,9 @@ def main():
     #pump.readTemporaryBasal()
 
     # Send temporary basal to pump
-    pump.setTemporaryBasal(5, "U/h", 30)
+    #pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
+    pump.cancelTemporaryBasal();
 
     # Suspend pump activity
     #pump.suspend()
