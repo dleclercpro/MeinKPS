@@ -1139,7 +1139,7 @@ def main():
     #pump.cancelTemporaryBasal()
 
     # Read carb ratios stored in pump
-    pump.readCarbRatios()
+    #pump.readCarbRatios()
 
     # Suspend pump activity
     #pump.suspend()

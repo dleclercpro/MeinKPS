@@ -18,14 +18,16 @@
             "Tiny Low": 3.8
         },
         "BG Time Interval": 5.0,
-        "Carb Ratios": "23:00",
-        "DIA": 3.0,
-        "ICF": {
-            "Afternoon": 2.5,
-            "Evening": 2.5,
-            "Morning": 3.0,
-            "Night": 2.5
+        "Carb Ratios": {
+            "00:00": 35.0,
+            "01:30": 150.0,
+            "02:00": 79.0,
+            "03:30": 3.0,
+            "22:30": 12.0,
+            "23:00": 17.0,
+            "23:30": 4.0
         },
+        "DIA": 3.0,
         "ISF": {
             "Afternoon": 1.0,
             "Evening": 1.0,

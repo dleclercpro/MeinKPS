@@ -57,46 +57,64 @@ class Reporter:
 
 
 
-    def addEntry(self, report_name, entry_type, entry_key, entry):
+    def addEntries(self, report_name, path, keys, entries):
 
         """
         ========================================================================
-        ADDENTRY
+        addEntries
         ========================================================================
         """
+
+        # Give user info
+        print "Loading report '" + report_name + "'..."
 
         # Load report
         with open("Reports/" + report_name, "r") as f:
             report = json.load(f)
 
+        # Read depth of entries
+        d = len(path)
+
+        # Read number of entries
+        n = len(keys)
+
+        # Get section of report in which to add entry
+        section = report[path[0]]
+
+        for i in range(1, d):
+            section = section[path[i]]
+
         # Look if entry is already in report
-        if entry in report[entry_type][entry_key]:
+        for i in range(n):
+            if keys[i] in section:
 
-            # Give user info
-            print ("Entry already exists in '" + report_name + "': " +
-                   str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
+                # Give user info
+                print ("Entry already exists: " + str(keys[i]) + ": " +
+                       str(entries[i]))
 
-        # If not, write it down
-        else:
+            # If not, write it down
+            else:
 
-            # Give user info
-            print ("New entry in '" + report_name + "': " +
-                   str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
+                # Give user info
+                print "New entry: " + str(keys[i]) + ": " + str(entries[i])
 
-            # Add entry to report
-            report[entry_type][entry_key] = entry
+                # Add entry to report
+                section[keys[i]] = entries[i]
 
-            # Rewrite report
-            with open("Reports/" + report_name, "w") as f:
-                json.dump(report,
-                          f,
-                          indent = 4,
-                          separators = (",", ": "),
-                          sort_keys = True)
+                # Rewrite report
+                with open("Reports/" + report_name, "w") as f:
+                    json.dump(report,
+                              f,
+                              indent = 4,
+                              separators = (",", ": "),
+                              sort_keys = True)
+
+        # Give user info
+        print "Report '" + report_name + "' updated."
 
 
 
-    def getEntry(self, report_name, entry_type, entry_key):
+    def getEntry(self, report_name, path, key):
 
         """
         ========================================================================
@@ -104,19 +122,30 @@ class Reporter:
         ========================================================================
         """
 
+        # Give user info
+        print "Loading report '" + report_name + "'..."
+
         # Load report
         with open("Reports/" + report_name, "r") as f:
             report = json.load(f)
 
+        # Read depth of entry
+        d = len(path)
+
+        # Get section of report from which to get entry
+        section = report[path[0]]
+
+        for i in range(1, d):
+            section = section[path[i]]
+
         # Look if entry exists
-        if entry_key in report[entry_type]:
+        if key in section:
 
             # Get entry matching the key
-            entry = report[entry_type][entry_key]
+            entry = section[key]
 
             # Give user info
-            print ("Entry found in '" + report_name + "': " +
-                   str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
+            print "Entry found: " + str(key) + ": " + str(entry)
 
             # Return entry for external access
             return entry
@@ -125,12 +154,11 @@ class Reporter:
         else:
 
             # Give user info
-            print ("No matching entry found in '" + report_name + "': " +
-                   str(entry_type) + ", " + str(entry_key) + ", ?")
+            print "No matching entry found."
 
 
 
-    def deleteEntries(self, report_name, entry_type, entry_key):
+    def deleteEntries(self, report_name, path):
 
         """
         ========================================================================
@@ -138,16 +166,27 @@ class Reporter:
         ========================================================================
         """
 
+        # Give user info
+        print "Loading report '" + report_name + "'..."
+
         # Load report
         with open("Reports/" + report_name, "r") as f:
             report = json.load(f)
 
+        # Read depth of entry
+        d = len(path)
+
+        # Get section of report in which to add entry
+        section = report[path[0]]
+
+        for i in range(1, d):
+            section = section[path[i]]
+
         # Give user info
-        print ("Deleting entries in '" + report_name + "': " +
-               str(entry_type) + ", " + str(entry_key))
+        print "Deleting entries..."
 
         # Delete entries
-        report[entry_type][entry_key].clear()
+        section.clear()
 
         # Rewrite report
         with open("Reports/" + report_name, "w") as f:
@@ -208,8 +247,8 @@ class Reporter:
         """
 
         # Add temporary basal entry
-        self.addEntry("pump.json", "Reservoir Levels",
-                      time, level)
+        self.addEntries("pump.json", ["Reservoir Levels"],
+                        [time], [level])
 
 
 
@@ -222,8 +261,8 @@ class Reporter:
         """
 
         # Add bolus entry
-        self.addEntry("insulin.json", "Boluses",
-                      time, bolus)
+        self.addEntries("insulin.json", ["Boluses"],
+                        [time], [bolus])
 
 
 
@@ -236,8 +275,8 @@ class Reporter:
         """
 
         # Add temporary basal entry
-        self.addEntry("insulin.json", "Temporary Basals",
-                      time, [rate, units, duration])
+        self.addEntries("insulin.json", ["Temporary Basals"],
+                        [time], [[rate, units, duration]])
 
 
 
@@ -250,15 +289,17 @@ class Reporter:
         """
 
         # Delete previous carb ratios
-        self.deleteEntries("profile.json", "Settings", "Carb Ratios")
+        self.deleteEntries("profile.json", ["Settings", "Carb Ratios"])
 
         # Read number of ratios
         n = len(ratios)
 
+        # Numpy array conversion
+        ratios = np.array(ratios)
+
         # Add ratio entries
-        for i in range(n):
-            self.addEntry("profile.json", "Settings", "Carb Ratios",
-                          ratios[i][0])
+        self.addEntries("profile.json", ["Settings", "Carb Ratios"],
+                        ratios[:, 0], ratios[:, 1].astype(float))
 
 
 
@@ -390,12 +431,10 @@ def main():
     reporter = Reporter()
 
     # Read last bolus
-    reporter.readLastBolus()
+    #reporter.readLastBolus()
 
     # Read last BG
-    reporter.readLastBG()
-
-    reporter.deleteEntries("profile.json", "Settings", "Carb Ratios")
+    #reporter.readLastBG()
 
 
 
