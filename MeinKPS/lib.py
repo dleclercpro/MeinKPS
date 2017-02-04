@@ -134,18 +134,18 @@ def convertBytes(x):
 
 
 
-def getByte(x, N):
+def getByte(x, n):
 
         """
         ========================================================================
         GETBYTE
         ========================================================================
 
-        This is a function that extracts the Nth byte of a number x (1 byte =
+        This is a function that extracts the nth byte of a number x (1 byte =
         8 bits = 256 states).
         """
 
-        return x / 256 ** N % 256
+        return x / 256 ** n % 256
 
 
 

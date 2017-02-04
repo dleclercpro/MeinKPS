@@ -517,6 +517,75 @@ class Pump:
 
 
 
+    def readCarbRatios(self):
+
+        """
+        ========================================================================
+        READCARBRATIOS
+        ========================================================================
+        """
+
+        # Initialize carb ratios and units
+        self.carb_ratios = []
+        self.carb_units = None;
+
+        # Define pump request
+        self.requester.define(info = "Reading pump carb ratios...",
+                              n_bytes_expected = 78,
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 0,
+                              attempts = 2,
+                              size = 1,
+                              code = 138,
+                              parameters = [])
+
+        # Make pump request
+        self.requester.make()
+
+        # Extract carb units
+        self.carb_units = self.requester.response[13]
+
+        # Initialize index as well as carb ratios vector
+        i = 0
+        carb_ratios = []
+
+        # Extract carb ratios
+        while True:
+
+            # Define start (a) and end (b) indexes of current ratio (each ratio
+            # entry corresponds to 2 bytes)
+            a = 15 + 2 * i
+            b = a + 2
+
+            # Get current ratio entry
+            entry = self.requester.response[a:b]
+
+            # Exit condition: no more carb ratios stored
+            if sum(entry) == 0:
+                break
+            else:
+                # Decode entry
+                carb_ratio_value = entry[0];
+                carb_ratio_time = entry[1] * 0.5; # Get time in hours (each
+                                                  # block corresponds to 30 m)
+
+                # Store decoded carb ratio and its corresponding ending time
+                carb_ratios.append([carb_ratio_time, carb_ratio_value]);
+
+            # Increment index
+            i += 1
+
+        # Rearrange carb ratios to have starting instead of ending times
+        for i in range(len(carb_ratios)):
+            self.carb_ratios.append([carb_ratios[i - 1][0], carb_ratios[i][1]])
+
+
+        # Give user info
+        print self.carb_ratios
+
+
+
     def readHistory(self, n_pages):
 
         """
@@ -1038,7 +1107,10 @@ def main():
     # Send temporary basal to pump
     #pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
-    pump.cancelTemporaryBasal();
+    #pump.cancelTemporaryBasal()
+
+    # Read carb ratios stored in pump
+    pump.readCarbRatios()
 
     # Suspend pump activity
     #pump.suspend()
