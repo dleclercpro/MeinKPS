@@ -1,40 +1,41 @@
 {
-    "User":{
-        "First Name": "David",
-        "Last Name": "Leclerc",
-        "Age": 24
-    },
-    "Settings":{
+    "Settings": {
+        "BG Maximal Rate": 3.0,
         "BG Scale": {
-            "Extreme Low": 1.5,
-            "Huge Low": 2.0,
-            "Big Low": 2.5,
-            "Low": 3.0,
-            "Little Low": 3.5,
-            "Tiny Low": 3.8,
-            "Target Low": 4.0,
-            "Target High": 7.0,
-            "Tiny High": 8.0,
-            "Little High": 10.0,
-            "High": 12.0,
             "Big High": 15.0,
+            "Big Low": 2.5,
+            "Extreme High": 20.0,
+            "Extreme Low": 1.5,
+            "High": 12.0,
             "Huge High": 18.0,
-            "Extreme High": 20.0
+            "Huge Low": 2.0,
+            "Little High": 10.0,
+            "Little Low": 3.5,
+            "Low": 3.0,
+            "Target High": 7.0,
+            "Target Low": 4.0,
+            "Tiny High": 8.0,
+            "Tiny Low": 3.8
         },
+        "BG Time Interval": 5.0,
+        "Carb Ratios": "23:00",
+        "DIA": 3.0,
         "ICF": {
-            "Morning": 3.0,
             "Afternoon": 2.5,
             "Evening": 2.5,
+            "Morning": 3.0,
             "Night": 2.5
         },
         "ISF": {
-            "Morning": 1.0,
             "Afternoon": 1.0,
             "Evening": 1.0,
+            "Morning": 1.0,
             "Night": 1.0
-        },
-        "DIA": 3.0,
-        "BG Time Interval": 5.0,
-        "BG Maximal Rate": 3.0
+        }
+    },
+    "User": {
+        "Age": 24,
+        "First Name": "David",
+        "Last Name": "Leclerc"
     }
 }

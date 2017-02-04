@@ -78,13 +78,13 @@ def getTime(x):
         ========================================================================
         """
 
-        if type(x) == str:
-
-            t = datetime.datetime.strptime(x, "%Y.%m.%d - %H:%M:%S")
-
-        elif type(x) == datetime.datetime:
+        if type(x) == datetime.datetime:
 
             t = datetime.datetime.strftime(x, "%Y.%m.%d - %H:%M:%S")
+
+        else:
+
+            t = datetime.datetime.strptime(x, "%Y.%m.%d - %H:%M:%S")
 
         return t
 

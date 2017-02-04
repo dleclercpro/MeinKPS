@@ -70,7 +70,7 @@ class Reporter:
             report = json.load(f)
 
         # Look if entry is already in report
-        if entry_key in report[entry_type]:
+        if entry in report[entry_type][entry_key]:
 
             # Give user info
             print ("Entry already exists in '" + report_name + "': " +
@@ -80,14 +80,14 @@ class Reporter:
         else:
 
             # Give user info
-            print ("New entry for '" + report_name + "': " +
+            print ("New entry in '" + report_name + "': " +
                    str(entry_type) + ", " + str(entry_key) + ", " + str(entry))
 
             # Add entry to report
             report[entry_type][entry_key] = entry
 
             # Rewrite report
-            with open("Reports/" + report_name + "", "w") as f:
+            with open("Reports/" + report_name, "w") as f:
                 json.dump(report,
                           f,
                           indent = 4,
@@ -127,6 +127,38 @@ class Reporter:
             # Give user info
             print ("No matching entry found in '" + report_name + "': " +
                    str(entry_type) + ", " + str(entry_key) + ", ?")
+
+
+
+    def deleteEntries(self, report_name, entry_type, entry_key):
+
+        """
+        ========================================================================
+        DELETEENTRIES
+        ========================================================================
+        """
+
+        # Load report
+        with open("Reports/" + report_name, "r") as f:
+            report = json.load(f)
+
+        # Give user info
+        print ("Deleting entries in '" + report_name + "': " +
+               str(entry_type) + ", " + str(entry_key))
+
+        # Delete entries
+        report[entry_type][entry_key].clear()
+
+        # Rewrite report
+        with open("Reports/" + report_name, "w") as f:
+            json.dump(report,
+                      f,
+                      indent = 4,
+                      separators = (",", ": "),
+                      sort_keys = True)
+
+        # Give user info
+        print ("Entries deleted!")
 
 
 
@@ -206,6 +238,27 @@ class Reporter:
         # Add temporary basal entry
         self.addEntry("insulin.json", "Temporary Basals",
                       time, [rate, units, duration])
+
+
+
+    def saveCarbRatios(self, ratios):
+
+        """
+        ========================================================================
+        SAVECARBRATIOS
+        ========================================================================
+        """
+
+        # Delete previous carb ratios
+        self.deleteEntries("profile.json", "Settings", "Carb Ratios")
+
+        # Read number of ratios
+        n = len(ratios)
+
+        # Add ratio entries
+        for i in range(n):
+            self.addEntry("profile.json", "Settings", "Carb Ratios",
+                          ratios[i][0])
 
 
 
@@ -341,6 +394,8 @@ def main():
 
     # Read last BG
     reporter.readLastBG()
+
+    reporter.deleteEntries("profile.json", "Settings", "Carb Ratios")
 
 
 

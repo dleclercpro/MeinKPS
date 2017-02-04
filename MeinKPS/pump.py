@@ -544,11 +544,17 @@ class Pump:
         self.requester.make()
 
         # Extract carb units
-        self.carb_units = self.requester.response[13]
+        units = self.requester.response[13]
 
-        # Initialize index as well as carb ratios vector
+        # Convert carb units to string
+        if units == 1:
+            self.carb_units = "g/U"
+        else:
+            self.carb_units = "exchanges" 
+
+        # Initialize index as well as ratios vector
         i = 0
-        carb_ratios = []
+        ratios = []
 
         # Extract carb ratios
         while True:
@@ -566,23 +572,46 @@ class Pump:
                 break
             else:
                 # Decode entry
-                carb_ratio_value = entry[0];
-                carb_ratio_time = entry[1] * 0.5; # Get time in hours (each
-                                                  # block corresponds to 30 m)
+                ratio = entry[0];
+                time = entry[1] * 30; # Get time in minutes (each block
+                                      # corresponds to 30 m)
+
+                # Format time
+                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
 
                 # Store decoded carb ratio and its corresponding ending time
-                carb_ratios.append([carb_ratio_time, carb_ratio_value]);
+                ratios.append([time, ratio]);
 
             # Increment index
             i += 1
 
+        # Store number of carb ratios read
+        n = len(ratios)
+
         # Rearrange carb ratios to have starting instead of ending times
-        for i in range(len(carb_ratios)):
-            self.carb_ratios.append([carb_ratios[i - 1][0], carb_ratios[i][1]])
+        for i in range(n):
+            self.carb_ratios.append([ratios[i - 1][0], ratios[i][1]])
 
 
         # Give user info
-        print self.carb_ratios
+        print "Found " + str(n) + " carb ratios:"
+
+        for i in range(n):
+            print (self.carb_ratios[i][0] + " - " +
+                   str(self.carb_ratios[i][1]) + " " + str(self.carb_units))
+
+        # Save carb ratios to profile report
+        self.reporter.saveCarbRatios(self.carb_ratios)
+
+
+
+    def readInsulinSensitivities(self):
+
+        """
+        ========================================================================
+        READINSULINSENSITIVITIES
+        ========================================================================
+        """
 
 
 
@@ -684,7 +713,7 @@ class Pump:
         """
 
         # Download most recent boluses on first pump history pages
-	    # FIXME When pump history too short, higher history page do not exist?
+	    # FIXME When pump history too short, higher history pages do not exist?
         n_pages = 1
 
         # Download pump history
