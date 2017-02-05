@@ -31,12 +31,15 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 #       - Test with alarm set on pump
 #       - Test with pump reservoir empty or almost empty
 #       - Deal with timezones, DST, year switch
+#       - Run series of tests overnight
+#       - Make sure enacted bolus are detected!
 
 
 
 # LIBRARIES
 import datetime
 import json
+import numpy as np
 import sys
 
 
@@ -517,20 +520,110 @@ class Pump:
 
 
 
-    def readCarbRatios(self):
+    def readInsulinSensitivityFactors(self):
 
         """
         ========================================================================
-        READCARBRATIOS
+        READINSULINSENSITIVITYFACTORS
         ========================================================================
         """
 
-        # Initialize carb ratios and units
-        self.carb_ratios = []
-        self.carb_units = None;
+        # Initialize insulin sensitivity factors and units
+        self.ISF = []
+        self.ISU = None;
 
         # Define pump request
-        self.requester.define(info = "Reading pump carb ratios...",
+        self.requester.define(info = ("Reading insulin sensitivity factors " +
+                                      "from pump..."),
+                              n_bytes_expected = 78,
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 0,
+                              attempts = 2,
+                              size = 1,
+                              code = 139,
+                              parameters = [])
+
+        # Make pump request
+        self.requester.make()
+
+        # Extract insulin sensitivity units
+        units = self.requester.response[13]
+
+        # Decode units
+        if units == 1:
+            self.ISU = "mg/dL/U"
+        else:
+            self.ISU = "mmol/L/U" 
+
+        # Initialize index as well as factors vector
+        i = 0
+        factors = []
+
+        # Extract insulin sensitivity factors
+        while True:
+
+            # Define start (a) and end (b) indexes of current factor (each
+            # factor entry corresponds to 2 bytes)
+            a = 15 + 2 * i
+            b = a + 2
+
+            # Get current factor entry
+            entry = self.requester.response[a:b]
+
+            # Exit condition: no more factors stored
+            if sum(entry) == 0:
+                break
+            else:
+                # Decode entry
+                factor = entry[0] / 10.0;
+                time = entry[1] * 30; # Get time in minutes (each block
+                                      # corresponds to 30 m)
+
+                # Format time
+                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
+
+                # Store decoded factor and its corresponding ending time
+                factors.append([time, factor]);
+
+            # Increment index
+            i += 1
+
+        # Store number of factors read
+        n = len(factors)
+
+        # Rearrange factors to have starting times instead of ending times
+        for i in range(n):
+            self.ISF.append([factors[i - 1][0], factors[i][1]])
+
+
+        # Give user info
+        print "Found " + str(n) + " insulin sensitivity factors:"
+
+        for i in range(n):
+            print (self.ISF[i][0] + " - " +
+                   str(self.ISF[i][1]) + " " + str(self.ISU))
+
+        # Save insulin sensitivity factors to profile report
+        self.reporter.saveInsulinSensitivityFactors(self.ISF, self.ISU)
+
+
+
+    def readCarbSensitivityFactors(self):
+
+        """
+        ========================================================================
+        READCARBSENSITIVITYFACTORS
+        ========================================================================
+        """
+
+        # Initialize carb sensitivity factors and units
+        self.CSF = []
+        self.CSU = None;
+
+        # Define pump request
+        self.requester.define(info = ("Reading carb sensitivity factors from " +
+                                      "pump..."),
                               n_bytes_expected = 78,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
@@ -543,75 +636,65 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract carb units
+        # Extract carb sensitivity units
         units = self.requester.response[13]
 
-        # Convert carb units to string
+        # Decode units
         if units == 1:
-            self.carb_units = "g/U"
+            self.CSU = "g/U"
         else:
-            self.carb_units = "exchanges" 
+            self.CSU = "exchanges/U" 
 
-        # Initialize index as well as ratios vector
+        # Initialize index as well as factors vector
         i = 0
-        ratios = []
+        factors = []
 
-        # Extract carb ratios
+        # Extract carb sensitivity factors
         while True:
 
-            # Define start (a) and end (b) indexes of current ratio (each ratio
-            # entry corresponds to 2 bytes)
+            # Define start (a) and end (b) indexes of current factor (each
+            # factor entry corresponds to 2 bytes)
             a = 15 + 2 * i
             b = a + 2
 
-            # Get current ratio entry
+            # Get current factor entry
             entry = self.requester.response[a:b]
 
-            # Exit condition: no more carb ratios stored
+            # Exit condition: no more factors stored
             if sum(entry) == 0:
                 break
             else:
                 # Decode entry
-                ratio = entry[0];
+                factor = entry[0];
                 time = entry[1] * 30; # Get time in minutes (each block
                                       # corresponds to 30 m)
 
                 # Format time
                 time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
 
-                # Store decoded carb ratio and its corresponding ending time
-                ratios.append([time, ratio]);
+                # Store decoded factor and its corresponding ending time
+                factors.append([time, factor]);
 
             # Increment index
             i += 1
 
-        # Store number of carb ratios read
-        n = len(ratios)
+        # Store number of factors read
+        n = len(factors)
 
-        # Rearrange carb ratios to have starting instead of ending times
+        # Rearrange factors to have starting times instead of ending times
         for i in range(n):
-            self.carb_ratios.append([ratios[i - 1][0], ratios[i][1]])
+            self.CSF.append([factors[i - 1][0], factors[i][1]])
 
 
         # Give user info
-        print "Found " + str(n) + " carb ratios:"
+        print "Found " + str(n) + " carb sensitivity factors:"
 
         for i in range(n):
-            print (self.carb_ratios[i][0] + " - " +
-                   str(self.carb_ratios[i][1]) + " " + str(self.carb_units))
+            print (self.CSF[i][0] + " - " +
+                   str(self.CSF[i][1]) + " " + str(self.CSU))
 
-        # Save carb ratios to profile report
-        self.reporter.saveCarbRatios(self.carb_ratios)
-
-
-
-    def readInsulinSensitivities(self):
-
-        """
-        ========================================================================
-        READINSULINSENSITIVITIES
-        ========================================================================
-        """
+        # Save carb sensitivity factors to profile report
+        self.reporter.saveCarbSensitivityFactors(self.CSF, self.CSU)
 
 
 
@@ -704,13 +787,16 @@ class Pump:
 
 
 
-    def readBolus(self):
+    def readBoluses(self):
 
         """
         ========================================================================
-        READBOLUS
+        READBOLUSES
         ========================================================================
         """
+
+        # Initialize boluses vector
+        boluses = []
 
         # Download most recent boluses on first pump history pages
 	    # FIXME When pump history too short, higher history pages do not exist?
@@ -756,15 +842,23 @@ class Pump:
                     print ("Bolus read: " + str(bolus) +
                            "U (" + str(bolus_time) + ")")
 
-                    # Add bolus to insulin report
-                    self.reporter.addBolus(time = bolus_time,
-                                           bolus = bolus)
+                    # Store bolus
+                    boluses.append([bolus_time, bolus])
 
                 except:
 
-                    # Error with bolus time (probably bad CRC)
+                    # Error with bolus time (bad CRC?)
                     print "Erroneous bolus time: " + str(bolus_time)
                     print "Not saving bolus."
+
+        # If new boluses read, write them to insulin report
+        if len(boluses) != 0:
+
+            # Convert boluses vector to numpy array
+            boluses = np.array(boluses)
+
+            # Add boluses to report
+            self.reporter.addBoluses(boluses[:, 0], boluses[:, 1])
 
 
 
@@ -862,7 +956,7 @@ class Pump:
         self.requester.make()
 
         # Read issued bolus in order to save it to the reports
-        self.readBolus()
+        self.readBoluses()
 
 
 
@@ -1124,8 +1218,8 @@ def main():
     # Read daily totals on pump
     #pump.readDailyTotals()
 
-    # Read history on pump
-    #pump.readBolus()
+    # Read bolus history on pump
+    #pump.readBoluses()
 
     # Send bolus to pump
     #pump.deliverBolus(0.5)
@@ -1138,8 +1232,11 @@ def main():
     #pump.setTemporaryBasal(200, "%", 60)
     #pump.cancelTemporaryBasal()
 
-    # Read carb ratios stored in pump
-    #pump.readCarbRatios()
+    # Read insulin sensitivity factors stored in pump
+    pump.readInsulinSensitivityFactors()
+
+    # Read carb sensitivity factors stored in pump
+    pump.readCarbSensitivityFactors()
 
     # Suspend pump activity
     #pump.suspend()

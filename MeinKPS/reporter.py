@@ -84,6 +84,9 @@ class Reporter:
         for i in range(1, d):
             section = section[path[i]]
 
+        # Initialize variable to keep track of report modifications
+        modified = False
+
         # Look if entry is already in report
         for i in range(n):
             if keys[i] in section:
@@ -109,8 +112,13 @@ class Reporter:
                               separators = (",", ": "),
                               sort_keys = True)
 
-        # Give user info
-        print "Report '" + report_name + "' updated."
+                # Update modifications variable
+                modified = True
+
+        # If report was modified, tell user
+        if modified:
+            # Give user info
+            print "Report '" + report_name + "' updated."
 
 
 
@@ -252,17 +260,19 @@ class Reporter:
 
 
 
-    def addBolus(self, time, bolus):
+    def addBoluses(self, t, boluses):
 
         """
         ========================================================================
-        ADDBOLUS
+        ADDBOLUSES
         ========================================================================
         """
+
+        # Give user info
+        print "Storing boluses to report: 'insulin.json'..."
 
         # Add bolus entry
-        self.addEntries("insulin.json", ["Boluses"],
-                        [time], [bolus])
+        self.addEntries("insulin.json", ["Boluses"], t, boluses.astype(float))
 
 
 
@@ -280,26 +290,49 @@ class Reporter:
 
 
 
-    def saveCarbRatios(self, ratios):
+    def saveInsulinSensitivityFactors(self, factors, units):
 
         """
         ========================================================================
-        SAVECARBRATIOS
+        SAVEINSULINSENSITIVITYFACTORS
         ========================================================================
         """
 
-        # Delete previous carb ratios
-        self.deleteEntries("profile.json", ["Settings", "Carb Ratios"])
+        # Delete previous carb factors
+        self.deleteEntries("profile.json", ["Settings", "ISF (" + units + ")"])
 
-        # Read number of ratios
-        n = len(ratios)
+        # Read number of factors
+        n = len(factors)
 
         # Numpy array conversion
-        ratios = np.array(ratios)
+        factors = np.array(factors)
 
-        # Add ratio entries
-        self.addEntries("profile.json", ["Settings", "Carb Ratios"],
-                        ratios[:, 0], ratios[:, 1].astype(float))
+        # Add factor entries
+        self.addEntries("profile.json", ["Settings", "ISF (" + units + ")"],
+                        factors[:, 0], factors[:, 1].astype(float))
+
+
+
+    def saveCarbSensitivityFactors(self, factors, units):
+
+        """
+        ========================================================================
+        SAVECARBSENSITIVITYFACTORS
+        ========================================================================
+        """
+
+        # Delete previous carb factors
+        self.deleteEntries("profile.json", ["Settings", "CSF (" + units + ")"])
+
+        # Read number of factors
+        n = len(factors)
+
+        # Numpy array conversion
+        factors = np.array(factors)
+
+        # Add factor entries
+        self.addEntries("profile.json", ["Settings", "CSF (" + units + ")"],
+                        factors[:, 0], factors[:, 1].astype(float))
 
 
 
