@@ -164,95 +164,6 @@ class Reporter:
 
 
 
-    def addEntries(self, report_name, path, keys, entries):
-
-        """
-        ========================================================================
-        addEntries
-        ========================================================================
-        """
-
-        # Load report
-        report = self.getReport(report_name)
-
-        # Read number of entries
-        n = len(keys)
-
-        # Load report section
-        section = self.checkSection(report, path, True)
-
-        # Initialize variable to keep track of report modifications
-        modified = False
-
-        # Look if entry is already in report
-        for i in range(n):
-            if keys[i] in section:
-
-                # Give user info
-                print ("Entry already exists: " + str(keys[i]) + ": " +
-                       str(entries[i]))
-
-            # If not, write it down
-            else:
-
-                # Give user info
-                print "New entry: " + str(keys[i]) + ": " + str(entries[i])
-
-                # Add entry to report
-                section[keys[i]] = entries[i]
-
-                # Rewrite report
-                with open("Reports/" + report_name, "w") as f:
-                    json.dump(report,
-                              f,
-                              indent = 4,
-                              separators = (",", ": "),
-                              sort_keys = True)
-
-                # Update modifications variable
-                modified = True
-
-        # If report was modified, tell user
-        if modified:
-            # Give user info
-            print "Report '" + report_name + "' updated."
-
-
-
-    def getEntry(self, report_name, path, key):
-
-        """
-        ========================================================================
-        GETENTRY
-        ========================================================================
-        """
-
-        # Load report
-        report = self.getReport(report_name)
-
-        # Load report section
-        section = self.checkSection(report, path, False)
-
-        # Look if entry exists
-        if key in section:
-
-            # Get entry matching the key
-            entry = section[key]
-
-            # Give user info
-            print "Entry found: " + str(key) + ": " + str(entry)
-
-            # Return entry for external access
-            return entry
-
-        # Otherwise
-        else:
-
-            # Give user info
-            print "No matching entry found."
-
-
-
     def deleteSection(self, report_name, path):
 
         """
@@ -300,7 +211,101 @@ class Reporter:
 
 
 
-    def addReservoirLevel(self):
+    def getEntry(self, report_name, path, key):
+
+        """
+        ========================================================================
+        GETENTRY
+        ========================================================================
+        """
+
+        # Load report
+        report = self.getReport(report_name)
+
+        # Load report section
+        section = self.checkSection(report, path, False)
+
+        # Look if entry exists
+        if key in section:
+
+            # Get entry matching the key
+            entry = section[key]
+
+            # Give user info
+            print "Entry found: " + str(key) + ": " + str(entry)
+
+            # Return entry for external access
+            return entry
+
+        # Otherwise
+        else:
+
+            # Give user info
+            print "No matching entry found."
+
+
+
+    def addEntries(self, report_name, path, keys, entries):
+
+        """
+        ========================================================================
+        addEntries
+        ========================================================================
+        """
+
+        # Load report
+        report = self.getReport(report_name)
+
+        # Make sure keys and entries are of array type
+        if type(keys) is not list:
+            keys = [keys]
+            entries = [entries]
+
+        # Read number of entries
+        n = len(keys)
+
+        # Load report section
+        section = self.checkSection(report, path, True)
+
+        # Initialize variable to keep track of report modifications
+        modified = False
+
+        # Look if entry is already in report
+        for i in range(n):
+            if keys[i] in section:
+
+                # Give user info
+                print ("Entry already exists: " + str(keys[i]) + ": " +
+                       str(entries[i]))
+
+            # If not, write it down
+            else:
+
+                # Give user info
+                print "New entry: " + str(keys[i]) + ": " + str(entries[i])
+
+                # Add entry to report
+                section[keys[i]] = entries[i]
+
+                # Rewrite report
+                with open("Reports/" + report_name, "w") as f:
+                    json.dump(report,
+                              f,
+                              indent = 4,
+                              separators = (",", ": "),
+                              sort_keys = True)
+
+                # Update modifications variable
+                modified = True
+
+        # If report was modified, tell user
+        if modified:
+            # Give user info
+            print "Report '" + report_name + "' was updated."
+
+
+
+    def addReservoirLevel(self, t, level):
 
         """
         ========================================================================
@@ -309,8 +314,7 @@ class Reporter:
         """
 
         # Add temporary basal entry
-        self.addEntries("pump.json", ["Reservoir Levels"],
-                        [time], [level])
+        self.addEntries("pump.json", ["Reservoir Levels"], t, level)
 
 
 
@@ -326,11 +330,11 @@ class Reporter:
         print "Storing boluses to report: 'insulin.json'..."
 
         # Add bolus entry
-        self.addEntries("insulin.json", ["Boluses"], t, boluses.astype(float))
+        self.addEntries("insulin.json", ["Boluses"], t, boluses)
 
 
 
-    def addTemporaryBasal(self, time, rate, units, duration):
+    def addTemporaryBasal(self, t, rate, units, duration):
 
         """
         ========================================================================
@@ -340,11 +344,11 @@ class Reporter:
 
         # Add temporary basal entry
         self.addEntries("insulin.json", ["Temporary Basals"],
-                        [time], [[rate, units, duration]])
+                                         t, [rate, units, duration])
 
 
 
-    def saveInsulinSensitivityFactors(self, factors, units):
+    def saveInsulinSensitivityFactors(self, t, factors, units):
 
         """
         ========================================================================
@@ -358,16 +362,13 @@ class Reporter:
         # Read number of factors
         n = len(factors)
 
-        # Numpy array conversion
-        factors = np.array(factors)
-
         # Add factor entries
         self.addEntries("profile.json", ["Settings", "ISF (" + units + ")"],
-                        factors[:, 0], factors[:, 1].astype(float))
+                                         t, factors)
 
 
 
-    def saveCarbSensitivityFactors(self, factors, units):
+    def saveCarbSensitivityFactors(self, t, factors, units):
 
         """
         ========================================================================
@@ -381,12 +382,9 @@ class Reporter:
         # Read number of factors
         n = len(factors)
 
-        # Numpy array conversion
-        factors = np.array(factors)
-
         # Add factor entries
         self.addEntries("profile.json", ["Settings", "CSF (" + units + ")"],
-                        factors[:, 0], factors[:, 1].astype(float))
+                                         t, factors)
 
 
 

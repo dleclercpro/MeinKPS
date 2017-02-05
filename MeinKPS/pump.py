@@ -528,8 +528,9 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize insulin sensitivity factors and units
+        # Initialize insulin sensitivity factors, times, and units
         self.ISF = []
+        self.ISFTimes = []
         self.ISU = None
 
         # Define pump request
@@ -556,9 +557,10 @@ class Pump:
         else:
             self.ISU = "mmol/L/U" 
 
-        # Initialize index as well as factors vector
+        # Initialize index as well as factors and times vectors
         i = 0
         factors = []
+        times = []
 
         # Extract insulin sensitivity factors
         while True:
@@ -584,7 +586,8 @@ class Pump:
                 time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
 
                 # Store decoded factor and its corresponding ending time
-                factors.append([time, factor])
+                factors.append(factor)
+                times.append(time)
 
             # Increment index
             i += 1
@@ -594,18 +597,19 @@ class Pump:
 
         # Rearrange factors to have starting times instead of ending times
         for i in range(n):
-            self.ISF.append([factors[i - 1][0], factors[i][1]])
-
+            self.ISF.append(factors[i])
+            self.ISFTimes.append(times[i - 1])
 
         # Give user info
         print "Found " + str(n) + " insulin sensitivity factors:"
 
         for i in range(n):
-            print (self.ISF[i][0] + " - " +
-                   str(self.ISF[i][1]) + " " + str(self.ISU))
+            print (self.ISFTimes[i] + " - " +
+                   str(self.ISF[i]) + " " + str(self.ISU))
 
         # Save insulin sensitivity factors to profile report
-        self.reporter.saveInsulinSensitivityFactors(self.ISF, self.ISU)
+        self.reporter.saveInsulinSensitivityFactors(self.ISFTimes, self.ISF,
+                                                    self.ISU)
 
 
 
@@ -617,8 +621,9 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize carb sensitivity factors and units
+        # Initialize carb sensitivity factors, times, and units
         self.CSF = []
+        self.CSFTimes = []
         self.CSU = None
 
         # Define pump request
@@ -645,9 +650,10 @@ class Pump:
         else:
             self.CSU = "exchanges/U" 
 
-        # Initialize index as well as factors vector
+        # Initialize index as well as factors and times vectors
         i = 0
         factors = []
+        times = []
 
         # Extract carb sensitivity factors
         while True:
@@ -673,7 +679,8 @@ class Pump:
                 time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
 
                 # Store decoded factor and its corresponding ending time
-                factors.append([time, factor])
+                factors.append(factor)
+                times.append(time)
 
             # Increment index
             i += 1
@@ -683,18 +690,19 @@ class Pump:
 
         # Rearrange factors to have starting times instead of ending times
         for i in range(n):
-            self.CSF.append([factors[i - 1][0], factors[i][1]])
-
+            self.CSF.append(factors[i])
+            self.CSFTimes.append(times[i - 1])
 
         # Give user info
         print "Found " + str(n) + " carb sensitivity factors:"
 
         for i in range(n):
-            print (self.CSF[i][0] + " - " +
-                   str(self.CSF[i][1]) + " " + str(self.CSU))
+            print (self.CSFTimes[i] + " - " +
+                   str(self.CSF[i]) + " " + str(self.CSU))
 
         # Save carb sensitivity factors to profile report
-        self.reporter.saveCarbSensitivityFactors(self.CSF, self.CSU)
+        self.reporter.saveCarbSensitivityFactors(self.CSFTimes, self.CSF,
+                                                 self.CSU)
 
 
 
@@ -706,7 +714,7 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize blood glucose targets, times and units
+        # Initialize blood glucose targets, times, and units
         self.BGTargets = []
         self.BGTargetsTimes = []
         self.BGU = None
@@ -890,8 +898,9 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize boluses vector
+        # Initialize bolus and times vectors
         boluses = []
+        times = []
 
         # Download most recent boluses on first pump history pages
 	    # FIXME When pump history too short, higher history pages do not exist?
@@ -917,43 +926,37 @@ class Pump:
                 bolus = round(self.history[i + 1] * self.BOLUS_STROKE, 1)
 
                 # Extract time at which bolus was delivered
-                bolus_time = lib.parseTime(self.history[i + 4 : i + 9])
+                time = lib.parseTime(self.history[i + 4 : i + 9])
 
                 # Test proof the bolus by looking closer at its delivery time
                 try:
 
                     # Build datetime object
-                    bolus_time = datetime.datetime(bolus_time[0],
-                                                   bolus_time[1],
-                                                   bolus_time[2],
-                                                   bolus_time[3],
-                                                   bolus_time[4],
-                                                   bolus_time[5])
+                    time = datetime.datetime(time[0], time[1], time[2],
+                                             time[3], time[4], time[5])
 
                     # Format bolus time
-                    bolus_time = lib.getTime(bolus_time)
+                    time = lib.getTime(time)
 
                     # Give user info
                     print ("Bolus read: " + str(bolus) +
-                           "U (" + str(bolus_time) + ")")
+                           "U (" + str(time) + ")")
 
                     # Store bolus
-                    boluses.append([bolus_time, bolus])
+                    boluses.append(bolus)
+                    times.append(time)
 
                 except:
 
                     # Error with bolus time (bad CRC?)
-                    print "Erroneous bolus time: " + str(bolus_time)
+                    print "Erroneous bolus time: " + str(time)
                     print "Not saving bolus."
 
         # If new boluses read, write them to insulin report
         if len(boluses) != 0:
 
-            # Convert boluses vector to numpy array
-            boluses = np.array(boluses)
-
             # Add boluses to report
-            self.reporter.addBoluses(boluses[:, 0], boluses[:, 1])
+            self.reporter.addBoluses(times, boluses)
 
 
 
@@ -1242,10 +1245,7 @@ class Pump:
             time = lib.getTime(self.requester.time)
 
             # Add bolus to insulin report
-            self.reporter.addTemporaryBasal(time = time,
-                                            rate = rate,
-                                            units = units,
-                                            duration = duration)
+            self.reporter.addTemporaryBasal(time, rate, units, duration)
 
         # Otherwise, quit
         else:
@@ -1317,13 +1317,13 @@ def main():
     #pump.readBoluses()
 
     # Send bolus to pump
-    #pump.deliverBolus(0.5)
+    #pump.deliverBolus(0.1)
 
     # Read temporary basal
     #pump.readTemporaryBasal()
 
     # Send temporary basal to pump
-    #pump.setTemporaryBasal(5, "U/h", 30)
+    pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
     #pump.cancelTemporaryBasal()
 
@@ -1334,7 +1334,7 @@ def main():
     #pump.readCarbSensitivityFactors()
 
     # Read blood glucose targets stored in pump
-    pump.readBGTargets()
+    #pump.readBGTargets()
 
     # Suspend pump activity
     #pump.suspend()
