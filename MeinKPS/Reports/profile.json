@@ -17,6 +17,21 @@
             "Tiny High": 8.0,
             "Tiny Low": 3.8
         },
+        "BG Targets (mg/dL)": {},
+        "BG Targets (mmol/L)": {
+            "00:00": [
+                4.2,
+                6.9
+            ],
+            "01:00": [
+                5.6,
+                5.7
+            ],
+            "02:00": [
+                5.2,
+                8.3
+            ]
+        },
         "BG Time Interval": 5.0,
         "CSF (exchanges/U)": {},
         "CSF (g/U)": {
@@ -40,7 +55,7 @@
         }
     },
     "User": {
-        "Age": 24,
+        "Age": 25,
         "First Name": "David",
         "Last Name": "Leclerc"
     }

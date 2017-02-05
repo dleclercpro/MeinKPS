@@ -42,6 +42,7 @@ Notes:    ...
 # LIBRARIES
 import json
 import numpy as np
+import os.path
 
 
 
@@ -57,6 +58,112 @@ class Reporter:
 
 
 
+    def getReport(self, report_name):
+
+        """
+        ========================================================================
+        GETREPORT
+        ========================================================================
+        """
+
+        # Give user info
+        print "Loading report '" + report_name + "'..."
+
+        # Check for report existence
+        self.checkReport(report_name)
+
+        # Load report
+        with open("Reports/" + report_name, "r") as f:
+            report = json.load(f)
+
+        # Give user info
+        print "Report loaded."
+
+        # Return entry for external access
+        return report
+
+
+
+    def printReport(self, report_name):
+
+        """
+        ========================================================================
+        PRINTREPORT
+        ========================================================================
+        """
+
+        # Load report
+        with open("Reports/" + report_name, "r") as f:
+            report = json.load(f)
+
+        # Print report entries
+        print report
+
+
+
+    def checkReport(self, report_name):
+
+        """
+        ========================================================================
+        CHECKREPORT
+        ========================================================================
+        """
+
+        # Check for report existence
+        if not os.path.exists("Reports/" + report_name):
+
+            # Give user info
+            print "Report '" + report_name + "' does not exist. Creating it..."
+
+            # Creating new empty report
+            with open("Reports/" + report_name, "w") as f:
+                json.dump({}, f)
+
+
+
+    def checkSection(self, report, path, create):
+
+        """
+        ========================================================================
+        CHECKSECTION
+        ========================================================================
+        """
+
+        # Check if section report exists. If not, then create it
+        section = report
+
+        # Read section depth
+        d = len(path)
+
+        for i in range(0, d):
+            if path[i] not in section:
+
+                # Create report if desired
+                if create:
+                
+                    # Give user info
+                    print ("Report section '" + path[i] + "' does not exist. " +
+                           "Creating it...")
+
+                    # Create missing report section
+                    section[path[i]] = {}
+
+                else:
+
+                    # Give user info
+                    print "No matching report section found for: " + str(path)
+
+                    # Exit
+                    return
+
+            # Actualize section
+            section = section[path[i]]
+
+        # Give out section
+        return section
+
+
+
     def addEntries(self, report_name, path, keys, entries):
 
         """
@@ -65,24 +172,14 @@ class Reporter:
         ========================================================================
         """
 
-        # Give user info
-        print "Loading report '" + report_name + "'..."
-
         # Load report
-        with open("Reports/" + report_name, "r") as f:
-            report = json.load(f)
-
-        # Read depth of entries
-        d = len(path)
+        report = self.getReport(report_name)
 
         # Read number of entries
         n = len(keys)
 
-        # Get section of report in which to add entry
-        section = report[path[0]]
-
-        for i in range(1, d):
-            section = section[path[i]]
+        # Load report section
+        section = self.checkSection(report, path, True)
 
         # Initialize variable to keep track of report modifications
         modified = False
@@ -130,21 +227,11 @@ class Reporter:
         ========================================================================
         """
 
-        # Give user info
-        print "Loading report '" + report_name + "'..."
-
         # Load report
-        with open("Reports/" + report_name, "r") as f:
-            report = json.load(f)
+        report = self.getReport(report_name)
 
-        # Read depth of entry
-        d = len(path)
-
-        # Get section of report from which to get entry
-        section = report[path[0]]
-
-        for i in range(1, d):
-            section = section[path[i]]
+        # Load report section
+        section = self.checkSection(report, path, False)
 
         # Look if entry exists
         if key in section:
@@ -166,83 +253,50 @@ class Reporter:
 
 
 
-    def deleteEntries(self, report_name, path):
+    def deleteSection(self, report_name, path):
 
         """
         ========================================================================
-        DELETEENTRIES
+        DELETESECTION
         ========================================================================
         """
-
-        # Give user info
-        print "Loading report '" + report_name + "'..."
 
         # Load report
-        with open("Reports/" + report_name, "r") as f:
-            report = json.load(f)
-
-        # Read depth of entry
-        d = len(path)
+        report = self.getReport(report_name)
 
         # Get section of report in which to add entry
-        section = report[path[0]]
+        section = report
 
-        for i in range(1, d):
-            section = section[path[i]]
-
-        # Give user info
-        print "Deleting entries..."
-
-        # Delete entries
-        section.clear()
-
-        # Rewrite report
-        with open("Reports/" + report_name, "w") as f:
-            json.dump(report,
-                      f,
-                      indent = 4,
-                      separators = (",", ": "),
-                      sort_keys = True)
+        # Check if section exists at all
+        section = self.checkSection(report, path, False)
 
         # Give user info
-        print ("Entries deleted!")
+        print "Attempting to delete section: " + str(path)
 
+        # If it does, delete it
+        if section:
 
+            # Load report parent section of the one that has to be deleted
+            parent = self.checkSection(report, path[0:-1], False)
 
-    def getReport(self, report_name):
+            # Delete last section in path
+            del parent[path[-1]]
 
-        """
-        ========================================================================
-        GETREPORT
-        ========================================================================
-        """
+            # Rewrite report
+            with open("Reports/" + report_name, "w") as f:
+                json.dump(report,
+                          f,
+                          indent = 4,
+                          separators = (",", ": "),
+                          sort_keys = True)
 
-        # Load report
-        with open("Reports/" + report_name, "r") as f:
-            report = json.load(f)
+            # Give user info
+            print ("Section deleted!")
 
-        # Give user info
-        print "Report '" + report_name + "' loaded."
+        else:
 
-        # Return entry for external access
-        return report
-
-
-
-    def printReport(self, report_name):
-
-        """
-        ========================================================================
-        PRINTREPORT
-        ========================================================================
-        """
-
-        # Load report
-        with open("Reports/" + report_name, "r") as f:
-            report = json.load(f)
-
-        # Print report entries
-        print report
+            # Give user info
+            print ("No such section: no need to delete!")
 
 
 
@@ -299,7 +353,7 @@ class Reporter:
         """
 
         # Delete previous carb factors
-        self.deleteEntries("profile.json", ["Settings", "ISF (" + units + ")"])
+        self.deleteSection("profile.json", ["Settings", "ISF (" + units + ")"])
 
         # Read number of factors
         n = len(factors)
@@ -322,7 +376,7 @@ class Reporter:
         """
 
         # Delete previous carb factors
-        self.deleteEntries("profile.json", ["Settings", "CSF (" + units + ")"])
+        self.deleteSection("profile.json", ["Settings", "CSF (" + units + ")"])
 
         # Read number of factors
         n = len(factors)
@@ -333,6 +387,27 @@ class Reporter:
         # Add factor entries
         self.addEntries("profile.json", ["Settings", "CSF (" + units + ")"],
                         factors[:, 0], factors[:, 1].astype(float))
+
+
+
+    def saveBloodGlucoseTargets(self, t, targets, units):
+
+        """
+        ========================================================================
+        SAVEBLOODGLUCOSETARGETS
+        ========================================================================
+        """
+
+        # Delete previous BG targets
+        self.deleteSection("profile.json", ["Settings", "BG Targets (" + 
+                                            units + ")"])
+
+        # Read number of factors
+        n = len(targets)
+
+        # Add factor entries
+        self.addEntries("profile.json", ["Settings", "BG Targets (" +
+                                         units + ")"], t, targets)
 
 
 

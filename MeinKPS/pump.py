@@ -530,7 +530,7 @@ class Pump:
 
         # Initialize insulin sensitivity factors and units
         self.ISF = []
-        self.ISU = None;
+        self.ISU = None
 
         # Define pump request
         self.requester.define(info = ("Reading insulin sensitivity factors " +
@@ -576,15 +576,15 @@ class Pump:
                 break
             else:
                 # Decode entry
-                factor = entry[0] / 10.0;
-                time = entry[1] * 30; # Get time in minutes (each block
-                                      # corresponds to 30 m)
+                factor = entry[0] / 10.0
+                time = entry[1] * 30 # Get time in minutes (each block
+                                     # corresponds to 30 m)
 
                 # Format time
                 time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
 
                 # Store decoded factor and its corresponding ending time
-                factors.append([time, factor]);
+                factors.append([time, factor])
 
             # Increment index
             i += 1
@@ -619,7 +619,7 @@ class Pump:
 
         # Initialize carb sensitivity factors and units
         self.CSF = []
-        self.CSU = None;
+        self.CSU = None
 
         # Define pump request
         self.requester.define(info = ("Reading carb sensitivity factors from " +
@@ -665,15 +665,15 @@ class Pump:
                 break
             else:
                 # Decode entry
-                factor = entry[0];
-                time = entry[1] * 30; # Get time in minutes (each block
-                                      # corresponds to 30 m)
+                factor = entry[0]
+                time = entry[1] * 30 # Get time in minutes (each block
+                                     # corresponds to 30 m)
 
                 # Format time
                 time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
 
                 # Store decoded factor and its corresponding ending time
-                factors.append([time, factor]);
+                factors.append([time, factor])
 
             # Increment index
             i += 1
@@ -695,6 +695,101 @@ class Pump:
 
         # Save carb sensitivity factors to profile report
         self.reporter.saveCarbSensitivityFactors(self.CSF, self.CSU)
+
+
+
+    def readBGTargets(self):
+
+        """
+        ========================================================================
+        READBGTARGETS
+        ========================================================================
+        """
+
+        # Initialize blood glucose targets, times and units
+        self.BGTargets = []
+        self.BGTargetsTimes = []
+        self.BGU = None
+
+        # Define pump request
+        self.requester.define(info = ("Reading blood glucose targets from " +
+                                      "pump..."),
+                              n_bytes_expected = 78,
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 0,
+                              attempts = 2,
+                              size = 1,
+                              code = 159,
+                              parameters = [])
+
+        # Make pump request
+        self.requester.make()
+
+        # Extract carb sensitivity units
+        units = self.requester.response[13]
+
+        # Decode units
+        if units == 1:
+            self.BGU = "mg/dL"
+        else:
+            self.BGU = "mmol/L" 
+
+        # Initialize index as well as targets and times vectors
+        i = 0
+        targets = []
+        times = []
+
+        # Extract BG targets
+        while True:
+
+            # Define start (a) and end (b) indexes of current targets (each
+            # target entry corresponds to 3 bytes)
+            a = 15 + 3 * i
+            b = a + 3
+
+            # Get current target entry
+            entry = self.requester.response[a:b]
+
+            # Exit condition: no more targets stored
+            if sum(entry) == 0:
+                break
+            else:
+                # Decode entry
+                target = [entry[0] / 10.0, entry[1] / 10.0]
+                time = entry[2] * 30 # Get time in minutes (each block
+                                     # corresponds to 30 m)
+
+                # Format time
+                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
+
+                # Store decoded target and its corresponding ending time
+                targets.append(target)
+                times.append(time)
+
+            # Increment index
+            i += 1
+
+        # Store number of targets read
+        n = len(targets)
+
+        # Rearrange targets to have starting times instead of ending times
+        for i in range(n):
+            self.BGTargets.append(targets[i])
+            self.BGTargetsTimes.append(times[i - 1])
+
+
+        # Give user info
+        print "Found " + str(n) + " blood glucose targets:"
+
+        for i in range(n):
+            print (self.BGTargetsTimes[i] + " - " +
+                   str(self.BGTargets[i]) + " " + str(self.BGU))
+
+        # Save blood glucose targets to profile report
+        self.reporter.saveBloodGlucoseTargets(self.BGTargetsTimes,
+                                              self.BGTargets,
+                                              self.BGU)
 
 
 
@@ -1233,10 +1328,13 @@ def main():
     #pump.cancelTemporaryBasal()
 
     # Read insulin sensitivity factors stored in pump
-    pump.readInsulinSensitivityFactors()
+    #pump.readInsulinSensitivityFactors()
 
     # Read carb sensitivity factors stored in pump
-    pump.readCarbSensitivityFactors()
+    #pump.readCarbSensitivityFactors()
+
+    # Read blood glucose targets stored in pump
+    pump.readBGTargets()
 
     # Suspend pump activity
     #pump.suspend()
