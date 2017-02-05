@@ -101,8 +101,28 @@ class Pump:
         # Prepare requester to send requests to the pump
         self.requester.prepare(recipient = "Pump", handle = self.stick.handle)
 
-        # Power up pump's RF transmitter
-        self.power()
+        # Read last power up time
+        then = self.reporter.getEntry("pump.json", [], "Last Power")
+
+        # Convert time to datetime object
+        then = lib.getTime(then)
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Define max time allowed between RF communication sessions
+        delta = datetime.timedelta(minutes = self.SESSION_TIME)
+
+        # Power up pump if necessary
+        if (now - then) > delta:
+
+            # Power up pump's RF transmitter
+            self.power()
+
+        else:
+
+            # Give user info
+            print "Pump's radio transmitter already on."
 
 
 
@@ -148,6 +168,9 @@ class Pump:
 
         # Make pump request
         self.requester.make()
+
+        # Save power up time
+        self.reporter.saveLastPowerTime()
 
 
 
@@ -1323,18 +1346,18 @@ def main():
     #pump.readTemporaryBasal()
 
     # Send temporary basal to pump
-    pump.setTemporaryBasal(5, "U/h", 30)
+    #pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
     #pump.cancelTemporaryBasal()
 
     # Read insulin sensitivity factors stored in pump
-    #pump.readInsulinSensitivityFactors()
+    pump.readInsulinSensitivityFactors()
 
     # Read carb sensitivity factors stored in pump
-    #pump.readCarbSensitivityFactors()
+    pump.readCarbSensitivityFactors()
 
     # Read blood glucose targets stored in pump
-    #pump.readBGTargets()
+    pump.readBGTargets()
 
     # Suspend pump activity
     #pump.suspend()

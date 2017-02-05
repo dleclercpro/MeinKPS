@@ -22,7 +22,8 @@ Notes:    ...
 """
 
 # TODO
-# - Create report and/or categories if non-existent
+# X Create report and/or categories if non-existent
+# - Overwrite option instead of deleting section completely
 
 
 
@@ -43,6 +44,7 @@ Notes:    ...
 import json
 import numpy as np
 import os.path
+import datetime
 
 
 
@@ -245,7 +247,7 @@ class Reporter:
 
 
 
-    def addEntries(self, report_name, path, keys, entries):
+    def addEntries(self, report_name, path, keys, entries, overwrite):
 
         """
         ========================================================================
@@ -272,7 +274,7 @@ class Reporter:
 
         # Look if entry is already in report
         for i in range(n):
-            if keys[i] in section:
+            if keys[i] in section and not overwrite:
 
                 # Give user info
                 print ("Entry already exists: " + str(keys[i]) + ": " +
@@ -282,7 +284,11 @@ class Reporter:
             else:
 
                 # Give user info
-                print "New entry: " + str(keys[i]) + ": " + str(entries[i])
+                if i == 0:
+                    print ("Writing down following entries under " +
+                           str(path) + ":")
+
+                print str(keys[i]) + " - " + str(entries[i])
 
                 # Add entry to report
                 section[keys[i]] = entries[i]
@@ -356,15 +362,12 @@ class Reporter:
         ========================================================================
         """
 
-        # Delete previous carb factors
-        self.deleteSection("profile.json", ["Settings", "ISF (" + units + ")"])
-
         # Read number of factors
         n = len(factors)
 
-        # Add factor entries
+        # Write down (and overwrite if necessary) factor entries into report
         self.addEntries("profile.json", ["Settings", "ISF (" + units + ")"],
-                                         t, factors)
+                                         t, factors, True)
 
 
 
@@ -376,15 +379,12 @@ class Reporter:
         ========================================================================
         """
 
-        # Delete previous carb factors
-        self.deleteSection("profile.json", ["Settings", "CSF (" + units + ")"])
-
         # Read number of factors
         n = len(factors)
 
-        # Add factor entries
+        # Write down (and overwrite if necessary) factor entries into report
         self.addEntries("profile.json", ["Settings", "CSF (" + units + ")"],
-                                         t, factors)
+                                         t, factors, True)
 
 
 
@@ -396,16 +396,31 @@ class Reporter:
         ========================================================================
         """
 
-        # Delete previous BG targets
-        self.deleteSection("profile.json", ["Settings", "BG Targets (" + 
-                                            units + ")"])
-
         # Read number of factors
         n = len(targets)
 
-        # Add factor entries
+        # Write down (and overwrite if necessary) factor entries into report
         self.addEntries("profile.json", ["Settings", "BG Targets (" +
-                                         units + ")"], t, targets)
+                                         units + ")"], t, targets, True)
+
+
+
+    def saveLastPowerTime(self):
+
+        """
+        ========================================================================
+        SAVELASTPOWERTIME
+        ========================================================================
+        """
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Convert time to string
+        now = lib.getTime(now)
+
+        # Write down (and overwrite if necessary) last power up time
+        self.addEntries("pump.json", [], "Last Power", now, True)
 
 
 
