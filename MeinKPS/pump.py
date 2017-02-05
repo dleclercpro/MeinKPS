@@ -135,9 +135,9 @@ class Pump:
         now = datetime.datetime.now()
 
         # Read last time pump's radio transmitter was power up
-        then = self.reporter.getEntry("pump.json", [], "Last Power")
+        then = self.reporter.getEntry("pump.json", [], "Power Up")
 
-        # Convert time to datetime object
+        # Format time
         then = lib.getTime(then)
 
         # Define max time allowed between RF communication sessions
@@ -405,6 +405,15 @@ class Pump:
         self.reservoir = (
             (lib.getByte(self.requester.response[13], 0) * 256 |
              lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE)
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Format time
+        now = lib.getTime(now)
+
+        # Add current reservoir level to pump report
+        self.reporter.addReservoirLevel(now, self.reservoir)
 
         # Give user info
         print "Amount of insulin in reservoir: " + str(self.reservoir) + "U"
@@ -1346,7 +1355,7 @@ def main():
     #pump.readFirmwareVersion()
 
     # Read remaining amount of insulin in pump
-    #pump.readReservoirLevel()
+    pump.readReservoirLevel()
 
     # Read pump status
     #pump.readStatus()

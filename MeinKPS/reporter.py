@@ -336,7 +336,7 @@ class Reporter:
         """
 
         # Add temporary basal entry
-        self.addEntries("pump.json", ["Reservoir Level"], t, level)
+        self.addEntries("pump.json", ["Reservoir Levels"], t, level)
 
 
 
@@ -436,7 +436,7 @@ class Reporter:
         now = lib.getTime(now)
 
         # Write down (and overwrite if necessary) last power up time
-        self.addEntries("pump.json", [], "Last Power", now, True)
+        self.addEntries("pump.json", [], "Power Up", now, True)
 
 
 
@@ -572,6 +572,9 @@ def main():
 
     # Read last BG
     #reporter.readLastBG()
+
+    # Add reservoir level
+    #reporter.addReservoirLevel("05.02.2017 - 23:42:05", 195)
 
 
 
