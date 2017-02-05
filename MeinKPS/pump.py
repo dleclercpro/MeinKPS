@@ -101,28 +101,8 @@ class Pump:
         # Prepare requester to send requests to the pump
         self.requester.prepare(recipient = "Pump", handle = self.stick.handle)
 
-        # Read last power up time
-        then = self.reporter.getEntry("pump.json", [], "Last Power")
-
-        # Convert time to datetime object
-        then = lib.getTime(then)
-
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Define max time allowed between RF communication sessions
-        delta = datetime.timedelta(minutes = self.SESSION_TIME)
-
-        # Power up pump if necessary
-        if (now - then) > delta:
-
-            # Power up pump's RF transmitter
-            self.power()
-
-        else:
-
-            # Give user info
-            print "Pump's radio transmitter already on."
+        # Power pump's radio transmitter if necessary
+        self.verifyPower()
 
 
 
@@ -139,6 +119,46 @@ class Pump:
 
         # Stop stick
         self.stick.stop()
+
+
+
+    def verifyPower(self):
+
+        """
+        ========================================================================
+        VERIFYPOWER
+        ========================================================================
+        """
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Read last time pump's radio transmitter was power up
+        then = self.reporter.getEntry("pump.json", [], "Last Power")
+
+        # Convert time to datetime object
+        then = lib.getTime(then)
+
+        # Define max time allowed between RF communication sessions
+        session = datetime.timedelta(minutes = self.SESSION_TIME)
+
+        # Compute time since last power up
+        delta = now - then
+
+        # Power up pump if necessary
+        if delta > session:
+
+            # Give user info
+            print "Pump's radio transmitter will be turned on..."
+
+            # Power up pump's RF transmitter
+            self.power()
+
+        else:
+
+            # Give user info
+            print ("Pump's radio transmitter is already on. Remaining time: " +
+                   str(self.SESSION_TIME - delta.seconds / 60) + " m")
 
 
 
@@ -170,7 +190,7 @@ class Pump:
         self.requester.make()
 
         # Save power up time
-        self.reporter.saveLastPowerTime()
+        self.reporter.savePowerTime()
 
 
 
@@ -1351,13 +1371,13 @@ def main():
     #pump.cancelTemporaryBasal()
 
     # Read insulin sensitivity factors stored in pump
-    pump.readInsulinSensitivityFactors()
+    #pump.readInsulinSensitivityFactors()
 
     # Read carb sensitivity factors stored in pump
-    pump.readCarbSensitivityFactors()
+    #pump.readCarbSensitivityFactors()
 
     # Read blood glucose targets stored in pump
-    pump.readBGTargets()
+    #pump.readBGTargets()
 
     # Suspend pump activity
     #pump.suspend()

@@ -72,7 +72,7 @@ class Reporter:
         print "Loading report '" + report_name + "'..."
 
         # Check for report existence
-        self.checkReport(report_name)
+        self.verifyReport(report_name)
 
         # Load report
         with open("Reports/" + report_name, "r") as f:
@@ -103,11 +103,11 @@ class Reporter:
 
 
 
-    def checkReport(self, report_name):
+    def verifyReport(self, report_name):
 
         """
         ========================================================================
-        CHECKREPORT
+        VERIFYREPORT
         ========================================================================
         """
 
@@ -123,11 +123,11 @@ class Reporter:
 
 
 
-    def checkSection(self, report, path, create):
+    def verifySection(self, report, path, create):
 
         """
         ========================================================================
-        CHECKSECTION
+        VERIFYSECTION
         ========================================================================
         """
 
@@ -181,7 +181,7 @@ class Reporter:
         section = report
 
         # Check if section exists at all
-        section = self.checkSection(report, path, False)
+        section = self.verifySection(report, path, False)
 
         # Give user info
         print "Attempting to delete section: " + str(path)
@@ -190,7 +190,7 @@ class Reporter:
         if section:
 
             # Load report parent section of the one that has to be deleted
-            parent = self.checkSection(report, path[0:-1], False)
+            parent = self.verifySection(report, path[0:-1], False)
 
             # Delete last section in path
             del parent[path[-1]]
@@ -225,7 +225,7 @@ class Reporter:
         report = self.getReport(report_name)
 
         # Load report section
-        section = self.checkSection(report, path, False)
+        section = self.verifySection(report, path, False)
 
         # Look if entry exists
         if key in section:
@@ -267,27 +267,37 @@ class Reporter:
         n = len(keys)
 
         # Load report section
-        section = self.checkSection(report, path, True)
+        section = self.verifySection(report, path, True)
+
+        # If overwrite option was selected, clear report section
+        if overwrite:
+
+            # Give user info
+            print ("Overwrite option was selected: clearing " +
+                   "report section...")
+
+            section.clear()
 
         # Initialize variable to keep track of report modifications
         modified = False
 
         # Look if entry is already in report
         for i in range(n):
-            if keys[i] in section and not overwrite:
+            if keys[i] in section:
 
                 # Give user info
-                print ("Entry already exists: " + str(keys[i]) + ": " +
+                print ("Entry already exists: " + str(keys[i]) + " - " +
                        str(entries[i]))
 
             # If not, write it down
             else:
-
-                # Give user info
                 if i == 0:
+
+                    # Give user info
                     print ("Writing down following entries under " +
                            str(path) + ":")
 
+                # Give user info
                 print str(keys[i]) + " - " + str(entries[i])
 
                 # Add entry to report
@@ -320,7 +330,7 @@ class Reporter:
         """
 
         # Add temporary basal entry
-        self.addEntries("pump.json", ["Reservoir Levels"], t, level)
+        self.addEntries("pump.json", ["Reservoir Level"], t, level)
 
 
 
@@ -350,7 +360,7 @@ class Reporter:
 
         # Add temporary basal entry
         self.addEntries("insulin.json", ["Temporary Basals"],
-                                         t, [rate, units, duration])
+                                         t, [rate, units, duration], False)
 
 
 
@@ -405,11 +415,11 @@ class Reporter:
 
 
 
-    def saveLastPowerTime(self):
+    def savePowerTime(self):
 
         """
         ========================================================================
-        SAVELASTPOWERTIME
+        SAVEPOWERTIME
         ========================================================================
         """
 
