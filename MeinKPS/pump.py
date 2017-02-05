@@ -33,6 +33,7 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 #       - Deal with timezones, DST, year switch
 #       - Run series of tests overnight
 #       - Make sure enacted bolus are detected!
+#       - No point in reissuing same TBR?
 
 
 
@@ -477,7 +478,7 @@ class Pump:
             self.resume()
 
             # Give user info
-            print "Pump status allow desired course of action."
+            print "Pump status allows desired course of action."
 
             return True
 
@@ -1069,9 +1070,9 @@ class Pump:
         """
 
         # Verify pump status and settings before doing anything
-        if ((self.verifyStatus() == False) |
-            (self.verifySettings(bolus = bolus) == False)):
-
+        if self.verifyStatus() == False:
+            return
+        if self.verifySettings(bolus = bolus) == False:
             return
 
         # Evaluating time required for bolus to be delivered (giving it some
@@ -1152,9 +1153,9 @@ class Pump:
         if first_run == True:
 
             # Verify pump status and settings before doing anything
-            if ((self.verifyStatus() == False) |
-                (self.verifySettings(rate = rate, units = units) == False)):
-
+            if self.verifyStatus() == False:
+                return
+            if self.verifySettings(rate = rate, units = units) == False:
                 return
 
             # Before issuing any TB, read the current one

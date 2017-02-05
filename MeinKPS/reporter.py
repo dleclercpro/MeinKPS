@@ -247,7 +247,7 @@ class Reporter:
 
 
 
-    def addEntries(self, report_name, path, keys, entries, overwrite):
+    def addEntries(self, report_name, path, keys, entries, overwrite = False):
 
         """
         ========================================================================
@@ -276,7 +276,13 @@ class Reporter:
             print ("Overwrite option was selected: clearing " +
                    "report section...")
 
-            section.clear()
+            # If section is on first level, do not delete whole report!
+            if len(path) == 0:
+                for i in range(n):
+                    del section[keys[i]]
+
+            else:
+                section.clear()
 
         # Initialize variable to keep track of report modifications
         modified = False
@@ -360,7 +366,7 @@ class Reporter:
 
         # Add temporary basal entry
         self.addEntries("insulin.json", ["Temporary Basals"],
-                                         t, [rate, units, duration], False)
+                                         t, [rate, units, duration])
 
 
 
