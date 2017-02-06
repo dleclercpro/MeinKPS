@@ -191,7 +191,7 @@ class Pump:
         self.requester.make()
 
         # Save power up time
-        self.reporter.savePowerTime()
+        self.reporter.storePowerTime()
 
 
 
@@ -401,10 +401,13 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract remaining amout of insulin
+        # Extract remaining amount of insulin
         self.reservoir = (
             (lib.getByte(self.requester.response[13], 0) * 256 |
              lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE)
+
+        # Round amount
+        self.reservoir = round(self.reservoir, 1)
 
         # Get current time
         now = datetime.datetime.now()
@@ -661,7 +664,7 @@ class Pump:
                    str(self.ISF[i]) + " " + str(self.ISU))
 
         # Save insulin sensitivity factors to profile report
-        self.reporter.saveInsulinSensitivityFactors(self.ISFTimes, self.ISF,
+        self.reporter.storeInsulinSensitivityFactors(self.ISFTimes, self.ISF,
                                                     self.ISU)
 
 
@@ -754,7 +757,7 @@ class Pump:
                    str(self.CSF[i]) + " " + str(self.CSU))
 
         # Save carb sensitivity factors to profile report
-        self.reporter.saveCarbSensitivityFactors(self.CSFTimes, self.CSF,
+        self.reporter.storeCarbSensitivityFactors(self.CSFTimes, self.CSF,
                                                  self.CSU)
 
 
@@ -848,9 +851,53 @@ class Pump:
                    str(self.BGTargets[i]) + " " + str(self.BGU))
 
         # Save blood glucose targets to profile report
-        self.reporter.saveBloodGlucoseTargets(self.BGTargetsTimes,
+        self.reporter.storeBloodGlucoseTargets(self.BGTargetsTimes,
                                               self.BGTargets,
                                               self.BGU)
+
+
+
+    def readCurrentHistoryPageNumber(self):
+
+        """
+        ========================================================================
+        READCURRENTHISTORYPAGENUMBER
+        ========================================================================
+        """
+
+        # Define pump request
+        self.requester.define(info = "Reading current pump history page " +
+                                     "number...",
+                              n_bytes_expected = 78,
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 0,
+                              attempts = 2,
+                              size = 1,
+                              code = 157,
+                              parameters = [])
+
+        # Make pump request
+        self.requester.make()
+
+
+
+    def read(self):
+        # Define pump request
+        self.requester.define(info = "Reading current pump history page " +
+                                     "number...",
+                              n_bytes_expected = 78,
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 0,
+                              attempts = 2,
+                              size = 1,
+                              code = 39,
+                              parameters = [])
+
+        # Make pump request
+        self.requester.make()
+        
 
 
 
@@ -887,6 +934,9 @@ class Pump:
 
             # Extend known history of pump
             self.history.extend(self.requester.data)
+
+            with open("Reports/History.txt", "a") as f:
+                json.dump(self.requester.data, f)
 
         # Give user info
         if self.VERBOSE:
@@ -957,7 +1007,7 @@ class Pump:
 
         # Download most recent boluses on first pump history pages
 	    # FIXME When pump history too short, higher history pages do not exist?
-        n_pages = 1
+        n_pages = 2
 
         # Download pump history
         self.readHistory(n_pages = n_pages)
@@ -1004,6 +1054,7 @@ class Pump:
                     # Error with bolus time (bad CRC?)
                     print "Erroneous bolus time: " + str(time)
                     print "Not saving bolus."
+                    print bolus
 
         # If new boluses read, write them to insulin report
         if len(boluses) != 0:
@@ -1106,7 +1157,7 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Read issued bolus in order to save it to the reports
+        # Read issued bolus in order to store it to the reports
         self.readBoluses()
 
 
@@ -1355,7 +1406,7 @@ def main():
     #pump.readFirmwareVersion()
 
     # Read remaining amount of insulin in pump
-    pump.readReservoirLevel()
+    #pump.readReservoirLevel()
 
     # Read pump status
     #pump.readStatus()
@@ -1366,8 +1417,11 @@ def main():
     # Read daily totals on pump
     #pump.readDailyTotals()
 
+    # Read current history page number
+    #pump.readCurrentHistoryPageNumber()
+
     # Read bolus history on pump
-    #pump.readBoluses()
+    pump.readBoluses()
 
     # Send bolus to pump
     #pump.deliverBolus(0.1)

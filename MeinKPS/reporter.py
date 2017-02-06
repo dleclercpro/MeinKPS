@@ -297,33 +297,35 @@ class Reporter:
 
             # If not, write it down
             else:
-                if i == 0:
-
-                    # Give user info
-                    print ("Writing down following entries under " +
-                           str(path) + ":")
 
                 # Give user info
-                print str(keys[i]) + " - " + str(entries[i])
+                print "New entry: " + str(keys[i]) + " - " + str(entries[i])
 
                 # Add entry to report
                 section[keys[i]] = entries[i]
 
-                # Rewrite report
-                with open("Reports/" + report_name, "w") as f:
-                    json.dump(report,
-                              f,
-                              indent = 4,
-                              separators = (",", ": "),
-                              sort_keys = True)
-
                 # Update modifications variable
                 modified = True
 
-        # If report was modified, tell user
+        # Does report need to be updated?
         if modified:
+
+            # Rewrite report
+            with open("Reports/" + report_name, "w") as f:
+                json.dump(report,
+                          f,
+                          indent = 4,
+                          separators = (",", ": "),
+                          sort_keys = True)
+
             # Give user info
             print "Report '" + report_name + "' was updated."
+
+
+
+
+
+
 
 
 
@@ -335,7 +337,7 @@ class Reporter:
         ========================================================================
         """
 
-        # Add temporary basal entry
+        # Add reservoir levels
         self.addEntries("pump.json", ["Reservoir Levels"], t, level)
 
 
@@ -351,7 +353,7 @@ class Reporter:
         # Give user info
         print "Storing boluses to report: 'insulin.json'..."
 
-        # Add bolus entry
+        # Add boluses
         self.addEntries("insulin.json", ["Boluses"], t, boluses)
 
 
@@ -364,17 +366,17 @@ class Reporter:
         ========================================================================
         """
 
-        # Add temporary basal entry
+        # Add temporary basal entries
         self.addEntries("insulin.json", ["Temporary Basals"],
                                          t, [rate, units, duration])
 
 
 
-    def saveInsulinSensitivityFactors(self, t, factors, units):
+    def storeInsulinSensitivityFactors(self, t, factors, units):
 
         """
         ========================================================================
-        SAVEINSULINSENSITIVITYFACTORS
+        STOREINSULINSENSITIVITYFACTORS
         ========================================================================
         """
 
@@ -387,11 +389,11 @@ class Reporter:
 
 
 
-    def saveCarbSensitivityFactors(self, t, factors, units):
+    def storeCarbSensitivityFactors(self, t, factors, units):
 
         """
         ========================================================================
-        SAVECARBSENSITIVITYFACTORS
+        STORECARBSENSITIVITYFACTORS
         ========================================================================
         """
 
@@ -404,11 +406,11 @@ class Reporter:
 
 
 
-    def saveBloodGlucoseTargets(self, t, targets, units):
+    def storeBloodGlucoseTargets(self, t, targets, units):
 
         """
         ========================================================================
-        SAVEBLOODGLUCOSETARGETS
+        STOREBLOODGLUCOSETARGETS
         ========================================================================
         """
 
@@ -421,11 +423,11 @@ class Reporter:
 
 
 
-    def savePowerTime(self):
+    def storePowerTime(self):
 
         """
         ========================================================================
-        SAVEPOWERTIME
+        STOREPOWERTIME
         ========================================================================
         """
 
@@ -437,6 +439,12 @@ class Reporter:
 
         # Write down (and overwrite if necessary) last power up time
         self.addEntries("pump.json", [], "Power Up", now, True)
+
+
+
+
+
+
 
 
 
