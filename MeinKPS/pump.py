@@ -920,7 +920,7 @@ class Pump:
 
             # Define pump request
             self.requester.define(info = "Reading pump history...",
-                                  n_bytes_expected = 206,
+                                  n_bytes_expected = 1024,
                                   head = self.PACKETS_HEAD,
                                   serial = self.SERIAL_NUMBER_ENCODED,
                                   power = 0,

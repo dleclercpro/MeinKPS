@@ -30,6 +30,7 @@ import numpy as np
 import sys
 import time
 import datetime
+import json
 
 
 
@@ -42,8 +43,9 @@ class Requester:
 
     # REQUESTER CONSTANTS
     VERBOSE        = True
-    BREATHE_TIME   = 0.1
+    BREATHE_TIME   = 0
     N_BYTES        = 64
+    n_bytes_download = 0
 
 
 
@@ -111,7 +113,7 @@ class Requester:
 
 
 
-    def build(self):
+    def build(self, n_bytes_download = False):
 
         """
         ========================================================================
@@ -162,10 +164,11 @@ class Requester:
             packet_ask = [3, 0, 0]
 
             # Build download request packet
-            packet_download.extend([12, 0])
-            packet_download.append(lib.getByte(self.n_bytes_expected, 1))
-            packet_download.append(lib.getByte(self.n_bytes_expected, 0))
-            packet_download.append(lib.computeCRC8(packet_download))
+            if n_bytes_download:
+                packet_download.extend([12, 0])
+                packet_download.append(lib.getByte(self.n_bytes_download, 1))
+                packet_download.append(lib.getByte(self.n_bytes_download, 0))
+                packet_download.append(lib.computeCRC8(packet_download))
 
         # If recipient is CGM
         elif self.recipient == "CGM":
@@ -192,6 +195,14 @@ class Requester:
 
         # Save request time
         self.time = datetime.datetime.now()
+
+        with open("/home/pi/Desktop/myNewCommands.txt", "a") as f:
+            f.write("W: ")
+            a = [x for x in self.packets[packet_type]]
+            json.dump(a, f)
+            f.write(" - ")
+            f.write(str(self.time))
+            f.write("\n")
 
         # Send request packet as bytes to device
         self.handle.write(bytearray(self.packets[packet_type]))
@@ -245,7 +256,14 @@ class Requester:
                 print "Reading data from device: " + str(n) + "/-"
 
             # Read raw request response from device
-            self.raw_response = self.handle.read(self.N_BYTES)
+            self.raw_response = self.handle.read(self.n_bytes_download | self.N_BYTES)
+
+            with open("/home/pi/Desktop/myNewCommands.txt", "a") as f:
+                f.write("R: " + str(self.N_BYTES))
+                json.dump([ord(x) for x in self.raw_response], f)
+                f.write(" - ")
+                f.write(str(datetime.datetime.now()))
+                f.write("\n")
 
             # When device has given all of response, exit loop
             if (len(self.raw_response) == 0) & (sum(self.response) != 0):
@@ -360,6 +378,7 @@ class Requester:
 
         # Reset number of bytes received
         self.n_bytes_received = 0
+        self.n_bytes_download = 0
 
         # Define asking attempt variable
         n = 0
@@ -384,7 +403,7 @@ class Requester:
         # Give user info
         if self.VERBOSE:
             print "Number of bytes found: " + str(self.n_bytes_received)
-            print "Expected number of bytes: " + str(self.n_bytes_expected)
+            #print "Expected number of bytes: " + str(self.n_bytes_expected)
 
 
 
@@ -398,12 +417,12 @@ class Requester:
 
         # Verify if received data is as expected. If not, resend request until
         # it is
-        while self.n_bytes_received != self.n_bytes_expected:
+        while self.n_bytes_received < 14:
 
             # Verify connection with pump, quit if inexistent (this number of
             # bytes means no data was received from pump)
             # FIXME for all devices
-            if self.n_bytes_received == 14:
+            if self.n_bytes_received == 15:
                 sys.exit("Pump is either out of range, or will not take "
                          "commands anymore because of low battery level... "
                          ":-(")
@@ -414,14 +433,18 @@ class Requester:
                 print "Resending request..."
 
             # Resend request packet to device
-            self.send(packet_type = "Normal")
+            #self.send(packet_type = "Normal")
 
             # Ask pump if data is now ready to be read
             self.ask()
 
+        # Store number of bytes ready to download
+        self.n_bytes_download = self.n_bytes_received
+
         # Give user info
         if self.VERBOSE:
-            print "Data corresponds to expectations."
+            print ("Data corresponds to expectations. Number of bytes to " + 
+                  "download: " + str(self.n_bytes_download))
 
 
 
@@ -432,12 +455,6 @@ class Requester:
         DOWNLOAD
         ========================================================================
         """
-        
-        # Ask if some data was received
-        self.ask()
-
-        # Verify if data corresponds to expectations
-        self.verify()
 
         # Give user info
         if self.VERBOSE:
@@ -446,25 +463,33 @@ class Requester:
         # Initialize data vector
         self.data = []
 
-        # Initialize download attempt variable
+	    # Initialize download attempt variable
         n = 0
 
         # Download whole data on device
         while True:
 
-		    # Update download attempt variable
-		    n += 1
+            # Ask if some data was received
+            self.ask()
+
+            # Verify if data corresponds to expectations
+            self.verify()
+
+            # Rebuild packets associated with request including download one!
+            self.build(self.n_bytes_download)
 
 		    # Download data by sending request packet
-		    self.send(packet_type = "Download")
+            self.send(packet_type = "Download")
 
 		    # Store device request response
-		    self.data.extend(self.response)
+            self.data.extend(self.response)
 
 		    # End of download condition FIXME ?
-		    if sum(self.response[-6:-1]) == 0:
+            if len(self.data) >= 1024:
+                break
 
-			    break
+		    # Update download attempt variable
+            n += 1
 
         # Give user info
         print "Downloaded data in " + str(n) + " attempt(s)."

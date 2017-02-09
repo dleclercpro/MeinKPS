@@ -75,7 +75,7 @@ class Stick:
         # Generate serial port handle
         self.handle = serial.Serial()
         self.handle.port = "/dev/ttyUSB0"
-        self.handle.timeout = 0.5
+        self.handle.timeout = 0.1
         self.handle.rtscts = True
         self.handle.dsrdtr = True
 
