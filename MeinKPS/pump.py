@@ -99,8 +99,9 @@ class Pump:
         # Start stick
         self.stick.start()
 
-        # Prepare requester to send requests to the pump
-        self.requester.prepare(recipient = "Pump", handle = self.stick.handle)
+        # Initialize requester to speak with pump
+        self.requester.initialize(recipient = "Pump",
+                                  handle = self.stick.handle)
 
         # Power pump's radio transmitter if necessary
         self.verifyPower()
@@ -286,7 +287,7 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump time...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -328,7 +329,7 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump model...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -358,7 +359,7 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump firmware version...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -389,7 +390,7 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading amount of insulin left...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -433,7 +434,7 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump status...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -506,7 +507,7 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump settings...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -576,6 +577,52 @@ class Pump:
 
 
 
+    def readDailyTotals(self):
+
+        """
+        ========================================================================
+        READDAILYTOTALS
+        ========================================================================
+        """
+
+        # Initialize daily totals dictionary
+        self.daily_totals = {"Today": None,
+                             "Yesterday": None}
+
+        # Define pump request
+        self.requester.define(info = "Reading pump daily totals...",
+                              read = True,
+                              head = self.PACKETS_HEAD,
+                              serial = self.SERIAL_NUMBER_ENCODED,
+                              power = 0,
+                              attempts = 2,
+                              size = 1,
+                              code = 121,
+                              parameters = [])
+
+        # Make pump request
+        self.requester.make()
+
+        # Extract daily totals of today and yesterday
+        self.daily_totals["Today"] = round(
+            (lib.getByte(self.requester.response[13], 0) * 256 |
+             lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE,
+             2)
+
+        # Extract daily totals of yesterday
+        self.daily_totals["Yesterday"] = round(
+            (lib.getByte(self.requester.response[15], 0) * 256 |
+             lib.getByte(self.requester.response[16], 0)) * self.BOLUS_STROKE,
+             2)
+
+        # Give user info
+        print "Daily totals:"
+        print json.dumps(self.daily_totals, indent = 2,
+                                            separators = (",", ": "),
+                                            sort_keys = True)
+
+
+
     def readInsulinSensitivityFactors(self):
 
         """
@@ -592,7 +639,7 @@ class Pump:
         # Define pump request
         self.requester.define(info = ("Reading insulin sensitivity factors " +
                                       "from pump..."),
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -685,7 +732,7 @@ class Pump:
         # Define pump request
         self.requester.define(info = ("Reading carb sensitivity factors from " +
                                       "pump..."),
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -778,7 +825,7 @@ class Pump:
         # Define pump request
         self.requester.define(info = ("Reading blood glucose targets from " +
                                       "pump..."),
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -857,18 +904,18 @@ class Pump:
 
 
 
-    def readCurrentHistoryPageNumber(self):
+    def readNumberHistoryPages(self):
 
         """
         ========================================================================
-        READCURRENTHISTORYPAGENUMBER
+        READNUMBERHISTORYPAGES
         ========================================================================
         """
 
         # Define pump request
         self.requester.define(info = "Reading current pump history page " +
                                      "number...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -879,25 +926,6 @@ class Pump:
 
         # Make pump request
         self.requester.make()
-
-
-
-    def read(self):
-        # Define pump request
-        self.requester.define(info = "Reading current pump history page " +
-                                     "number...",
-                              n_bytes_expected = 78,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
-                              attempts = 2,
-                              size = 1,
-                              code = 39,
-                              parameters = [])
-
-        # Make pump request
-        self.requester.make()
-        
 
 
 
@@ -920,7 +948,7 @@ class Pump:
 
             # Define pump request
             self.requester.define(info = "Reading pump history...",
-                                  n_bytes_expected = 1024,
+                                  read = True,
                                   head = self.PACKETS_HEAD,
                                   serial = self.SERIAL_NUMBER_ENCODED,
                                   power = 0,
@@ -947,52 +975,6 @@ class Pump:
 
 
 
-    def readDailyTotals(self):
-
-        """
-        ========================================================================
-        READDAILYTOTALS
-        ========================================================================
-        """
-
-        # Initialize daily totals dictionary
-        self.daily_totals = {"Today": None,
-                             "Yesterday": None}
-
-        # Define pump request
-        self.requester.define(info = "Reading pump daily totals...",
-                              n_bytes_expected = 78,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
-                              attempts = 2,
-                              size = 1,
-                              code = 121,
-                              parameters = [])
-
-        # Make pump request
-        self.requester.make()
-
-        # Extract daily totals of today and yesterday
-        self.daily_totals["Today"] = round(
-            (lib.getByte(self.requester.response[13], 0) * 256 |
-             lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE,
-             2)
-
-        # Extract daily totals of yesterday
-        self.daily_totals["Yesterday"] = round(
-            (lib.getByte(self.requester.response[15], 0) * 256 |
-             lib.getByte(self.requester.response[16], 0)) * self.BOLUS_STROKE,
-             2)
-
-        # Give user info
-        print "Daily totals:"
-        print json.dumps(self.daily_totals, indent = 2,
-                                            separators = (",", ": "),
-                                            sort_keys = True)
-
-
-
     def readBoluses(self):
 
         """
@@ -1007,7 +989,7 @@ class Pump:
 
         # Download most recent boluses on first pump history pages
 	    # FIXME When pump history too short, higher history pages do not exist?
-        n_pages = 2
+        n_pages = 3
 
         # Download pump history
         self.readHistory(n_pages = n_pages)
@@ -1079,7 +1061,7 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading current temporary basal...",
-                              n_bytes_expected = 78,
+                              read = True,
                               head = self.PACKETS_HEAD,
                               serial = self.SERIAL_NUMBER_ENCODED,
                               power = 0,
@@ -1418,7 +1400,7 @@ def main():
     #pump.readDailyTotals()
 
     # Read current history page number
-    #pump.readCurrentHistoryPageNumber()
+    #pump.readNumberHistoryPages()
 
     # Read bolus history on pump
     pump.readBoluses()

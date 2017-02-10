@@ -54,7 +54,7 @@ class Stick:
     PRODUCT          = 0x8001
     SIGNAL_THRESHOLD = 150
     N_BYTES          = 64
-    SLEEP            = 0.1
+    TIMEOUT          = 0.5
     FREQUENCIES      = {0 : 916.5, 1 : 868.35, 255 : 916.5}
 
 
@@ -75,7 +75,7 @@ class Stick:
         # Generate serial port handle
         self.handle = serial.Serial()
         self.handle.port = "/dev/ttyUSB0"
-        self.handle.timeout = 0.1
+        self.handle.timeout = self.TIMEOUT
         self.handle.rtscts = True
         self.handle.dsrdtr = True
 
@@ -97,8 +97,8 @@ class Stick:
         # Give the stick a requester
         self.requester = requester.Requester()
 
-        # Prepare requester to send requests to the stick
-        self.requester.prepare(recipient = "Stick", handle = self.handle)
+        # Initialize requester to speak with stick
+        self.requester.initialize(recipient = "Stick", handle = self.handle)
 
         # Ask for stick infos
         self.getInfos()

@@ -8,9 +8,9 @@ Title:    requester
 
 Author:   David Leclerc
 
-Version:  1.0
+Version:  1.1
 
-Date:     01.06.2016
+Date:     09.02.2017
 
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
@@ -26,11 +26,8 @@ Notes:    ...
 
 
 # LIBRARIES
-import numpy as np
 import sys
 import time
-import datetime
-import json
 
 
 
@@ -42,23 +39,23 @@ import lib
 class Requester:
 
     # REQUESTER CONSTANTS
-    VERBOSE        = True
-    BREATHE_TIME   = 0
-    N_BYTES        = 64
-    n_bytes_download = 0
+    VERBOSE          = True
+    N_BYTES_DEFAULT  = 64
+    N_BYTES_READ     = 1024
+    N_BYTES_FORMAT   = 8
+    SLEEP            = 0.4
 
 
 
-    def prepare(self, recipient = None,
-                      handle = None):
+    def initialize(self, recipient = None, handle = None):
 
         """
         ========================================================================
-        PREPARE
+        INITIALIZE
         ========================================================================
         """
 
-        # Verify if requester can be properly prepared
+        # Verify if requester can be properly initialized
         if (recipient == None) | (handle == None):
 
             # If user forgot to give required input, quit
@@ -73,11 +70,16 @@ class Requester:
         # device
         self.handle = handle
 
+        # Initialize a packet dictionary for the requester
+        self.packets = {"Normal": [],
+                        "Poll": [],
+                        "Download": []}
+
 
 
     def define(self, info = None,
                      packet = None,
-                     n_bytes_expected = 0,
+                     read = False,
                      sleep = 0,
                      sleep_reason = None,
                      head = None,
@@ -97,7 +99,7 @@ class Requester:
         # Store definition of request
         self.info = info
         self.packet = packet
-        self.n_bytes_expected = n_bytes_expected
+        self.read = read
         self.sleep = sleep
         self.sleep_reason = sleep_reason
         self.head = head
@@ -108,12 +110,9 @@ class Requester:
         self.code = code
         self.parameters = parameters
 
-        # Build packets associated with request
-        self.build()
 
 
-
-    def build(self, n_bytes_download = False):
+    def build(self, sort = "Normal"):
 
         """
         ========================================================================
@@ -121,22 +120,12 @@ class Requester:
         ========================================================================
         """
 
-        # Initialize a packet dictionary for the requester
-        self.packets = {"Normal": None,
-                        "Ask": None,
-                        "Download": None}
+        # Initialize packet
+        packet = []
 
-        # Initialize packets
-        packet_normal = []
-        packet_ask = []
-        packet_download = []
-
-        # If packet was passed as a defining argument to the parser, it is the
-        # normal packet
+        # If packet was given in definition of request, just take it
         if self.packet != None:
-
-            # Assign input packet to normal request packet
-            packet_normal = self.packet
+            packet = self.packet
 
         # If recipient is stick
         if self.recipient == "Stick":
@@ -147,42 +136,41 @@ class Requester:
         elif self.recipient == "Pump":
 
             # Build normal request packet
-            packet_normal.extend(self.head)
-            packet_normal.extend(self.serial)
-            packet_normal.append(128 | lib.getByte(len(self.parameters), 1))
-            packet_normal.append(lib.getByte(len(self.parameters), 0))
-            packet_normal.append(self.power)
-            packet_normal.append(self.attempts)
-            packet_normal.append(self.size)
-            packet_normal.append(0)
-            packet_normal.append(self.code)
-            packet_normal.append(lib.computeCRC8(packet_normal))
-            packet_normal.extend(self.parameters)
-            packet_normal.append(lib.computeCRC8(self.parameters))
+            if sort == "Normal":
+                packet.extend(self.head)
+                packet.extend(self.serial)
+                packet.append(128 | lib.getByte(len(self.parameters), 1))
+                packet.append(lib.getByte(len(self.parameters), 0))
+                packet.append(self.power)
+                packet.append(self.attempts)
+                packet.append(self.size)
+                packet.append(0)
+                packet.append(self.code)
+                packet.append(lib.computeCRC8(packet))
+                packet.extend(self.parameters)
+                packet.append(lib.computeCRC8(self.parameters))
 
-            # Build ask request packet
-            packet_ask = [3, 0, 0]
+            # Build poll request packet
+            elif sort == "Poll":
+                packet = [3, 0, 0]
 
             # Build download request packet
-            if n_bytes_download:
-                packet_download.extend([12, 0])
-                packet_download.append(lib.getByte(self.n_bytes_download, 1))
-                packet_download.append(lib.getByte(self.n_bytes_download, 0))
-                packet_download.append(lib.computeCRC8(packet_download))
+            elif sort == "Download":
+                packet.extend([12, 0])
+                packet.append(lib.getByte(self.n_bytes_expected, 1))
+                packet.append(lib.getByte(self.n_bytes_expected, 0))
+                packet.append(lib.computeCRC8(packet))
 
         # If recipient is CGM
         elif self.recipient == "CGM":
 
             pass
 
-        # Add packets to requester packet dictionary
-        self.packets["Normal"] = packet_normal
-        self.packets["Ask"] = packet_ask
-        self.packets["Download"] = packet_download
+        # Update requester's packet dictionary
+        self.packets[sort] = packet
 
 
-
-    def send(self, packet_type = None):
+    def send(self, sort = "Normal"):
 
         """
         ========================================================================
@@ -191,23 +179,12 @@ class Requester:
         """
 
         # Give user info
-        print "Sending packet: " + str(self.packets[packet_type])
-
-        # Save request time
-        self.time = datetime.datetime.now()
-
-        with open("/home/pi/Desktop/myNewCommands.txt", "a") as f:
-            f.write("W: ")
-            a = [x for x in self.packets[packet_type]]
-            json.dump(a, f)
-            f.write(" - ")
-            f.write(str(self.time))
-            f.write("\n")
+        print "Sending packet: " + str(self.packets[sort])
 
         # Send request packet as bytes to device
-        self.handle.write(bytearray(self.packets[packet_type]))
+        self.handle.write(bytearray(self.packets[sort]))
 
-        # Get device response to request
+        # Get response to request
         self.get()
 
 
@@ -220,71 +197,31 @@ class Requester:
         ========================================================================
         """
 
-        # Read response on device
-        self.read()
+        # Initialize response vector
+        self.response = []
+
+        # If no bytes expected, set to default value
+        if (self.n_bytes_expected < 64):
+            self.n_bytes_expected = self.N_BYTES_DEFAULT
+
+        # Give user info
+        print "Reading data from device..."
+
+        # Read raw request response from device
+        self.raw_response = self.handle.read(self.n_bytes_expected)
+
+        # Vectorize raw response, transform its bytes to decimals, and
+        # append it to final response vector
+        self.response.extend([ord(x) for x in self.raw_response])
+
+        # Give user info
+        print "Data read from device."
 
         # Format response
         self.format()
 
-        # Print response in readable formats (lines of 8 bytes)
-        self.show(n_bytes = 8)
-
-
-
-    def read(self):
-
-        """
-        ========================================================================
-        READ
-        ========================================================================
-        """
-
-        # Initialize response vector
-        self.response = []
-
-        # Initialize reading attempt variable
-        n = 0
-
-        # Ask for response from device until we get a full one
-        while True:
-
-            # Update reading attempt variable
-            n += 1
-
-            # Keep track of number of attempts
-            if self.VERBOSE:
-                print "Reading data from device: " + str(n) + "/-"
-
-            # Read raw request response from device
-            self.raw_response = self.handle.read(self.n_bytes_download | self.N_BYTES)
-
-            with open("/home/pi/Desktop/myNewCommands.txt", "a") as f:
-                f.write("R: " + str(self.N_BYTES))
-                json.dump([ord(x) for x in self.raw_response], f)
-                f.write(" - ")
-                f.write(str(datetime.datetime.now()))
-                f.write("\n")
-
-            # When device has given all of response, exit loop
-            if (len(self.raw_response) == 0) & (sum(self.response) != 0):
-
-                break
-
-            # Otherwise, store current response and ask for the rest
-            else:
-
-                # Vectorize raw response and transform its bytes to decimals
-                self.raw_response = [ord(x) for x in self.raw_response]
-
-                # Append raw response to final response vector
-                self.response.extend(self.raw_response)
-
-                # Give the device a bit of time to breathe before reading again
-                time.sleep(self.BREATHE_TIME)
-
-        # Give user info
-        if self.VERBOSE:
-            print "Read data from device in " + str(n) + " attempt(s)."
+        # Print response in readable formats (lines of N bytes)
+        self.show(self.N_BYTES_FORMAT)
 
 
 
@@ -297,8 +234,7 @@ class Requester:
         """
 
         # Give user info
-        if self.VERBOSE:
-            print "Formatting response..."
+        print "Formatting response..."
 
         # Format response to padded hexadecimals
         self.response_hex = [lib.padHex(hex(x)) for x in self.response]
@@ -324,86 +260,84 @@ class Requester:
         # Define number of rows to be printed 
         n_rows = len(self.response) / n_bytes + int(n_exceeding_bytes != 0)
 
-        # Give user info
-        if self.VERBOSE:
+        # Print response
+        print "Device response to precedent request: "
 
-            # Print response
-            print "Device response to precedent request: "
+        # Print formatted response
+        for i in range(n_rows):
 
-            # Print formatted response
-            for i in range(n_rows):
+            # Define hexadecimal line
+            line_hex = " ".join(self.response_hex[i * n_bytes :
+                                                 (i + 1) * n_bytes])
 
-                # Define hexadecimal line
-                line_hex = " ".join(self.response_hex[i * n_bytes :
-                                                     (i + 1) * n_bytes])
+            # Define character line
+            line_chr = "".join(self.response_chr[i * n_bytes :
+                                                (i + 1) * n_bytes])
 
-                # Define character line
-                line_chr = "".join(self.response_chr[i * n_bytes :
-                                                    (i + 1) * n_bytes])
+            # Define decimal line
+            line_dec = "".join(str(self.response[i * n_bytes :
+                                                (i + 1) * n_bytes]))
 
-                # Define decimal line
-                line_dec = "".join(str(self.response[i * n_bytes :
-                                                    (i + 1) * n_bytes]))
+            # On last line, some extra space may be needed
+            if (i == n_rows - 1) & (n_exceeding_bytes != 0):
 
-                # On last line, some extra space may be needed
-                if (i == n_rows - 1) & (n_exceeding_bytes != 0):
+                # Define line
+                line = (line_hex +
+                       (n_bytes - n_exceeding_bytes) * 5 * " " +
+                        " " +
+                        line_chr +
+                       (n_bytes - n_exceeding_bytes) * " " +
+                        " " +
+                        line_dec)
 
-                    # Define line
-                    line = (line_hex +
-                           (n_bytes - n_exceeding_bytes) * 5 * " " +
-                            " " +
-                            line_chr +
-                           (n_bytes - n_exceeding_bytes) * " " +
-                            " " +
-                            line_dec)
+            # First lines don't need extra space
+            else:
 
-                # First lines don't need extra space
-                else:
+                # Define line
+                line = line_hex + " " + line_chr + " " + line_dec
 
-                    # Define line
-                    line = line_hex + " " + line_chr + " " + line_dec
-
-                # Print line
-                print line
+            # Print line
+            print line
 
 
 
-    def ask(self):
+    def poll(self):
 
         """
         ========================================================================
-        ASK
+        POLL
         ========================================================================
         """
 
         # Reset number of bytes received
-        self.n_bytes_received = 0
-        self.n_bytes_download = 0
+        self.n_bytes_expected = 0
 
-        # Define asking attempt variable
+        # Build poll packet
+        self.build("Poll")
+
+        # Define polling attempt variable
         n = 0
 
-        # Ask recipient if data is ready until something is received
-        while self.n_bytes_received == 0:
+        # Poll until data is ready to be read
+        while self.n_bytes_expected == 0:
 
             # Update attempt variable
             n += 1
 
             # Keep track of attempts
-            if self.VERBOSE:
-                print "Asking if data was received: " + str(n) + "/-"
+            print "Polling data: " + str(n) + "/-"
 
-            # Send ask request packet
-            self.send(packet_type = "Ask")
+            # Send poll request packet
+            self.send("Poll")
 
             # Get size of response waiting in radio buffer
-            # FIXME for all devices
-            self.n_bytes_received = self.response[7]
+            self.n_bytes_expected = self.response[7]
+
+            # Give the stick some time to breathe
+            time.sleep(self.SLEEP)
 
         # Give user info
-        if self.VERBOSE:
-            print "Number of bytes found: " + str(self.n_bytes_received)
-            #print "Expected number of bytes: " + str(self.n_bytes_expected)
+        print "Number of bytes expected: " + str(self.n_bytes_expected)
 
 
 
@@ -415,36 +349,40 @@ class Requester:
         ========================================================================
         """
 
-        # Verify if received data is as expected. If not, resend request until
-        # it is
-        while self.n_bytes_received < 14:
+        # Define verification variable
+        n = 0
+
+        # Verify if received data is as expected. There should be at least 14
+        # bytes to read!
+        while (self.n_bytes_expected < 14):
+
+            # Update verification variable
+            n += 1
+
+            # Keep track of verifications
+            print "Verifying data integrity: " + str(n) + "/-"
 
             # Verify connection with pump, quit if inexistent (this number of
-            # bytes means no data was received from pump)
-            # FIXME for all devices
-            if self.n_bytes_received == 15:
+            # bytes means no data was received from pump?)
+            if self.n_bytes_expected == 15:
                 sys.exit("Pump is either out of range, or will not take "
                          "commands anymore because of low battery level... "
                          ":-(")
 
             # Give user info
-            if self.VERBOSE:
-                print "Data does not correspond to expectations."
-                print "Resending request..."
+            print "Data does not correspond to expectations."
+            print "Polling again..."
+            #print "Resending request..."
 
             # Resend request packet to device
-            #self.send(packet_type = "Normal")
+            #self.send()
 
-            # Ask pump if data is now ready to be read
-            self.ask()
-
-        # Store number of bytes ready to download
-        self.n_bytes_download = self.n_bytes_received
+            # Poll pump data
+            self.poll()
 
         # Give user info
-        if self.VERBOSE:
-            print ("Data corresponds to expectations. Number of bytes to " + 
-                  "download: " + str(self.n_bytes_download))
+        print ("Data corresponds to expectations. Number of bytes downloaded " + 
+              "ready to be read: " + str(self.n_bytes_expected))
 
 
 
@@ -457,8 +395,7 @@ class Requester:
         """
 
         # Give user info
-        if self.VERBOSE:
-            print "Downloading data from device..."
+        print "Downloading data from device..."
 
         # Initialize data vector
         self.data = []
@@ -469,30 +406,33 @@ class Requester:
         # Download whole data on device
         while True:
 
+		    # Update download attempt variable
+            n += 1
+
+            # Keep track of download process
+            print "Downloading data: " + str(n) + "/-"
+
             # Ask if some data was received
-            self.ask()
+            self.poll()
 
             # Verify if data corresponds to expectations
             self.verify()
 
-            # Rebuild packets associated with request including download one!
-            self.build(self.n_bytes_download)
+            # Update download packet
+            self.build("Download")
 
-		    # Download data by sending request packet
-            self.send(packet_type = "Download")
+		    # Download data
+            self.send("Download")
 
 		    # Store device request response
             self.data.extend(self.response)
 
-		    # End of download condition FIXME ?
-            if len(self.data) >= 1024:
+		    # End of download condition
+            if len(self.data) >= self.N_BYTES_READ:
                 break
 
-		    # Update download attempt variable
-            n += 1
-
         # Give user info
-        print "Downloaded data in " + str(n) + " attempt(s)."
+        print "Downloaded data after " + str(n) + " request(s)."
 
 
 
@@ -507,11 +447,17 @@ class Requester:
         # Print request info
         print self.info
 
+        # Initialize number of expected bytes
+        self.n_bytes_expected = 0
+
+        # Build request packet if not already existent
+        self.build()
+
         # Send request to device
-        self.send(packet_type = "Normal")
+        self.send()
 
         # If data was requested, download it
-        if self.n_bytes_expected > 0:
+        if self.read:
 
             # Download data
             self.download()
