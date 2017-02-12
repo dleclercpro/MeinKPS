@@ -32,7 +32,7 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 #       - Test with pump reservoir empty or almost empty
 #       - Deal with timezones, DST, year switch
 #       - Run series of tests overnight
-#       - Make sure enacted bolus are detected!
+#       X Make sure enacted bolus are detected!
 #       - No point in reissuing same TBR?
 
 
@@ -40,7 +40,6 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 # LIBRARIES
 import datetime
 import json
-import numpy as np
 import sys
 
 
@@ -61,7 +60,7 @@ class Pump:
     SERIAL_NUMBER         = 799163
     SERIAL_NUMBER_ENCODED = lib.encodeSerialNumber(SERIAL_NUMBER)
     POWER_TIME            = 10     # Time (s) needed for pump to go online
-    SESSION_TIME          = 10     # Time (m) for which pump will listen to RFs
+    SESSION_TIME          = 8      # Time (m) for which pump will listen to RFs
     EXECUTION_TIME        = 5      # Time (s) needed for pump command execution
     BOLUS_STROKE          = 0.1    # Pump bolus stroke (U)
     BASAL_STROKE          = 0.05   # Pump basal stroke rate (U/h)
@@ -963,9 +962,6 @@ class Pump:
             # Extend known history of pump
             self.history.extend(self.requester.data)
 
-            with open("Reports/History.txt", "a") as f:
-                json.dump(self.requester.data, f)
-
         # Give user info
         if self.VERBOSE:
 
@@ -1374,6 +1370,11 @@ def main():
 
     # Instanciate a pump for me
     pump = Pump()
+
+    # Reset log file
+    with open("/home/pi/Desktop/myNewCommands.txt", "w") as f:
+        f.seek(0)
+        f.truncate()
 
     # Start dialogue pump
     pump.start()

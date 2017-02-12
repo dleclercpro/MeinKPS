@@ -15,7 +15,7 @@ Date:     09.02.2017
 License:  GNU General Public License, Version 3
           (http://www.gnu.org/licenses/gpl.html)
 
-Overview: This is a script that defines the requester object, which is
+Overview: This is a script that defines a requester object, which is
           responsible for dealing with device requests, that is sending over
           or retrieving data from said devices.
 
@@ -28,6 +28,8 @@ Notes:    ...
 # LIBRARIES
 import sys
 import time
+import datetime
+import json
 
 
 
@@ -39,11 +41,8 @@ import lib
 class Requester:
 
     # REQUESTER CONSTANTS
-    VERBOSE          = True
-    N_BYTES_DEFAULT  = 64
-    N_BYTES_READ     = 1024
-    N_BYTES_FORMAT   = 8
-    SLEEP            = 0.4
+    N_BYTES        = 64
+    N_BYTES_FORMAT = 8
 
 
 
@@ -184,6 +183,9 @@ class Requester:
         # Send request packet as bytes to device
         self.handle.write(bytearray(self.packets[sort]))
 
+        # Sleep a bit before reading (0.001s)
+        time.sleep(0.001)
+
         # Get response to request
         self.get()
 
@@ -197,25 +199,28 @@ class Requester:
         ========================================================================
         """
 
-        # Initialize response vector
-        self.response = []
-
-        # If no bytes expected, set to default value
-        if (self.n_bytes_expected < 64):
-            self.n_bytes_expected = self.N_BYTES_DEFAULT
+        # Decide on number of bytes to read. If less bytes expected than usual,
+        # set to default value. Otherwise, read expected number of bytes.
+        if (self.n_bytes_expected < self.N_BYTES):
+            n = self.N_BYTES
+        else: 
+            n = self.n_bytes_expected
 
         # Give user info
-        print "Reading data from device..."
+        print "Trying to read " + str(n) + " bytes from device..."
 
         # Read raw request response from device
-        self.raw_response = self.handle.read(self.n_bytes_expected)
+        self.raw_response = self.handle.read(n)
 
         # Vectorize raw response, transform its bytes to decimals, and
-        # append it to final response vector
-        self.response.extend([ord(x) for x in self.raw_response])
+        # append it to the response vector
+        self.response = [ord(x) for x in self.raw_response]
+
+        # Store number of bytes read from device
+        self.n_bytes_received = len(self.response)
 
         # Give user info
-        print "Data read from device."
+        print "Number of bytes received: " + str(self.n_bytes_received)
 
         # Format response
         self.format()
@@ -324,6 +329,17 @@ class Requester:
             # Update attempt variable
             n += 1
 
+            # First poll of first download attempt: sleep 0.25s
+            if (self.n_download_attempts) == 1 & (n == 1):
+                time.sleep(0.25)
+
+            # First poll of next download attempts: sleep 0.2s
+            elif n == 1:
+                time.sleep(0.2)
+            # No response to poll? Sleep 0.1s
+            else:
+                time.sleep(0.1)
+
             # Keep track of attempts
             print "Polling data: " + str(n) + "/-"
 
@@ -332,9 +348,6 @@ class Requester:
 
             # Get size of response waiting in radio buffer
             self.n_bytes_expected = self.response[7]
-
-            # Give the stick some time to breathe
-            time.sleep(self.SLEEP)
 
         # Give user info
         print "Number of bytes expected: " + str(self.n_bytes_expected)
@@ -349,40 +362,40 @@ class Requester:
         ========================================================================
         """
 
-        # Define verification variable
-        n = 0
+        # Parse data
+        head = self.response[0:13]
+        body = self.response[13:-1]
+        CRC = self.response[-1]
 
-        # Verify if received data is as expected. There should be at least 14
-        # bytes to read!
-        while (self.n_bytes_expected < 14):
+        # Compute expected CRC based on received data
+        expected_CRC = lib.computeCRC8(body)
 
-            # Update verification variable
-            n += 1
+        # Check for incorrect CRC
+        if CRC != expected_CRC:
 
-            # Keep track of verifications
-            print "Verifying data integrity: " + str(n) + "/-"
+            # Exit
+            sys.exit("Error: expected CRC: " + str(expected_CRC) + ", " +
+                     "CRC found: " + str(CRC))
 
-            # Verify connection with pump, quit if inexistent (this number of
-            # bytes means no data was received from pump?)
-            if self.n_bytes_expected == 15:
-                sys.exit("Pump is either out of range, or will not take "
-                         "commands anymore because of low battery level... "
-                         ":-(")
+        # Check for incorrect number of bytes.
+        if self.n_bytes_received != self.n_bytes_expected:
 
-            # Give user info
-            print "Data does not correspond to expectations."
-            print "Polling again..."
-            #print "Resending request..."
+            # There should always be a minimum of 64 bytes received. Sometimes,
+            # the expected number of bytes is lower than 64 (e.g. 15), in this
+            # case don't exit loop, just go with the 64 that were read.
+            if self.n_bytes_expected >= 64:
 
-            # Resend request packet to device
-            #self.send()
-
-            # Poll pump data
-            self.poll()
+                # Exit
+                sys.exit("Error: expected number of bytes: " + 
+                         str(self.n_bytes_expected) + ", " +
+                         "number of bytes received: " +
+                         str(self.n_bytes_received))
 
         # Give user info
-        print ("Data corresponds to expectations. Number of bytes downloaded " + 
-              "ready to be read: " + str(self.n_bytes_expected))
+        print ("Data corresponds to expectations. Storing it...")
+
+	    # Store body of request response
+        self.data.extend(body)
 
 
 
@@ -401,22 +414,19 @@ class Requester:
         self.data = []
 
 	    # Initialize download attempt variable
-        n = 0
+        self.n_download_attempts = 0
 
         # Download whole data on device
         while True:
 
 		    # Update download attempt variable
-            n += 1
+            self.n_download_attempts += 1
 
             # Keep track of download process
-            print "Downloading data: " + str(n) + "/-"
+            print "Downloading data: " + str(self.n_download_attempts) + "/-"
 
             # Ask if some data was received
             self.poll()
-
-            # Verify if data corresponds to expectations
-            self.verify()
 
             # Update download packet
             self.build("Download")
@@ -424,15 +434,19 @@ class Requester:
 		    # Download data
             self.send("Download")
 
-		    # Store device request response
-            self.data.extend(self.response)
+            # Verify if data corresponds to expectations
+            self.verify()
 
-		    # End of download condition
-            if len(self.data) >= self.N_BYTES_READ:
+	        # Look for end of data (EOD) condition
+            if self.response[5] == 128:
+
+                # Give user info
+                print "End of data. Exiting download loop."
+
                 break
 
         # Give user info
-        print "Downloaded data after " + str(n) + " request(s)."
+        print "Downloaded data after " + str(self.n_download_attempts) + " request(s)."
 
 
 
@@ -455,6 +469,8 @@ class Requester:
 
         # Send request to device
         self.send()
+
+        time.sleep(0.25)
 
         # If data was requested, download it
         if self.read:
