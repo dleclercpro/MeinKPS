@@ -88,7 +88,7 @@ class Stick:
         except:
 
             # Give user info
-            sys.exit("There seems to be a problem with the stick. " + \
+            sys.exit("There seems to be a problem with the stick. " +
                       "Are you sure it's plugged in?")
 
         # Give the stick a reporter
@@ -145,7 +145,8 @@ class Stick:
 
         # Define request
         self.requester.define(info = "Reading stick infos...",
-                              packet = [4, 0, 0])
+                              packet = [4, 0, 0],
+                              remote = False)
 
         # Make request
         self.requester.make()
@@ -180,7 +181,8 @@ class Stick:
 
         # Define request
         self.requester.define(info = "Reading stick signal strength...",
-                              packet = [6, 0, 0])
+                              packet = [6, 0, 0],
+                              remote = False)
 
         # Initialize signal strength
         self.signal = 0
@@ -233,7 +235,8 @@ class Stick:
 
         # Define request
         self.requester.define(info = "Reading stick USB state...",
-                              packet = [5, 1, 0])
+                              packet = [5, 1, 0],
+                              remote = False)
 
         # Make request
         self.requester.make()
@@ -250,7 +253,8 @@ class Stick:
 
         # Define request
         self.requester.define(info = "Reading stick RF state...",
-                              packet = [5, 0, 0])
+                              packet = [5, 0, 0],
+                              remote = False)
 
         # Make request
         self.requester.make()

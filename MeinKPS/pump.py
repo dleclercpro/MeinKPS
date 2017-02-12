@@ -41,6 +41,7 @@ Notes:    - When the battery is low, the stick will not be able to communicate
 import datetime
 import json
 import sys
+import time
 
 
 
@@ -56,9 +57,7 @@ class Pump:
 
     # PUMP CHARACTERISTICS
     VERBOSE               = True
-    PACKETS_HEAD          = [1, 0, 167, 1]
-    SERIAL_NUMBER         = 799163
-    SERIAL_NUMBER_ENCODED = lib.encodeSerialNumber(SERIAL_NUMBER)
+    SERIAL                = 799163
     POWER_TIME            = 10     # Time (s) needed for pump to go online
     SESSION_TIME          = 8      # Time (m) for which pump will listen to RFs
     EXECUTION_TIME        = 5      # Time (s) needed for pump command execution
@@ -100,6 +99,7 @@ class Pump:
 
         # Initialize requester to speak with pump
         self.requester.initialize(recipient = "Pump",
+                                  serial = self.SERIAL,
                                   handle = self.stick.handle)
 
         # Power pump's radio transmitter if necessary
@@ -174,13 +174,11 @@ class Pump:
         # Define pump request
         self.requester.define(info = "Powering pump radio transmitter for: " + 
                                      str(self.SESSION_TIME) + "m",
-                              sleep = self.POWER_TIME,
-                              sleep_reason = "Sleeping until pump " +
-                                             "radio transmitter is powered " +
-                                             "up... (" + str(self.POWER_TIME) +
-                                             "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
+                              wait = self.POWER_TIME,
+                              wait_reason = "Sleeping until pump " +
+                                            "radio transmitter is powered " +
+                                            "up... (" + str(self.POWER_TIME) +
+                                            "s)",
                               power = 85,
                               attempts = 0,
                               size = 0,
@@ -205,13 +203,10 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Suspending pump activity...",
-                              sleep = self.EXECUTION_TIME,
-                              sleep_reason = "Waiting for pump activity to " +
-                                             "be suspended... (" +
-                                             str(self.EXECUTION_TIME) + "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
+                              wait = self.EXECUTION_TIME,
+                              wait_reason = "Waiting for pump activity to " +
+                                            "be suspended... (" +
+                                            str(self.EXECUTION_TIME) + "s)",
                               attempts = 2,
                               size = 1,
                               code = 77,
@@ -232,13 +227,10 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Resuming pump activity...",
-                              sleep = self.EXECUTION_TIME,
-                              sleep_reason = "Waiting for pump activity to " +
-                                             "be resumed... (" +
-                                             str(self.EXECUTION_TIME) + "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
+                              wait = self.EXECUTION_TIME,
+                              wait_reason = "Waiting for pump activity to " +
+                                            "be resumed... (" +
+                                            str(self.EXECUTION_TIME) + "s)",
                               attempts = 2,
                               size = 1,
                               code = 77,
@@ -259,13 +251,10 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Pushing button: " + button,
-                              sleep = self.EXECUTION_TIME,
-                              sleep_reason = "Waiting for button to " +
-                                             "be pushed... (" +
-                                             str(self.EXECUTION_TIME) + "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
+                              wait = self.EXECUTION_TIME,
+                              wait_reason = "Waiting for button to " +
+                                            "be pushed... (" +
+                                            str(self.EXECUTION_TIME) + "s)",
                               attempts = 1,
                               size = 0,
                               code = 91,
@@ -286,14 +275,9 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump time...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 112,
-                              parameters = [])
+                              code = 112)
 
         # Make pump request
         self.requester.make()
@@ -328,20 +312,15 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump model...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 141,
-                              parameters = [])
+                              code = 141)
 
         # Make pump request
         self.requester.make()
 
         # Extract pump model from received data
-        self.model = int("".join([chr(x) for x in self.requester.data[14:17]]))
+        self.model = int("".join([chr(x) for x in self.requester.data[1:4]]))
 
         # Give user info
         print "Pump model: " + str(self.model)
@@ -358,14 +337,9 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump firmware version...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 116,
-                              parameters = [])
+                              code = 116)
 
         # Make pump request
         self.requester.make()
@@ -389,14 +363,9 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading amount of insulin left...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 115,
-                              parameters = [])
+                              code = 115)
 
         # Make pump request
         self.requester.make()
@@ -433,14 +402,9 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump status...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 206,
-                              parameters = [])
+                              code = 206)
 
         # Make pump request
         self.requester.make()
@@ -506,14 +470,9 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump settings...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 192,
-                              parameters = [])
+                              code = 192)
 
         # Make pump request
         self.requester.make()
@@ -548,9 +507,9 @@ class Pump:
             if bolus > self.settings["Max Bolus"]:
 
                 # Give user info
-                print "Pump cannot issue bolus since it is bigger than its " + \
-                      "maximal allowed bolus. Update the latter before " + \
-                      "trying again." 
+                print ("Pump cannot issue bolus since it is bigger than its " +
+                       "maximal allowed bolus. Update the latter before " +
+                       "trying again." )
 
                 return False
 
@@ -560,9 +519,9 @@ class Pump:
                 (units == "%") & (rate > 200)):
 
                 # Give user info
-                print "Pump cannot issue temporary basal rate since it is " + \
-                      "bigger than its maximal basal rate. Update the " + \
-                      "latter before trying again." 
+                print ("Pump cannot issue temporary basal rate since it is " +
+                       "bigger than its maximal basal rate. Update the " +
+                       "latter before trying again.") 
 
                 return False
 
@@ -590,14 +549,9 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading pump daily totals...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 121,
-                              parameters = [])
+                              code = 121)
 
         # Make pump request
         self.requester.make()
@@ -638,14 +592,9 @@ class Pump:
         # Define pump request
         self.requester.define(info = ("Reading insulin sensitivity factors " +
                                       "from pump..."),
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 139,
-                              parameters = [])
+                              code = 139)
 
         # Make pump request
         self.requester.make()
@@ -731,14 +680,9 @@ class Pump:
         # Define pump request
         self.requester.define(info = ("Reading carb sensitivity factors from " +
                                       "pump..."),
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 138,
-                              parameters = [])
+                              code = 138)
 
         # Make pump request
         self.requester.make()
@@ -824,14 +768,9 @@ class Pump:
         # Define pump request
         self.requester.define(info = ("Reading blood glucose targets from " +
                                       "pump..."),
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 159,
-                              parameters = [])
+                              code = 159)
 
         # Make pump request
         self.requester.make()
@@ -914,21 +853,22 @@ class Pump:
         # Define pump request
         self.requester.define(info = "Reading current pump history page " +
                                      "number...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 157,
-                              parameters = [])
+                              code = 157)
 
         # Make pump request
         self.requester.make()
 
+        # Store number of history pages
+        self.n_history_pages = self.requester.data[3] + 1
+
+        # Give user info
+        print "Found " + str(self.n_history_pages) + " pump history pages."
 
 
-    def readHistory(self, n_pages):
+
+    def readHistory(self):
 
         """
         ========================================================================
@@ -936,21 +876,20 @@ class Pump:
         ========================================================================
         """
 
+        # Read number of existing history pages
+        self.readNumberHistoryPages()
+
         # Initialize pump history vector
         self.history = []
 
         # Download user-defined number of most recent pages of pump history
-        for i in range(n_pages):
+        for i in range(self.n_history_pages):
 
             # Give user info
             print "Reading pump history page: " + str(i)
 
             # Define pump request
             self.requester.define(info = "Reading pump history...",
-                                  read = True,
-                                  head = self.PACKETS_HEAD,
-                                  serial = self.SERIAL_NUMBER_ENCODED,
-                                  power = 0,
                                   attempts = 2,
                                   size = 2, # 2 means larger data exchange
                                   code = 128,
@@ -966,7 +905,7 @@ class Pump:
         if self.VERBOSE:
 
             # Print collected history pages
-            print "First " + str(n_pages) + " pages of pump history:"
+            print str(self.n_history_pages) + " pages of pump history:"
             print self.history
 
 
@@ -983,12 +922,8 @@ class Pump:
         boluses = []
         times = []
 
-        # Download most recent boluses on first pump history pages
-	    # FIXME When pump history too short, higher history pages do not exist?
-        n_pages = 3
-
         # Download pump history
-        self.readHistory(n_pages = n_pages)
+        self.readHistory()
 
         # Define parameters to parse history pages when looking for boluses
         payload_code = 1
@@ -1012,6 +947,12 @@ class Pump:
                 # Test proof the bolus by looking closer at its delivery time
                 try:
 
+                    # Check for bolus year
+                    if abs(time[0] - now.year) > 1:
+
+                        raise ValueError("Bolus can't be more than one year " +
+                                         "in the past!")
+
                     # Build datetime object
                     time = datetime.datetime(time[0], time[1], time[2],
                                              time[3], time[4], time[5])
@@ -1022,17 +963,14 @@ class Pump:
                     # Give user info
                     print ("Bolus read: " + str(bolus) +
                            "U (" + str(time) + ")")
-
+                    
                     # Store bolus
                     boluses.append(bolus)
                     times.append(time)
 
                 except:
 
-                    # Error with bolus time (bad CRC?)
-                    print "Erroneous bolus time: " + str(time)
-                    print "Not saving bolus."
-                    print bolus
+                    pass
 
         # If new boluses read, write them to insulin report
         if len(boluses) != 0:
@@ -1057,14 +995,9 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Reading current temporary basal...",
-                              read = True,
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
                               attempts = 2,
                               size = 1,
-                              code = 152,
-                              parameters = [])
+                              code = 152)
 
         # Make pump request
         self.requester.make()
@@ -1120,13 +1053,10 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Sending bolus: " + str(bolus) + " U",
-                              sleep = bolus_delivery_time,
-                              sleep_reason = "Waiting for bolus to be " +
-                                             "delivered... (" + 
-                                             str(bolus_delivery_time) + "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
+                              wait = bolus_delivery_time,
+                              wait_reason = "Waiting for bolus to be " +
+                                            "delivered... (" + 
+                                            str(bolus_delivery_time) + "s)",
                               attempts = 0,
                               size = 1,
                               code = 66,
@@ -1137,6 +1067,9 @@ class Pump:
 
         # Read issued bolus in order to store it to the reports
         self.readBoluses()
+
+        # Check if last bolus stored fits to the one just delivered
+        # TODO
 
 
 
@@ -1158,13 +1091,10 @@ class Pump:
 
         # Define pump request
         self.requester.define(info = "Setting temporary basal units: " + units,
-                              sleep = self.EXECUTION_TIME,
-                              sleep_reason = "Waiting for temporary basal " +
-                                             "rate units to be set... (" +
-                                             str(self.EXECUTION_TIME) + "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
+                              wait = self.EXECUTION_TIME,
+                              wait_reason = "Waiting for temporary basal " +
+                                            "rate units to be set... (" +
+                                            str(self.EXECUTION_TIME) + "s)",
                               attempts = 0,
                               size = 1,
                               code = 104,
@@ -1184,8 +1114,8 @@ class Pump:
         """
 
         # Give user info regarding the next TB that will be set
-        print "Trying to set new temporary basal: " + str(rate) + \
-              " " + units + " (" + str(duration) + "m)"
+        print ("Trying to set new temporary basal: " + str(rate) + " " + units +
+               " (" + str(duration) + "m)")
 
         # First run
         if first_run == True:
@@ -1210,8 +1140,8 @@ class Pump:
                (duration == last_duration):
 
                 # Give user info
-                print "There is no point in reissuing the exact same " + \
-                      "temporary basal: ignoring."
+                print ("There is no point in reissuing the exact same " +
+                       "temporary basal: ignoring.")
 
                 return
 
@@ -1220,8 +1150,8 @@ class Pump:
                   (duration == 0) & (last_duration == 0)):
 
                 # Give user info
-                print "There is no point in canceling a non-existent TB: " + \
-                      "ignoring."
+                print ("There is no point in canceling a non-existent TB: " +
+                       "ignoring.")
 
                 return
 
@@ -1229,8 +1159,8 @@ class Pump:
             elif (last_rate != 0) | (last_duration != 0):
 
                 # Give user info
-                print "Temporary basal needs to be set to zero before " + \
-                      "issuing a new one..."
+                print ("Temporary basal needs to be set to zero before " +
+                       "issuing a new one...")
 
                 # Set TB to zero (it is crucial here to use the precedent
                 # units, otherwise it would not work!)
@@ -1259,15 +1189,15 @@ class Pump:
                 if dt < 0:
 
                     # Give user info
-                    print "The temporary basal will be shortened " + \
-                          "by: " + str(-dt) + "m"
+                    print ("The temporary basal will be shortened by: " +
+                           str(-dt) + "m")
 
                 # For an extended TB
                 elif dt > 0:
 
                     # Give user info
-                    print "The temporary basal will be extended " + \
-                          "by: " + str(dt) + "m"
+                    print ("The temporary basal will be extended by: " +
+                           str(dt) + "m")
 
         # If request is for absolute temporary basal
         if units == "U/h":
@@ -1287,33 +1217,35 @@ class Pump:
                                      str(rate) + " " +
                                      units + " (" +
                                      str(duration) + "m)",
-                              sleep = self.EXECUTION_TIME,
-                              sleep_reason = "Waiting for temporary basal " +
-                                             "rate to be set... (" +
-                                             str(self.EXECUTION_TIME) + "s)",
-                              head = self.PACKETS_HEAD,
-                              serial = self.SERIAL_NUMBER_ENCODED,
-                              power = 0,
+                              wait = self.EXECUTION_TIME,
+                              wait_reason = "Waiting for temporary basal " +
+                                            "rate to be set... (" +
+                                            str(self.EXECUTION_TIME) + "s)",
                               attempts = 0,
                               size = 1,
                               code = code,
                               parameters = parameters)
 
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Store time at which TBR is requested
+        time = lib.getTime(now)
+
         # Make pump request
         self.requester.make()
 
         # Give user info
-        print "Verifying that the new temporary basal was correctly " + \
-              "set..."
+        print "Verifying that the new temporary basal was correctly set..."
 
         # Verify that the TB was correctly issued by reading current TB on
         # pump
         self.readTemporaryBasal()
 
         # Compare to expectedly set TB
-        if (self.TB["Rate"] == rate) & \
-           (self.TB["Units"] == units) & \
-           (self.TB["Duration"] == duration):
+        if ((self.TB["Rate"] == rate) &
+            (self.TB["Units"] == units) &
+            (self.TB["Duration"] == duration)):
 
             # Give user info
             print ("New temporary basal correctly set: " +
@@ -1322,9 +1254,6 @@ class Pump:
 
             # Give user info
             print "Saving new temporary basal to reports..."
-
-            # Format time at which TB was set
-            time = lib.getTime(self.requester.time)
 
             # Add bolus to insulin report
             self.reporter.addTemporaryBasal(time, rate, units, duration)
@@ -1371,11 +1300,6 @@ def main():
     # Instanciate a pump for me
     pump = Pump()
 
-    # Reset log file
-    with open("/home/pi/Desktop/myNewCommands.txt", "w") as f:
-        f.seek(0)
-        f.truncate()
-
     # Start dialogue pump
     pump.start()
 
@@ -1407,6 +1331,7 @@ def main():
     pump.readBoluses()
 
     # Send bolus to pump
+    # FIXME Decode
     #pump.deliverBolus(0.1)
 
     # Read temporary basal
@@ -1415,7 +1340,6 @@ def main():
     # Send temporary basal to pump
     #pump.setTemporaryBasal(5, "U/h", 30)
     #pump.setTemporaryBasal(200, "%", 60)
-    #pump.cancelTemporaryBasal()
 
     # Read insulin sensitivity factors stored in pump
     #pump.readInsulinSensitivityFactors()

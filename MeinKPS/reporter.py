@@ -501,8 +501,8 @@ class Reporter:
         self.last_bolus_t = boluses_t[-1]
 
         # Give user info
-        print "Last bolus: " + str(self.last_bolus) + "U (" + \
-              self.last_bolus_t + ")"
+        print ("Last bolus: " + str(self.last_bolus) + "U (" +
+               self.last_bolus_t + ")")
 
 
 
@@ -559,8 +559,8 @@ class Reporter:
         self.last_BG_t = BG_t[-1]
 
         # Give user info
-        print "Last BG: " + str(self.last_BG) + " mmol/l (" + \
-              self.last_BG_t + ")"
+        print ("Last BG: " + str(self.last_BG) + " mmol/l (" +
+               self.last_BG_t + ")")
 
 
 

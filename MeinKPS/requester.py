@@ -43,10 +43,15 @@ class Requester:
     # REQUESTER CONSTANTS
     N_BYTES        = 64
     N_BYTES_FORMAT = 8
+    READ_SLEEP     = 0.01
+    RESPONSE_SLEEP = 0.001
+    REQUEST_SLEEP  = 0.25
+    POLL_SLEEP     = 0.25
+    EOD            = 128
 
 
 
-    def initialize(self, recipient = None, handle = None):
+    def initialize(self, recipient = None, serial = None, handle = None):
 
         """
         ========================================================================
@@ -65,6 +70,10 @@ class Requester:
         # device
         self.recipient = recipient
 
+        # Read and store encoded version of recipient's serial number
+        if serial is not None:
+            self.serial = lib.encodeSerialNumber(serial)
+
         # Link requester with the previously generated USB serial handle of said
         # device
         self.handle = handle
@@ -78,16 +87,14 @@ class Requester:
 
     def define(self, info = None,
                      packet = None,
-                     read = False,
-                     sleep = 0,
-                     sleep_reason = None,
-                     head = None,
-                     serial = None,
-                     power = None,
+                     remote = True,
+                     wait = 0,
+                     wait_reason = None,
+                     power = 0,
                      attempts = None,
                      size = None,
                      code = None,
-                     parameters = None):
+                     parameters = []):
 
         """
         ========================================================================
@@ -98,11 +105,9 @@ class Requester:
         # Store definition of request
         self.info = info
         self.packet = packet
-        self.read = read
-        self.sleep = sleep
-        self.sleep_reason = sleep_reason
-        self.head = head
-        self.serial = serial
+        self.remote = remote
+        self.wait = wait
+        self.wait_reason = wait_reason
         self.power = power
         self.attempts = attempts
         self.size = size
@@ -136,7 +141,7 @@ class Requester:
 
             # Build normal request packet
             if sort == "Normal":
-                packet.extend(self.head)
+                packet.extend([1, 0, 167, 1])
                 packet.extend(self.serial)
                 packet.append(128 | lib.getByte(len(self.parameters), 1))
                 packet.append(lib.getByte(len(self.parameters), 0))
@@ -183,8 +188,8 @@ class Requester:
         # Send request packet as bytes to device
         self.handle.write(bytearray(self.packets[sort]))
 
-        # Sleep a bit before reading (0.001s)
-        time.sleep(0.001)
+        # Give device some time to respond
+        time.sleep(self.RESPONSE_SLEEP)
 
         # Get response to request
         self.get()
@@ -211,6 +216,15 @@ class Requester:
 
         # Read raw request response from device
         self.raw_response = self.handle.read(n)
+
+        # Retry reading if there was no response
+        while len(self.raw_response) == 0:
+            
+            # Give device a break before reading again
+            time.sleep(self.READ_SLEEP)
+
+            # Read
+            self.raw_response = self.handle.read(n)
 
         # Vectorize raw response, transform its bytes to decimals, and
         # append it to the response vector
@@ -329,16 +343,8 @@ class Requester:
             # Update attempt variable
             n += 1
 
-            # First poll of first download attempt: sleep 0.25s
-            if (self.n_download_attempts) == 1 & (n == 1):
-                time.sleep(0.25)
-
-            # First poll of next download attempts: sleep 0.2s
-            elif n == 1:
-                time.sleep(0.2)
-            # No response to poll? Sleep 0.1s
-            else:
-                time.sleep(0.1)
+            # Poll sleep
+            time.sleep(self.POLL_SLEEP)
 
             # Keep track of attempts
             print "Polling data: " + str(n) + "/-"
@@ -362,6 +368,21 @@ class Requester:
         ========================================================================
         """
 
+        # Check for incorrect number of bytes
+        if self.n_bytes_received != self.n_bytes_expected:
+
+            # There should always be a minimum of 64 bytes received. Sometimes,
+            # the expected number of bytes is lower than 64 (e.g. 15), in this
+            # case don't exit loop, just go with it.
+            if self.n_bytes_expected >= 64:
+
+                # Exit
+                # FIXME
+                sys.exit("Error: expected number of bytes: " + 
+                       str(self.n_bytes_expected) + ", " +
+                       "number of bytes received: " +
+                       str(self.n_bytes_received))
+
         # Parse data
         head = self.response[0:13]
         body = self.response[13:-1]
@@ -373,23 +394,14 @@ class Requester:
         # Check for incorrect CRC
         if CRC != expected_CRC:
 
-            # Exit
-            sys.exit("Error: expected CRC: " + str(expected_CRC) + ", " +
-                     "CRC found: " + str(CRC))
+            # Give user info
+            print ("Error: expected CRC: " + str(expected_CRC) + ", " +
+                   "CRC found: " + str(CRC))
 
-        # Check for incorrect number of bytes.
-        if self.n_bytes_received != self.n_bytes_expected:
-
-            # There should always be a minimum of 64 bytes received. Sometimes,
-            # the expected number of bytes is lower than 64 (e.g. 15), in this
-            # case don't exit loop, just go with the 64 that were read.
-            if self.n_bytes_expected >= 64:
-
-                # Exit
-                sys.exit("Error: expected number of bytes: " + 
-                         str(self.n_bytes_expected) + ", " +
-                         "number of bytes received: " +
-                         str(self.n_bytes_received))
+            # Exit, do not store faulty data!
+            # FIXME: Does simply exiting let us avoid errors, or are we missing
+            #        on data?
+            return
 
         # Give user info
         print ("Data corresponds to expectations. Storing it...")
@@ -414,16 +426,16 @@ class Requester:
         self.data = []
 
 	    # Initialize download attempt variable
-        self.n_download_attempts = 0
+        n = 0
 
         # Download whole data on device
         while True:
 
 		    # Update download attempt variable
-            self.n_download_attempts += 1
+            n += 1
 
             # Keep track of download process
-            print "Downloading data: " + str(self.n_download_attempts) + "/-"
+            print "Downloading data: " + str(n) + "/-"
 
             # Ask if some data was received
             self.poll()
@@ -438,7 +450,7 @@ class Requester:
             self.verify()
 
 	        # Look for end of data (EOD) condition
-            if self.response[5] == 128:
+            if self.response[5] == self.EOD:
 
                 # Give user info
                 print "End of data. Exiting download loop."
@@ -446,7 +458,7 @@ class Requester:
                 break
 
         # Give user info
-        print "Downloaded data after " + str(self.n_download_attempts) + " request(s)."
+        print "Downloaded data after " + str(n) + " request(s)."
 
 
 
@@ -470,23 +482,23 @@ class Requester:
         # Send request to device
         self.send()
 
-        time.sleep(0.25)
+        # Give device some time before starting to poll
+        time.sleep(self.REQUEST_SLEEP)
 
-        # If data was requested, download it
-        if self.read:
+        # If remote data was requested, download it
+        if self.remote:
 
             # Download data
             self.download()
 
-        # Wait before next request if needed (give device time to fully execute
-        # last request)
-        if self.sleep > 0:
+        # Give enough time for last request to be executed
+        if self.wait > 0:
 
-            # Give sleep reason
-            print self.sleep_reason
+            # Explain why sleeping is necessary
+            print self.wait_reason
 
             # Sleep
-            time.sleep(self.sleep)
+            time.sleep(self.wait)
 
 
 
