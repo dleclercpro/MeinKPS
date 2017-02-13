@@ -206,24 +206,36 @@ class Requester:
         # Decide on number of bytes to read. If less bytes expected than usual,
         # set to default value (64). Otherwise, read expected number of bytes.
         if self.nBytesExpected == 0:
-            n = self.nBytes
+            nBytes = self.nBytes
         else: 
-            n = self.nBytesExpected
+            nBytes = self.nBytesExpected
 
         # Give user info
-        print "Trying to read " + str(n) + " bytes from device..."
+        print "Trying to read " + str(nBytes) + " bytes from device..."
 
         # Read raw request response from device
-        self.rawResponse = self.handle.read(n)
+        self.rawResponse = self.handle.read(nBytes)
+
+        # Initialize reading attempt variable
+        n = 1
 
         # Retry reading if there was no response
         while len(self.rawResponse) == 0:
+
+            # Update reading attempt variable
+            n += 1
+
+            # Give user info
+            print "Reading attempt: " + str(n) + "/-"
             
             # Give device a break before reading again
             time.sleep(self.readSleep)
 
             # Read
-            self.rawResponse = self.handle.read(n)
+            self.rawResponse = self.handle.read(nBytes)
+
+        # Give user info
+        print "Read data in " + str(n) + " attempt(s)."
 
         # Vectorize raw response, transform its bytes to decimals, and
         # append it to the response vector
@@ -362,6 +374,7 @@ class Requester:
                 sys.exit("Maximal number of polling attempts reached.")
 
         # Give user info
+        print "Polled data in " + str(n) + " attempt(s)."
         print "Number of bytes expected: " + str(self.nBytesExpected)
 
 
@@ -456,7 +469,7 @@ class Requester:
                 break
 
         # Give user info
-        print "Downloaded data after " + str(n) + " request(s)."
+        print "Downloaded data in " + str(n) + " attempt(s)."
 
 
 

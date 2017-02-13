@@ -30,8 +30,13 @@ import json
 
 
 
+# PATHS
+sys.path.append("/home/pi/MeinKPS/MeinKPS")
+
+
+
 # USER LIBRARIES
-import lib
+import pump
 
 
 
@@ -42,84 +47,84 @@ sleep = 5
 
 # MAIN
 # Instanciate a pump for me
-pump = Pump()
+myPump = pump.Pump()
 
 # Start dialogue pump
-pump.start()
+myPump.start()
 
 # Read bolus history of pump
-pump.readTime()
+myPump.readTime()
 time.sleep(sleep)
 
 # Read pump model
-pump.readModel()
+myPump.readModel()
 time.sleep(sleep)
 
 # Read pump firmware version
-pump.readFirmwareVersion()
+myPump.readFirmwareVersion()
 time.sleep(sleep)
 
 # Read remaining amount of insulin in pump
-pump.readReservoirLevel()
+myPump.readReservoirLevel()
 time.sleep(sleep)
 
 # Read pump status
-pump.readStatus()
+myPump.readStatus()
 time.sleep(sleep)
 
 # Read pump settings
-pump.readSettings()
+myPump.readSettings()
 time.sleep(sleep)
 
 # Read daily totals on pump
-pump.readDailyTotals()
+myPump.readDailyTotals()
 time.sleep(sleep)
 
 # Read current history page number
-pump.readNumberHistoryPages()
+myPump.readNumberHistoryPages()
 time.sleep(sleep)
 
 # Read bolus history on pump
-pump.readBoluses()
+myPump.readBoluses()
 time.sleep(sleep)
 
 # Send bolus to pump
-pump.deliverBolus(0.1)
+myPump.deliverBolus(0.1)
 time.sleep(sleep)
 
 # Read temporary basal
-pump.readTemporaryBasal()
+myPump.readTemporaryBasal()
 time.sleep(sleep)
 
 # Send temporary basal to pump
-pump.setTemporaryBasal(5, "U/h", 30)
+myPump.setTemporaryBasal(5, "U/h", 30)
 time.sleep(sleep)
-pump.setTemporaryBasal(200, "%", 60)
+myPump.setTemporaryBasal(200, "%", 60)
 time.sleep(sleep)
 
 # Read insulin sensitivity factors stored in pump
-pump.readInsulinSensitivityFactors()
+myPump.readInsulinSensitivityFactors()
 time.sleep(sleep)
 
 # Read carb sensitivity factors stored in pump
-pump.readCarbSensitivityFactors()
+myPump.readCarbSensitivityFactors()
 time.sleep(sleep)
 
 # Read blood glucose targets stored in pump
-pump.readBGTargets()
+myPump.readBGTargets()
 time.sleep(sleep)
 
 # Suspend pump activity
-pump.suspend()
+myPump.suspend()
 time.sleep(sleep)
 
 # Resume pump activity
-pump.resume()
+myPump.resume()
 time.sleep(sleep)
 
 # Push button on pump
-pump.pushButton("DOWN")
+myPump.pushButton("DOWN")
 time.sleep(sleep)
 
 # Stop dialogue with pump
-pump.stop()
+myPump.stop()

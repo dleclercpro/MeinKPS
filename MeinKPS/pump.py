@@ -503,11 +503,14 @@ class Pump:
 
         # Extract pump settings from received data
         self.settings = {
-            "Max Bolus" : self.requester.data[5] * self.bolusStroke,
-            "Max Basal" : (lib.getByte(self.requester.data[6], 0) * 256 |
-                           lib.getByte(self.requester.data[7], 0)) *
-                           self.basalStroke / 2.0,
-            "Insulin Action Curve" : self.requester.data[17]}
+            "Max Bolus": self.requester.data[5] * self.bolusStroke,
+            "Max Basal": (lib.getByte(self.requester.data[6], 0) * 256 |
+                          lib.getByte(self.requester.data[7], 0)) *
+                          self.basalStroke / 2.0,
+            "IAC": self.requester.data[17]}
+
+        # Save pump settings to profile report
+        self.reporter.storeSettings(self.settings)
 
         # Give user info
         print "Pump settings: " + str(self.settings)

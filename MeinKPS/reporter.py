@@ -23,7 +23,7 @@
 
 # TODO
 # X Create report and/or categories if non-existent
-# - Overwrite option instead of deleting section completely
+# X Overwrite option instead of deleting section completely
 
 
 
@@ -53,6 +53,11 @@ import lib
 
 
 
+# CONSTANTS
+dirReports = "/home/pi/MeinKPS/MeinKPS/Reports/"
+
+
+
 class Reporter:
 
     # REPORTER CHARACTERISTICS
@@ -74,7 +79,7 @@ class Reporter:
         self.verifyReport(reportName)
 
         # Load report
-        with open("Reports/" + reportName, "r") as f:
+        with open(dirReports + reportName, "r") as f:
             report = json.load(f)
 
         # Give user info
@@ -94,7 +99,7 @@ class Reporter:
         """
 
         # Load report
-        with open("Reports/" + reportName, "r") as f:
+        with open(dirReports + reportName, "r") as f:
             report = json.load(f)
 
         # Print report entries
@@ -111,13 +116,13 @@ class Reporter:
         """
 
         # Check for report existence
-        if not os.path.exists("Reports/" + reportName):
+        if not os.path.exists(dirReports + reportName):
 
             # Give user info
             print "Report '" + reportName + "' does not exist. Creating it..."
 
             # Creating new empty report
-            with open("Reports/" + reportName, "w") as f:
+            with open(dirReports + reportName, "w") as f:
                 json.dump({}, f)
 
 
@@ -195,7 +200,7 @@ class Reporter:
             del parent[path[-1]]
 
             # Rewrite report
-            with open("Reports/" + reportName, "w") as f:
+            with open(dirReports + reportName, "w") as f:
                 json.dump(report,
                           f,
                           indent = 4,
@@ -268,17 +273,16 @@ class Reporter:
         # Load report section
         section = self.verifySection(report, path, True)
 
-        # If overwrite option was selected, clear report section
+        # If desired, clear report section
         if overwrite:
 
             # Give user info
-            print ("Overwrite option was selected: clearing " +
-                   "report section...")
+            print "Overwriting option chosen: removing entries..."
 
-            # If section is on first level, do not delete whole report!
-            if len(path) == 0:
-                for i in range(n):
-                    del section[keys[i]]
+            # If section to write only consists in a single entry, only delete
+            # said entry and not the whole section!
+            if n == 1:
+                del section[keys[0]]
 
             else:
                 section.clear()
@@ -292,7 +296,7 @@ class Reporter:
 
                 # Give user info
                 print ("Entry already exists: " + str(keys[i]) + " - " +
-                       str(entries[i]))
+                       str(section[keys[i]]))
 
             # If not, write it down
             else:
@@ -310,7 +314,7 @@ class Reporter:
         if modified:
 
             # Rewrite report
-            with open("Reports/" + reportName, "w") as f:
+            with open(dirReports + reportName, "w") as f:
                 json.dump(report,
                           f,
                           indent = 4,
@@ -330,8 +334,8 @@ class Reporter:
         ========================================================================
         """
 
-        # Add reservoir levels
-        self.addEntries("pump.json", ["Reservoir Levels"], t, level)
+        # Add reservoir levels (only keep one digit in case of rounding errors)
+        self.addEntries("pump.json", ["Reservoir Levels"], t, round(level, 1))
 
 
 
@@ -362,6 +366,24 @@ class Reporter:
         # Add temporary basal entries
         self.addEntries("insulin.json", ["Temporary Basals"],
                                          t, [rate, units, duration])
+
+
+
+    def storeSettings(self, settings):
+
+        """
+        ========================================================================
+        STORESETTINGS
+        ========================================================================
+        """
+
+        # Write down max bolus
+        self.addEntries("profile.json", ["Settings"], "Max Bolus",
+                        settings["Max Bolus"], True)
+
+        # Write down max basal
+        self.addEntries("profile.json", ["Settings"], "Max Basal",
+                        settings["Max Basal"], True)
 
 
 
