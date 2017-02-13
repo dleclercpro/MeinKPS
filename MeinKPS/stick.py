@@ -1,28 +1,29 @@
 #! /usr/bin/python
 
-
-
 """
 ================================================================================
-Title:    stick
 
-Author:   David Leclerc
+    Title:    stick
 
-Version:  1.2
+    Author:   David Leclerc
 
-Date:     01.06.2016
+    Version:  1.2
 
-License:  GNU General Public License, Version 3
-          (http://www.gnu.org/licenses/gpl.html)
+    Date:     01.06.2016
 
-Overview: This is a script that allows to retrieve informations from a MiniMed
-          insulin pump, using the CareLink USB stick of Medtronic. It is based
-          on the PySerial library and is a work of reverse-engineering the USB
-          communication protocols of said USB stick.
+    License:  GNU General Public License, Version 3
+              (http://www.gnu.org/licenses/gpl.html)
 
-Notes:    It is important to not interact with the pump while this script
-          communicates with it, otherwise some commands could not be actually
-          performed!
+    Overview: This is a script that allows to retrieve informations from a
+              MiniMed insulin pump, using the CareLink USB stick of Medtronic.
+              It is based on the PySerial library and is a work of
+              reverse-engineering the USB communication protocols of said USB
+              stick.
+
+    Notes:    It is important to not interact with the pump while this script
+              communicates with it, otherwise some commands could not be
+              actually performed!
+
 ================================================================================
 """
 
@@ -49,13 +50,12 @@ import requester
 class Stick:
 
     # STICK CHARACTERISTICS
-    VERBOSE          = True
-    VENDOR           = 0x0a21
-    PRODUCT          = 0x8001
-    SIGNAL_THRESHOLD = 150
-    N_BYTES          = 64
-    TIMEOUT          = 0.5
-    FREQUENCIES      = {0 : 916.5, 1 : 868.35, 255 : 916.5}
+    vendor          = 0x0a21
+    product         = 0x8001
+    signalThreshold = 150
+    nBytes          = 64
+    timeout         = 0.5
+    frequencies     = {0: 916.5, 1: 868.35, 255: 916.5}
 
 
 
@@ -69,13 +69,13 @@ class Stick:
 
         # Add serial port
         os.system("modprobe --quiet --first-time usbserial"
-            + " vendor=" + str(self.VENDOR)
-            + " product=" + str(self.PRODUCT))
+            + " vendor=" + str(self.vendor)
+            + " product=" + str(self.product))
 
         # Generate serial port handle
         self.handle = serial.Serial()
         self.handle.port = "/dev/ttyUSB0"
-        self.handle.timeout = self.TIMEOUT
+        self.handle.timeout = self.timeout
         self.handle.rtscts = True
         self.handle.dsrdtr = True
 
@@ -100,14 +100,22 @@ class Stick:
         # Initialize requester to speak with stick
         self.requester.initialize(recipient = "Stick", handle = self.handle)
 
+        # Define state indicators
+        stateIndicators = {"Errors": {"CRC": None, "SEQ": None, "NAK": None,
+                                      "Timeout": None},
+                           "Packets": {"Received": None, "Sent": None}}
+
+        # Initialize a state dictionary for the stick's USB and radio interfaces
+        self.state = {"USB": stateIndicators, "Radio": stateIndicators}
+
         # Ask for stick infos
-        self.getInfos()
+        self.readInfos()
 
         # Ask for signal strength
-        self.getSignalStrength()
+        self.readSignalStrength()
 
         # Get state of stick
-        self.getState()
+        self.readStates()
 
 
 
@@ -127,11 +135,11 @@ class Stick:
 
 
 
-    def getInfos(self):
+    def readInfos(self):
 
         """
         ========================================================================
-        GETINFOS
+        READINFOS
         ========================================================================
         """
 
@@ -153,29 +161,28 @@ class Stick:
 
         # Extract infos
         self.infos["ACK"] = self.requester.response[0]
-        self.infos["Status"] = self.requester.response_chr[1]
+        self.infos["Status"] = self.requester.responseChr[1]
         self.infos["Serial"] = "".join(x[2:] for x in
-                                       self.requester.response_hex[3:6])
-        self.infos["Frequency"] = (str(self.FREQUENCIES[
-                                       self.requester.response[8]]) + " MHz")
-        self.infos["Description"] = "".join(self.requester.response_chr[9:19])
+                               self.requester.responseHex[3:6])
+        self.infos["Frequency"] = (str(self.frequencies[
+                                   self.requester.response[8]]) + " MHz")
+        self.infos["Description"] = "".join(self.requester.responseChr[9:19])
         self.infos["Version"] = (1.00 * self.requester.response[19:21][0] +
                                  0.01 * self.requester.response[19:21][1])
 
         # Print infos
-        if self.VERBOSE:
-            print "Stick infos:"
-            print json.dumps(self.infos, indent = 2,
-                                         separators = (",", ": "),
-                                         sort_keys = True)
+        print "Stick infos:"
+        print json.dumps(self.infos, indent = 2,
+                                     separators = (",", ": "),
+                                     sort_keys = True)
 
 
 
-    def getSignalStrength(self):
+    def readSignalStrength(self):
 
         """
         ========================================================================
-        GETSIGNALSTRENGTH
+        READSIGNALSTRENGTH
         ========================================================================
         """
 
@@ -191,14 +198,13 @@ class Stick:
         n = 0
 
         # Loop until signal found is sufficiently strong
-        while self.signal < self.SIGNAL_THRESHOLD:
+        while self.signal < self.signalThreshold:
 
             # Update attempt variable
             n += 1
 
             # Keep track of attempts reading signal strength
-            if self.VERBOSE:
-                print "Looking for sufficient signal strength: " + str(n) + "/-"
+            print "Looking for sufficient signal strength: " + str(n) + "/-"
 
             # Make request
             self.requester.make()
@@ -207,31 +213,19 @@ class Stick:
             self.signal = self.requester.response[3]
 
             # Print signal strength
-            if self.VERBOSE:
-                print "Signal strength found: " + str(self.signal)
-                print ("Expected minimal signal strength: " +
-                       str(self.SIGNAL_THRESHOLD))
+            print "Signal strength found: " + str(self.signal)
+            print ("Expected minimal signal strength: " +
+                   str(self.signalThreshold))
 
 
 
-    def getState(self):
+    def readUSBState(self):
 
         """
         ========================================================================
-        GETSTATE
+        READUSBSTATE
         ========================================================================
         """
-
-        # Define state indicators
-        state_indicators = {"Errors": {"CRC": None,
-                                       "SEQ": None,
-                                       "NAK": None,
-                                       "Timeout": None},
-                            "Packets": {"Received": None,
-                                        "Sent": None}}
-
-        # Define state dictionary for USB and RF interfaces
-        self.state = {"USB": state_indicators, "RF": state_indicators}
 
         # Define request
         self.requester.define(info = "Reading stick USB state...",
@@ -251,8 +245,18 @@ class Stick:
         self.state["USB"]["Packets"]["Sent"] = (
             lib.convertBytes(self.requester.response[11:15]))
 
+
+
+    def readRadioState(self):
+
+        """
+        ========================================================================
+        READRADIOSTATE
+        ========================================================================
+        """
+
         # Define request
-        self.requester.define(info = "Reading stick RF state...",
+        self.requester.define(info = "Reading stick radio state...",
                               packet = [5, 0, 0],
                               remote = False)
 
@@ -260,23 +264,34 @@ class Stick:
         self.requester.make()
 
         # Extract state
-        self.state["RF"]["Errors"]["CRC"] = self.requester.response[3]
-        self.state["RF"]["Errors"]["SEQ"] = self.requester.response[4]
-        self.state["RF"]["Errors"]["NAK"] = self.requester.response[5]
-        self.state["RF"]["Errors"]["Timeout"] = self.requester.response[6]
-        self.state["RF"]["Packets"]["Received"] = (
+        self.state["Radio"]["Errors"]["CRC"] = self.requester.response[3]
+        self.state["Radio"]["Errors"]["SEQ"] = self.requester.response[4]
+        self.state["Radio"]["Errors"]["NAK"] = self.requester.response[5]
+        self.state["Radio"]["Errors"]["Timeout"] = self.requester.response[6]
+        self.state["Radio"]["Packets"]["Received"] = (
             lib.convertBytes(self.requester.response[7:11]))
-        self.state["RF"]["Packets"]["Sent"] = (
+        self.state["Radio"]["Packets"]["Sent"] = (
             lib.convertBytes(self.requester.response[11:15]))
 
-        # Give user info
-        if self.VERBOSE:
 
-            # Print current stick state
-            print "Stick state:"
-            print json.dumps(self.state, indent = 2,
-                                         separators = (",", ": "),
-                                         sort_keys = True)
+
+    def readStates(self):
+
+        """
+        ========================================================================
+        READSTATES
+        ========================================================================
+        """
+
+        # Read USB and radio states
+        self.readUSBState()
+        self.readRadioState()
+
+        # Print current stick states
+        print "Stick states:"
+        print json.dumps(self.state, indent = 2,
+                                     separators = (",", ": "),
+                                     sort_keys = True)
 
 
 

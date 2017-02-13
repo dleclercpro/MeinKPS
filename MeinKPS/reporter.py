@@ -1,23 +1,23 @@
 #! /usr/bin/python
 
-
-
 """
 ================================================================================
-Title:    reporter
 
-Author:   David Leclerc
+    Title:    reporter
 
-Version:  0.1
+    Author:   David Leclerc
 
-Date:     30.05.2016
+    Version:  0.1
 
-License:  GNU General Public License, Version 3
-          (http://www.gnu.org/licenses/gpl.html)
+    Date:     30.05.2016
 
-Overview: ...
+    License:  GNU General Public License, Version 3
+              (http://www.gnu.org/licenses/gpl.html)
 
-Notes:    ...
+    Overview: ...
+
+    Notes:    ...
+
 ================================================================================
 """
 
@@ -28,15 +28,15 @@ Notes:    ...
 
 
 # TERMINOLOGY
-# - BG: Blood glucose [mmol/l]
+# - BGs: Blood glucose [mmol/l]
 # - TB: Temporary basal (rate) [U/h]
 # - ICF: Insulin to carbs factors [U/(15g)]
 # - ISF: Insulin sensitivity factors [(mmol/l)/U]
 # - DIA: Duration of insulin action [h]
 # - IOB: Insulin on board [U]
 # - COB: Carbs on board [g]
-# - BG Maximal Rate: Maximal allowed BG rate [(mmol/l)/h]
-# - BG Time Interval: Time interval between two BG readings [m]
+# - BGs Maximal Rate: Maximal allowed BGs rate [(mmol/l)/h]
+# - BGs Time Interval: Time interval between two BGs readings [m]
 
 
 
@@ -56,11 +56,10 @@ import lib
 class Reporter:
 
     # REPORTER CHARACTERISTICS
-    VERBOSE = True
 
 
 
-    def getReport(self, report_name):
+    def getReport(self, reportName):
 
         """
         ========================================================================
@@ -69,13 +68,13 @@ class Reporter:
         """
 
         # Give user info
-        print "Loading report '" + report_name + "'..."
+        print "Loading report '" + reportName + "'..."
 
         # Check for report existence
-        self.verifyReport(report_name)
+        self.verifyReport(reportName)
 
         # Load report
-        with open("Reports/" + report_name, "r") as f:
+        with open("Reports/" + reportName, "r") as f:
             report = json.load(f)
 
         # Give user info
@@ -86,7 +85,7 @@ class Reporter:
 
 
 
-    def printReport(self, report_name):
+    def printReport(self, reportName):
 
         """
         ========================================================================
@@ -95,7 +94,7 @@ class Reporter:
         """
 
         # Load report
-        with open("Reports/" + report_name, "r") as f:
+        with open("Reports/" + reportName, "r") as f:
             report = json.load(f)
 
         # Print report entries
@@ -103,7 +102,7 @@ class Reporter:
 
 
 
-    def verifyReport(self, report_name):
+    def verifyReport(self, reportName):
 
         """
         ========================================================================
@@ -112,13 +111,13 @@ class Reporter:
         """
 
         # Check for report existence
-        if not os.path.exists("Reports/" + report_name):
+        if not os.path.exists("Reports/" + reportName):
 
             # Give user info
-            print "Report '" + report_name + "' does not exist. Creating it..."
+            print "Report '" + reportName + "' does not exist. Creating it..."
 
             # Creating new empty report
-            with open("Reports/" + report_name, "w") as f:
+            with open("Reports/" + reportName, "w") as f:
                 json.dump({}, f)
 
 
@@ -166,7 +165,7 @@ class Reporter:
 
 
 
-    def deleteSection(self, report_name, path):
+    def deleteSection(self, reportName, path):
 
         """
         ========================================================================
@@ -175,7 +174,7 @@ class Reporter:
         """
 
         # Load report
-        report = self.getReport(report_name)
+        report = self.getReport(reportName)
 
         # Get section of report in which to add entry
         section = report
@@ -196,7 +195,7 @@ class Reporter:
             del parent[path[-1]]
 
             # Rewrite report
-            with open("Reports/" + report_name, "w") as f:
+            with open("Reports/" + reportName, "w") as f:
                 json.dump(report,
                           f,
                           indent = 4,
@@ -213,7 +212,7 @@ class Reporter:
 
 
 
-    def getEntry(self, report_name, path, key):
+    def getEntry(self, reportName, path, key):
 
         """
         ========================================================================
@@ -222,7 +221,7 @@ class Reporter:
         """
 
         # Load report
-        report = self.getReport(report_name)
+        report = self.getReport(reportName)
 
         # Load report section
         section = self.verifySection(report, path, False)
@@ -247,7 +246,7 @@ class Reporter:
 
 
 
-    def addEntries(self, report_name, path, keys, entries, overwrite = False):
+    def addEntries(self, reportName, path, keys, entries, overwrite = False):
 
         """
         ========================================================================
@@ -256,7 +255,7 @@ class Reporter:
         """
 
         # Load report
-        report = self.getReport(report_name)
+        report = self.getReport(reportName)
 
         # Make sure keys and entries are of array type
         if type(keys) is not list:
@@ -311,7 +310,7 @@ class Reporter:
         if modified:
 
             # Rewrite report
-            with open("Reports/" + report_name, "w") as f:
+            with open("Reports/" + reportName, "w") as f:
                 json.dump(report,
                           f,
                           indent = 4,
@@ -319,13 +318,7 @@ class Reporter:
                           sort_keys = True)
 
             # Give user info
-            print "Report '" + report_name + "' was updated."
-
-
-
-
-
-
+            print "Report '" + reportName + "' was updated."
 
 
 
@@ -418,7 +411,7 @@ class Reporter:
         n = len(targets)
 
         # Write down (and overwrite if necessary) factor entries into report
-        self.addEntries("profile.json", ["Settings", "BG Targets (" +
+        self.addEntries("profile.json", ["Settings", "BGs Targets (" +
                                          units + ")"], t, targets, True)
 
 
@@ -445,9 +438,6 @@ class Reporter:
 
 
 
-
-
-
     def readLastBolus(self):
 
         """
@@ -464,45 +454,45 @@ class Reporter:
 
         # Initialize bolus vectors
         boluses = [None] * n
-        boluses_t = [None] * n
+        times = [None] * n
 
         # Initialize looping variable
         i = 0
 
         # Read bolus report
-        for entry_key in report["Boluses"]:
+        for key in report["Boluses"]:
 
             # Extend bolus vectors
-            boluses[i] = report["Boluses"][entry_key]
-            boluses_t[i] = lib.getTime(entry_key)
+            boluses[i] = report["Boluses"][key]
+            times[i] = lib.getTime(key)
 
             # Update looping variable
             i += 1
 
         # Convert bolus vectors to numpy arrays
         boluses = np.array(boluses)
-        boluses_t = np.array(boluses_t)
+        times = np.array(times)
 
         # Get sorted index of bolus vectors according to growing time order
-        indices = np.argsort(boluses_t)
+        indices = np.argsort(times)
 
         # Sort bolus vectors
         boluses = boluses[indices]
-        boluses_t = boluses_t[indices]
+        times = times[indices]
 
         # Reconvert bolus time to a string
         for i in range(n):
 
             # Convert datetime object
-            boluses_t[i] = lib.getTime(boluses_t[i])
+            times[i] = lib.getTime(times[i])
 
         # Store last bolus
-        self.last_bolus = boluses[-1]
-        self.last_bolus_t = boluses_t[-1]
+        self.lastBolus = boluses[-1]
+        self.lastBolusTime = times[-1]
 
         # Give user info
-        print ("Last bolus: " + str(self.last_bolus) + "U (" +
-               self.last_bolus_t + ")")
+        print ("Last bolus: " + str(self.lastBolus) + "U (" +
+               self.lastBolusTime + ")")
 
 
 
@@ -514,53 +504,53 @@ class Reporter:
         ========================================================================
         """
 
-        # Load BG report
-        report = self.getReport("BG.json")
+        # Load BGs report
+        report = self.getReport("BGs.json")
 
         # Get number of entries
         n = len(report)
 
-        # Initialize BG vectors
-        BG = [None] * n
-        BG_t = [None] * n
+        # Initialize BGs vectors
+        BGs = [None] * n
+        BGTimes = [None] * n
 
         # Initialize looping variable
         i = 0
 
-        # Read BG report
-        for entry_key in report:
+        # Read BGs report
+        for key in report:
 
-            # Extend BG vectors
-            BG[i] = report[entry_key]
-            BG_t[i] = lib.getTime(entry_key)
+            # Extend BGs vectors
+            BGs[i] = report[key]
+            BGTimes[i] = lib.getTime(key)
 
             # Update looping variable
             i += 1
 
-        # Convert BG vectors to numpy arrays
-        BG = np.array(BG)
-        BG_t = np.array(BG_t)
+        # Convert BGs vectors to numpy arrays
+        BGs = np.array(BGs)
+        BGTimes = np.array(BGTimes)
 
-        # Get sorted index of BG vectors according to growing time order
-        indices = np.argsort(BG_t)
+        # Get sorted index of BGs vectors according to growing time order
+        indices = np.argsort(BGTimes)
 
-        # Sort BG vectors
-        BG = BG[indices]
-        BG_t = BG_t[indices]
+        # Sort BGs vectors
+        BGs = BGs[indices]
+        BGTimes = BGTimes[indices]
 
-        # Reconvert BG time to a string
+        # Reconvert BGs time to a string
         for i in range(n):
 
             # Convert datetime object
-            BG_t[i] = lib.getTime(BG_t[i])
+            BGTimes[i] = lib.getTime(BGTimes[i])
 
-        # Store last BG
-        self.last_BG = BG[-1]
-        self.last_BG_t = BG_t[-1]
+        # Store last BGs
+        self.lastBGs = BGs[-1]
+        self.lastBGTimes = BGTimes[-1]
 
         # Give user info
-        print ("Last BG: " + str(self.last_BG) + " mmol/l (" +
-               self.last_BG_t + ")")
+        print ("Last BGs: " + str(self.lastBGs) + " mmol/l (" +
+               self.lastBGTimes + ")")
 
 
 
@@ -578,8 +568,8 @@ def main():
     # Read last bolus
     #reporter.readLastBolus()
 
-    # Read last BG
-    #reporter.readLastBG()
+    # Read last BGs
+    #reporter.readLastBGs()
 
     # Add reservoir level
     #reporter.addReservoirLevel("05.02.2017 - 23:42:05", 195)

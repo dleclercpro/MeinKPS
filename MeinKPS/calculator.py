@@ -1,27 +1,25 @@
 #! /usr/bin/python
 
-
-
 """
 ================================================================================
-Title:    calculator
 
-Author:   David Leclerc
+    Title:    calculator
 
-Version:  0.1
+    Author:   David Leclerc
 
-Date:     27.05.2016
+    Version:  0.1
 
-License:  GNU General Public License, Version 3
-          (http://www.gnu.org/licenses/gpl.html)
+    Date:     27.05.2016
 
-Overview: ...
+    License:  GNU General Public License, Version 3
+              (http://www.gnu.org/licenses/gpl.html)
 
-Notes:    ...
+    Overview: ...
+
+    Notes:    ...
+
 ================================================================================
 """
-
-
 
 # LIBRARIES
 import os

@@ -1,27 +1,25 @@
 #! /usr/bin/python
 
-
-
 """
 ================================================================================
-Title:    model
 
-Author:   David Leclerc
+    Title:    model
 
-Version:  0.1
+    Author:   David Leclerc
 
-Date:     03.06.2016
+    Version:  0.1
 
-License:  GNU General Public License, Version 3
-          (http://www.gnu.org/licenses/gpl.html)
+    Date:     03.06.2016
 
-Overview: ...
+    License:  GNU General Public License, Version 3
+              (http://www.gnu.org/licenses/gpl.html)
 
-Notes:    ...
+    Overview: ...
+
+    Notes:    ...
+
 ================================================================================
 """
-
-
 
 # TERMINOLOGY
 #   - IAC: insulin action curve
@@ -42,7 +40,7 @@ import scipy.special
 
 
 
-def integrate(t, f, f_params):
+def integrate(t, f, args):
 
     """
     ============================================================================
@@ -64,9 +62,9 @@ def integrate(t, f, f_params):
     t = t[0:-1]
 
     # Evaluate definite integral of f from a to b
-    i = np.sum(h/6 * (f(t, f_params) +
-                      f(t + h/2, f_params) * 4 +
-                      f(t + h, f_params)))
+    i = np.sum(h/6 * (f(t, args) +
+                      f(t + h/2, args) * 4 +
+                      f(t + h, args)))
 
     print "i(a = " + str(a) + ", b = " + str(b) + ") = " + str(i)
 
@@ -74,7 +72,7 @@ def integrate(t, f, f_params):
 
 
 
-def IAC(t, f_params):
+def IAC(t, args):
 
     """
     ============================================================================
@@ -82,9 +80,9 @@ def IAC(t, f_params):
     ============================================================================
     """
 
-    a = f_params[0]
-    b = f_params[1]
-    c = f_params[2]
+    a = args[0]
+    b = args[1]
+    c = args[2]
 
     IAC = a * t**b * np.exp(-c * t)
 
@@ -92,7 +90,7 @@ def IAC(t, f_params):
 
 
 
-def IDC(t, f_params):
+def IDC(t, args):
 
     """
     ============================================================================
@@ -106,9 +104,9 @@ def IDC(t, f_params):
 
     """
 
-    a = f_params[0]
-    b = f_params[1]
-    c = f_params[2]
+    a = args[0]
+    b = args[1]
+    c = args[2]
 
     # Initialize indefinite integral I with I(t = 0)
     I = np.array([0])
@@ -119,7 +117,7 @@ def IDC(t, f_params):
         # Add new I(t) to I
         I = np.append(I, integrate(t = t[0:(m + 1)],
                                    f = IAC,
-                                   f_params = [a, b, c]))
+                                   args = [a, b, c]))
 
     # Tweak indefinite integral I to obtain IDC
     IDC = 1 - I
@@ -137,34 +135,30 @@ def optimizeIAC(t, PIA, DIA, MID):
     """
 
     # Define importance of right peak time
-    weight_max = 1000
+    weightmax = 1000
 
     # Define importance of getting the right integral values
-    weight_I = 1000
+    weightI = 1000
 
     load = lambda x:(
-            abs(t[np.argmax(
-                         IAC(t = t, f_params = [x[0], x[1], x[2]]))] - PIA) +
-            abs(IAC(t = t, f_params = [x[0], x[1], x[2]])[DIA]) +
-            abs(1.0 - integrate(t = t,
-                                           f = IAC,
-                                           f_params = [x[0], x[1], x[2]])) +
-            abs(0.5 - integrate(t = t[0:(MID * len(t) / DIA)],
-                                           f = IAC,
-                                           f_params = [x[0], x[1], x[2]])))
+            abs(t[np.argmax(IAC(t = t, args = [x[0], x[1], x[2]]))] - PIA) +
+            abs(IAC(t = t, args = [x[0], x[1], x[2]])[DIA]) +
+            abs(1.0 - integrate(t = t, f = IAC, args = [x[0], x[1], x[2]])) +
+            abs(0.5 - integrate(t = t[0:(MID * len(t) / DIA)], f = IAC,
+            args = [x[0], x[1], x[2]])))
 
-    optimized_f_params = scipy.optimize.fmin(func = load,
-                                           x0 = [15.0, 4.0, 4.0],
-                                           maxiter = 5000,
-                                           maxfun = 5000)
+    optimizedArgs = scipy.optimize.fmin(func = load,
+                                         x0 = [15.0, 4.0, 4.0],
+                                         maxiter = 5000,
+                                         maxfun = 5000)
 
-    print "Optimized function parameters: " + str(optimized_f_params)
+    print "Optimized function parameters: " + str(optimizedArgs)
 
-    return optimized_f_params
+    return optimizedArgs
 
 
 
-def plotInsulinActivity(t, f_params, PIA, DIA, MID):
+def plotInsulinActivity(t, args, PIA, DIA, MID):
 
     """
     ============================================================================
@@ -173,20 +167,20 @@ def plotInsulinActivity(t, f_params, PIA, DIA, MID):
     """
 
     # Define IDC of Animas
-    x_0 = 1.0104
-    x_1 = -0.02203
-    x_2 = -0.2479
-    x_3 = 0.07493
-    x_4 = -0.006623
+    x0 = 1.0104
+    x1 = -0.02203
+    x2 = -0.2479
+    x3 = 0.07493
+    x4 = -0.006623
 
-    t_Animas = t[0:(4.5 * len(t) / DIA)]
-    IDC_Animas = (x_0 + x_1 * t_Animas + x_2 * t_Animas**2 + x_3 * t_Animas**3 +
-                  x_4 * t_Animas**4)
+    tAnimas = t[0:(4.5 * len(t) / DIA)]
+    IDCAnimas = (x0 + x1 * tAnimas + x2 * tAnimas**2 + x3 * tAnimas**3 +
+                  x4 * tAnimas**4)
 
     # Extract optimized parameters
-    a = f_params[0]
-    b = f_params[1]
-    c = f_params[2]
+    a = args[0]
+    b = args[1]
+    c = args[2]
 
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
@@ -204,17 +198,17 @@ def plotInsulinActivity(t, f_params, PIA, DIA, MID):
     plt.ylabel("Insulin Activity (-)", weight = "semibold")
 
     # Add IAC and its integral to plot
-    plt.plot(t, IAC(t = t, f_params = f_params),
+    plt.plot(t, IAC(t = t, args = args),
              ls = "-", lw = 1.5, c = "grey",
              label = "IAC: " + r"$f(t) = a \cdot x^b \cdot e^{-c \cdot t}$, " +
                      "with $[a, b, c]$ = [" + str(round(a, 1)) + ", " +
                      str(round(b, 1)) + ", " + str(round(c, 1)) + "]")
 
-    plt.plot(t, IDC(t = t, f_params = f_params),
+    plt.plot(t, IDC(t = t, args = args),
              ls = "-", lw = 1.5, c = "blue",
              label = "IDC: " + r"$F(t) = \int$" + " " + r"$f(t) \cdot dt$")
 
-    plt.plot(t_Animas, IDC_Animas,
+    plt.plot(tAnimas, IDCAnimas,
              ls = "-", lw = 1.5, c = "purple",
              label = "Animas IDC")
 
@@ -222,10 +216,10 @@ def plotInsulinActivity(t, f_params, PIA, DIA, MID):
     legend = plt.legend(title = "Insulin activity and decay curves", loc = 1,
                         borderaxespad = 1.5, numpoints = 1, markerscale = 2)
 
-    plt.setp(legend.get_title(), fontweight = "semibold")
+    plt.setp(legend.gettitle(), fontweight = "semibold")
 
     # Tighten up
-    plt.tight_layout()
+    plt.tightlayout()
 
     # Show plot
     plt.show()
@@ -247,16 +241,9 @@ def main():
 
     t = np.linspace(0, DIA, N)
 
-    f_params = optimizeIAC(t = t,
-                           PIA = PIA,
-                           DIA = DIA,
-                           MID = MID)
+    args = optimizeIAC(t = t, PIA = PIA, DIA = DIA, MID = MID)
 
-    plotInsulinActivity(t = t,
-                        f_params = f_params,
-                        PIA = PIA,
-                        DIA = DIA,
-                        MID = MID)
+    plotInsulinActivity(t = t, args = args, PIA = PIA, DIA = DIA, MID = MID)
 
 
 

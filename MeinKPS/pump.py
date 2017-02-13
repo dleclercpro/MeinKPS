@@ -1,32 +1,31 @@
 #! /usr/bin/python
 
-
-
 """
 ================================================================================
-Title:    pump
 
-Author:   David Leclerc
+    Title:    pump
 
-Version:  0.2
+    Author:   David Leclerc
 
-Date:     01.06.2016
+    Version:  0.2
 
-License:  GNU General Public License, Version 3
-          (http://www.gnu.org/licenses/gpl.html)
+    Date:     01.06.2016
 
-Overview: This is a script that contains a handful of commands that can be sent
-          wirelessly to a Medtronic RF Paradigm pump through a Carelink USB
-          stick. Please use carefully!
+    License:  GNU General Public License, Version 3
+              (http://www.gnu.org/licenses/gpl.html)
 
-Notes:    - When the battery is low, the stick will not be able to communicate
-            with the pump anymore; the script will say the pump does not appear
-            to be in range.
+    Overview: This is a script that contains a handful of commands that can be
+              sent wirelessly to a Medtronic RF Paradigm pump through a Carelink
+              USB stick. Please use carefully!
+
+    Notes:    - When the battery is low, the stick will not be able to
+                communicate with the pump anymore.
+
 ================================================================================
 """
 
 # TODO: - Make sure the maximal temporary basal rate and bolus are correctly
-#         set, that is higher than or equal to the TB and/or bolus that will be
+#         set, that is higher than or equal to the TBR and/or bolus that will be
 #         issued.
 #       - Test with alarm set on pump
 #       - Test with pump reservoir empty or almost empty
@@ -56,21 +55,16 @@ import stick
 class Pump:
 
     # PUMP CHARACTERISTICS
-    VERBOSE               = True
-    SERIAL                = 799163
-    POWER_TIME            = 10     # Time (s) needed for pump to go online
-    SESSION_TIME          = 8      # Time (m) for which pump will listen to RFs
-    EXECUTION_TIME        = 5      # Time (s) needed for pump command execution
-    BOLUS_STROKE          = 0.1    # Pump bolus stroke (U)
-    BASAL_STROKE          = 0.05   # Pump basal stroke rate (U/h)
-    TIME_BLOCK            = 30     # Time block (m) used by pump
-    BOLUS_DELIVERY_RATE   = 40.0   # Bolus delivery rate (s/U)
-    BOLUS_EXTRA_TIME      = 7.5    # Ensure bolus was completely given
-    BUTTONS               = {"EASY" : 0,
-                             "ESC"  : 1,
-                             "ACT"  : 2,
-                             "UP"   : 3,
-                             "DOWN" : 4}
+    serial            = 799163
+    powerTime         = 10     # Time (s) needed for pump to go online
+    sessionTime       = 8      # Time (m) for which pump will listen to RFs
+    executionTime     = 5      # Time (s) needed for pump command execution
+    bolusStroke       = 0.1    # Pump bolus stroke (U)
+    basalStroke       = 0.05   # Pump basal stroke rate (U/h)
+    timeBlock         = 30     # Time block (m) used by pump
+    bolusDeliveryRate = 40.0   # Bolus delivery rate (s/U)
+    bolusExtraTime    = 7.5    # Ensure bolus was completely given
+    buttons           = {"EASY": 0, "ESC": 1, "ACT": 2, "UP": 3, "DOWN": 4}
 
 
 
@@ -99,7 +93,7 @@ class Pump:
 
         # Initialize requester to speak with pump
         self.requester.initialize(recipient = "Pump",
-                                  serial = self.SERIAL,
+                                  serial = self.serial,
                                   handle = self.stick.handle)
 
         # Power pump's radio transmitter if necessary
@@ -141,7 +135,7 @@ class Pump:
         then = lib.getTime(then)
 
         # Define max time allowed between RF communication sessions
-        session = datetime.timedelta(minutes = self.SESSION_TIME)
+        session = datetime.timedelta(minutes = self.sessionTime)
 
         # Compute time since last power up
         delta = now - then
@@ -159,7 +153,7 @@ class Pump:
 
             # Give user info
             print ("Pump's radio transmitter is already on. Remaining time: " +
-                   str(self.SESSION_TIME - delta.seconds / 60) + " m")
+                   str(self.sessionTime - delta.seconds / 60) + " m")
 
 
 
@@ -171,19 +165,22 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = ("Powering pump radio transmitter for: " +
+                str(self.sessionTime) + "m")
+        sleepReason = ("Sleeping until pump radio transmitter is powered " +
+                       "up... (" + str(self.powerTime) + "s)")
+
         # Define pump request
-        self.requester.define(info = "Powering pump radio transmitter for: " + 
-                                     str(self.SESSION_TIME) + "m",
-                              wait = self.POWER_TIME,
-                              wait_reason = "Sleeping until pump " +
-                                            "radio transmitter is powered " +
-                                            "up... (" + str(self.POWER_TIME) +
-                                            "s)",
-                              power = 85,
-                              attempts = 0,
-                              size = 0,
-                              code = 93,
-                              parameters = [1, self.SESSION_TIME])
+        self.requester.define(
+            info = info,
+            sleep = self.powerTime,
+            sleepReason = sleepReason,
+            power = 85,
+            attempts = 0,
+            size = 0,
+            code = 93,
+            parameters = [1, self.sessionTime])
 
         # Make pump request
         self.requester.make()
@@ -201,12 +198,15 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Suspending pump activity..."
+        sleepReason = ("Waiting for pump activity to be suspended... (" +
+                       str(self.executionTime) + "s)")
+
         # Define pump request
-        self.requester.define(info = "Suspending pump activity...",
-                              wait = self.EXECUTION_TIME,
-                              wait_reason = "Waiting for pump activity to " +
-                                            "be suspended... (" +
-                                            str(self.EXECUTION_TIME) + "s)",
+        self.requester.define(info = info,
+                              sleep = self.executionTime,
+                              sleepReason = sleepReason,
                               attempts = 2,
                               size = 1,
                               code = 77,
@@ -225,12 +225,15 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Resuming pump activity..."
+        sleepReason = ("Waiting for pump activity to be resumed... (" +
+                       str(self.executionTime) + "s)")
+
         # Define pump request
-        self.requester.define(info = "Resuming pump activity...",
-                              wait = self.EXECUTION_TIME,
-                              wait_reason = "Waiting for pump activity to " +
-                                            "be resumed... (" +
-                                            str(self.EXECUTION_TIME) + "s)",
+        self.requester.define(info = info,
+                              sleep = self.executionTime,
+                              sleepReason = sleepReason,
                               attempts = 2,
                               size = 1,
                               code = 77,
@@ -249,16 +252,19 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Pushing button: " + button
+        sleepReason = ("Waiting for button " + button + " to be pushed... (" +
+                       str(self.executionTime) + "s)")
+
         # Define pump request
-        self.requester.define(info = "Pushing button: " + button,
-                              wait = self.EXECUTION_TIME,
-                              wait_reason = "Waiting for button to " +
-                                            "be pushed... (" +
-                                            str(self.EXECUTION_TIME) + "s)",
+        self.requester.define(info = info,
+                              sleep = self.executionTime,
+                              sleepReason = sleepReason,
                               attempts = 1,
                               size = 0,
                               code = 91,
-                              parameters = [int(self.BUTTONS[button])])
+                              parameters = [int(self.buttons[button])])
 
         # Make pump request
         self.requester.make()
@@ -273,8 +279,11 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading pump time..."
+
         # Define pump request
-        self.requester.define(info = "Reading pump time...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 112)
@@ -283,13 +292,13 @@ class Pump:
         self.requester.make()
 
         # Extract pump time from received data
-        second = self.requester.response[15]
-        minute = self.requester.response[14]
-        hour   = self.requester.response[13]
-        day    = self.requester.response[19]
-        month  = self.requester.response[18]
-        year   = (lib.getByte(self.requester.response[16], 0) * 256 |
-                  lib.getByte(self.requester.response[17], 0))
+        second = self.requester.data[2]
+        minute = self.requester.data[1]
+        hour   = self.requester.data[0]
+        day    = self.requester.data[6]
+        month  = self.requester.data[5]
+        year   = (lib.getByte(self.requester.data[3], 0) * 256 |
+                  lib.getByte(self.requester.data[4], 0))
 
         # Generate time object
         time = datetime.datetime(year, month, day, hour, minute, second)
@@ -310,8 +319,11 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading pump model..."
+
         # Define pump request
-        self.requester.define(info = "Reading pump model...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 141)
@@ -335,8 +347,11 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading pump firmware version..."
+
         # Define pump request
-        self.requester.define(info = "Reading pump firmware version...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 116)
@@ -345,8 +360,8 @@ class Pump:
         self.requester.make()
 
         # Extract pump firmware from received data
-        self.firmware = ("".join(self.requester.response_chr[17:21]) + " " +
-                         "".join(self.requester.response_chr[21:24]))
+        self.firmware = ("".join(self.requester.responseChr[17:21]) + " " +
+                         "".join(self.requester.responseChr[21:24]))
 
         # Give user info
         print "Pump firmware version: " + self.firmware
@@ -361,8 +376,11 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading amount of insulin left in pump reservoir..."
+
         # Define pump request
-        self.requester.define(info = "Reading amount of insulin left...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 115)
@@ -372,8 +390,8 @@ class Pump:
 
         # Extract remaining amount of insulin
         self.reservoir = (
-            (lib.getByte(self.requester.response[13], 0) * 256 |
-             lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE)
+            (lib.getByte(self.requester.data[0], 0) * 256 |
+             lib.getByte(self.requester.data[1], 0)) * self.bolusStroke)
 
         # Round amount
         self.reservoir = round(self.reservoir, 1)
@@ -400,8 +418,11 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading pump status..."
+
         # Define pump request
-        self.requester.define(info = "Reading pump status...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 206)
@@ -410,9 +431,9 @@ class Pump:
         self.requester.make()
 
         # Extract pump status from received data
-        self.status = {"Normal" : self.requester.response[13] == 3,
-                       "Bolusing" : self.requester.response[14] == 1,
-                       "Suspended" : self.requester.response[15] == 1}
+        self.status = {"Normal" : self.requester.data[0] == 3,
+                       "Bolusing" : self.requester.data[1] == 1,
+                       "Suspended" : self.requester.data[2] == 1}
 
         # Give user info
         print "Pump status: " + str(self.status)
@@ -468,8 +489,11 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading pump settings..."
+
         # Define pump request
-        self.requester.define(info = "Reading pump settings...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 192)
@@ -479,11 +503,11 @@ class Pump:
 
         # Extract pump settings from received data
         self.settings = {
-            "Max Bolus" : self.requester.response[18] * self.BOLUS_STROKE,
-            "Max Basal" : (lib.getByte(self.requester.response[19], 0) * 256 |
-                           lib.getByte(self.requester.response[20], 0)) *
-                           self.BASAL_STROKE / 2.0,
-            "Insulin Action Curve" : self.requester.response[30]}
+            "Max Bolus" : self.requester.data[5] * self.bolusStroke,
+            "Max Basal" : (lib.getByte(self.requester.data[6], 0) * 256 |
+                           lib.getByte(self.requester.data[7], 0)) *
+                           self.basalStroke / 2.0,
+            "Insulin Action Curve" : self.requester.data[17]}
 
         # Give user info
         print "Pump settings: " + str(self.settings)
@@ -543,12 +567,11 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize daily totals dictionary
-        self.daily_totals = {"Today": None,
-                             "Yesterday": None}
+        # Define infos for pump request
+        info = "Reading pump daily totals..."
 
         # Define pump request
-        self.requester.define(info = "Reading pump daily totals...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 121)
@@ -556,23 +579,27 @@ class Pump:
         # Make pump request
         self.requester.make()
 
+        # Initialize daily totals dictionary
+        self.dailyTotals = {"Today": None,
+                             "Yesterday": None}
+
         # Extract daily totals of today and yesterday
-        self.daily_totals["Today"] = round(
-            (lib.getByte(self.requester.response[13], 0) * 256 |
-             lib.getByte(self.requester.response[14], 0)) * self.BOLUS_STROKE,
+        self.dailyTotals["Today"] = round(
+            (lib.getByte(self.requester.data[0], 0) * 256 |
+             lib.getByte(self.requester.data[1], 0)) * self.bolusStroke,
              2)
 
         # Extract daily totals of yesterday
-        self.daily_totals["Yesterday"] = round(
-            (lib.getByte(self.requester.response[15], 0) * 256 |
-             lib.getByte(self.requester.response[16], 0)) * self.BOLUS_STROKE,
+        self.dailyTotals["Yesterday"] = round(
+            (lib.getByte(self.requester.data[2], 0) * 256 |
+             lib.getByte(self.requester.data[3], 0)) * self.bolusStroke,
              2)
 
         # Give user info
         print "Daily totals:"
-        print json.dumps(self.daily_totals, indent = 2,
-                                            separators = (",", ": "),
-                                            sort_keys = True)
+        print json.dumps(self.dailyTotals, indent = 2,
+                                           separators = (",", ": "),
+                                           sort_keys = True)
 
 
 
@@ -584,14 +611,11 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize insulin sensitivity factors, times, and units
-        self.ISF = []
-        self.ISFTimes = []
-        self.ISU = None
+        # Define infos for pump request
+        info = "Reading insulin sensitivity factors from pump..."
 
         # Define pump request
-        self.requester.define(info = ("Reading insulin sensitivity factors " +
-                                      "from pump..."),
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 139)
@@ -599,8 +623,13 @@ class Pump:
         # Make pump request
         self.requester.make()
 
+        # Initialize insulin sensitivity factors, times, and units
+        self.ISF = []
+        self.ISFTimes = []
+        self.ISU = None
+
         # Extract insulin sensitivity units
-        units = self.requester.response[13]
+        units = self.requester.data[0]
 
         # Decode units
         if units == 1:
@@ -616,13 +645,14 @@ class Pump:
         # Extract insulin sensitivity factors
         while True:
 
-            # Define start (a) and end (b) indexes of current factor (each
-            # factor entry corresponds to 2 bytes)
-            a = 15 + 2 * i
-            b = a + 2
+            # Define start (a) and end (b) indexes of current factor based on
+            # number of bytes per entry
+            n = 2
+            a = 2 + n * i
+            b = a + n
 
             # Get current factor entry
-            entry = self.requester.response[a:b]
+            entry = self.requester.data[a:b]
 
             # Exit condition: no more factors stored
             if sum(entry) == 0:
@@ -672,14 +702,11 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize carb sensitivity factors, times, and units
-        self.CSF = []
-        self.CSFTimes = []
-        self.CSU = None
+        # Define infos for pump request
+        info = "Reading carb sensitivity factors from pump..."
 
         # Define pump request
-        self.requester.define(info = ("Reading carb sensitivity factors from " +
-                                      "pump..."),
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 138)
@@ -687,8 +714,13 @@ class Pump:
         # Make pump request
         self.requester.make()
 
+        # Initialize carb sensitivity factors, times, and units
+        self.CSF = []
+        self.CSFTimes = []
+        self.CSU = None
+
         # Extract carb sensitivity units
-        units = self.requester.response[13]
+        units = self.requester.data[0]
 
         # Decode units
         if units == 1:
@@ -704,13 +736,14 @@ class Pump:
         # Extract carb sensitivity factors
         while True:
 
-            # Define start (a) and end (b) indexes of current factor (each
-            # factor entry corresponds to 2 bytes)
-            a = 15 + 2 * i
-            b = a + 2
+            # Define start (a) and end (b) indexes of current factor based on
+            # number of bytes per entry
+            n = 2
+            a = 2 + n * i
+            b = a + n
 
             # Get current factor entry
-            entry = self.requester.response[a:b]
+            entry = self.requester.data[a:b]
 
             # Exit condition: no more factors stored
             if sum(entry) == 0:
@@ -760,14 +793,11 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize blood glucose targets, times, and units
-        self.BGTargets = []
-        self.BGTargetsTimes = []
-        self.BGU = None
+        # Define infos for pump request
+        info = "Reading blood glucose targets from pump..."
 
         # Define pump request
-        self.requester.define(info = ("Reading blood glucose targets from " +
-                                      "pump..."),
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 159)
@@ -775,8 +805,13 @@ class Pump:
         # Make pump request
         self.requester.make()
 
+        # Initialize blood glucose targets, times, and units
+        self.BGTargets = []
+        self.BGTargetsTimes = []
+        self.BGU = None
+
         # Extract carb sensitivity units
-        units = self.requester.response[13]
+        units = self.requester.data[0]
 
         # Decode units
         if units == 1:
@@ -792,13 +827,14 @@ class Pump:
         # Extract BG targets
         while True:
 
-            # Define start (a) and end (b) indexes of current targets (each
-            # target entry corresponds to 3 bytes)
-            a = 15 + 3 * i
-            b = a + 3
+            # Define start (a) and end (b) indexes of current factor based on
+            # number of bytes per entry
+            n = 3
+            a = 2 + n * i
+            b = a + n
 
             # Get current target entry
-            entry = self.requester.response[a:b]
+            entry = self.requester.data[a:b]
 
             # Exit condition: no more targets stored
             if sum(entry) == 0:
@@ -850,9 +886,11 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading current pump history page number..."
+
         # Define pump request
-        self.requester.define(info = "Reading current pump history page " +
-                                     "number...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 157)
@@ -861,10 +899,10 @@ class Pump:
         self.requester.make()
 
         # Store number of history pages
-        self.n_history_pages = self.requester.data[3] + 1
+        self.nHistoryPages = self.requester.data[3] + 1
 
         # Give user info
-        print "Found " + str(self.n_history_pages) + " pump history pages."
+        print "Found " + str(self.nHistoryPages) + " pump history pages."
 
 
 
@@ -876,6 +914,9 @@ class Pump:
         ========================================================================
         """
 
+        # Define infos for pump request
+        info = "Reading pump history..."
+
         # Read number of existing history pages
         self.readNumberHistoryPages()
 
@@ -883,17 +924,17 @@ class Pump:
         self.history = []
 
         # Download user-defined number of most recent pages of pump history
-        for i in range(self.n_history_pages):
+        for i in range(self.nHistoryPages):
 
             # Give user info
             print "Reading pump history page: " + str(i)
 
             # Define pump request
-            self.requester.define(info = "Reading pump history...",
+            self.requester.define(info = info,
                                   attempts = 2,
-                                  size = 2, # 2 means larger data exchange
+                                  size = 2,
                                   code = 128,
-                                  parameters = [i]) # 0 equals most recent page
+                                  parameters = [i])
 
             # Make pump request
             self.requester.make()
@@ -901,12 +942,9 @@ class Pump:
             # Extend known history of pump
             self.history.extend(self.requester.data)
 
-        # Give user info
-        if self.VERBOSE:
-
-            # Print collected history pages
-            print str(self.n_history_pages) + " pages of pump history:"
-            print self.history
+        # Print collected history pages
+        print str(self.nHistoryPages) + " pages of pump history:"
+        print self.history
 
 
 
@@ -918,28 +956,28 @@ class Pump:
         ========================================================================
         """
 
-        # Initialize bolus and times vectors
-        boluses = []
-        times = []
-
         # Download pump history
         self.readHistory()
 
         # Define parameters to parse history pages when looking for boluses
-        payload_code = 1
-        payload_size = 9
+        payloadCode = 1
+        payloadSize = 9
         now = datetime.datetime.now()
 
+        # Initialize bolus and times vectors
+        boluses = []
+        times = []
+
         # Parse history page to find boluses
-        for i in range(len(self.history) - 1 - payload_size):
+        for i in range(len(self.history) - 1 - payloadSize):
 
             # Define bolus criteria
-            if ((self.history[i] == payload_code) &
+            if ((self.history[i] == payloadCode) &
                 (self.history[i + 1] == self.history[i + 2]) &
                 (self.history[i + 3] == 0)):
         
                 # Extract bolus from pump history
-                bolus = round(self.history[i + 1] * self.BOLUS_STROKE, 1)
+                bolus = round(self.history[i + 1] * self.bolusStroke, 1)
 
                 # Extract time at which bolus was delivered
                 time = lib.parseTime(self.history[i + 4 : i + 9])
@@ -988,13 +1026,11 @@ class Pump:
         ========================================================================
         """
 
-        # Define current temporary basal dictionary
-        self.TB = {"Rate": None,
-                   "Units": None,
-                   "Duration": None}
+        # Define infos for pump request
+        info = "Reading current temporary basal..."
 
         # Define pump request
-        self.requester.define(info = "Reading current temporary basal...",
+        self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 152)
@@ -1002,31 +1038,36 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract TB [U/h]
-        if self.requester.response[13] == 0:
+        # Define current temporary basal dictionary
+        self.TBR = {"Value": None,
+                    "Units": None,
+                    "Duration": None}
 
-            # Extract TB characteristics
-            self.TB["Units"] = "U/h"
-            self.TB["Rate"] = round(
-                (lib.getByte(self.requester.response[15], 0) * 256 |
-                 lib.getByte(self.requester.response[16], 0)) *
-                 self.BASAL_STROKE / 2.0, 2)
+        # Extract TBR [U/h]
+        if self.requester.data[0] == 0:
 
-        # Extract TB [%]
-        elif self.requester.response[13] == 1:
+            # Extract TBR characteristics
+            self.TBR["Units"] = "U/h"
+            self.TBR["Value"] = round(
+                (lib.getByte(self.requester.data[2], 0) * 256 |
+                 lib.getByte(self.requester.data[3], 0)) *
+                 self.basalStroke / 2.0, 2)
 
-            # Extract TB characteristics
-            self.TB["Units"] = "%"
-            self.TB["Rate"] = round(self.requester.response[14], 2)
+        # Extract TBR [%]
+        elif self.requester.data[0] == 1:
 
-        # Extract TB remaining time
-        self.TB["Duration"] = round(
-            (lib.getByte(self.requester.response[17], 0) * 256 |
-             lib.getByte(self.requester.response[18], 0)), 0)
+            # Extract TBR characteristics
+            self.TBR["Units"] = "%"
+            self.TBR["Value"] = round(self.requester.data[1], 2)
+
+        # Extract TBR remaining time
+        self.TBR["Duration"] = round(
+            (lib.getByte(self.requester.data[4], 0) * 256 |
+             lib.getByte(self.requester.data[5], 0)), 0)
 
         # Give user info
         print "Temporary basal:"
-        print json.dumps(self.TB, indent = 2,
+        print json.dumps(self.TBR, indent = 2,
                                   separators = (",", ": "),
                                   sort_keys = True)
 
@@ -1048,19 +1089,22 @@ class Pump:
 
         # Evaluating time required for bolus to be delivered (giving it some
         # additional seconds to be safe)
-        bolus_delivery_time = (self.BOLUS_DELIVERY_RATE * bolus +
-                               self.BOLUS_EXTRA_TIME)
+        bolusDeliveryTime = (self.bolusDeliveryRate * bolus +
+                             self.bolusExtraTime)
+
+        # Define infos for pump request
+        info = "Sending bolus: " + str(bolus) + " U"
+        sleepReason = ("Waiting for bolus to be delivered... (" +
+                       str(bolusDeliveryTime) + "s)")
 
         # Define pump request
-        self.requester.define(info = "Sending bolus: " + str(bolus) + " U",
-                              wait = bolus_delivery_time,
-                              wait_reason = "Waiting for bolus to be " +
-                                            "delivered... (" + 
-                                            str(bolus_delivery_time) + "s)",
+        self.requester.define(info = info,
+                              sleep = bolusDeliveryTime,
+                              sleepReason = sleepReason,
                               attempts = 0,
                               size = 1,
                               code = 66,
-                              parameters = [int(bolus / self.BOLUS_STROKE)])
+                              parameters = [int(bolus / self.bolusStroke)])
 
         # Make pump request
         self.requester.make()
@@ -1089,12 +1133,15 @@ class Pump:
         elif units == "%":
             parameters = [1]
 
+        # Define infos for pump request
+        info = "Setting temporary basal units: " + units
+        sleepReason = ("Waiting for temporary basal rate units to be set... (" +
+                       str(self.executionTime) + "s)")
+
         # Define pump request
-        self.requester.define(info = "Setting temporary basal units: " + units,
-                              wait = self.EXECUTION_TIME,
-                              wait_reason = "Waiting for temporary basal " +
-                                            "rate units to be set... (" +
-                                            str(self.EXECUTION_TIME) + "s)",
+        self.requester.define(info = info,
+                              sleep = self.executionTime,
+                              sleepReason = sleepReason,
                               attempts = 0,
                               size = 1,
                               code = 104,
@@ -1105,7 +1152,7 @@ class Pump:
 
 
 
-    def setTemporaryBasal(self, rate, units, duration, first_run = True):
+    def setTemporaryBasal(self, rate, units, duration, run = True):
 
         """
         ========================================================================
@@ -1113,12 +1160,12 @@ class Pump:
         ========================================================================
         """
 
-        # Give user info regarding the next TB that will be set
+        # Give user info regarding the next TBR that will be set
         print ("Trying to set new temporary basal: " + str(rate) + " " + units +
                " (" + str(duration) + "m)")
 
         # First run
-        if first_run == True:
+        if run == True:
 
             # Verify pump status and settings before doing anything
             if self.verifyStatus() == False:
@@ -1126,18 +1173,18 @@ class Pump:
             if self.verifySettings(rate = rate, units = units) == False:
                 return
 
-            # Before issuing any TB, read the current one
+            # Before issuing any TBR, read the current one
             self.readTemporaryBasal()
 
-            # Store last TB values
-            last_rate = self.TB["Rate"]
-            last_units = self.TB["Units"]
-            last_duration = self.TB["Duration"]
+            # Store last TBR values
+            lastValue = self.TBR["Value"]
+            lastUnits = self.TBR["Units"]
+            lastDuration = self.TBR["Duration"]
 
-            # In case the user wants to set the exact same TB, just ignore it
-            if (rate == last_rate) & \
-               (units == last_units) & \
-               (duration == last_duration):
+            # In case the user wants to set the exact same TBR, just ignore it
+            if (rate == lastValue) & \
+               (units == lastUnits) & \
+               (duration == lastDuration):
 
                 # Give user info
                 print ("There is no point in reissuing the exact same " +
@@ -1145,32 +1192,32 @@ class Pump:
 
                 return
 
-            # In case the user wants to cancel a non-existent TB
-            elif ((rate == 0) & (last_rate == 0) &
-                  (duration == 0) & (last_duration == 0)):
+            # In case the user wants to cancel a non-existent TBR
+            elif ((rate == 0) & (lastValue == 0) &
+                  (duration == 0) & (lastDuration == 0)):
 
                 # Give user info
-                print ("There is no point in canceling a non-existent TB: " +
+                print ("There is no point in canceling a non-existent TBR: " +
                        "ignoring.")
 
                 return
 
-            # Look if a TB is already set
-            elif (last_rate != 0) | (last_duration != 0):
+            # Look if a TBR is already set
+            elif (lastValue != 0) | (lastDuration != 0):
 
                 # Give user info
                 print ("Temporary basal needs to be set to zero before " +
                        "issuing a new one...")
 
-                # Set TB to zero (it is crucial here to use the precedent
+                # Set TBR to zero (it is crucial here to use the precedent
                 # units, otherwise it would not work!)
                 self.setTemporaryBasal(rate = 0,
-                                       units = last_units,
+                                       units = lastUnits,
                                        duration = 0,
-                                       first_run = False)
+                                       run = False)
 
             # If units do not match, they must be changed
-            if units != last_units:
+            if units != lastUnits:
 
                 # Give user info
                 print "Old and new temporary basal units mismatch."
@@ -1179,20 +1226,20 @@ class Pump:
                 self.setTemporaryBasalUnits(units = units)
 
             # If user only wishes to extend/shorten the length of the already
-            # set TB
-            elif (rate == last_rate) & (duration != last_duration):
+            # set TBR
+            elif (rate == lastValue) & (duration != lastDuration):
 
                 # Evaluate time difference
-                dt = duration - last_duration
+                dt = duration - lastDuration
 
-                # For a shortened TB
+                # For a shortened TBR
                 if dt < 0:
 
                     # Give user info
                     print ("The temporary basal will be shortened by: " +
                            str(-dt) + "m")
 
-                # For an extended TB
+                # For an extended TBR
                 elif dt > 0:
 
                     # Give user info
@@ -1203,28 +1250,32 @@ class Pump:
         if units == "U/h":
             code = 76
             parameters = [0,
-                          int(round(rate / self.BASAL_STROKE * 2.0)),
-                          int(duration / self.TIME_BLOCK)]
+                          int(round(rate / self.basalStroke * 2.0)),
+                          int(duration / self.timeBlock)]
 
         # If request is for temporary basal in percentage
         elif units == "%":
             code = 105
             parameters = [int(round(rate)),
-                          int(duration / self.TIME_BLOCK)]
+                          int(duration / self.timeBlock)]
+
+
+
+        # Define infos for pump request
+        info = ("Setting temporary basal: " + str(rate) + " " + units + " (" +
+                str(duration) + "m)")
+        sleepReason = ("Waiting for temporary basal rate to be set... (" +
+                       str(self.executionTime) + "s)")
 
         # Define pump request
-        self.requester.define(info = "Setting temporary basal: " +
-                                     str(rate) + " " +
-                                     units + " (" +
-                                     str(duration) + "m)",
-                              wait = self.EXECUTION_TIME,
-                              wait_reason = "Waiting for temporary basal " +
-                                            "rate to be set... (" +
-                                            str(self.EXECUTION_TIME) + "s)",
-                              attempts = 0,
-                              size = 1,
-                              code = code,
-                              parameters = parameters)
+        self.requester.define(
+            info = info,
+            sleep = self.executionTime,
+            sleepReason = sleepReason,
+            attempts = 0,
+            size = 1,
+            code = code,
+            parameters = parameters)
 
         # Get current time
         now = datetime.datetime.now()
@@ -1238,19 +1289,19 @@ class Pump:
         # Give user info
         print "Verifying that the new temporary basal was correctly set..."
 
-        # Verify that the TB was correctly issued by reading current TB on
+        # Verify that the TBR was correctly issued by reading current TBR on
         # pump
         self.readTemporaryBasal()
 
-        # Compare to expectedly set TB
-        if ((self.TB["Rate"] == rate) &
-            (self.TB["Units"] == units) &
-            (self.TB["Duration"] == duration)):
+        # Compare to expectedly set TBR
+        if ((self.TBR["Value"] == rate) &
+            (self.TBR["Units"] == units) &
+            (self.TBR["Duration"] == duration)):
 
             # Give user info
             print ("New temporary basal correctly set: " +
-                   str(self.TB["Rate"]) + " " + str(self.TB["Units"]) + " (" +
-                   str(self.TB["Duration"]) + ")")
+                   str(self.TBR["Value"]) + " " + str(self.TBR["Units"]) +
+                   " (" + str(self.TBR["Duration"]) + ")")
 
             # Give user info
             print "Saving new temporary basal to reports..."
@@ -1331,7 +1382,6 @@ def main():
     pump.readBoluses()
 
     # Send bolus to pump
-    # FIXME Decode
     #pump.deliverBolus(0.1)
 
     # Read temporary basal
