@@ -967,7 +967,7 @@ class Pump:
         payloadSize = 9
         now = datetime.datetime.now()
 
-        # Initialize bolus and times vectors
+        # Initialize boluses and times vectors
         boluses = []
         times = []
 
@@ -1073,6 +1073,36 @@ class Pump:
         print json.dumps(self.TBR, indent = 2,
                                   separators = (",", ": "),
                                   sort_keys = True)
+
+
+
+    def readCarbs(self):
+
+        """
+        ========================================================================
+        READCARBS
+        ========================================================================
+        """
+
+        # Download pump history
+        self.readHistory()
+
+        # Define parameters to parse history pages when looking for boluses
+        payloadCode = 91
+        payloadSize = 20 # FIXME
+        now = datetime.datetime.now()
+
+        # Initialize carbs and times vectors
+        carbs = []
+        times = []
+
+        # Parse history page to find boluses
+        for i in range(len(self.history) - 1 - payloadSize):
+
+            # Define carb criteria
+            if self.history[i] == payloadCode:
+        
+                print self.history[i:i + payloadSize]
 
 
 
@@ -1382,7 +1412,10 @@ def main():
     #pump.readNumberHistoryPages()
 
     # Read bolus history on pump
-    pump.readBoluses()
+    #pump.readBoluses()
+
+    # Read carbs history on pump
+    pump.readCarbs()
 
     # Send bolus to pump
     #pump.deliverBolus(0.1)

@@ -371,7 +371,8 @@ class Requester:
             if n == self.nPollAttempts:
 
                 # Give user info
-                sys.exit("Maximal number of polling attempts reached.")
+                sys.exit("Error: maximal number of polling attempts (" +
+                         str(self.nPollAttempts) + ") " + "reached. Exiting...")
 
         # Give user info
         print "Polled data in " + str(n) + " attempt(s)."
@@ -388,13 +389,18 @@ class Requester:
         """
 
         # Check for incorrect number of bytes
-        if self.nBytesReceived != self.nBytesExpected:
+        if self.nBytesExpected == 14:
 
             # Exit
-            sys.exit("Error: expected number of bytes: " + 
-                     str(self.nBytesExpected) + ", " +
-                     "number of bytes received: " +
-                     str(self.nBytesReceived))
+            sys.exit("Error: a problem occured while communicating with the " +
+                     "pump (number of bytes expected: 14). Exiting...")
+
+        elif self.nBytesReceived != self.nBytesExpected:
+
+            # Exit
+            sys.exit("Error: expected " + str(self.nBytesExpected) +
+                     " bytes, but received " + str(self.nBytesReceived) +
+                     "instead. Exiting...")
 
         # Parse data
         head = self.response[0:13]
