@@ -1032,13 +1032,18 @@ class Pump:
                     inputCSF = body[2]
                     inputISF = body[3] / 10.0
 
+                    # If BG is 0, none was entered
+                    if inputBG == 0:
+
+                        # Reassign BG
+                        inputBG = None
+
                     # Give user output
                     print time
                     print "Carbs: " + str(inputCarbs) + " g"
                     print "BG: " + str(inputBG) + " mmol/L"
                     print "CSF: " + str(inputCSF) + " g/U"
                     print "ISF: " + str(inputCSF) + " mmol/L/U"
-                    print "\n"
 
                 except:
                     pass

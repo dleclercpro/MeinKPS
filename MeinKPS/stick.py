@@ -37,6 +37,8 @@ import json
 import os
 import serial
 import sys
+import time
+import datetime
 
 
 
@@ -52,10 +54,11 @@ class Stick:
     # STICK CHARACTERISTICS
     vendor          = 0x0a21
     product         = 0x8001
+    nBytesDefault   = 64
     signalThreshold = 150
-    nBytes          = 64
-    timeout         = 0.1 # 0.5
-    frequencies     = {0: 916.5, 1: 868.35, 255: 916.5}
+    timeout         = 0.1 # (s) / 0.5
+    emptySleep      = 1   # (s)
+    frequencies     = {0: 916.5, 1: 868.35, 255: 916.5} # MHz
 
 
 
@@ -90,6 +93,9 @@ class Stick:
             # Give user info
             sys.exit("There seems to be a problem with the stick. " +
                       "Are you sure it's plugged in?")
+
+        # Before anything, make sure the stick's buffer is empty
+        self.empty()
 
         # Give the stick a reporter
         self.reporter = reporter.Reporter()
@@ -132,6 +138,38 @@ class Stick:
 
         # Remove serial port
         os.system("modprobe --quiet --remove usbserial")
+
+
+
+    def empty(self):
+
+        """
+        ========================================================================
+        EMPTY
+        ========================================================================
+        """
+
+        # TODO Test me!
+        # Read initial time
+        then = datetime.datetime.now()
+
+        # Give user info
+        print "Emptying buffer for " + str(self.emptySleep) + "s..."
+
+        # Try reading for a certain number of attempts, before concluding buffer
+        # must really be empty
+        while True:
+
+            # Update time
+            now = datetime.datetime.now()
+
+            # Empty buffer
+            self.rawResponse = self.handle.read(self.nBytesDefault)
+
+            # If maximum amount of time reached, exit
+            if (now - then).seconds >= self.emptySleep:
+
+                break
 
 
 
