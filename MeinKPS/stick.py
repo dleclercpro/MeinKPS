@@ -147,11 +147,17 @@ class Stick:
         ========================================================================
         EMPTY
         ========================================================================
+
+        Note: This seems to work, contrary to the serial object's methods
+              flushInput() and flushOutput()...
+
         """
 
-        # TODO Test me!
         # Read initial time
         then = datetime.datetime.now()
+
+        # Initialize number of bytes read while emptying buffer
+        n = 0
 
         # Give user info
         print "Emptying buffer for " + str(self.emptySleep) + "s..."
@@ -166,10 +172,16 @@ class Stick:
             # Empty buffer
             self.rawResponse = self.handle.read(self.nBytesDefault)
 
+            # Update number of bytes read
+            n += len(self.rawResponse)
+
             # If maximum amount of time reached, exit
             if (now - then).seconds >= self.emptySleep:
 
                 break
+
+        # Give user output
+        print "Found " + str(n) + " byte(s) while emptying buffer."
 
 
 
