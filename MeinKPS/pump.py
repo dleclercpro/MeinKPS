@@ -33,6 +33,7 @@
 #       - Run series of tests overnight
 #       X Make sure enacted bolus are detected!
 #       - No point in reissuing same TBR?
+#       - Decode square/dual boluses?
 
 
 
@@ -132,7 +133,7 @@ class Pump:
         then = self.reporter.getEntry("pump.json", [], "Power Up")
 
         # Format time
-        then = lib.getTime(then)
+        then = lib.formatTime(then)
 
         # Define max time allowed between RF communication sessions
         session = datetime.timedelta(minutes = self.sessionTime)
@@ -297,14 +298,13 @@ class Pump:
         hour   = self.requester.data[0]
         day    = self.requester.data[6]
         month  = self.requester.data[5]
-        year   = (lib.getByte(self.requester.data[3], 0) * 256 |
-                  lib.getByte(self.requester.data[4], 0))
+        year   = lib.bangInt(self.requester.data[3:5])
 
         # Generate time object
         time = datetime.datetime(year, month, day, hour, minute, second)
 
         # Store formatted time
-        self.time = lib.getTime(time)
+        self.time = lib.formatTime(time)
 
         # Give user info
         print "Pump time: " + self.time
@@ -389,9 +389,8 @@ class Pump:
         self.requester.make()
 
         # Extract remaining amount of insulin
-        self.reservoir = (
-            (lib.getByte(self.requester.data[0], 0) * 256 |
-             lib.getByte(self.requester.data[1], 0)) * self.bolusStroke)
+        self.reservoir = (lib.bangInt(self.requester.data[0:2]) *
+                          self.bolusStroke)
 
         # Round amount
         self.reservoir = round(self.reservoir, 1)
@@ -400,7 +399,7 @@ class Pump:
         now = datetime.datetime.now()
 
         # Format time
-        now = lib.getTime(now)
+        now = lib.formatTime(now)
 
         # Add current reservoir level to pump report
         self.reporter.addReservoirLevel(now, self.reservoir)
@@ -504,10 +503,10 @@ class Pump:
         # Extract pump settings from received data
         self.settings = {
             "Max Bolus": self.requester.data[5] * self.bolusStroke,
-            "Max Basal": (lib.getByte(self.requester.data[6], 0) * 256 |
-                          lib.getByte(self.requester.data[7], 0)) *
-                          self.basalStroke / 2.0,
-            "IAC": self.requester.data[17]}
+            "Max Basal": (lib.bangInt(self.requester.data[6:8]) *
+                          self.basalStroke / 2.0),
+            "IAC": self.requester.data[17]
+        }
 
         # Save pump settings to profile report
         self.reporter.storeSettings(self.settings)
@@ -588,15 +587,11 @@ class Pump:
 
         # Extract daily totals of today and yesterday
         self.dailyTotals["Today"] = round(
-            (lib.getByte(self.requester.data[0], 0) * 256 |
-             lib.getByte(self.requester.data[1], 0)) * self.bolusStroke,
-             2)
+            lib.bangInt(self.requester.data[0:2]) * self.bolusStroke, 2)
 
         # Extract daily totals of yesterday
         self.dailyTotals["Yesterday"] = round(
-            (lib.getByte(self.requester.data[2], 0) * 256 |
-             lib.getByte(self.requester.data[3], 0)) * self.bolusStroke,
-             2)
+            lib.bangInt(self.requester.data[2:4]) * self.bolusStroke, 2)
 
         # Give user info
         print "Daily totals:"
@@ -951,6 +946,105 @@ class Pump:
 
 
 
+    def readTreatments(self):
+
+        """
+        ========================================================================
+        READTREATMENTS
+        ========================================================================
+        """
+
+        # Download pump history
+        self.readHistory()
+
+        # Get current time
+        now = datetime.datetime.now()
+
+
+
+        # BOLUSES
+        # Initialize boluses and times vectors
+        boluses = []
+        times = []
+
+
+
+        # CARBS
+        # Initialize carbs and times vectors
+        carbs = []
+        times = []
+
+        # Define record code
+        code = 91
+        headSize = 2
+        dateSize = 5
+        bodySize = 13
+
+        # Compute minimum size of record
+        minRecordSize = headSize + dateSize + bodySize
+
+        # Parse history
+        for i in range(len(self.history) - minRecordSize + 1):
+
+            # Look for code, with which every record should start
+            if self.history[i] == code:
+
+                # Test proof bolus wizard record
+                try:
+
+                    # Define a record running variable
+                    x = i
+            
+                    # Assign record head
+                    head = self.history[x:x + headSize]
+
+                    # Update running variable
+                    x += headSize
+
+                    # Assign record date
+                    date = self.history[x:x + dateSize]
+
+                    # Update running variable
+                    x += dateSize
+
+                    # Assign record body
+                    body = self.history[x:x + bodySize]
+
+                    # Decode time using date bytes
+                    time = lib.decodeTime(date)
+
+                    # Build datetime object
+                    time = datetime.datetime(time[0], time[1], time[2],
+                                             time[3], time[4], time[5])
+
+                    # Proof record year
+                    if abs(time.year - now.year) > 1:
+
+                        raise ValueError("Record and current year too far " +
+                                         "apart!")
+
+                    # Format time
+                    time = lib.formatTime(time)
+
+                    # Decode record
+                    inputCarbs = int(body[0])
+                    inputBG = lib.bangInt([body[1] & 15, head[1]]) / 10.0
+                    inputCSF = body[2]
+                    inputISF = body[3] / 10.0
+
+                    # Give user output
+                    print time
+                    print "Carbs: " + str(inputCarbs) + " g"
+                    print "BG: " + str(inputBG) + " mmol/L"
+                    print "CSF: " + str(inputCSF) + " g/U"
+                    print "ISF: " + str(inputCSF) + " mmol/L/U"
+                    print "\n"
+
+                except:
+                    pass
+
+
+
     def readBoluses(self):
 
         """
@@ -983,7 +1077,7 @@ class Pump:
                 bolus = round(self.history[i + 1] * self.bolusStroke, 1)
 
                 # Extract time at which bolus was delivered
-                time = lib.parseTime(self.history[i + 4 : i + 9])
+                time = lib.decodeTime(self.history[i + 4 : i + 9])
 
                 # Test proof the bolus by looking closer at its delivery time
                 try:
@@ -999,7 +1093,7 @@ class Pump:
                                              time[3], time[4], time[5])
 
                     # Format bolus time
-                    time = lib.getTime(time)
+                    time = lib.formatTime(time)
 
                     # Give user info
                     print ("Bolus read: " + str(bolus) +
@@ -1018,61 +1112,6 @@ class Pump:
 
             # Add boluses to report
             self.reporter.addBoluses(times, boluses)
-
-
-
-    def readTemporaryBasal(self):
-
-        """
-        ========================================================================
-        READTEMPORARYBASAL
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading current temporary basal..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 152)
-
-        # Make pump request
-        self.requester.make()
-
-        # Define current temporary basal dictionary
-        self.TBR = {"Value": None,
-                    "Units": None,
-                    "Duration": None}
-
-        # Extract TBR [U/h]
-        if self.requester.data[0] == 0:
-
-            # Extract TBR characteristics
-            self.TBR["Units"] = "U/h"
-            self.TBR["Value"] = round(
-                (lib.getByte(self.requester.data[2], 0) * 256 |
-                 lib.getByte(self.requester.data[3], 0)) *
-                 self.basalStroke / 2.0, 2)
-
-        # Extract TBR [%]
-        elif self.requester.data[0] == 1:
-
-            # Extract TBR characteristics
-            self.TBR["Units"] = "%"
-            self.TBR["Value"] = round(self.requester.data[1], 2)
-
-        # Extract TBR remaining time
-        self.TBR["Duration"] = round(
-            (lib.getByte(self.requester.data[4], 0) * 256 |
-             lib.getByte(self.requester.data[5], 0)), 0)
-
-        # Give user info
-        print "Temporary basal:"
-        print json.dumps(self.TBR, indent = 2,
-                                  separators = (",", ": "),
-                                  sort_keys = True)
 
 
 
@@ -1103,6 +1142,58 @@ class Pump:
             if self.history[i] == payloadCode:
         
                 print self.history[i:i + payloadSize]
+
+
+
+    def readTBR(self):
+
+        """
+        ========================================================================
+        READTBR
+        ========================================================================
+        """
+
+        # Define infos for pump request
+        info = "Reading current temporary basal..."
+
+        # Define pump request
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 152)
+
+        # Make pump request
+        self.requester.make()
+
+        # Define current temporary basal dictionary
+        self.TBR = {"Value": None,
+                    "Units": None,
+                    "Duration": None}
+
+        # Extract TBR [U/h]
+        if self.requester.data[0] == 0:
+
+            # Extract characteristics
+            self.TBR["Units"] = "U/h"
+            self.TBR["Value"] = round(
+                lib.bangInt(self.requester.data[2:4]) * self.basalStroke / 2.0,
+                2)
+
+        # Extract TBR [%]
+        elif self.requester.data[0] == 1:
+
+            # Extract characteristics
+            self.TBR["Units"] = "%"
+            self.TBR["Value"] = round(self.requester.data[1], 2)
+
+        # Extract remaining time
+        self.TBR["Duration"] = round(lib.bangInt(self.requester.data[4:6]), 0)
+
+        # Give user info
+        print "Temporary basal:"
+        print json.dumps(self.TBR, indent = 2,
+                                   separators = (",", ": "),
+                                   sort_keys = True)
 
 
 
@@ -1150,11 +1241,11 @@ class Pump:
 
 
 
-    def setTemporaryBasalUnits(self, units):
+    def setTBRUnits(self, units):
 
         """
         ========================================================================
-        SETTEMPORARYBASALUNITS
+        SETTBRUNITS
         ========================================================================
         """
 
@@ -1185,11 +1276,11 @@ class Pump:
 
 
 
-    def setTemporaryBasal(self, rate, units, duration, run = True):
+    def setTBR(self, rate, units, duration, run = True):
 
         """
         ========================================================================
-        SETTEMPORARYBASAL
+        SETTBR
         ========================================================================
         """
 
@@ -1207,7 +1298,7 @@ class Pump:
                 return
 
             # Before issuing any TBR, read the current one
-            self.readTemporaryBasal()
+            self.readTBR()
 
             # Store last TBR values
             lastValue = self.TBR["Value"]
@@ -1244,10 +1335,8 @@ class Pump:
 
                 # Set TBR to zero (it is crucial here to use the precedent
                 # units, otherwise it would not work!)
-                self.setTemporaryBasal(rate = 0,
-                                       units = lastUnits,
-                                       duration = 0,
-                                       run = False)
+                self.setTBR(rate = 0, units = lastUnits, duration = 0,
+                            run = False)
 
             # If units do not match, they must be changed
             if units != lastUnits:
@@ -1256,7 +1345,7 @@ class Pump:
                 print "Old and new temporary basal units mismatch."
 
                 # Modify units as wished by the user
-                self.setTemporaryBasalUnits(units = units)
+                self.setTBRUnits(units = units)
 
             # If user only wishes to extend/shorten the length of the already
             # set TBR
@@ -1314,7 +1403,7 @@ class Pump:
         now = datetime.datetime.now()
 
         # Store time at which TBR is requested
-        time = lib.getTime(now)
+        time = lib.formatTime(now)
 
         # Make pump request
         self.requester.make()
@@ -1324,7 +1413,7 @@ class Pump:
 
         # Verify that the TBR was correctly issued by reading current TBR on
         # pump
-        self.readTemporaryBasal()
+        self.readTBR()
 
         # Compare to expectedly set TBR
         if ((self.TBR["Value"] == rate) &
@@ -1340,7 +1429,7 @@ class Pump:
             print "Saving new temporary basal to reports..."
 
             # Add bolus to insulin report
-            self.reporter.addTemporaryBasal(time, rate, units, duration)
+            self.reporter.addTBR(time, rate, units, duration)
 
         # Otherwise, quit
         else:
@@ -1349,27 +1438,27 @@ class Pump:
 
 
 
-    def snoozeTemporaryBasal(self, snooze):
+    def snoozeTBR(self, snooze):
 
         """
         ========================================================================
-        SNOOZETEMPORARYBASAL
+        SNOOZETBR
         ========================================================================
         """
 
-        self.setTemporaryBasal(0, "U/h", snooze)
+        self.setTBR(0, "U/h", snooze)
 
 
 
-    def cancelTemporaryBasal(self):
+    def cancelTBR(self):
 
         """
         ========================================================================
-        CANCELTEMPORARYBASAL
+        CANCELTBR
         ========================================================================
         """
 
-        self.setTemporaryBasal(0, "U/h", 0)
+        self.setTBR(0, "U/h", 0)
 
 
 
@@ -1412,20 +1501,23 @@ def main():
     #pump.readNumberHistoryPages()
 
     # Read bolus history on pump
+    pump.readTreatments()
+
+    # Read bolus history on pump
     #pump.readBoluses()
 
     # Read carbs history on pump
-    pump.readCarbs()
+    #pump.readCarbs()
 
     # Send bolus to pump
     #pump.deliverBolus(0.1)
 
     # Read temporary basal
-    #pump.readTemporaryBasal()
+    #pump.readTBR()
 
     # Send temporary basal to pump
-    #pump.setTemporaryBasal(5, "U/h", 30)
-    #pump.setTemporaryBasal(200, "%", 60)
+    #pump.setTBR(5, "U/h", 30)
+    #pump.setTBR(200, "%", 60)
 
     # Read insulin sensitivity factors stored in pump
     #pump.readInsulinSensitivityFactors()

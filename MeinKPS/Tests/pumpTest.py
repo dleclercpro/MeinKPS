@@ -84,8 +84,8 @@ time.sleep(sleep)
 myPump.readNumberHistoryPages()
 time.sleep(sleep)
 
-# Read bolus history on pump
-myPump.readBoluses()
+# Read treatment history on pump (BG and carbs)
+myPump.readTreatments()
 time.sleep(sleep)
 
 # Send bolus to pump

@@ -39,9 +39,9 @@ import lib
 class Requester:
 
     # REQUESTER CONSTANTS
-    nBytes        = 64
+    nBytesDefault = 64
     nBytesFormat  = 8
-    nPollAttempts = 75
+    nPollAttempts = 50
     readSleep     = 0.01
     responseSleep = 0.001
     requestSleep  = 0.25
@@ -206,18 +206,18 @@ class Requester:
         # Decide on number of bytes to read. If less bytes expected than usual,
         # set to default value (64). Otherwise, read expected number of bytes.
         if self.nBytesExpected == 0:
-            nBytes = self.nBytes
+            n = self.nBytesDefault
         else: 
-            nBytes = self.nBytesExpected
+            n = self.nBytesExpected
 
         # Give user info
-        print "Trying to read " + str(nBytes) + " bytes from device..."
+        print "Trying to read " + str(n) + " bytes from device..."
 
         # Read raw request response from device
-        self.rawResponse = self.handle.read(nBytes)
+        self.rawResponse = self.handle.read(n)
 
         # Initialize reading attempt variable
-        n = 1
+        n = 0
 
         # Retry reading if there was no response
         while len(self.rawResponse) == 0:
@@ -232,7 +232,7 @@ class Requester:
             time.sleep(self.readSleep)
 
             # Read
-            self.rawResponse = self.handle.read(nBytes)
+            self.rawResponse = self.handle.read(n)
 
         # Give user info
         print "Read data in " + str(n) + " attempt(s)."
@@ -276,7 +276,7 @@ class Requester:
 
 
 
-    def show(self, nBytes = 8):
+    def show(self, n = 8):
 
         """
         ========================================================================
@@ -284,11 +284,11 @@ class Requester:
         ========================================================================
         """
 
-        # Define exceeding bytes
-        nBytesExceeding = len(self.response) % nBytes
+        # Compute number of exceeding bytes
+        nBytesExceeding = len(self.response) % n
 
         # Define number of rows to be printed 
-        nRows = len(self.response) / nBytes + int(nBytesExceeding != 0)
+        nRows = len(self.response) / n + int(nBytesExceeding != 0)
 
         # Print response
         print "Device response to precedent request: "
@@ -297,27 +297,20 @@ class Requester:
         for i in range(nRows):
 
             # Define hexadecimal line
-            lineHex = " ".join(self.responseHex[i * nBytes :
-                                                 (i + 1) * nBytes])
+            lineHex = " ".join(self.responseHex[i * n : (i + 1) * n])
 
             # Define character line
-            lineChr = "".join(self.responseChr[i * nBytes :
-                                                (i + 1) * nBytes])
+            lineChr = "".join(self.responseChr[i * n : (i + 1) * n])
 
             # Define decimal line
-            lineDec = "".join(str(self.response[i * nBytes :
-                                                (i + 1) * nBytes]))
+            lineDec = "".join(str(self.response[i * n : (i + 1) * n]))
 
             # On last line, some extra space may be needed
             if (i == nRows - 1) & (nBytesExceeding != 0):
 
                 # Define line
-                line = (lineHex +
-                       (nBytes - nBytesExceeding) * 5 * " " +
-                        " " +
-                        lineChr +
-                       (nBytes - nBytesExceeding) * " " +
-                        " " +
+                line = (lineHex + (n - nBytesExceeding) * 5 * " " + " " +
+                        lineChr + (n - nBytesExceeding) * " " + " " +
                         lineDec)
 
             # First lines don't need extra space
@@ -358,7 +351,7 @@ class Requester:
             time.sleep(self.pollSleep)
 
             # Keep track of attempts
-            print "Polling data: " + str(n) + "/-"
+            print "Polling data: " + str(n) + "/" + str(self.nPollAttempts)
 
             # Send poll request packet
             self.send("Poll")
@@ -400,7 +393,7 @@ class Requester:
             # Exit
             sys.exit("Error: expected " + str(self.nBytesExpected) +
                      " bytes, but received " + str(self.nBytesReceived) +
-                     "instead. Exiting...")
+                     " instead. Exiting...")
 
         # Parse data
         head = self.response[0:13]
@@ -467,7 +460,7 @@ class Requester:
             self.verify()
 
 	        # Look for end of data (EOD) condition
-            if self.response[5] == self.EOD:
+            if self.response[5] >= self.EOD:
 
                 # Give user info
                 print "End of data. Exiting download loop."

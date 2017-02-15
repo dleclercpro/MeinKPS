@@ -54,7 +54,7 @@ class Stick:
     product         = 0x8001
     signalThreshold = 150
     nBytes          = 64
-    timeout         = 0.5
+    timeout         = 0.1 # 0.5
     frequencies     = {0: 916.5, 1: 868.35, 255: 916.5}
 
 

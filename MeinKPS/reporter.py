@@ -355,11 +355,11 @@ class Reporter:
 
 
 
-    def addTemporaryBasal(self, t, rate, units, duration):
+    def addTBR(self, t, rate, units, duration):
 
         """
         ========================================================================
-        ADDTEMPORARYBASAL
+        ADDTBR
         ========================================================================
         """
 
@@ -450,7 +450,7 @@ class Reporter:
         now = datetime.datetime.now()
 
         # Convert time to string
-        now = lib.getTime(now)
+        now = lib.formatTime(now)
 
         # Write down (and overwrite if necessary) last power up time
         self.addEntries("pump.json", [], "Power Up", now, True)
@@ -486,7 +486,7 @@ class Reporter:
 
             # Extend bolus vectors
             boluses[i] = report["Boluses"][key]
-            times[i] = lib.getTime(key)
+            times[i] = lib.formatTime(key)
 
             # Update looping variable
             i += 1
@@ -506,7 +506,7 @@ class Reporter:
         for i in range(n):
 
             # Convert datetime object
-            times[i] = lib.getTime(times[i])
+            times[i] = lib.formatTime(times[i])
 
         # Store last bolus
         self.lastBolus = boluses[-1]
@@ -544,7 +544,7 @@ class Reporter:
 
             # Extend BGs vectors
             BGs[i] = report[key]
-            BGTimes[i] = lib.getTime(key)
+            BGTimes[i] = lib.formatTime(key)
 
             # Update looping variable
             i += 1
@@ -564,7 +564,7 @@ class Reporter:
         for i in range(n):
 
             # Convert datetime object
-            BGTimes[i] = lib.getTime(BGTimes[i])
+            BGTimes[i] = lib.formatTime(BGTimes[i])
 
         # Store last BGs
         self.lastBGs = BGs[-1]
