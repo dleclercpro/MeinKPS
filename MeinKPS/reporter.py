@@ -355,6 +355,22 @@ class Reporter:
 
 
 
+    def addCarbs(self, t, carbs):
+
+        """
+        ========================================================================
+        ADDCARBS
+        ========================================================================
+        """
+
+        # Give user info
+        print "Storing carbs entries to report: 'insulin.json'..."
+
+        # Add boluses
+        self.addEntries("insulin.json", ["Carbs"], t, carbs)
+
+
+
     def addTBR(self, t, rate, units, duration):
 
         """

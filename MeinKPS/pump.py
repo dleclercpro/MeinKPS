@@ -584,6 +584,7 @@ class Pump:
         # Decode BG units
         if self.requester.data[0] == 1:
             self.BGU = "mg/dL"
+
         elif self.requester.data[0] == 2:
             self.BGU = "mmol/L"
 
@@ -614,12 +615,13 @@ class Pump:
 
         # Decode BG units
         if self.requester.data[0] == 1:
-            self.BGU = "g"
+            self.CU = "g"
+
         elif self.requester.data[0] == 2:
-            self.BGU = "exchanges"
+            self.CU = "exchanges"
 
         # Give user info
-        print "Pump's carb units are set to: " + str(self.BGU)
+        print "Pump's carb units are set to: " + str(self.CU)
 
 
 
@@ -1035,31 +1037,43 @@ class Pump:
         ========================================================================
         READTREATMENTS
         ========================================================================
+
+        Note: - Boluses and carbs input seem to be stored exactly at sime time
+                in pump.
+
+        Warning: - Do not change units for no reason, otherwise treatments will
+                   not be read correctly!
         """
 
-        # TODO: test with differents units: read BG and carb units beforehand!
-
-        # Download pump history
-        self.readHistory()
-
-        # Get current time
-        now = datetime.datetime.now()
-
-
-
-        # BOLUSES
-        # Initialize boluses and times vectors
-        boluses = []
-        times = []
-
-
-
-        # CARBS
         # Initialize carbs and times vectors
         carbs = []
         times = []
 
-        # Define record code
+        # Read current time
+        now = datetime.datetime.now()
+
+        # Read units
+        self.readBGU()
+        self.readCU()
+
+        # Compute a multiplicator to decode BG units
+        if self.BGU == "mmol/L":
+            u = 1.0
+
+        elif self.BGU == "mg/dL":
+            u = 0
+
+        # Compute a multiplicator to decode carb units
+        if self.CU == "g":
+            m = 0
+
+        elif self.CU == "exchanges":
+            m = 1.0
+
+        # Download pump history
+        self.readHistory()
+
+        # Define record characteristics
         code = 91
         headSize = 2
         dateSize = 5
@@ -1112,30 +1126,35 @@ class Pump:
                     time = lib.formatTime(time)
 
                     # Decode record
-                    inputBG = lib.bangInt([body[1] & 15, head[1]]) / 10.0
-                    inputCarbs = body[0]
-                    inputCSF = body[2]
-                    inputISF = body[3] / 10.0
-                    inputBGTargets = [body[4] / 10.0, body[12] / 10.0]
+                    BG = lib.bangInt([body[1] & 15, head[1]]) / 10 ** u
+                    BGTargets = [body[4] / 10 ** u, body[12] / 10 ** u]
+                    ISF = body[3] / 10 ** u
+                    CH = body[0] / 10 ** m
+                    CSF = body[2] / 10 ** m
 
-                    # If BG is 0, none was entered
-                    if inputBG == 0:
-
-                        # Reassign BG
-                        inputBG = None
+                    # Add carbs and times at which they were consumed to their
+                    # respective vectors only if they have a given value!
+                    if CH:
+                        carbs.append(CH)
+                        times.append(time)
 
                     # Give user output
                     print time
                     print str(head) + ", " + str(body)
-                    print "BG: " + str(inputBG) + " mmol/L"
-                    print "Carbs: " + str(inputCarbs) + " g"
-                    print "CSF: " + str(inputCSF) + " g/U"
-                    print "ISF: " + str(inputISF) + " mmol/L/U"
-                    print "BG Targets: " + str(inputBGTargets) + " mmol/L"
+                    print "BG: " + str(BG) + " mmol/L"
+                    print "BG Targets: " + str(BGTargets) + " mmol/L"
+                    print "ISF: " + str(ISF) + " mmol/L/U"
+                    print "Carbs: " + str(CH) + " g"
+                    print "CSF: " + str(CSF) + " g/U"
+                    
                     print
 
                 except:
                     pass
+
+        # If carbs read, store them
+        if len(carbs) != 0:
+            self.reporter.addCarbs(times, carbs)
 
 
 
@@ -1201,10 +1220,8 @@ class Pump:
 
                     pass
 
-        # If new boluses read, write them to insulin report
+        # If boluses read, store them
         if len(boluses) != 0:
-
-            # Add boluses to report
             self.reporter.addBoluses(times, boluses)
 
 
@@ -1595,9 +1612,7 @@ def main():
     #pump.readNumberHistoryPages()
 
     # Read bolus history on pump
-    #pump.readTreatments()
-    pump.readBGU()
-    pump.readCU()
+    pump.readTreatments()
 
     # Read bolus history on pump
     #pump.readBoluses()
