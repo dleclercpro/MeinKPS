@@ -150,7 +150,6 @@ class Stick:
 
         Note: This seems to work, contrary to the serial object's methods
               flushInput() and flushOutput()...
-
         """
 
         # Read initial time

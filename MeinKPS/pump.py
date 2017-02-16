@@ -632,8 +632,15 @@ class Pump:
         # Decode units
         if units == 1:
             self.ISU = "mg/dL/U"
+            
+            # Define a multiplicator to decode ISF bytes
+            m = 0
+
         else:
-            self.ISU = "mmol/L/U" 
+            self.ISU = "mmol/L/U"
+
+            # Define a multiplicator to decode ISF bytes
+            m = 1.0
 
         # Initialize index as well as factors and times vectors
         i = 0
@@ -657,7 +664,7 @@ class Pump:
                 break
             else:
                 # Decode entry
-                factor = entry[0] / 10.0
+                factor = entry[0] / 10 ** m
                 time = entry[1] * 30 # Get time in minutes (each block
                                      # corresponds to 30 m)
 
@@ -723,8 +730,15 @@ class Pump:
         # Decode units
         if units == 1:
             self.CSU = "g/U"
+
+            # Define a multiplicator to decode ISF bytes
+            m = 0
+
         else:
-            self.CSU = "exchanges/U" 
+            self.CSU = "exchanges/U"
+
+            # Define a multiplicator to decode ISF bytes
+            m = 1.0
 
         # Initialize index as well as factors and times vectors
         i = 0
@@ -748,7 +762,7 @@ class Pump:
                 break
             else:
                 # Decode entry
-                factor = entry[0]
+                factor = entry[0] / 10 ** m
                 time = entry[1] * 30 # Get time in minutes (each block
                                      # corresponds to 30 m)
 
@@ -814,8 +828,15 @@ class Pump:
         # Decode units
         if units == 1:
             self.BGU = "mg/dL"
+
+            # Define a multiplicator to decode ISF bytes
+            m = 0
+
         else:
-            self.BGU = "mmol/L" 
+            self.BGU = "mmol/L"
+
+            # Define a multiplicator to decode ISF bytes
+            m = 1.0
 
         # Initialize index as well as targets and times vectors
         i = 0
@@ -839,7 +860,7 @@ class Pump:
                 break
             else:
                 # Decode entry
-                target = [entry[0] / 10.0, entry[1] / 10.0]
+                target = [entry[0] / 10 ** m, entry[1] / 10 ** m]
                 time = entry[2] * 30 # Get time in minutes (each block
                                      # corresponds to 30 m)
 
@@ -954,6 +975,8 @@ class Pump:
         ========================================================================
         """
 
+        # TODO: test with differents units: read BG and carb units beforehand!
+
         # Download pump history
         self.readHistory()
 
@@ -1027,10 +1050,11 @@ class Pump:
                     time = lib.formatTime(time)
 
                     # Decode record
-                    inputCarbs = int(body[0])
                     inputBG = lib.bangInt([body[1] & 15, head[1]]) / 10.0
+                    inputCarbs = body[0]
                     inputCSF = body[2]
                     inputISF = body[3] / 10.0
+                    inputBGTargets = [body[4] / 10.0, body[12] / 10.0]
 
                     # If BG is 0, none was entered
                     if inputBG == 0:
@@ -1040,10 +1064,13 @@ class Pump:
 
                     # Give user output
                     print time
-                    print "Carbs: " + str(inputCarbs) + " g"
+                    print str(head) + ", " + str(body)
                     print "BG: " + str(inputBG) + " mmol/L"
+                    print "Carbs: " + str(inputCarbs) + " g"
                     print "CSF: " + str(inputCSF) + " g/U"
-                    print "ISF: " + str(inputCSF) + " mmol/L/U"
+                    print "ISF: " + str(inputISF) + " mmol/L/U"
+                    print "BG Targets: " + str(inputBGTargets) + " mmol/L"
+                    print
 
                 except:
                     pass

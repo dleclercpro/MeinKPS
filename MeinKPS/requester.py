@@ -207,33 +207,37 @@ class Requester:
         # Decide on number of bytes to read. If less bytes expected than usual,
         # set to default value (64). Otherwise, read expected number of bytes.
         if self.nBytesExpected == 0:
-            n = self.nBytesDefault
+            nBytes = self.nBytesDefault
         else: 
-            n = self.nBytesExpected
+            nBytes = self.nBytesExpected
 
         # Give user info
-        print "Trying to read " + str(n) + " bytes from device..."
-
-        # Read raw request response from device
-        self.rawResponse = self.handle.read(n)
+        print "Trying to read " + str(nBytes) + " bytes from device..."
 
         # Initialize reading attempt variable
         n = 0
 
         # Retry reading if there was no response
-        while len(self.rawResponse) == 0:
+        while True:
 
             # Update reading attempt variable
             n += 1
 
             # Give user info
             print "Reading attempt: " + str(n) + "/-"
-            
-            # Give device a break before reading again
-            time.sleep(self.readSleep)
 
-            # Read
-            self.rawResponse = self.handle.read(n)
+            # Read raw request response from device
+            self.rawResponse = self.handle.read(nBytes)
+
+            # Exit condition
+            if len(self.rawResponse) > 0:
+
+                break
+
+            else:
+
+                # Give device a break before reading again
+                time.sleep(self.readSleep)
 
         # Give user info
         print "Read data in " + str(n) + " attempt(s)."
