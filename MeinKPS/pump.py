@@ -561,6 +561,68 @@ class Pump:
 
 
 
+    def readBGU(self):
+
+        """
+        ========================================================================
+        READBGU
+        ========================================================================
+        """
+
+        # Define infos for pump request
+        info = "Reading pump's BG units..."
+
+        # Define pump request
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 137)
+
+        # Make pump request
+        self.requester.make()
+
+        # Decode BG units
+        if self.requester.data[0] == 1:
+            self.BGU = "mg/dL"
+        elif self.requester.data[0] == 2:
+            self.BGU = "mmol/L"
+
+        # Give user info
+        print "Pump's BG units are set to: " + str(self.BGU)
+
+
+
+    def readCU(self):
+
+        """
+        ========================================================================
+        READCU
+        ========================================================================
+        """
+
+        # Define infos for pump request
+        info = "Reading pump's carb units..."
+
+        # Define pump request
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 136)
+
+        # Make pump request
+        self.requester.make()
+
+        # Decode BG units
+        if self.requester.data[0] == 1:
+            self.BGU = "g"
+        elif self.requester.data[0] == 2:
+            self.BGU = "exchanges"
+
+        # Give user info
+        print "Pump's carb units are set to: " + str(self.BGU)
+
+
+
     def readDailyTotals(self):
 
         """
@@ -598,6 +660,106 @@ class Pump:
         print json.dumps(self.dailyTotals, indent = 2,
                                            separators = (",", ": "),
                                            sort_keys = True)
+
+
+
+    def readBGTargets(self):
+
+        """
+        ========================================================================
+        READBGTARGETS
+        ========================================================================
+        """
+
+        # Define infos for pump request
+        info = "Reading blood glucose targets from pump..."
+
+        # Define pump request
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 159)
+
+        # Make pump request
+        self.requester.make()
+
+        # Initialize blood glucose targets, times, and units
+        self.BGTargets = []
+        self.BGTargetsTimes = []
+        self.BGU = None
+
+        # Extract carb sensitivity units
+        units = self.requester.data[0]
+
+        # Decode units
+        if units == 1:
+            self.BGU = "mg/dL"
+
+            # Define a multiplicator to decode ISF bytes
+            m = 0
+
+        else:
+            self.BGU = "mmol/L"
+
+            # Define a multiplicator to decode ISF bytes
+            m = 1.0
+
+        # Initialize index as well as targets and times vectors
+        i = 0
+        targets = []
+        times = []
+
+        # Extract BG targets
+        while True:
+
+            # Define start (a) and end (b) indexes of current factor based on
+            # number of bytes per entry
+            n = 3
+            a = 2 + n * i
+            b = a + n
+
+            # Get current target entry
+            entry = self.requester.data[a:b]
+
+            # Exit condition: no more targets stored
+            if sum(entry) == 0:
+                break
+            else:
+                # Decode entry
+                target = [entry[0] / 10 ** m, entry[1] / 10 ** m]
+                time = entry[2] * 30 # Get time in minutes (each block
+                                     # corresponds to 30 m)
+
+                # Format time
+                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
+
+                # Store decoded target and its corresponding ending time
+                targets.append(target)
+                times.append(time)
+
+            # Increment index
+            i += 1
+
+        # Store number of targets read
+        n = len(targets)
+
+        # Rearrange targets to have starting times instead of ending times
+        for i in range(n):
+            self.BGTargets.append(targets[i])
+            self.BGTargetsTimes.append(times[i - 1])
+
+
+        # Give user info
+        print "Found " + str(n) + " blood glucose targets:"
+
+        for i in range(n):
+            print (self.BGTargetsTimes[i] + " - " +
+                   str(self.BGTargets[i]) + " " + str(self.BGU))
+
+        # Save blood glucose targets to profile report
+        self.reporter.storeBloodGlucoseTargets(self.BGTargetsTimes,
+                                              self.BGTargets,
+                                              self.BGU)
 
 
 
@@ -794,106 +956,6 @@ class Pump:
         # Save carb sensitivity factors to profile report
         self.reporter.storeCarbSensitivityFactors(self.CSFTimes, self.CSF,
                                                  self.CSU)
-
-
-
-    def readBGTargets(self):
-
-        """
-        ========================================================================
-        READBGTARGETS
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading blood glucose targets from pump..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 159)
-
-        # Make pump request
-        self.requester.make()
-
-        # Initialize blood glucose targets, times, and units
-        self.BGTargets = []
-        self.BGTargetsTimes = []
-        self.BGU = None
-
-        # Extract carb sensitivity units
-        units = self.requester.data[0]
-
-        # Decode units
-        if units == 1:
-            self.BGU = "mg/dL"
-
-            # Define a multiplicator to decode ISF bytes
-            m = 0
-
-        else:
-            self.BGU = "mmol/L"
-
-            # Define a multiplicator to decode ISF bytes
-            m = 1.0
-
-        # Initialize index as well as targets and times vectors
-        i = 0
-        targets = []
-        times = []
-
-        # Extract BG targets
-        while True:
-
-            # Define start (a) and end (b) indexes of current factor based on
-            # number of bytes per entry
-            n = 3
-            a = 2 + n * i
-            b = a + n
-
-            # Get current target entry
-            entry = self.requester.data[a:b]
-
-            # Exit condition: no more targets stored
-            if sum(entry) == 0:
-                break
-            else:
-                # Decode entry
-                target = [entry[0] / 10 ** m, entry[1] / 10 ** m]
-                time = entry[2] * 30 # Get time in minutes (each block
-                                     # corresponds to 30 m)
-
-                # Format time
-                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
-
-                # Store decoded target and its corresponding ending time
-                targets.append(target)
-                times.append(time)
-
-            # Increment index
-            i += 1
-
-        # Store number of targets read
-        n = len(targets)
-
-        # Rearrange targets to have starting times instead of ending times
-        for i in range(n):
-            self.BGTargets.append(targets[i])
-            self.BGTargetsTimes.append(times[i - 1])
-
-
-        # Give user info
-        print "Found " + str(n) + " blood glucose targets:"
-
-        for i in range(n):
-            print (self.BGTargetsTimes[i] + " - " +
-                   str(self.BGTargets[i]) + " " + str(self.BGU))
-
-        # Save blood glucose targets to profile report
-        self.reporter.storeBloodGlucoseTargets(self.BGTargetsTimes,
-                                              self.BGTargets,
-                                              self.BGU)
 
 
 
@@ -1533,7 +1595,9 @@ def main():
     #pump.readNumberHistoryPages()
 
     # Read bolus history on pump
-    pump.readTreatments()
+    #pump.readTreatments()
+    pump.readBGU()
+    pump.readCU()
 
     # Read bolus history on pump
     #pump.readBoluses()
