@@ -1039,7 +1039,7 @@ class Pump:
 
 
 
-    def readHistory(self):
+    def readHistory(self, n = False):
 
         """
         ========================================================================
@@ -1050,14 +1050,24 @@ class Pump:
         # Define infos for pump request
         info = "Reading pump history..."
 
-        # Read number of existing history pages
-        self.readNumberHistoryPages()
+        # Based on input regarding number of pages to read
+        if n:
+
+            # Read n history pages
+            nPages = n
+
+        else:
+
+            #Read number of existing history pages
+            self.readNumberHistoryPages()
+
+            n = self.nHistoryPages
 
         # Initialize pump history vector
         self.history = []
 
         # Download user-defined number of most recent pages of pump history
-        for i in range(self.nHistoryPages):
+        for i in range(n):
 
             # Give user info
             print "Reading pump history page: " + str(i)
@@ -1076,7 +1086,7 @@ class Pump:
             self.history.extend(self.requester.data)
 
         # Print collected history pages
-        print str(self.nHistoryPages) + " pages of pump history:"
+        print str(n) + " page(s) of pump history:"
         print self.history
 
 
@@ -1251,7 +1261,7 @@ class Pump:
 
 
 
-    def readBoluses(self):
+    def readBoluses(self, n = False):
 
         """
         ========================================================================
@@ -1259,8 +1269,8 @@ class Pump:
         ========================================================================
         """
 
-        # Download pump history
-        self.readHistory()
+        # Download n pages of pump history (or all of it if none is given)
+        self.readHistory(n)
 
         # Define parameters to parse history pages when looking for boluses
         payloadCode = 1
@@ -1316,6 +1326,19 @@ class Pump:
         # If boluses read, store them
         if len(boluses) != 0:
             self.reporter.addBoluses(times, boluses)
+
+
+
+    def readRecentBoluses(self):
+
+        """
+        ========================================================================
+        READRECENTBOLUSES
+        ========================================================================
+        """
+
+        # Read last page and search it for boluses
+        self.readBoluses(n = 1)
 
 
 
@@ -1408,7 +1431,7 @@ class Pump:
         self.requester.make()
 
         # Read issued bolus in order to store it to the reports
-        self.readBoluses()
+        self.readRecentBoluses()
 
         # Check if last bolus stored fits to the one just delivered
         # TODO
@@ -1660,10 +1683,10 @@ def main():
     #pump.readFirmwareVersion()
 
     # Read pump battery level
-    pump.readBatteryLevel()
+    #pump.readBatteryLevel()
 
     # Read remaining amount of insulin in pump
-    pump.readReservoirLevel()
+    #pump.readReservoirLevel()
 
     # Read pump status
     #pump.readStatus()
@@ -1687,7 +1710,7 @@ def main():
     #pump.readTreatments()
 
     # Send bolus to pump
-    #pump.deliverBolus(0.1)
+    pump.deliverBolus(0.1)
 
     # Read temporary basal
     #pump.readCurrentTBR()
