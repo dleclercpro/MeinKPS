@@ -46,6 +46,7 @@ sleep = 5
 
 
 # MAIN
+
 # Instanciate a pump for me
 myPump = pump.Pump()
 
@@ -64,6 +65,10 @@ time.sleep(sleep)
 myPump.readFirmwareVersion()
 time.sleep(sleep)
 
+# Read pump battery level
+myPump.readBatteryLevel()
+time.sleep(sleep)
+
 # Read remaining amount of insulin in pump
 myPump.readReservoirLevel()
 time.sleep(sleep)
@@ -78,6 +83,18 @@ time.sleep(sleep)
 
 # Read daily totals on pump
 myPump.readDailyTotals()
+time.sleep(sleep)
+
+# Read blood glucose targets stored in pump
+myPump.readBGTargets()
+time.sleep(sleep)
+
+# Read insulin sensitivity factors stored in pump
+myPump.readInsulinSensitivityFactors()
+time.sleep(sleep)
+
+# Read carb sensitivity factors stored in pump
+myPump.readCarbSensitivityFactors()
 time.sleep(sleep)
 
 # Read current history page number
@@ -100,18 +117,6 @@ time.sleep(sleep)
 myPump.setTBR(5, "U/h", 30)
 time.sleep(sleep)
 myPump.setTBR(200, "%", 60)
-time.sleep(sleep)
-
-# Read insulin sensitivity factors stored in pump
-myPump.readInsulinSensitivityFactors()
-time.sleep(sleep)
-
-# Read carb sensitivity factors stored in pump
-myPump.readCarbSensitivityFactors()
-time.sleep(sleep)
-
-# Read blood glucose targets stored in pump
-myPump.readBGTargets()
 time.sleep(sleep)
 
 # Suspend pump activity

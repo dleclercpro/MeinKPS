@@ -400,8 +400,17 @@ class Pump:
             self.battery = "Low"
 
         # Decode battery voltage # FIXME
-        self.batteryVoltage = lib.bangInt([self.requester.data[1],
-                                           self.requester.data[2]]) / 100.0
+        self.batteryVoltage = round(lib.bangInt([self.requester.data[1],
+                                    self.requester.data[2]]) / 100.0, 1)
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Format time
+        now = lib.formatTime(now)
+
+        # Add current reservoir level to pump report
+        self.reporter.addBatteryLevel(now, [self.battery, self.batteryVoltage])
 
         # Give user info
         print "Pump's battery level: " + str([self.battery,
@@ -1310,36 +1319,6 @@ class Pump:
 
 
 
-    def readCarbs(self):
-
-        """
-        ========================================================================
-        READCARBS
-        ========================================================================
-        """
-
-        # Download pump history
-        self.readHistory()
-
-        # Define parameters to parse history pages when looking for boluses
-        payloadCode = 91
-        payloadSize = 20 # FIXME
-        now = datetime.datetime.now()
-
-        # Initialize carbs and times vectors
-        carbs = []
-        times = []
-
-        # Parse history page to find boluses
-        for i in range(len(self.history) - 1 - payloadSize):
-
-            # Define carb criteria
-            if self.history[i] == payloadCode:
-        
-                print self.history[i:i + payloadSize]
-
-
-
     def readCurrentTBR(self):
 
         """
@@ -1681,10 +1660,10 @@ def main():
     #pump.readFirmwareVersion()
 
     # Read pump battery level
-    #pump.readBatteryLevel()
+    pump.readBatteryLevel()
 
     # Read remaining amount of insulin in pump
-    #pump.readReservoirLevel()
+    pump.readReservoirLevel()
 
     # Read pump status
     #pump.readStatus()
@@ -1695,17 +1674,17 @@ def main():
     # Read daily totals on pump
     #pump.readDailyTotals()
 
-    # Read current history page number
-    #pump.readNumberHistoryPages()
+    # Read blood glucose targets stored in pump
+    #pump.readBGTargets()
 
-    # Read bolus history on pump
+    # Read insulin sensitivity factors stored in pump
+    #pump.readInsulinSensitivityFactors()
+
+    # Read carb sensitivity factors stored in pump
+    #pump.readCarbSensitivityFactors()
+
+    # Read treatment history on pump (BG and carbs)
     #pump.readTreatments()
-
-    # Read bolus history on pump
-    pump.readBoluses()
-
-    # Read carbs history on pump
-    #pump.readCarbs()
 
     # Send bolus to pump
     #pump.deliverBolus(0.1)
@@ -1716,15 +1695,6 @@ def main():
     # Send temporary basal to pump
     #pump.setTBR(5, "U/h", 30)
     #pump.setTBR(200, "%", 60)
-
-    # Read insulin sensitivity factors stored in pump
-    #pump.readInsulinSensitivityFactors()
-
-    # Read carb sensitivity factors stored in pump
-    #pump.readCarbSensitivityFactors()
-
-    # Read blood glucose targets stored in pump
-    #pump.readBGTargets()
 
     # Suspend pump activity
     #pump.suspend()

@@ -326,6 +326,19 @@ class Reporter:
 
 
 
+    def addBatteryLevel(self, t, level):
+
+        """
+        ========================================================================
+        ADDBATTERYLEVEL
+        ========================================================================
+        """
+
+        # Add battery levels
+        self.addEntries("pump.json", ["Battery Levels"], t, level)
+
+
+
     def addReservoirLevel(self, t, level):
 
         """
@@ -334,8 +347,8 @@ class Reporter:
         ========================================================================
         """
 
-        # Add reservoir levels (only keep one digit in case of rounding errors)
-        self.addEntries("pump.json", ["Reservoir Levels"], t, round(level, 1))
+        # Add reservoir levels
+        self.addEntries("pump.json", ["Reservoir Levels"], t, level)
 
 
 
@@ -348,10 +361,10 @@ class Reporter:
         """
 
         # Give user info
-        print "Storing boluses to report: 'insulin.json'..."
+        print "Storing boluses to report: 'treatments.json'..."
 
         # Add boluses
-        self.addEntries("insulin.json", ["Boluses"], t, boluses)
+        self.addEntries("treatments.json", ["Boluses"], t, boluses)
 
 
 
@@ -364,10 +377,10 @@ class Reporter:
         """
 
         # Give user info
-        print "Storing carbs entries to report: 'insulin.json'..."
+        print "Storing carbs entries to report: 'treatments.json'..."
 
         # Add boluses
-        self.addEntries("insulin.json", ["Carbs"], t, carbs)
+        self.addEntries("treatments.json", ["Carbs"], t, carbs)
 
 
 
@@ -380,7 +393,7 @@ class Reporter:
         """
 
         # Add temporary basal entries
-        self.addEntries("insulin.json", ["Temporary Basals"],
+        self.addEntries("treatments.json", ["Temporary Basals"],
                                          t, [rate, units, duration])
 
 
@@ -485,7 +498,7 @@ class Reporter:
         """
 
         # Load insulin report
-        report = self.getReport("insulin.json")
+        report = self.getReport("treatments.json")
 
         # Get number of entries
         n = len(report["Boluses"])
