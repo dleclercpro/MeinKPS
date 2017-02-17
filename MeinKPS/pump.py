@@ -34,6 +34,9 @@
 #       X Make sure enacted bolus are detected!
 #       - No point in reissuing same TBR?
 #       - Decode square/dual boluses?
+#       - Add "change battery" suggestion when no more response received from
+#         stick
+#       - Reduce session time if looping every 5 minutes?
 
 
 
@@ -57,8 +60,8 @@ class Pump:
 
     # PUMP CHARACTERISTICS
     serial            = 799163
-    powerTime         = 10     # Time (s) needed for pump to go online
-    sessionTime       = 8      # Time (m) for which pump will listen to RFs
+    powerTime         = 10     # Time (s) needed for pump's radio to power up
+    sessionTime       = 10     # Time (m) for which pump will listen to RFs
     executionTime     = 5      # Time (s) needed for pump command execution
     bolusStroke       = 0.1    # Pump bolus stroke (U)
     basalStroke       = 0.05   # Pump basal stroke rate (U/h)
@@ -368,6 +371,44 @@ class Pump:
 
 
 
+    def readBatteryLevel(self):
+
+        """
+        ========================================================================
+        READBATTERYLEVEL
+        ========================================================================
+        """
+
+        # Define infos for pump request
+        info = "Reading battery level..."
+
+        # Define pump request
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 114)
+
+        # Make pump request
+        self.requester.make()
+
+        # Decode battery level
+        level = self.requester.data[0]
+
+        if level == 0:
+            self.battery = "Normal"
+        elif level == 1:
+            self.battery = "Low"
+
+        # Decode battery voltage # FIXME
+        self.batteryVoltage = lib.bangInt([self.requester.data[1],
+                                           self.requester.data[2]]) / 100.0
+
+        # Give user info
+        print "Pump's battery level: " + str([self.battery,
+                                              str(self.batteryVoltage) + " V"])
+
+
+
     def readReservoirLevel(self):
 
         """
@@ -388,7 +429,7 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract remaining amount of insulin
+        # Decode remaining amount of insulin
         self.reservoir = (lib.bangInt(self.requester.data[0:2]) *
                           self.bolusStroke)
 
@@ -1040,6 +1081,11 @@ class Pump:
 
         Note: - Boluses and carbs input seem to be stored exactly at sime time
                 in pump.
+              - No need to run readBGU and readCU functions, since units are
+                encoded in message bytes!
+              - No idea how to decode low ISF in mg/dL... information seems to
+                be stored in 4th body byte, but no other byte enables
+                differenciation between < and >= 256 ?
 
         Warning: - Do not change units for no reason, otherwise treatments will
                    not be read correctly!
@@ -1049,26 +1095,28 @@ class Pump:
         carbs = []
         times = []
 
+        # Define an indicator dictionary to decode BG and carb bytes
+        # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
+        self.indicators = {
+            80: ["mg/dL", "g", False, False],
+            82: ["mg/dL", "g", True, False],
+            84: ["mg/dL", "g", False, True],
+            86: ["mg/dL", "g", True, True],
+
+            96: ["mg/dL", "exchanges", False, False],
+            98: ["mg/dL", "exchanges", True, False],
+
+            144: ["mmol/L", "g", False, False],
+            145: ["mmol/L", "g", True, False],
+            148: ["mmol/L", "g", False, True],
+            149: ["mmol/L", "g", True, True],
+
+            160: ["mmol/L", "exchanges", False, False],
+            161: ["mmol/L", "exchanges", True, False],
+        }
+
         # Read current time
         now = datetime.datetime.now()
-
-        # Read units
-        self.readBGU()
-        self.readCU()
-
-        # Compute a multiplicator to decode BG units
-        if self.BGU == "mmol/L":
-            u = 1.0
-
-        elif self.BGU == "mg/dL":
-            u = 0
-
-        # Compute a multiplicator to decode carb units
-        if self.CU == "g":
-            m = 0
-
-        elif self.CU == "exchanges":
-            m = 1.0
 
         # Download pump history
         self.readHistory()
@@ -1125,28 +1173,64 @@ class Pump:
                     # Format time
                     time = lib.formatTime(time)
 
+                    # Decode units and sizes of BG and carb entries using 2nd
+                    # body byte as indicator
+                    indicator = body[1]
+                    
+                    # Find a match between current indicator and the previously
+                    # defined dictionary
+                    [BGU, CU, largerBG, largerC] = self.indicators[indicator]
+
+                    # Define rounding multiplicator for BGs and Cs
+                    if BGU == "mmol/L":
+                        mBGU = 1.0
+
+                    else:
+                        mBGU = 0
+
+                    if CU == "exchanges":
+                        mCU = 1.0
+
+                    else:
+                        mCU = 0
+
+                    # Define number of bytes to add for larger BGs and Cs
+                    if largerBG:
+                        
+                        # Extra number of bytes depends on BG units
+                        if BGU == "mmol/L":
+                            mBG = 256
+
+                        else:
+                            mBG = 512
+
+                    else:
+                        mBG = 0
+
+                    if largerC:
+                        mC = 256
+
+                    else:
+                        mC = 0
+
                     # Decode record
-                    BG = lib.bangInt([body[1] & 15, head[1]]) / 10 ** u
-                    BGTargets = [body[4] / 10 ** u, body[12] / 10 ** u]
-                    ISF = body[3] / 10 ** u
-                    CH = body[0] / 10 ** m
-                    CSF = body[2] / 10 ** m
+                    BG = (head[1] + mBG) / 10 ** mBGU
+                    C = (body[0] + mC) / 10 ** mCU
+
+                    # Not really necessary, but those are correct
+                    BGTargets = [body[4] / 10 ** mBGU, body[12] / 10 ** mBGU]
+                    CSF = body[2] / 10 ** mCU
 
                     # Add carbs and times at which they were consumed to their
                     # respective vectors only if they have a given value!
-                    if CH:
-                        carbs.append(CH)
+                    if C:
+                        carbs.append([C, CU])
                         times.append(time)
 
                     # Give user output
-                    print time
                     print str(head) + ", " + str(body)
-                    print "BG: " + str(BG) + " mmol/L"
-                    print "BG Targets: " + str(BGTargets) + " mmol/L"
-                    print "ISF: " + str(ISF) + " mmol/L/U"
-                    print "Carbs: " + str(CH) + " g"
-                    print "CSF: " + str(CSF) + " g/U"
-                    
+                    print "BG: " + str(BG) + " " + str(BGU) + " - " + time
+                    print "Carbs: " + str(C) + " " + str(CU) + " - " + time
                     print
 
                 except:
@@ -1256,11 +1340,11 @@ class Pump:
 
 
 
-    def readTBR(self):
+    def readCurrentTBR(self):
 
         """
         ========================================================================
-        READTBR
+        READCURRENTTBR
         ========================================================================
         """
 
@@ -1409,7 +1493,7 @@ class Pump:
                 return
 
             # Before issuing any TBR, read the current one
-            self.readTBR()
+            self.readCurrentTBR()
 
             # Store last TBR values
             lastValue = self.TBR["Value"]
@@ -1524,7 +1608,7 @@ class Pump:
 
         # Verify that the TBR was correctly issued by reading current TBR on
         # pump
-        self.readTBR()
+        self.readCurrentTBR()
 
         # Compare to expectedly set TBR
         if ((self.TBR["Value"] == rate) &
@@ -1596,6 +1680,9 @@ def main():
     # Read pump firmware version
     #pump.readFirmwareVersion()
 
+    # Read pump battery level
+    #pump.readBatteryLevel()
+
     # Read remaining amount of insulin in pump
     #pump.readReservoirLevel()
 
@@ -1612,10 +1699,10 @@ def main():
     #pump.readNumberHistoryPages()
 
     # Read bolus history on pump
-    pump.readTreatments()
+    #pump.readTreatments()
 
     # Read bolus history on pump
-    #pump.readBoluses()
+    pump.readBoluses()
 
     # Read carbs history on pump
     #pump.readCarbs()
@@ -1624,7 +1711,7 @@ def main():
     #pump.deliverBolus(0.1)
 
     # Read temporary basal
-    #pump.readTBR()
+    #pump.readCurrentTBR()
 
     # Send temporary basal to pump
     #pump.setTBR(5, "U/h", 30)

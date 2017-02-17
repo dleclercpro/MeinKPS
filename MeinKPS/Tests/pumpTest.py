@@ -93,13 +93,13 @@ myPump.deliverBolus(0.1)
 time.sleep(sleep)
 
 # Read temporary basal
-myPump.readTemporaryBasal()
+myPump.readCurrentTBR()
 time.sleep(sleep)
 
 # Send temporary basal to pump
-myPump.setTemporaryBasal(5, "U/h", 30)
+myPump.setTBR(5, "U/h", 30)
 time.sleep(sleep)
-myPump.setTemporaryBasal(200, "%", 60)
+myPump.setTBR(200, "%", 60)
 time.sleep(sleep)
 
 # Read insulin sensitivity factors stored in pump

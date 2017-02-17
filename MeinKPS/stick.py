@@ -57,7 +57,7 @@ class Stick:
     nBytesDefault   = 64
     signalThreshold = 150
     timeout         = 0.1 # (s) / 0.5
-    emptySleep      = 1   # (s)
+    emptySleep      = 0.5 # (s)
     frequencies     = {0: 916.5, 1: 868.35, 255: 916.5} # MHz
 
 

@@ -42,10 +42,10 @@ class Requester:
     nBytesDefault = 64
     nBytesFormat  = 8
     nPollAttempts = 50
-    readSleep     = 0.01
-    responseSleep = 0.001
-    requestSleep  = 0.25
-    pollSleep     = 0.25
+    readSleep     = 0   # 0.01
+    responseSleep = 0   # 0.001
+    requestSleep  = 0.1 # 0.25
+    pollSleep     = 0.1 # 0.25
     EOD           = 128
 
 
