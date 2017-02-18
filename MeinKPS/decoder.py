@@ -415,23 +415,18 @@ class Decoder:
 
         # Define an indicator dictionary to decode BG and carb bytes
         # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
-        indicators = {
-            80: ["mg/dL", "g", False, False],
-            82: ["mg/dL", "g", True, False],
-            84: ["mg/dL", "g", False, True],
-            86: ["mg/dL", "g", True, True],
-
-            96: ["mg/dL", "exchanges", False, False],
-            98: ["mg/dL", "exchanges", True, False],
-
-            144: ["mmol/L", "g", False, False],
-            145: ["mmol/L", "g", True, False],
-            148: ["mmol/L", "g", False, True],
-            149: ["mmol/L", "g", True, True],
-
-            160: ["mmol/L", "exchanges", False, False],
-            161: ["mmol/L", "exchanges", True, False],
-        }
+        indicators = {80: ["mg/dL", "g", False, False],
+                      82: ["mg/dL", "g", True, False],
+                      84: ["mg/dL", "g", False, True],
+                      86: ["mg/dL", "g", True, True],
+                      96: ["mg/dL", "exchanges", False, False],
+                      98: ["mg/dL", "exchanges", True, False],
+                      144: ["mmol/L", "g", False, False],
+                      145: ["mmol/L", "g", True, False],
+                      148: ["mmol/L", "g", False, True],
+                      149: ["mmol/L", "g", True, True],
+                      160: ["mmol/L", "exchanges", False, False],
+                      161: ["mmol/L", "exchanges", True, False]}
 
         # Serch history for specified record
         for i in range(len(device.history)):
@@ -583,8 +578,8 @@ class Decoder:
                     time = lib.formatTime(time)
 
                     # Give user info
-                    print ("Bolus read: " + str(bolus) +
-                           "U (" + str(time) + ")")
+                    #print ("Bolus read: " + str(bolus) +
+                    #       "U (" + str(time) + ")")
                     
                     # Store bolus
                     device.boluses.append(bolus)

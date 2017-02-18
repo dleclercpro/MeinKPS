@@ -929,7 +929,6 @@ class Pump:
         for i in range(len(self.carbs)):
 
             print str(self.carbs[i]) + " (" + str(self.carbTimes[i]) + ")"
-            print
 
         # If carbs read, store them
         if len(self.carbs) != 0:
@@ -954,6 +953,13 @@ class Pump:
 
         # Decode pump record
         self.decoder.decodeBolusRecord(self, code = 1, size = 9)
+
+        # Give user output
+        print "Found following bolus entries: "
+
+        for i in range(len(self.boluses)):
+
+            print str(self.boluses[i]) + " U (" + str(self.bolusTimes[i]) + ")"
 
         # If boluses read, store them
         if len(self.boluses) != 0:
@@ -1324,7 +1330,7 @@ def main():
     #pump.readCarbSensitivityFactors()
 
     # Read treatment history on pump (BG and carbs)
-    #pump.readTreatments()
+    pump.readTreatments()
 
     # Send bolus to pump
     #pump.deliverBolus(0.1)
