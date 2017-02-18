@@ -327,8 +327,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract pump model from received data
-        self.model = int("".join([chr(x) for x in self.requester.data[1:4]]))
+        # Decode pump's response
+        self.decoder.decode(self, "readModel")
 
         # Give user info
         print "Pump model: " + str(self.model)
@@ -355,9 +355,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract pump firmware from received data
-        self.firmware = ("".join(self.requester.responseChr[17:21]) + " " +
-                         "".join(self.requester.responseChr[21:24]))
+        # Decode pump's response
+        self.decoder.decode(self, "readFirmwareVersion")
 
         # Give user info
         print "Pump firmware version: " + self.firmware
@@ -384,17 +383,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Decode battery level
-        level = self.requester.data[0]
-
-        if level == 0:
-            self.battery = "Normal"
-        elif level == 1:
-            self.battery = "Low"
-
-        # Decode battery voltage # FIXME
-        self.batteryVoltage = round(lib.bangInt([self.requester.data[1],
-                                    self.requester.data[2]]) / 100.0, 1)
+        # Decode pump's response
+        self.decoder.decode(self, "readBatteryLevel")
 
         # Get current time
         now = datetime.datetime.now()
@@ -403,11 +393,12 @@ class Pump:
         now = lib.formatTime(now)
 
         # Add current reservoir level to pump report
-        self.reporter.addBatteryLevel(now, [self.battery, self.batteryVoltage])
+        self.reporter.addBatteryLevel(now, [self.batteryLevel,
+                                            self.batteryVoltage])
 
         # Give user info
-        print "Pump's battery level: " + str([self.battery,
-                                              str(self.batteryVoltage) + " V"])
+        print "Pump's battery level: " + str([self.batteryLevel,
+                                             str(self.batteryVoltage) + " V"])
 
 
 
@@ -431,12 +422,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Decode remaining amount of insulin
-        self.reservoir = (lib.bangInt(self.requester.data[0:2]) *
-                          self.bolusStroke)
-
-        # Round amount
-        self.reservoir = round(self.reservoir, 1)
+        # Decode pump's response
+        self.decoder.decode(self, "readReservoirLevel")
 
         # Get current time
         now = datetime.datetime.now()
@@ -448,7 +435,7 @@ class Pump:
         self.reporter.addReservoirLevel(now, self.reservoir)
 
         # Give user info
-        print "Amount of insulin in reservoir: " + str(self.reservoir) + "U"
+        print "Amount of insulin in reservoir: " + str(self.reservoir) + " U"
 
 
 
@@ -472,10 +459,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract pump status from received data
-        self.status = {"Normal" : self.requester.data[0] == 3,
-                       "Bolusing" : self.requester.data[1] == 1,
-                       "Suspended" : self.requester.data[2] == 1}
+        # Decode pump's response
+        self.decoder.decode(self, "readStatus")
 
         # Give user info
         print "Pump status: " + str(self.status)
@@ -543,13 +528,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract pump settings from received data
-        self.settings = {
-            "Max Bolus": self.requester.data[5] * self.bolusStroke,
-            "Max Basal": (lib.bangInt(self.requester.data[6:8]) *
-                          self.basalStroke / 2.0),
-            "IAC": self.requester.data[17]
-        }
+        # Decode pump's response
+        self.decoder.decode(self, "readSettings")
 
         # Save pump settings to profile report
         self.reporter.storeSettings(self.settings)
@@ -624,12 +604,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Decode BG units
-        if self.requester.data[0] == 1:
-            self.BGU = "mg/dL"
-
-        elif self.requester.data[0] == 2:
-            self.BGU = "mmol/L"
+        # Decode pump's response
+        self.decoder.decode(self, "readBGU")
 
         # Give user info
         print "Pump's BG units are set to: " + str(self.BGU)
@@ -656,12 +632,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Decode BG units
-        if self.requester.data[0] == 1:
-            self.CU = "g"
-
-        elif self.requester.data[0] == 2:
-            self.CU = "exchanges"
+        # Decode pump's response
+        self.decoder.decode(self, "readCU")
 
         # Give user info
         print "Pump's carb units are set to: " + str(self.CU)
@@ -692,13 +664,8 @@ class Pump:
         self.dailyTotals = {"Today": None,
                              "Yesterday": None}
 
-        # Extract daily totals of today and yesterday
-        self.dailyTotals["Today"] = round(
-            lib.bangInt(self.requester.data[0:2]) * self.bolusStroke, 2)
-
-        # Extract daily totals of yesterday
-        self.dailyTotals["Yesterday"] = round(
-            lib.bangInt(self.requester.data[2:4]) * self.bolusStroke, 2)
+        # Decode pump's response
+        self.decoder.decode(self, "readDailyTotals")
 
         # Give user info
         print "Daily totals:"
@@ -733,66 +700,11 @@ class Pump:
         self.BGTargetsTimes = []
         self.BGU = None
 
-        # Extract carb sensitivity units
-        units = self.requester.data[0]
+        # Decode pump's response
+        self.decoder.decode(self, "readBGTargets")
 
-        # Decode units
-        if units == 1:
-            self.BGU = "mg/dL"
-
-            # Define a multiplicator to decode ISF bytes
-            m = 0
-
-        else:
-            self.BGU = "mmol/L"
-
-            # Define a multiplicator to decode ISF bytes
-            m = 1.0
-
-        # Initialize index as well as targets and times vectors
-        i = 0
-        targets = []
-        times = []
-
-        # Extract BG targets
-        while True:
-
-            # Define start (a) and end (b) indexes of current factor based on
-            # number of bytes per entry
-            n = 3
-            a = 2 + n * i
-            b = a + n
-
-            # Get current target entry
-            entry = self.requester.data[a:b]
-
-            # Exit condition: no more targets stored
-            if sum(entry) == 0:
-                break
-            else:
-                # Decode entry
-                target = [entry[0] / 10 ** m, entry[1] / 10 ** m]
-                time = entry[2] * 30 # Get time in minutes (each block
-                                     # corresponds to 30 m)
-
-                # Format time
-                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
-
-                # Store decoded target and its corresponding ending time
-                targets.append(target)
-                times.append(time)
-
-            # Increment index
-            i += 1
-
-        # Store number of targets read
-        n = len(targets)
-
-        # Rearrange targets to have starting times instead of ending times
-        for i in range(n):
-            self.BGTargets.append(targets[i])
-            self.BGTargetsTimes.append(times[i - 1])
-
+        # Read number of BG targets read
+        n = len(self.BGTargets)
 
         # Give user info
         print "Found " + str(n) + " blood glucose targets:"
@@ -833,65 +745,11 @@ class Pump:
         self.ISFTimes = []
         self.ISU = None
 
-        # Extract insulin sensitivity units
-        units = self.requester.data[0]
+        # Decode pump's response
+        self.decoder.decode(self, "readInsulinSensitivityFactors")
 
-        # Decode units
-        if units == 1:
-            self.ISU = "mg/dL/U"
-            
-            # Define a multiplicator to decode ISF bytes
-            m = 0
-
-        else:
-            self.ISU = "mmol/L/U"
-
-            # Define a multiplicator to decode ISF bytes
-            m = 1.0
-
-        # Initialize index as well as factors and times vectors
-        i = 0
-        factors = []
-        times = []
-
-        # Extract insulin sensitivity factors
-        while True:
-
-            # Define start (a) and end (b) indexes of current factor based on
-            # number of bytes per entry
-            n = 2
-            a = 2 + n * i
-            b = a + n
-
-            # Get current factor entry
-            entry = self.requester.data[a:b]
-
-            # Exit condition: no more factors stored
-            if sum(entry) == 0:
-                break
-            else:
-                # Decode entry
-                factor = entry[0] / 10 ** m
-                time = entry[1] * 30 # Get time in minutes (each block
-                                     # corresponds to 30 m)
-
-                # Format time
-                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
-
-                # Store decoded factor and its corresponding ending time
-                factors.append(factor)
-                times.append(time)
-
-            # Increment index
-            i += 1
-
-        # Store number of factors read
-        n = len(factors)
-
-        # Rearrange factors to have starting times instead of ending times
-        for i in range(n):
-            self.ISF.append(factors[i])
-            self.ISFTimes.append(times[i - 1])
+        # Read number of ISF read
+        n = len(self.ISF)
 
         # Give user info
         print "Found " + str(n) + " insulin sensitivity factors:"
@@ -931,65 +789,11 @@ class Pump:
         self.CSFTimes = []
         self.CSU = None
 
-        # Extract carb sensitivity units
-        units = self.requester.data[0]
+        # Decode pump's response
+        self.decoder.decode(self, "readCarbSensitivityFactors")
 
-        # Decode units
-        if units == 1:
-            self.CSU = "g/U"
-
-            # Define a multiplicator to decode ISF bytes
-            m = 0
-
-        else:
-            self.CSU = "exchanges/U"
-
-            # Define a multiplicator to decode ISF bytes
-            m = 1.0
-
-        # Initialize index as well as factors and times vectors
-        i = 0
-        factors = []
-        times = []
-
-        # Extract carb sensitivity factors
-        while True:
-
-            # Define start (a) and end (b) indexes of current factor based on
-            # number of bytes per entry
-            n = 2
-            a = 2 + n * i
-            b = a + n
-
-            # Get current factor entry
-            entry = self.requester.data[a:b]
-
-            # Exit condition: no more factors stored
-            if sum(entry) == 0:
-                break
-            else:
-                # Decode entry
-                factor = entry[0] / 10 ** m
-                time = entry[1] * 30 # Get time in minutes (each block
-                                     # corresponds to 30 m)
-
-                # Format time
-                time = str(time / 60).zfill(2) + ":" + str(time % 60).zfill(2)
-
-                # Store decoded factor and its corresponding ending time
-                factors.append(factor)
-                times.append(time)
-
-            # Increment index
-            i += 1
-
-        # Store number of factors read
-        n = len(factors)
-
-        # Rearrange factors to have starting times instead of ending times
-        for i in range(n):
-            self.CSF.append(factors[i])
-            self.CSFTimes.append(times[i - 1])
+        # Read number of CSF read
+        n = len(self.CSF)
 
         # Give user info
         print "Found " + str(n) + " carb sensitivity factors:"
@@ -1024,8 +828,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Store number of history pages
-        self.nHistoryPages = self.requester.data[3] + 1
+        # Decode pump's response
+        self.decoder.decode(self, "readNumberHistoryPages")
 
         # Give user info
         print "Found " + str(self.nHistoryPages) + " pump history pages."
@@ -1079,7 +883,7 @@ class Pump:
             self.history.extend(self.requester.data)
 
         # Print collected history pages
-        print str(n) + " page(s) of pump history:"
+        print "Read " + str(n) + " page(s) of pump history:"
         print self.history
 
 
@@ -1109,156 +913,27 @@ class Pump:
         #       correspond to calibration BGs...
 
         # Initialize carbs and times vectors
-        carbs = []
-        times = []
-
-        # Define an indicator dictionary to decode BG and carb bytes
-        # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
-        self.indicators = {
-            80: ["mg/dL", "g", False, False],
-            82: ["mg/dL", "g", True, False],
-            84: ["mg/dL", "g", False, True],
-            86: ["mg/dL", "g", True, True],
-
-            96: ["mg/dL", "exchanges", False, False],
-            98: ["mg/dL", "exchanges", True, False],
-
-            144: ["mmol/L", "g", False, False],
-            145: ["mmol/L", "g", True, False],
-            148: ["mmol/L", "g", False, True],
-            149: ["mmol/L", "g", True, True],
-
-            160: ["mmol/L", "exchanges", False, False],
-            161: ["mmol/L", "exchanges", True, False],
-        }
-
-        # Read current time
-        now = datetime.datetime.now()
+        self.carbs = []
+        self.carbTimes = []
 
         # Download pump history
         self.readHistory()
 
-        # Define record characteristics
-        code = 91
-        headSize = 2
-        dateSize = 5
-        bodySize = 13
+        # Decode pump record
+        self.decoder.decodeBolusWizardRecord(self, code = 91, headSize = 2,
+            dateSize = 5, bodySize = 13)
 
-        # Compute minimum size of record
-        minRecordSize = headSize + dateSize + bodySize
+        # Give user output
+        print "Found following carb entries: "
 
-        # Parse history
-        for i in range(len(self.history) - minRecordSize + 1):
+        for i in range(len(self.carbs)):
 
-            # Look for code, with which every record should start
-            if self.history[i] == code:
-
-                # Test proof bolus wizard record
-                try:
-
-                    # Define a record running variable
-                    x = i
-            
-                    # Assign record head
-                    head = self.history[x:x + headSize]
-
-                    # Update running variable
-                    x += headSize
-
-                    # Assign record date
-                    date = self.history[x:x + dateSize]
-
-                    # Update running variable
-                    x += dateSize
-
-                    # Assign record body
-                    body = self.history[x:x + bodySize]
-
-                    # Decode time using date bytes
-                    time = lib.decodeTime(date)
-
-                    # Build datetime object
-                    time = datetime.datetime(time[0], time[1], time[2],
-                                             time[3], time[4], time[5])
-
-                    # Proof record year
-                    if abs(time.year - now.year) > 1:
-
-                        raise ValueError("Record and current year too far " +
-                                         "apart!")
-
-                    # Format time
-                    time = lib.formatTime(time)
-
-                    # Decode units and sizes of BG and carb entries using 2nd
-                    # body byte as indicator
-                    indicator = body[1]
-                    
-                    # Find a match between current indicator and the previously
-                    # defined dictionary
-                    [BGU, CU, largerBG, largerC] = self.indicators[indicator]
-
-                    # Define rounding multiplicator for BGs and Cs
-                    if BGU == "mmol/L":
-                        mBGU = 1.0
-
-                    else:
-                        mBGU = 0
-
-                    if CU == "exchanges":
-                        mCU = 1.0
-
-                    else:
-                        mCU = 0
-
-                    # Define number of bytes to add for larger BGs and Cs
-                    if largerBG:
-                        
-                        # Extra number of bytes depends on BG units
-                        if BGU == "mmol/L":
-                            mBG = 256
-
-                        else:
-                            mBG = 512
-
-                    else:
-                        mBG = 0
-
-                    if largerC:
-                        mC = 256
-
-                    else:
-                        mC = 0
-
-                    # Decode record
-                    BG = (head[1] + mBG) / 10 ** mBGU
-                    C = (body[0] + mC) / 10 ** mCU
-
-                    # Not really necessary, but those are correct
-                    BGTargets = [body[4] / 10 ** mBGU, body[12] / 10 ** mBGU]
-                    CSF = body[2] / 10 ** mCU
-
-                    # Add carbs and times at which they were consumed to their
-                    # respective vectors only if they have a given value!
-                    if C:
-                        carbs.append([C, CU])
-                        times.append(time)
-
-                    # Give user output
-                    print "Time: " + time
-                    print "Response: " + str(head) + ", " + str(body)
-                    print "BG: " + str(BG) + " " + str(BGU)
-                    print "Carbs: " + str(C) + " " + str(CU)
-                    print "BG Targets: " + str(BGTargets) + " " + str(BGU)
-                    print "CSF: " + str(CSF) + " " + str(CU) + "/U"
-                    print
-
-                except:
-                    pass
+            print str(self.carbs[i]) + " (" + str(self.carbTimes[i]) + ")"
+            print
 
         # If carbs read, store them
-        if len(carbs) != 0:
-            self.reporter.addCarbs(times, carbs)
+        if len(self.carbs) != 0:
+            self.reporter.addCarbs(self.carbTimes, self.carbs)
 
 
 
@@ -1270,63 +945,19 @@ class Pump:
         ========================================================================
         """
 
+        # Initialize boluses and times vectors
+        self.boluses = []
+        self.bolusTimes = []
+
         # Download n pages of pump history (or all of it if none is given)
         self.readHistory(n)
 
-        # Define parameters to parse history pages when looking for boluses
-        payloadCode = 1
-        payloadSize = 9
-        now = datetime.datetime.now()
-
-        # Initialize boluses and times vectors
-        boluses = []
-        times = []
-
-        # Parse history page to find boluses
-        for i in range(len(self.history) - 1 - payloadSize):
-
-            # Define bolus criteria
-            if ((self.history[i] == payloadCode) &
-                (self.history[i + 1] == self.history[i + 2]) &
-                (self.history[i + 3] == 0)):
-        
-                # Extract bolus from pump history
-                bolus = round(self.history[i + 1] * self.bolusStroke, 1)
-
-                # Extract time at which bolus was delivered
-                time = lib.decodeTime(self.history[i + 4 : i + 9])
-
-                # Test proof the bolus by looking closer at its delivery time
-                try:
-
-                    # Check for bolus year
-                    if abs(time[0] - now.year) > 1:
-
-                        raise ValueError("Bolus can't be more than one year " +
-                                         "in the past!")
-
-                    # Build datetime object
-                    time = datetime.datetime(time[0], time[1], time[2],
-                                             time[3], time[4], time[5])
-
-                    # Format bolus time
-                    time = lib.formatTime(time)
-
-                    # Give user info
-                    print ("Bolus read: " + str(bolus) +
-                           "U (" + str(time) + ")")
-                    
-                    # Store bolus
-                    boluses.append(bolus)
-                    times.append(time)
-
-                except:
-
-                    pass
+        # Decode pump record
+        self.decoder.decodeBolusRecord(self, code = 1, size = 9)
 
         # If boluses read, store them
-        if len(boluses) != 0:
-            self.reporter.addBoluses(times, boluses)
+        if len(self.boluses) != 0:
+            self.reporter.addBoluses(self.bolusTimes, self.boluses)
 
 
 
@@ -1343,7 +974,7 @@ class Pump:
 
 
 
-    def readCurrentTBR(self):
+    def readTBR(self):
 
         """
         ========================================================================
@@ -1368,24 +999,8 @@ class Pump:
                     "Units": None,
                     "Duration": None}
 
-        # Extract TBR [U/h]
-        if self.requester.data[0] == 0:
-
-            # Extract characteristics
-            self.TBR["Units"] = "U/h"
-            self.TBR["Value"] = round(
-                lib.bangInt(self.requester.data[2:4]) * self.basalStroke / 2.0,
-                2)
-
-        # Extract TBR [%]
-        elif self.requester.data[0] == 1:
-
-            # Extract characteristics
-            self.TBR["Units"] = "%"
-            self.TBR["Value"] = round(self.requester.data[1], 2)
-
-        # Extract remaining time
-        self.TBR["Duration"] = round(lib.bangInt(self.requester.data[4:6]), 0)
+        # Decode pump's response
+        self.decoder.decode(self, "readTBR")
 
         # Give user info
         print "Temporary basal:"
@@ -1406,6 +1021,7 @@ class Pump:
         # Verify pump status and settings before doing anything
         if self.verifyStatus() == False:
             return
+
         if self.verifySettings(bolus = bolus) == False:
             return
 
@@ -1496,7 +1112,7 @@ class Pump:
                 return
 
             # Before issuing any TBR, read the current one
-            self.readCurrentTBR()
+            self.readTBR()
 
             # Store last TBR values
             lastValue = self.TBR["Value"]
@@ -1611,7 +1227,7 @@ class Pump:
 
         # Verify that the TBR was correctly issued by reading current TBR on
         # pump
-        self.readCurrentTBR()
+        self.readTBR()
 
         # Compare to expectedly set TBR
         if ((self.TBR["Value"] == rate) &
@@ -1675,7 +1291,7 @@ def main():
     pump.start()
 
     # Read bolus history of pump
-    pump.readTime()
+    #pump.readTime()
 
     # Read pump model
     #pump.readModel()
@@ -1714,7 +1330,7 @@ def main():
     #pump.deliverBolus(0.1)
 
     # Read temporary basal
-    #pump.readCurrentTBR()
+    #pump.readTBR()
 
     # Send temporary basal to pump
     #pump.setTBR(5, "U/h", 30)

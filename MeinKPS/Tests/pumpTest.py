@@ -110,7 +110,7 @@ myPump.deliverBolus(0.1)
 time.sleep(sleep)
 
 # Read temporary basal
-myPump.readCurrentTBR()
+myPump.readTBR()
 time.sleep(sleep)
 
 # Send temporary basal to pump
