@@ -1102,13 +1102,18 @@ class Pump:
                 in pump.
               - No need to run readBGU and readCU functions, since units are
                 encoded in message bytes!
-              - No idea how to decode low ISF in mg/dL... information seems to
+              - No idea how to decode large ISF in mg/dL... information seems to
                 be stored in 4th body byte, but no other byte enables
-                differenciation between < and >= 256 ?
+                differenciation between < and >= 256 ? This is not critical,
+                since those ISF only represent the ones the BolusWizard used in
+                its calculations. The ISF profiles can be read with readISF().
 
         Warning: - Do not change units for no reason, otherwise treatments will
                    not be read correctly!
         """
+
+        # TODO: should we store BGs that were input by the user? Those could
+        #       correspond to calibration BGs...
 
         # Initialize carbs and times vectors
         carbs = []
@@ -1247,9 +1252,12 @@ class Pump:
                         times.append(time)
 
                     # Give user output
-                    print str(head) + ", " + str(body)
-                    print "BG: " + str(BG) + " " + str(BGU) + " - " + time
-                    print "Carbs: " + str(C) + " " + str(CU) + " - " + time
+                    print "Time: " + time
+                    print "Response: " + str(head) + ", " + str(body)
+                    print "BG: " + str(BG) + " " + str(BGU)
+                    print "Carbs: " + str(C) + " " + str(CU)
+                    print "BG Targets: " + str(BGTargets) + " " + str(BGU)
+                    print "CSF: " + str(CSF) + " " + str(CU) + "/U"
                     print
 
                 except:
@@ -1707,10 +1715,10 @@ def main():
     #pump.readCarbSensitivityFactors()
 
     # Read treatment history on pump (BG and carbs)
-    #pump.readTreatments()
+    pump.readTreatments()
 
     # Send bolus to pump
-    pump.deliverBolus(0.1)
+    #pump.deliverBolus(0.1)
 
     # Read temporary basal
     #pump.readCurrentTBR()

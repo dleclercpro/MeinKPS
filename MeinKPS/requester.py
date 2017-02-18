@@ -23,6 +23,10 @@
 ================================================================================
 """
 
+# TODO: - recover from 14 bytes expected when downloading?
+
+
+
 # LIBRARIES
 import sys
 import time
@@ -41,7 +45,7 @@ class Requester:
     # REQUESTER CONSTANTS
     nBytesDefault = 64
     nBytesFormat  = 8
-    nPollAttempts = 50
+    nPollAttempts = 100 # 50
     readSleep     = 0   # 0.01
     responseSleep = 0   # 0.001
     requestSleep  = 0.1 # 0.25
