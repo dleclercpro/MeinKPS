@@ -50,7 +50,7 @@ sleep = 5
 # Instanciate a pump for me
 myPump = pump.Pump()
 
-# Start dialogue pump
+# Start dialogue with pump
 myPump.start()
 
 # Read bolus history of pump

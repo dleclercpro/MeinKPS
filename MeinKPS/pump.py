@@ -50,6 +50,7 @@ import time
 
 # USER LIBRARIES
 import lib
+import decoder
 import reporter
 import requester
 import stick
@@ -88,6 +89,9 @@ class Pump:
 
         # Give the pump a requester
         self.requester = requester.Requester()
+
+        # Give the pump a decoder
+        self.decoder = decoder.Decoder()
 
         # Instanciate a stick to communicate with the pump
         self.stick = stick.Stick()
@@ -295,19 +299,8 @@ class Pump:
         # Make pump request
         self.requester.make()
 
-        # Extract pump time from received data
-        second = self.requester.data[2]
-        minute = self.requester.data[1]
-        hour   = self.requester.data[0]
-        day    = self.requester.data[6]
-        month  = self.requester.data[5]
-        year   = lib.bangInt(self.requester.data[3:5])
-
-        # Generate time object
-        time = datetime.datetime(year, month, day, hour, minute, second)
-
-        # Store formatted time
-        self.time = lib.formatTime(time)
+        # Decode pump's response
+        self.decoder.decode(self, "readTime")
 
         # Give user info
         print "Pump time: " + self.time
@@ -1678,11 +1671,11 @@ def main():
     # Instanciate a pump for me
     pump = Pump()
 
-    # Start dialogue pump
+    # Start dialogue with pump
     pump.start()
 
     # Read bolus history of pump
-    #pump.readTime()
+    pump.readTime()
 
     # Read pump model
     #pump.readModel()
@@ -1715,7 +1708,7 @@ def main():
     #pump.readCarbSensitivityFactors()
 
     # Read treatment history on pump (BG and carbs)
-    pump.readTreatments()
+    #pump.readTreatments()
 
     # Send bolus to pump
     #pump.deliverBolus(0.1)
