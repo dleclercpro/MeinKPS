@@ -75,8 +75,15 @@ class Reporter:
         # Give user info
         print "Loading report '" + reportName + "'..."
 
-        # Check for report existence
-        self.verifyReport(reportName)
+        # Check if report exists. If not, generate it.
+        if not os.path.exists(dirReports + reportName):
+
+            # Give user info
+            print "Report '" + reportName + "' does not exist. Creating it..."
+
+            # Creating new empty report
+            with open(dirReports + reportName, "w") as f:
+                json.dump({}, f)
 
         # Load report
         with open(dirReports + reportName, "r") as f:
@@ -107,31 +114,11 @@ class Reporter:
 
 
 
-    def verifyReport(self, reportName):
+    def getSection(self, report, path, create):
 
         """
         ========================================================================
-        VERIFYREPORT
-        ========================================================================
-        """
-
-        # Check for report existence
-        if not os.path.exists(dirReports + reportName):
-
-            # Give user info
-            print "Report '" + reportName + "' does not exist. Creating it..."
-
-            # Creating new empty report
-            with open(dirReports + reportName, "w") as f:
-                json.dump({}, f)
-
-
-
-    def verifySection(self, report, path, create):
-
-        """
-        ========================================================================
-        VERIFYSECTION
+        GETSECTION
         ========================================================================
         """
 
@@ -176,6 +163,8 @@ class Reporter:
         ========================================================================
         DELETESECTION
         ========================================================================
+
+        Note: - Deprecated since creation of overwrite option in addEntries.
         """
 
         # Load report
@@ -185,7 +174,7 @@ class Reporter:
         section = report
 
         # Check if section exists at all
-        section = self.verifySection(report, path, False)
+        section = self.getSection(report, path, False)
 
         # Give user info
         print "Attempting to delete section: " + str(path)
@@ -194,7 +183,7 @@ class Reporter:
         if section:
 
             # Load report parent section of the one that has to be deleted
-            parent = self.verifySection(report, path[0:-1], False)
+            parent = self.getSection(report, path[0:-1], False)
 
             # Delete last section in path
             del parent[path[-1]]
@@ -229,7 +218,7 @@ class Reporter:
         report = self.getReport(reportName)
 
         # Load report section
-        section = self.verifySection(report, path, False)
+        section = self.getSection(report, path, False)
 
         # Look if entry exists
         if key in section:
@@ -238,7 +227,7 @@ class Reporter:
             entry = section[key]
 
             # Give user info
-            print "Entry found: " + str(key) + ": " + str(entry)
+            print "Entry found: " + str(key) + ": " + json.dumps(entry)
 
             # Return entry for external access
             return entry
@@ -271,7 +260,7 @@ class Reporter:
         n = len(keys)
 
         # Load report section
-        section = self.verifySection(report, path, True)
+        section = self.getSection(report, path, True)
 
         # If desired, clear report section
         if overwrite:
@@ -296,13 +285,14 @@ class Reporter:
 
                 # Give user info
                 print ("Entry already exists: " + str(keys[i]) + " - " +
-                       str(section[keys[i]]))
+                       json.dumps(section[keys[i]]))
 
             # If not, write it down
             else:
 
                 # Give user info
-                print "New entry: " + str(keys[i]) + " - " + str(entries[i])
+                print ("New entry: " + str(keys[i]) + " - " +
+                       json.dumps(entries[i]))
 
                 # Add entry to report
                 section[keys[i]] = entries[i]
