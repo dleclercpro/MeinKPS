@@ -55,6 +55,19 @@ class Requester:
 
 
 
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize data vector
+        self.data = []
+
+
+
     def initialize(self, recipient = None, serial = None, handle = None):
 
         """
@@ -285,8 +298,7 @@ class Requester:
 
         # Format response to readable characters
         self.responseChr = ["." if (x < 32) | (x > 126)
-                                 else chr(x)
-                                 for x in self.response]
+                                else chr(x) for x in self.response]
 
 
 
@@ -446,7 +458,7 @@ class Requester:
         # Give user info
         print "Downloading data from device..."
 
-        # Initialize data vector
+        # Reset data vector
         self.data = []
 
 	    # Initialize download attempt variable

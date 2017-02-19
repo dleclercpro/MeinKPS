@@ -63,6 +63,41 @@ class Stick:
 
 
 
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give the stick a reporter
+        self.reporter = reporter.Reporter()
+
+        # Give the stick a requester
+        self.requester = requester.Requester()
+
+        # Give the stick a decoder
+        # FIXME
+        self.decoder = decoder.Decoder(self, self)
+
+        # Give the stick an infos dictionary
+        self.infos = {"ACK": None,
+                      "Status": None,
+                      "Frequency": None,
+                      "Description": None,
+                      "Version": None}
+
+        # Define state indicators
+        stateIndicators = {"Errors": {"CRC": None, "SEQ": None, "NAK": None,
+                                      "Timeout": None},
+                           "Packets": {"Received": None, "Sent": None}}
+
+        # Give the stick a state dictionary for its USB and radio interfaces
+        self.state = {"USB": stateIndicators, "Radio": stateIndicators}
+
+
+
     def start(self):
 
         """
@@ -98,41 +133,14 @@ class Stick:
         # Before anything, make sure the stick's buffer is empty
         self.empty()
 
-        # Give the stick a reporter
-        self.reporter = reporter.Reporter()
-
-        # Give the stick a requester
-        self.requester = requester.Requester()
-
-        # Give the stick a decoder
-        self.decoder = decoder.Decoder()
-
         # Initialize requester to speak with stick
         self.requester.initialize(recipient = "Stick", handle = self.handle)
-
-        # Define stick infos dictionary
-        self.infos = {"ACK": None,
-                      "Status": None,
-                      "Frequency": None,
-                      "Description": None,
-                      "Version": None}
 
         # Ask for stick infos
         self.readInfos()
 
         # Ask for signal strength
         self.readSignalStrength()
-
-        # Define state indicators
-        stateIndicators = {"Errors": {"CRC": None,
-                                      "SEQ": None,
-                                      "NAK": None,
-                                      "Timeout": None},
-                           "Packets": {"Received": None,
-                                       "Sent": None}}
-
-        # Initialize a state dictionary for the stick's USB and radio interfaces
-        self.state = {"USB": stateIndicators, "Radio": stateIndicators}
 
         # Get state of stick
         self.readStates()
@@ -215,7 +223,7 @@ class Stick:
         self.requester.make()
 
         # Decode stick's response
-        self.decoder.decode(self, "readInfos")
+        self.decoder.decode("readInfos")
 
         # Print infos
         print "Stick infos:"
@@ -257,7 +265,7 @@ class Stick:
             self.requester.make()
 
             # Decode stick's response
-            self.decoder.decode(self, "readSignalStrength")
+            self.decoder.decode("readSignalStrength")
 
             # Print signal strength
             print "Signal strength found: " + str(self.signal)
@@ -283,7 +291,7 @@ class Stick:
         self.requester.make()
 
         # Decode stick's response
-        self.decoder.decode(self, "readUSBState")
+        self.decoder.decode("readUSBState")
 
 
 
@@ -304,7 +312,7 @@ class Stick:
         self.requester.make()
 
         # Decode stick's response
-        self.decoder.decode(self, "readRadioState")
+        self.decoder.decode("readRadioState")
 
 
 

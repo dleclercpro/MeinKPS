@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Title:    pump
 
@@ -21,7 +21,7 @@
     Notes:    - When the battery is low, the stick will not be able to
                 communicate with the pump anymore.
 
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
 # TODO: - Make sure the maximal temporary basal rate and bolus are correctly
@@ -74,16 +74,13 @@ class Pump:
 
 
 
-    def start(self):
+    def __init__(self):
 
         """
-        ========================================================================
-        START
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Give user info
-        print "Starting dialogue with pump..."
 
         # Give the pump a reporter
         self.reporter = reporter.Reporter()
@@ -91,11 +88,45 @@ class Pump:
         # Give the pump a requester
         self.requester = requester.Requester()
 
-        # Give the pump a decoder
-        self.decoder = decoder.Decoder()
-
-        # Instanciate a stick to communicate with the pump
+        # Give the pump a stick
         self.stick = stick.Stick()
+
+        # Give the pump a power instance
+        self.power = Power(self)
+
+        # Give the pump a time instance
+        self.time = Time(self)
+
+        # Give the pump a model instance
+        self.model = Model(self)
+
+        # Give the pump a firmware instance
+        self.firmware = Firmware(self)
+
+        # Give the pump a battery instance
+        self.battery = Battery(self)
+
+        # Give the pump a reservoir instance
+        self.reservoir = Reservoir(self)
+
+        # Give the pump a status instance
+        self.status = Status(self)
+
+        # Give the pump a settings instance
+        self.settings = Settings(self)
+
+
+
+    def start(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            START
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Starting dialogue with pump..."
 
         # Start stick
         self.stick.start()
@@ -106,16 +137,16 @@ class Pump:
                                   handle = self.stick.handle)
 
         # Power pump's radio transmitter if necessary
-        self.verifyPower()
+        self.power.verify()
 
 
 
     def stop(self):
 
         """
-        ========================================================================
-        STOP
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STOP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Give user info
@@ -123,142 +154,6 @@ class Pump:
 
         # Stop stick
         self.stick.stop()
-
-
-
-    def verifyPower(self):
-
-        """
-        ========================================================================
-        VERIFYPOWER
-        ========================================================================
-        """
-
-        # Load pump's report
-        self.reporter.load("pump.json")
-
-        # Read last time pump's radio transmitter was power up
-        then = self.reporter.getEntry([], "Power Up")
-
-        # Format time
-        then = lib.formatTime(then)
-
-        # Define max time allowed between RF communication sessions
-        session = datetime.timedelta(minutes = self.sessionTime)
-
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Compute time since last power up
-        delta = now - then
-
-        # Power up pump if necessary
-        if delta > session:
-
-            # Give user info
-            print "Pump's radio transmitter will be turned on..."
-
-            # Power up pump's RF transmitter
-            self.power()
-
-        else:
-
-            # Give user info
-            print ("Pump's radio transmitter is already on. Remaining time: " +
-                   str(self.sessionTime - delta.seconds / 60) + " m")
-
-
-
-    def power(self):
-
-        """
-        ========================================================================
-        POWER
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = ("Powering pump radio transmitter for: " +
-                str(self.sessionTime) + "m")
-        sleepReason = ("Sleeping until pump radio transmitter is powered " +
-                       "up... (" + str(self.powerTime) + "s)")
-
-        # Define pump request
-        self.requester.define(
-            info = info,
-            sleep = self.powerTime,
-            sleepReason = sleepReason,
-            power = 85,
-            attempts = 0,
-            size = 0,
-            code = 93,
-            parameters = [1, self.sessionTime])
-
-        # Make pump request
-        self.requester.make()
-
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Convert time to string
-        now = lib.formatTime(now)
-
-        # Save power up time
-        self.reporter.storePowerTime(now)
-
-
-
-    def suspend(self):
-
-        """
-        ========================================================================
-        SUSPEND
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Suspending pump activity..."
-        sleepReason = ("Waiting for pump activity to be suspended... (" +
-                       str(self.executionTime) + "s)")
-
-        # Define pump request
-        self.requester.define(info = info,
-                              sleep = self.executionTime,
-                              sleepReason = sleepReason,
-                              attempts = 2,
-                              size = 1,
-                              code = 77,
-                              parameters = [1])
-
-        # Make pump request
-        self.requester.make()
-
-
-
-    def resume(self):
-
-        """
-        ========================================================================
-        RESUME
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Resuming pump activity..."
-        sleepReason = ("Waiting for pump activity to be resumed... (" +
-                       str(self.executionTime) + "s)")
-
-        # Define pump request
-        self.requester.define(info = info,
-                              sleep = self.executionTime,
-                              sleepReason = sleepReason,
-                              attempts = 2,
-                              size = 1,
-                              code = 77,
-                              parameters = [0])
-
-        # Make pump request
-        self.requester.make()
 
 
 
@@ -270,12 +165,12 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Pushing button: " + button
         sleepReason = ("Waiting for button " + button + " to be pushed... (" +
                        str(self.executionTime) + "s)")
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               sleep = self.executionTime,
                               sleepReason = sleepReason,
@@ -284,319 +179,8 @@ class Pump:
                               code = 91,
                               parameters = [int(self.buttons[button])])
 
-        # Make pump request
+        # Make request
         self.requester.make()
-
-
-
-    def readTime(self):
-
-        """
-        ========================================================================
-        READTIME
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading pump time..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 112)
-
-        # Make pump request
-        self.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode(self, "readTime")
-
-        # Give user info
-        print "Pump time: " + self.time
-
-
-
-    def readModel(self):
-
-        """
-        ========================================================================
-        READMODEL
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading pump model..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 141)
-
-        # Make pump request
-        self.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode(self, "readModel")
-
-        # Store pump model
-        self.reporter.storeModel(self.model)
-
-        # Give user info
-        print "Pump model: " + str(self.model)
-
-
-
-    def readFirmware(self):
-
-        """
-        ========================================================================
-        READFIRMWARE
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading pump firmware version..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 116)
-
-        # Make pump request
-        self.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode(self, "readFirmware")
-
-        # Store pump firmware
-        self.reporter.storeFirmware(self.firmware)
-
-        # Give user info
-        print "Pump firmware version: " + self.firmware
-
-
-
-    def readBatteryLevel(self):
-
-        """
-        ========================================================================
-        READBATTERYLEVEL
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading battery level..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 114)
-
-        # Make pump request
-        self.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode(self, "readBatteryLevel")
-
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Format time
-        now = lib.formatTime(now)
-
-        # Add current reservoir level to pump report
-        self.reporter.addBatteryLevel(now, [self.batteryLevel,
-                                            self.batteryVoltage])
-
-        # Give user info
-        print "Pump's battery level: " + str([self.batteryLevel,
-                                              str(self.batteryVoltage) + " V"])
-
-
-
-    def readReservoirLevel(self):
-
-        """
-        ========================================================================
-        READRESERVOIRLEVEL
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading amount of insulin left in pump reservoir..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 115)
-
-        # Make pump request
-        self.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode(self, "readReservoirLevel")
-
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Format time
-        now = lib.formatTime(now)
-
-        # Add current reservoir level to pump report
-        self.reporter.addReservoirLevel(now, self.reservoir)
-
-        # Give user info
-        print "Amount of insulin in reservoir: " + str(self.reservoir) + " U"
-
-
-
-    def readStatus(self):
-
-        """
-        ========================================================================
-        READSTATUS
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading pump status..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 206)
-
-        # Make pump request
-        self.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode(self, "readStatus")
-
-        # Give user info
-        print "Pump status: " + str(self.status)
-
-
-
-    def verifyStatus(self):
-
-        """
-        ========================================================================
-        VERIFYSTATUS
-        ========================================================================
-
-        Overview: Verify pump's status before enabling any desired course of
-                  action (e.g. bolusing or enacting a TBR).
-        """
-
-        # Read pump status
-        self.readStatus()
-
-        # Check if pump is ready to take action
-        if not self.status["Normal"]:
-
-            # Give user info
-            print "There seems to be a problem with the pump. Try again later."
-
-            return False
-
-        elif self.status["Bolusing"]:
-
-            # Give user info
-            print "Pump is bolusing. Try again later."
-
-            return False
-
-        elif self.status["Suspended"]:
-
-            # Give user info
-            print "Pump is suspended, but will be asked to resume activity."
-
-            # Resume pump activity
-            self.resume()
-
-        # Give user info
-        print "Pump status allows desired course of action. Proceeding..."
-
-        return True
-
-
-
-    def readSettings(self):
-
-        """
-        ========================================================================
-        READSETTINGS
-        ========================================================================
-        """
-
-        # Define infos for pump request
-        info = "Reading pump settings..."
-
-        # Define pump request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 192)
-
-        # Make pump request
-        self.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode(self, "readSettings")
-
-        # Save pump settings to profile report
-        self.reporter.storeSettings(self.settings)
-
-        # Give user info
-        print "Pump settings: " + str(self.settings)
-
-
-
-    def verifySettings(self, bolus = None, rate = None, units = None):
-
-        """
-        ========================================================================
-        VERIFYSETTINGS
-        ========================================================================
-        """
-
-        # Read pump settings
-        self.readSettings()
-
-        # Check if pump is ready to take action
-        if bolus is not None:
-
-            if bolus > self.settings["Max Bolus"]:
-
-                # Give user info
-                print ("Pump cannot issue bolus since it is bigger than its " +
-                       "maximal allowed bolus. Update the latter before " +
-                       "trying again." )
-
-                return False
-
-        elif (rate is not None) and (units is not None):
-
-            if ((units == "U/h") and (rate > self.settings["Max Basal"]) or
-                (units == "%") and (rate > 200)):
-
-                # Give user info
-                print ("Pump cannot issue temporary basal rate since it is " +
-                       "bigger than its maximal basal rate. Update the " +
-                       "latter before trying again.") 
-
-                return False
-
-        # Give user info
-        print "Pump settings allow desired course of action. Proceeding..."
-
-        return True
 
 
 
@@ -608,16 +192,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading pump's BG units..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 137)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Decode pump's response
@@ -636,16 +220,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading pump's carb units..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 136)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Decode pump's response
@@ -664,16 +248,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading pump daily totals..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 121)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Initialize daily totals dictionary
@@ -699,16 +283,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading blood glucose targets from pump..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 159)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Initialize blood glucose targets, times, and units
@@ -747,16 +331,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading insulin sensitivity factors from pump..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 139)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Initialize insulin sensitivity factors, times, and units
@@ -793,16 +377,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading carb sensitivity factors from pump..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 138)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Initialize carb sensitivity factors, times, and units
@@ -839,16 +423,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading current pump history page number..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 157)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Decode pump's response
@@ -867,7 +451,7 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading pump history..."
 
         # Based on input regarding number of pages to read
@@ -892,14 +476,14 @@ class Pump:
             # Give user info
             print "Reading pump history page: " + str(i)
 
-            # Define pump request
+            # Define request
             self.requester.define(info = info,
                                   attempts = 2,
                                   size = 2,
                                   code = 128,
                                   parameters = [i])
 
-            # Make pump request
+            # Make request
             self.requester.make()
 
             # Extend known history of pump
@@ -1011,16 +595,16 @@ class Pump:
         ========================================================================
         """
 
-        # Define infos for pump request
+        # Define request infos
         info = "Reading current temporary basal..."
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               attempts = 2,
                               size = 1,
                               code = 152)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Define current temporary basal dictionary
@@ -1059,12 +643,12 @@ class Pump:
         bolusDeliveryTime = (self.bolusDeliveryRate * bolus +
                              self.bolusExtraTime)
 
-        # Define infos for pump request
+        # Define request infos
         info = "Sending bolus: " + str(bolus) + " U"
         sleepReason = ("Waiting for bolus to be delivered... (" +
                        str(bolusDeliveryTime) + "s)")
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               sleep = bolusDeliveryTime,
                               sleepReason = sleepReason,
@@ -1073,7 +657,7 @@ class Pump:
                               code = 66,
                               parameters = [int(bolus / self.bolusStroke)])
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Read issued bolus in order to store it to the reports
@@ -1100,12 +684,12 @@ class Pump:
         elif units == "%":
             parameters = [1]
 
-        # Define infos for pump request
+        # Define request infos
         info = "Setting temporary basal units: " + units
         sleepReason = ("Waiting for temporary basal rate units to be set... (" +
                        str(self.executionTime) + "s)")
 
-        # Define pump request
+        # Define request
         self.requester.define(info = info,
                               sleep = self.executionTime,
                               sleepReason = sleepReason,
@@ -1114,7 +698,7 @@ class Pump:
                               code = 104,
                               parameters = parameters)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
 
@@ -1228,13 +812,13 @@ class Pump:
 
 
 
-        # Define infos for pump request
+        # Define request infos
         info = ("Setting temporary basal: " + str(rate) + " " + units + " (" +
                 str(duration) + "m)")
         sleepReason = ("Waiting for temporary basal rate to be set... (" +
                        str(self.executionTime) + "s)")
 
-        # Define pump request
+        # Define request
         self.requester.define(
             info = info,
             sleep = self.executionTime,
@@ -1250,7 +834,7 @@ class Pump:
         # Format time at which TBR is requested
         now = lib.formatTime(now)
 
-        # Make pump request
+        # Make request
         self.requester.make()
 
         # Give user info
@@ -1307,6 +891,693 @@ class Pump:
 
 
 
+
+
+
+
+
+
+class Power:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time a link to its corresponding device
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def verify(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump's report
+        self.device.reporter.load("pump.json")
+
+        # Read last time pump's radio transmitter was power up
+        then = self.device.reporter.getEntry([], "Power Up")
+
+        # Format time
+        then = lib.formatTime(then)
+
+        # Define max time allowed between RF communication sessions
+        session = datetime.timedelta(minutes = self.device.sessionTime)
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Compute time since last power up
+        delta = now - then
+
+        # Power up pump if necessary
+        if delta > session:
+
+            # Give user info
+            print "Pump's radio transmitter will be turned on..."
+
+            # Power up pump's RF transmitter
+            self.do()
+
+        else:
+
+            # Give user info
+            print ("Pump's radio transmitter is already on. Remaining time: " +
+                   str(self.device.sessionTime - delta.seconds / 60) + " m")
+
+
+
+    def do(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Devine infos for request
+        info = ("Powering pump radio transmitter for: " +
+                       str(self.device.sessionTime) + "m")
+        sleepReason = ("Sleeping until pump radio transmitter is " +
+                              "powered up... (" + str(self.device.powerTime) +
+                              "s)")
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     sleep = self.device.powerTime,
+                                     sleepReason = sleepReason,
+                                     power = 85,
+                                     attempts = 0,
+                                     size = 0,
+                                     code = 93,
+                                     parameters = [1, self.device.sessionTime])
+
+        # Make request
+        self.device.requester.make()
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Convert time to string
+        now = lib.formatTime(now)
+
+        # Save power up time
+        self.device.reporter.storePowerTime(now)
+
+
+
+class Time:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time an instance to the device it should be linked to
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading pump time..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 112)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readTime")
+
+        # Give user info
+        print "Pump time: " + self.value
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
+class Model:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time an instance to the device it should be linked to
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading pump model..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 141)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readModel")
+
+        # Store pump model
+        self.device.reporter.storeModel(self.value)
+
+        # Give user info
+        print "Pump model: " + str(self.value)
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
+class Firmware:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time an instance to the device it should be linked to
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading pump firmware version..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 116)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readFirmware")
+
+        # Store pump model
+        self.device.reporter.storeFirmware(self.value)
+
+        # Give user info
+        print "Pump firmware version: " + str(self.value)
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
+class Battery:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time an instance to the device it should be linked to
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading battery level..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 114)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readBatteryLevel")
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Format time
+        now = lib.formatTime(now)
+
+        # Add current reservoir level to pump report
+        self.device.reporter.addBatteryLevel(now, [self.level, self.voltage])
+
+        # Give user info
+        print ("Pump's battery level: " +
+               str([self.level, str(self.voltage) + " V"]))
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return [self.level, self.voltage]
+
+
+
+class Reservoir:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time an instance to the device it should be linked to
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading amount of insulin left in pump reservoir..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 115)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readReservoirLevel")
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Format time
+        now = lib.formatTime(now)
+
+        # Add current reservoir level to pump report
+        self.device.reporter.addReservoirLevel(now, self.value)
+
+        # Give user info
+        print "Amount of insulin in reservoir: " + str(self.value) + " U"
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
+class Status:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time an instance to the device it should be linked to
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def verify(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Overview: Verify pump's status before enabling any desired course of
+                  action (e.g. bolusing or enacting a TBR).
+        """
+
+        # Read pump status
+        self.read()
+
+        # Check if pump is ready to take action
+        if not self.value["Normal"]:
+
+            # Give user info
+            print "There seems to be a problem with the pump. Try again later."
+
+            return False
+
+        elif self.value["Bolusing"]:
+
+            # Give user info
+            print "Pump is bolusing. Try again later."
+
+            return False
+
+        elif self.value["Suspended"]:
+
+            # Give user info
+            print "Pump is suspended, but will be asked to resume activity."
+
+            # Resume pump activity
+            self.resume()
+
+        # Give user info
+        print "Pump status allows desired course of action. Proceeding..."
+
+        return True
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading pump status..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 206)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readStatus")
+
+        # Give user info
+        print "Pump status: " + str(self.value)
+
+
+
+    def suspend(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SUSPEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Suspending pump activity..."
+        sleepReason = ("Waiting for pump activity to be suspended... (" +
+                       str(self.device.executionTime) + "s)")
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     sleep = self.device.executionTime,
+                                     sleepReason = sleepReason,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 77,
+                                     parameters = [1])
+
+        # Make request
+        self.device.requester.make()
+
+
+
+    def resume(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESUME
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Resuming pump activity..."
+        sleepReason = ("Waiting for pump activity to be resumed... (" +
+                       str(self.device.executionTime) + "s)")
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     sleep = self.device.executionTime,
+                                     sleepReason = sleepReason,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 77,
+                                     parameters = [0])
+
+        # Make request
+        self.device.requester.make()
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
+class Settings:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give time an instance to the device it should be linked to
+        self.device = device
+
+        # Give time a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def verify(self, bolus = None, rate = None, units = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read pump settings
+        self.read()
+
+        # Check if pump is ready to take action
+        if bolus is not None:
+
+            if bolus > self.settings["Max Bolus"]:
+
+                # Give user info
+                print ("Pump cannot issue bolus since it is bigger than its " +
+                       "maximal allowed bolus. Update the latter before " +
+                       "trying again." )
+
+                return False
+
+        elif (rate is not None) and (units is not None):
+
+            if ((units == "U/h") and (rate > self.settings["Max Basal"]) or
+                (units == "%") and (rate > 200)):
+
+                # Give user info
+                print ("Pump cannot issue temporary basal rate since it is " +
+                       "bigger than its maximal basal rate. Update the " +
+                       "latter before trying again.") 
+
+                return False
+
+        # Give user info
+        print "Pump settings allow desired course of action. Proceeding..."
+
+        return True
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading pump settings..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 192)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readSettings")
+
+        # Save pump settings to profile report
+        self.device.reporter.storeSettings(self.value)
+
+        # Give user info
+        print "Pump settings: " + str(self.value)
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
 def main():
 
     """
@@ -1322,25 +1593,29 @@ def main():
     pump.start()
 
     # Read bolus history of pump
-    #pump.readTime()
+    pump.time.read()
 
     # Read pump model
-    #pump.readModel()
+    pump.model.read()
 
     # Read pump firmware version
-    #pump.readFirmware()
+    pump.firmware.read()
 
     # Read pump battery level
-    #pump.readBatteryLevel()
+    pump.battery.read()
 
     # Read remaining amount of insulin in pump
-    #pump.readReservoirLevel()
+    pump.reservoir.read()
 
     # Read pump status
-    #pump.readStatus()
+    #pump.status.read()
+    pump.status.verify()
+    pump.status.suspend()
+    pump.status.resume()
 
     # Read pump settings
-    #pump.readSettings()
+    #pump.settings.read()
+    pump.settings.verify()
 
     # Read daily totals on pump
     #pump.readDailyTotals()

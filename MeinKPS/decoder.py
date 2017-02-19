@@ -38,7 +38,24 @@ class Decoder:
 
 
 
-    def decode(self, device, command):
+    def __init__(self, device, part):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give the decoder a device from which to read bytes
+        self.device = device
+
+        # Give the decoder a part of the device to which the previously decoded
+        # information should be stored
+        self.part = part
+
+
+
+    def decode(self, command):
 
         """
         ========================================================================
@@ -46,25 +63,34 @@ class Decoder:
         ========================================================================
         """
 
+        # Get device's response
+        response = self.device.requester.response
+        responseHex = self.device.requester.responseHex
+        responseChr = self.device.requester.responseChr
+
+        # Get device's data
+        data = self.device.requester.data
+
+
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         # READINFOS                                                            #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         if command == "readInfos":
 
-            # Decode stick infos
-            ack = device.requester.response[0]
-            status = device.requester.responseChr[1]
-            frequency = device.frequencies[device.requester.response[8]]
-            description = "".join(device.requester.responseChr[9:19])
-            version = (1.00 * device.requester.response[19] +
-                       0.01 * device.requester.response[20])
+            # Decode infos
+            ACK = response[0]
+            status = responseChr[1]
+            description = "".join(responseChr[9:19])
+            frequency = str(self.device.frequencies[response[8]]) + " MHz"
+            version = 1.00 * response[19] + 0.01 * response[20]
 
             # Store infos
-            device.infos["ACK"] = ack
-            device.infos["Status"] = status
-            device.infos["Description"] = description
-            device.infos["Version"] = version
-            device.infos["Frequency"] = str(frequency) + " MHz"
+            self.device.infos["ACK"] = ACK
+            self.device.infos["Status"] = status
+            self.device.infos["Description"] = description
+            self.device.infos["Version"] = version
+            self.device.infos["Frequency"] = frequency
 
 
 
@@ -73,8 +99,8 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readSignalStrength":
 
-            # Decode strength of signal received by stick
-            device.signal = device.requester.response[3]
+            # Decode strength of signal
+            self.device.signal = response[3]
 
 
 
@@ -85,26 +111,26 @@ class Decoder:
 
             # Define stick's interface for which state infos will be decoded
             if command == "readUSBState":
-                interface = "USB"
+                i = "USB"
 
             elif command == "readRadioState":
-                interface = "Radio"
+                i = "Radio"
 
-            # Decode stick infos
-            errorCRC = device.requester.response[3]
-            errorSEQ = device.requester.response[4]
-            errorNAK = device.requester.response[5]
-            errorTimeout = device.requester.response[6]
-            packetsReceived = lib.convertBytes(device.requester.response[7:11])
-            packetsSent = lib.convertBytes(device.requester.response[11:15])
+            # Decode state
+            errorCRC = response[3]
+            errorSEQ = response[4]
+            errorNAK = response[5]
+            errorTimeout = response[6]
+            packetsReceived = lib.convertBytes(response[7:11])
+            packetsSent = lib.convertBytes(response[11:15])
 
-            # Store infos
-            device.state[interface]["Errors"]["CRC"] = errorCRC
-            device.state[interface]["Errors"]["SEQ"] = errorSEQ
-            device.state[interface]["Errors"]["NAK"] = errorNAK
-            device.state[interface]["Errors"]["Timeout"] = errorTimeout
-            device.state[interface]["Packets"]["Received"] = packetsReceived
-            device.state[interface]["Packets"]["Sent"] = packetsSent
+            # Store state
+            self.device.state[i]["Errors"]["CRC"] = errorCRC
+            self.device.state[i]["Errors"]["SEQ"] = errorSEQ
+            self.device.state[i]["Errors"]["NAK"] = errorNAK
+            self.device.state[i]["Errors"]["Timeout"] = errorTimeout
+            self.device.state[i]["Packets"]["Received"] = packetsReceived
+            self.device.state[i]["Packets"]["Sent"] = packetsSent
 
 
 
@@ -114,18 +140,18 @@ class Decoder:
         elif command == "readTime":
 
             # Decode pump time
-            second = device.requester.data[2]
-            minute = device.requester.data[1]
-            hour   = device.requester.data[0]
-            day    = device.requester.data[6]
-            month  = device.requester.data[5]
-            year   = lib.bangInt(device.requester.data[3:5])
+            second = data[2]
+            minute = data[1]
+            hour   = data[0]
+            day    = data[6]
+            month  = data[5]
+            year   = lib.bangInt(data[3:5])
 
             # Generate time object
             time = datetime.datetime(year, month, day, hour, minute, second)
 
             # Store formatted time
-            device.time = lib.formatTime(time)
+            self.part.value = lib.formatTime(time)
 
 
 
@@ -135,8 +161,7 @@ class Decoder:
         elif command == "readModel":
 
             # Decode pump model
-            device.model = int("".join(
-                [chr(x) for x in device.requester.data[1:4]]))
+            self.part.value = int("".join([chr(x) for x in data[1:4]]))
 
 
 
@@ -146,8 +171,8 @@ class Decoder:
         elif command == "readFirmware":
 
             # Decode pump firmware
-            device.firmware = ("".join(device.requester.responseChr[17:21]) +
-                         " " + "".join(device.requester.responseChr[21:24]))
+            self.part.value = ("".join(responseChr[17:21]) +
+                               " " + "".join(responseChr[21:24]))
 
 
 
@@ -157,17 +182,16 @@ class Decoder:
         elif command == "readBatteryLevel":
 
             # Decode battery level
-            level = device.requester.data[0]
+            level = data[0]
 
             if level == 0:
-                device.batteryLevel = "Normal"
+                self.part.level = "Normal"
             elif level == 1:
-                device.batteryLevel = "Low"
+                self.part.level = "Low"
 
             # Decode battery voltage
-            device.batteryVoltage = round(
-                lib.bangInt([device.requester.data[1],
-                device.requester.data[2]]) / 100.0, 1)
+            self.part.voltage = round(lib.bangInt([data[1], data[2]]) / 100.0,
+                                      1)
 
 
 
@@ -177,11 +201,8 @@ class Decoder:
         elif command == "readReservoirLevel":
 
             # Decode remaining amount of insulin
-            device.reservoir = (lib.bangInt(device.requester.data[0:2]) *
-                                device.bolusStroke)
-
-            # Round amount
-            device.reservoir = round(device.reservoir, 1)
+            self.part.value = round(lib.bangInt(data[0:2]) *
+                                    self.device.bolusStroke, 1)
 
 
 
@@ -191,9 +212,9 @@ class Decoder:
         elif command == "readStatus":
 
             # Extract pump status from received data
-            device.status = {"Normal" : device.requester.data[0] == 3,
-                           "Bolusing" : device.requester.data[1] == 1,
-                           "Suspended" : device.requester.data[2] == 1}
+            self.part.value = {"Normal" : data[0] == 3,
+                               "Bolusing" : data[1] == 1,
+                               "Suspended" : data[2] == 1}
 
 
 
@@ -203,11 +224,10 @@ class Decoder:
         elif command == "readSettings":
 
             # Decode pump settings
-            device.settings = {
-                "IAC": device.requester.data[17],
-                "Max Bolus": device.requester.data[5] * device.bolusStroke,
-                "Max Basal": (lib.bangInt(device.requester.data[6:8]) *
-                              device.basalStroke / 2.0)}
+            self.part.value = {"IAC": data[17],
+                               "Max Bolus": data[5] * self.device.bolusStroke,
+                               "Max Basal": (lib.bangInt(data[6:8]) *
+                                             self.device.basalStroke / 2.0)}
 
 
 
@@ -217,13 +237,13 @@ class Decoder:
         elif command == "readBGU":
 
             # Decode BG units set on pump
-            units = device.requester.data[0]
+            units = data[0]
 
             if units == 1:
-                device.BGU = "mg/dL"
+                self.part.value = "mg/dL"
 
             elif units == 2:
-                device.BGU = "mmol/L"
+                self.part.value = "mmol/L"
 
 
 
@@ -233,13 +253,13 @@ class Decoder:
         elif command == "readCU":
 
             # Decode carb units set on pump
-            units = device.requester.data[0]
+            units = data[0]
             
             if units == 1:
-                device.BGU = "g"
+                self.part.value = "g"
 
             elif units == 2:
-                device.BGU = "exchanges"
+                self.part.value = "exchanges"
 
 
 
@@ -248,15 +268,13 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readDailyTotals":
 
-            # Decode daily totals of today
-            device.dailyTotals["Today"] = round(
-                lib.bangInt(device.requester.data[0:2]) * device.bolusStroke, 2)
+            # Decode daily totals
+            self.part.value = {"Today": round(lib.bangInt(data[0:2]) *
+                                              self.device.bolusStroke, 2),
+                               "Yesterday": round(lib.bangInt(data[2:4]) *
+                                                  self.device.bolusStroke, 2)}
 
-            # Decode daily totals of yesterday
-            device.dailyTotals["Yesterday"] = round(
-                lib.bangInt(device.requester.data[2:4]) * device.bolusStroke, 2)
-
-
+################################################################################
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         # READBGTARGETS                                                        #
@@ -264,17 +282,17 @@ class Decoder:
         elif command == "readBGTargets":
 
             # Extract carb sensitivity units
-            units = device.requester.data[0]
+            units = data[0]
 
             # Decode units
             if units == 1:
-                device.BGU = "mg/dL"
+                self.device.BGU = "mg/dL"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                device.BGU = "mmol/L"
+                self.device.BGU = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -294,7 +312,7 @@ class Decoder:
                 b = a + n
 
                 # Get current target entry
-                entry = device.requester.data[a:b]
+                entry = data[a:b]
 
                 # Exit condition: no more targets stored
                 if not sum(entry):
@@ -319,8 +337,8 @@ class Decoder:
 
             # Rearrange targets to have starting times instead of ending times
             for i in range(len(targets)):
-                device.BGTargets.append(targets[i])
-                device.BGTargetsTimes.append(times[i - 1])
+                self.device.BGTargets.append(targets[i])
+                self.device.BGTargetsTimes.append(times[i - 1])
 
 
 
@@ -330,19 +348,19 @@ class Decoder:
         elif command == "readISF":
 
             # Extract insulin sensitivity units
-            units = device.requester.data[0]
+            units = data[0]
 
             # Decode units
             if units == 1:
-                device.ISU = "mg/dL/U"
-                device.BGU = "mg/dL"
+                self.device.ISU = "mg/dL/U"
+                self.device.BGU = "mg/dL"
                 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                device.ISU = "mmol/L/U"
-                device.BGU = "mmol/L"
+                self.device.ISU = "mmol/L/U"
+                self.device.BGU = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -362,7 +380,7 @@ class Decoder:
                 b = a + n
 
                 # Get current factor entry
-                entry = device.requester.data[a:b]
+                entry = data[a:b]
 
                 # Exit condition: no more factors stored
                 if not sum(entry):
@@ -387,8 +405,8 @@ class Decoder:
 
             # Rearrange factors to have starting times instead of ending times
             for i in range(len(factors)):
-                device.ISF.append(factors[i])
-                device.ISFTimes.append(times[i - 1])
+                self.device.ISF.append(factors[i])
+                self.device.ISFTimes.append(times[i - 1])
 
 
 
@@ -398,19 +416,19 @@ class Decoder:
         elif command == "readCSF":
 
             # Extract carb sensitivity units
-            units = device.requester.data[0]
+            units = data[0]
 
             # Decode units
             if units == 1:
-                device.CSU = "g/U"
-                device.CU = "g"
+                self.device.CSU = "g/U"
+                self.device.CU = "g"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                device.CSU = "exchanges/U"
-                device.CU = "exchanges"
+                self.device.CSU = "exchanges/U"
+                self.device.CU = "exchanges"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -430,7 +448,7 @@ class Decoder:
                 b = a + n
 
                 # Get current factor entry
-                entry = device.requester.data[a:b]
+                entry = data[a:b]
 
                 # Exit condition: no more factors stored
                 if not sum(entry):
@@ -455,8 +473,8 @@ class Decoder:
 
             # Rearrange factors to have starting times instead of ending times
             for i in range(len(factors)):
-                device.CSF.append(factors[i])
-                device.CSFTimes.append(times[i - 1])
+                self.device.CSF.append(factors[i])
+                self.device.CSFTimes.append(times[i - 1])
 
 
 
@@ -466,7 +484,7 @@ class Decoder:
         elif command == "readNumberHistoryPages":
 
             # Decode and store number of history pages
-            device.nHistoryPages = device.requester.data[3] + 1
+            self.device.nHistoryPages = data[3] + 1
 
 
 
@@ -475,27 +493,27 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readTBR":
 
-            units = device.requester.data[0]
+            units = data[0]
 
             # Extract TBR [U/h]
             if units == 0:
 
                 # Decode TBR characteristics
-                device.TBR["Units"] = "U/h"
-                device.TBR["Value"] = round(
-                    lib.bangInt(device.requester.data[2:4]) *
-                    device.basalStroke / 2.0, 2)
+                self.device.TBR["Units"] = "U/h"
+                self.device.TBR["Value"] = round(
+                    lib.bangInt(data[2:4]) *
+                    self.device.basalStroke / 2.0, 2)
 
             # Extract TBR [%]
             elif units == 1:
 
                 # Decode TBR characteristics
-                device.TBR["Units"] = "%"
-                device.TBR["Value"] = round(device.requester.data[1], 2)
+                self.device.TBR["Units"] = "%"
+                self.device.TBR["Value"] = round(data[1], 2)
 
             # Decode TBR remaining time
-            device.TBR["Duration"] = round(
-                lib.bangInt(device.requester.data[4:6]), 0)
+            self.device.TBR["Duration"] = round(
+                lib.bangInt(data[4:6]), 0)
 
 
 
@@ -527,31 +545,31 @@ class Decoder:
                       161: ["mmol/L", "exchanges", True, False]}
 
         # Search history for specified record
-        for i in range(len(device.history)):
+        for i in range(len(self.device.history)):
 
             # Try and find bolus wizard records
             try:
 
                 # Look for code, with which every record should start
-                if device.history[i] == code:
+                if self.device.history[i] == code:
 
                     # Define a record running variable
                     x = i
             
                     # Assign record head
-                    head = device.history[x:x + headSize]
+                    head = self.device.history[x:x + headSize]
 
                     # Update running variable
                     x += headSize
 
                     # Assign record date
-                    date = device.history[x:x + dateSize]
+                    date = self.device.history[x:x + dateSize]
 
                     # Update running variable
                     x += dateSize
 
                     # Assign record body
-                    body = device.history[x:x + bodySize]
+                    body = self.device.history[x:x + bodySize]
 
                     # Decode time using date bytes
                     time = lib.decodeTime(date)
@@ -617,8 +635,8 @@ class Decoder:
                     # Add carbs and times at which they were consumed to their
                     # respective vectors only if they have a given value!
                     if C:
-                        device.carbs.append([C, CU])
-                        device.carbTimes.append(time)
+                        self.device.carbs.append([C, CU])
+                        self.device.carbTimes.append(time)
 
                     # Give user output
                     #print "Time: " + time
@@ -646,21 +664,22 @@ class Decoder:
         now = datetime.datetime.now()
 
         # Search history for specified record
-        for i in range(len(device.history)):
+        for i in range(len(self.device.history)):
 
             # Try and find bolus records
             try:
 
                 # Define bolus criteria
-                if ((device.history[i] == code) and
-                    (device.history[i + 1] == device.history[i + 2]) and
-                    (device.history[i + 3] == 0)):
+                if ((self.device.history[i] == code) and
+                    (self.device.history[i + 1] == self.device.history[i + 2]) and
+                    (self.device.history[i + 3] == 0)):
             
                     # Extract bolus from pump history
-                    bolus = round(device.history[i + 1] * device.bolusStroke, 1)
+                    bolus = round(self.device.history[i + 1] *
+                                  self.device.bolusStroke, 1)
 
                     # Extract time at which bolus was delivered
-                    time = lib.decodeTime(device.history[i + 4 : i + 9])
+                    time = lib.decodeTime(self.device.history[i + 4 : i + 9])
 
                     # Check for bolus year
                     if abs(time[0] - now.year) > 1:
@@ -679,8 +698,8 @@ class Decoder:
                     #print "Bolus read: " + str(bolus) + "U (" + time + ")"
                     
                     # Store bolus
-                    device.boluses.append(bolus)
-                    device.bolusTimes.append(time)
+                    self.device.boluses.append(bolus)
+                    self.device.bolusTimes.append(time)
 
             except:
                 pass
