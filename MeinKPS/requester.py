@@ -32,6 +32,7 @@ import sys
 import time
 import datetime
 import json
+import math
 
 
 
@@ -227,8 +228,12 @@ class Requester:
             # Update reading attempt variable
             n += 1
 
-            # Give user info
-            print "Reading attempt: " + str(n) + "/-"
+            # Give user info every certain number of run
+            x = n / 15.0
+
+            if math.floor(x) == x:
+
+                print "Reading attempt: " + str(n) + "/-"
 
             # Read raw request response from device
             self.rawResponse = self.handle.read(nBytes)

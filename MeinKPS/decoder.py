@@ -74,8 +74,8 @@ class Decoder:
 
 
 
-        # Decode readFirmwareVersion command
-        elif command == "readFirmwareVersion":
+        # Decode readFirmware command
+        elif command == "readFirmware":
 
             # Extract pump firmware from received data
             device.firmware = ("".join(device.requester.responseChr[17:21]) +
@@ -127,10 +127,10 @@ class Decoder:
 
             # Extract pump settings from received data
             device.settings = {
+                "IAC": device.requester.data[17],
                 "Max Bolus": device.requester.data[5] * device.bolusStroke,
                 "Max Basal": (lib.bangInt(device.requester.data[6:8]) *
-                              device.basalStroke / 2.0),
-                "IAC": device.requester.data[17]}
+                              device.basalStroke / 2.0)}
 
 
 
@@ -140,7 +140,6 @@ class Decoder:
             # Decode BG units set on pump
             units = device.requester.data[0]
 
-            
             if units == 1:
                 device.BGU = "mg/dL"
 
@@ -189,7 +188,7 @@ class Decoder:
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
-            else:
+            elif units == 2:
                 device.BGU = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
@@ -213,7 +212,7 @@ class Decoder:
                 entry = device.requester.data[a:b]
 
                 # Exit condition: no more targets stored
-                if sum(entry) == 0:
+                if not sum(entry):
                     break
 
                 else:
@@ -240,8 +239,8 @@ class Decoder:
 
 
 
-        # Decode readInsulinSensitivityFactors command
-        elif command == "readInsulinSensitivityFactors":
+        # Decode readISF command
+        elif command == "readISF":
 
             # Extract insulin sensitivity units
             units = device.requester.data[0]
@@ -249,12 +248,14 @@ class Decoder:
             # Decode units
             if units == 1:
                 device.ISU = "mg/dL/U"
+                device.BGU = "mg/dL"
                 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
-            else:
+            elif units == 2:
                 device.ISU = "mmol/L/U"
+                device.BGU = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -277,8 +278,9 @@ class Decoder:
                 entry = device.requester.data[a:b]
 
                 # Exit condition: no more factors stored
-                if sum(entry) == 0:
+                if not sum(entry):
                     break
+
                 else:
                     # Decode entry
                     factor = entry[0] / 10 ** m
@@ -303,8 +305,8 @@ class Decoder:
 
 
 
-        # Decode readCarbSensitivityFactors command
-        elif command == "readCarbSensitivityFactors":
+        # Decode readCSF command
+        elif command == "readCSF":
 
             # Extract carb sensitivity units
             units = device.requester.data[0]
@@ -312,12 +314,14 @@ class Decoder:
             # Decode units
             if units == 1:
                 device.CSU = "g/U"
+                device.CU = "g"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
-            else:
+            elif units == 2:
                 device.CSU = "exchanges/U"
+                device.CU = "exchanges"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -340,8 +344,9 @@ class Decoder:
                 entry = device.requester.data[a:b]
 
                 # Exit condition: no more factors stored
-                if sum(entry) == 0:
+                if not sum(entry):
                     break
+
                 else:
                     # Decode entry
                     factor = entry[0] / 10 ** m
@@ -480,13 +485,13 @@ class Decoder:
                     if BGU == "mmol/L":
                         mBGU = 1.0
 
-                    else:
+                    elif BGU == "mg/dL":
                         mBGU = 0
 
                     if CU == "exchanges":
                         mCU = 1.0
 
-                    else:
+                    elif CU == "g":
                         mCU = 0
 
                     # Define number of bytes to add for larger BGs and Cs
@@ -496,7 +501,7 @@ class Decoder:
                         if BGU == "mmol/L":
                             mBG = 256
 
-                        else:
+                        elif BGU == "mg/dL":
                             mBG = 512
 
                     else:
@@ -554,8 +559,8 @@ class Decoder:
             try:
 
                 # Define bolus criteria
-                if ((device.history[i] == code) &
-                    (device.history[i + 1] == device.history[i + 2]) &
+                if ((device.history[i] == code) and
+                    (device.history[i + 1] == device.history[i + 2]) and
                     (device.history[i + 3] == 0)):
             
                     # Extract bolus from pump history
@@ -578,8 +583,7 @@ class Decoder:
                     time = lib.formatTime(time)
 
                     # Give user info
-                    #print ("Bolus read: " + str(bolus) +
-                    #       "U (" + str(time) + ")")
+                    #print "Bolus read: " + str(bolus) + "U (" + time + ")"
                     
                     # Store bolus
                     device.boluses.append(bolus)

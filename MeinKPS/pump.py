@@ -37,6 +37,7 @@
 #       - Add "change battery" suggestion when no more response received from
 #         stick
 #       - Reduce session time if looping every 5 minutes?
+#       - Deal with manually set TBR. Read end of TBR?
 
 
 
@@ -133,17 +134,20 @@ class Pump:
         ========================================================================
         """
 
-        # Get current time
-        now = datetime.datetime.now()
+        # Load pump's report
+        self.reporter.load("pump.json")
 
         # Read last time pump's radio transmitter was power up
-        then = self.reporter.getEntry("pump.json", [], "Power Up")
+        then = self.reporter.getEntry([], "Power Up")
 
         # Format time
         then = lib.formatTime(then)
 
         # Define max time allowed between RF communication sessions
         session = datetime.timedelta(minutes = self.sessionTime)
+
+        # Get current time
+        now = datetime.datetime.now()
 
         # Compute time since last power up
         delta = now - then
@@ -193,8 +197,14 @@ class Pump:
         # Make pump request
         self.requester.make()
 
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Convert time to string
+        now = lib.formatTime(now)
+
         # Save power up time
-        self.reporter.storePowerTime()
+        self.reporter.storePowerTime(now)
 
 
 
@@ -330,16 +340,19 @@ class Pump:
         # Decode pump's response
         self.decoder.decode(self, "readModel")
 
+        # Store pump model
+        self.reporter.storeModel(self.model)
+
         # Give user info
         print "Pump model: " + str(self.model)
 
 
 
-    def readFirmwareVersion(self):
+    def readFirmware(self):
 
         """
         ========================================================================
-        READFIRMWAREVERSION
+        READFIRMWARE
         ========================================================================
         """
 
@@ -356,7 +369,10 @@ class Pump:
         self.requester.make()
 
         # Decode pump's response
-        self.decoder.decode(self, "readFirmwareVersion")
+        self.decoder.decode(self, "readFirmware")
+
+        # Store pump firmware
+        self.reporter.storeFirmware(self.firmware)
 
         # Give user info
         print "Pump firmware version: " + self.firmware
@@ -398,7 +414,7 @@ class Pump:
 
         # Give user info
         print "Pump's battery level: " + str([self.batteryLevel,
-                                             str(self.batteryVoltage) + " V"])
+                                              str(self.batteryVoltage) + " V"])
 
 
 
@@ -473,27 +489,30 @@ class Pump:
         ========================================================================
         VERIFYSTATUS
         ========================================================================
+
+        Overview: Verify pump's status before enabling any desired course of
+                  action (e.g. bolusing or enacting a TBR).
         """
 
         # Read pump status
         self.readStatus()
 
         # Check if pump is ready to take action
-        if self.status["Normal"] == False:
+        if not self.status["Normal"]:
 
             # Give user info
             print "There seems to be a problem with the pump. Try again later."
 
             return False
 
-        elif self.status["Bolusing"] == True:
+        elif self.status["Bolusing"]:
 
             # Give user info
             print "Pump is bolusing. Try again later."
 
             return False
 
-        elif self.status["Suspended"] == True:
+        elif self.status["Suspended"]:
 
             # Give user info
             print "Pump is suspended, but will be asked to resume activity."
@@ -501,10 +520,10 @@ class Pump:
             # Resume pump activity
             self.resume()
 
-            # Give user info
-            print "Pump status allows desired course of action."
+        # Give user info
+        print "Pump status allows desired course of action. Proceeding..."
 
-            return True
+        return True
 
 
 
@@ -551,7 +570,7 @@ class Pump:
         self.readSettings()
 
         # Check if pump is ready to take action
-        if bolus != None:
+        if bolus is not None:
 
             if bolus > self.settings["Max Bolus"]:
 
@@ -562,10 +581,10 @@ class Pump:
 
                 return False
 
-        elif (rate != None) & (units != None):
+        elif (rate is not None) and (units is not None):
 
-            if ((units == "U/h") & (rate > self.settings["Max Basal"]) |
-                (units == "%") & (rate > 200)):
+            if ((units == "U/h") and (rate > self.settings["Max Basal"]) or
+                (units == "%") and (rate > 200)):
 
                 # Give user info
                 print ("Pump cannot issue temporary basal rate since it is " +
@@ -574,13 +593,10 @@ class Pump:
 
                 return False
 
-        # Pump settings allow desired action
-        else:
+        # Give user info
+        print "Pump settings allow desired course of action. Proceeding..."
 
-            # Give user info
-            print "Pump settings allow desired course of action."
-
-            return True
+        return True
 
 
 
@@ -713,18 +729,21 @@ class Pump:
             print (self.BGTargetsTimes[i] + " - " +
                    str(self.BGTargets[i]) + " " + str(self.BGU))
 
-        # Save blood glucose targets to profile report
-        self.reporter.storeBloodGlucoseTargets(self.BGTargetsTimes,
-                                              self.BGTargets,
-                                              self.BGU)
+        # Store BG targets to profile report
+        self.reporter.storeBGTargets(self.BGTargetsTimes,
+                                     self.BGTargets,
+                                     self.BGU)
+
+        # Store BG units to pump report
+        self.reporter.storeBGU(self.BGU)
 
 
 
-    def readInsulinSensitivityFactors(self):
+    def readISF(self):
 
         """
         ========================================================================
-        READINSULINSENSITIVITYFACTORS
+        READISF
         ========================================================================
         """
 
@@ -746,7 +765,7 @@ class Pump:
         self.ISU = None
 
         # Decode pump's response
-        self.decoder.decode(self, "readInsulinSensitivityFactors")
+        self.decoder.decode(self, "readISF")
 
         # Read number of ISF read
         n = len(self.ISF)
@@ -758,17 +777,19 @@ class Pump:
             print (self.ISFTimes[i] + " - " +
                    str(self.ISF[i]) + " " + str(self.ISU))
 
-        # Save insulin sensitivity factors to profile report
-        self.reporter.storeInsulinSensitivityFactors(self.ISFTimes, self.ISF,
-                                                    self.ISU)
+        # Store insulin sensitivity factors to profile report
+        self.reporter.storeISF(self.ISFTimes, self.ISF, self.ISU)
+
+        # Store BG units to pump report
+        self.reporter.storeBGU(self.BGU)
 
 
 
-    def readCarbSensitivityFactors(self):
+    def readCSF(self):
 
         """
         ========================================================================
-        READCARBSENSITIVITYFACTORS
+        READCSF
         ========================================================================
         """
 
@@ -790,7 +811,7 @@ class Pump:
         self.CSU = None
 
         # Decode pump's response
-        self.decoder.decode(self, "readCarbSensitivityFactors")
+        self.decoder.decode(self, "readCSF")
 
         # Read number of CSF read
         n = len(self.CSF)
@@ -802,9 +823,11 @@ class Pump:
             print (self.CSFTimes[i] + " - " +
                    str(self.CSF[i]) + " " + str(self.CSU))
 
-        # Save carb sensitivity factors to profile report
-        self.reporter.storeCarbSensitivityFactors(self.CSFTimes, self.CSF,
-                                                 self.CSU)
+        # Store carb sensitivity factors to profile report
+        self.reporter.storeCSF(self.CSFTimes, self.CSF, self.CSU)
+
+        # Store carb units to pump report
+        self.reporter.storeCU(self.CU)
 
 
 
@@ -931,7 +954,7 @@ class Pump:
             print str(self.carbs[i]) + " (" + str(self.carbTimes[i]) + ")"
 
         # If carbs read, store them
-        if len(self.carbs) != 0:
+        if len(self.carbs):
             self.reporter.addCarbs(self.carbTimes, self.carbs)
 
 
@@ -962,7 +985,7 @@ class Pump:
             print str(self.boluses[i]) + " U (" + str(self.bolusTimes[i]) + ")"
 
         # If boluses read, store them
-        if len(self.boluses) != 0:
+        if len(self.boluses):
             self.reporter.addBoluses(self.bolusTimes, self.boluses)
 
 
@@ -984,7 +1007,7 @@ class Pump:
 
         """
         ========================================================================
-        READCURRENTTBR
+        READTBR
         ========================================================================
         """
 
@@ -1025,10 +1048,10 @@ class Pump:
         """
 
         # Verify pump status and settings before doing anything
-        if self.verifyStatus() == False:
+        if not self.verifyStatus():
             return
 
-        if self.verifySettings(bolus = bolus) == False:
+        if not self.verifySettings(bolus = bolus):
             return
 
         # Evaluating time required for bolus to be delivered (giving it some
@@ -1109,12 +1132,13 @@ class Pump:
                " (" + str(duration) + "m)")
 
         # First run
-        if run == True:
+        if run:
 
             # Verify pump status and settings before doing anything
-            if self.verifyStatus() == False:
+            if not self.verifyStatus():
                 return
-            if self.verifySettings(rate = rate, units = units) == False:
+
+            if not self.verifySettings(rate = rate, units = units):
                 return
 
             # Before issuing any TBR, read the current one
@@ -1126,9 +1150,9 @@ class Pump:
             lastDuration = self.TBR["Duration"]
 
             # In case the user wants to set the exact same TBR, just ignore it
-            if (rate == lastValue) & \
-               (units == lastUnits) & \
-               (duration == lastDuration):
+            if ((rate == lastValue) and
+                (units == lastUnits) and
+                (duration == lastDuration)):
 
                 # Give user info
                 print ("There is no point in reissuing the exact same " +
@@ -1137,8 +1161,9 @@ class Pump:
                 return
 
             # In case the user wants to cancel a non-existent TBR
-            elif ((rate == 0) & (lastValue == 0) &
-                  (duration == 0) & (lastDuration == 0)):
+            elif ((rate == 0) and (lastValue == 0) and
+                  (duration == 0) and
+                  (lastDuration == 0)):
 
                 # Give user info
                 print ("There is no point in canceling a non-existent TBR: " +
@@ -1147,7 +1172,7 @@ class Pump:
                 return
 
             # Look if a TBR is already set
-            elif (lastValue != 0) | (lastDuration != 0):
+            elif (lastValue != 0) or (lastDuration != 0):
 
                 # Give user info
                 print ("Temporary basal needs to be set to zero before " +
@@ -1169,7 +1194,7 @@ class Pump:
 
             # If user only wishes to extend/shorten the length of the already
             # set TBR
-            elif (rate == lastValue) & (duration != lastDuration):
+            elif (rate == lastValue) and (duration != lastDuration):
 
                 # Evaluate time difference
                 dt = duration - lastDuration
@@ -1222,8 +1247,8 @@ class Pump:
         # Get current time
         now = datetime.datetime.now()
 
-        # Store time at which TBR is requested
-        time = lib.formatTime(now)
+        # Format time at which TBR is requested
+        now = lib.formatTime(now)
 
         # Make pump request
         self.requester.make()
@@ -1236,8 +1261,8 @@ class Pump:
         self.readTBR()
 
         # Compare to expectedly set TBR
-        if ((self.TBR["Value"] == rate) &
-            (self.TBR["Units"] == units) &
+        if ((self.TBR["Value"] == rate) and
+            (self.TBR["Units"] == units) and
             (self.TBR["Duration"] == duration)):
 
             # Give user info
@@ -1249,7 +1274,7 @@ class Pump:
             print "Saving new temporary basal to reports..."
 
             # Add bolus to insulin report
-            self.reporter.addTBR(time, rate, units, duration)
+            self.reporter.addTBR(now, rate, units, duration)
 
         # Otherwise, quit
         else:
@@ -1303,7 +1328,7 @@ def main():
     #pump.readModel()
 
     # Read pump firmware version
-    #pump.readFirmwareVersion()
+    #pump.readFirmware()
 
     # Read pump battery level
     #pump.readBatteryLevel()
@@ -1324,13 +1349,13 @@ def main():
     #pump.readBGTargets()
 
     # Read insulin sensitivity factors stored in pump
-    #pump.readInsulinSensitivityFactors()
+    #pump.readISF()
 
     # Read carb sensitivity factors stored in pump
-    #pump.readCarbSensitivityFactors()
+    #pump.readCSF()
 
     # Read treatment history on pump (BG and carbs)
-    pump.readTreatments()
+    #pump.readTreatments()
 
     # Send bolus to pump
     #pump.deliverBolus(0.1)

@@ -62,7 +62,7 @@ myPump.readModel()
 time.sleep(sleep)
 
 # Read pump firmware version
-myPump.readFirmwareVersion()
+myPump.readFirmware()
 time.sleep(sleep)
 
 # Read pump battery level
@@ -90,11 +90,11 @@ myPump.readBGTargets()
 time.sleep(sleep)
 
 # Read insulin sensitivity factors stored in pump
-myPump.readInsulinSensitivityFactors()
+myPump.readISF()
 time.sleep(sleep)
 
 # Read carb sensitivity factors stored in pump
-myPump.readCarbSensitivityFactors()
+myPump.readCSF()
 time.sleep(sleep)
 
 # Read current history page number
