@@ -433,7 +433,7 @@ class Decoder:
                       160: ["mmol/L", "exchanges", False, False],
                       161: ["mmol/L", "exchanges", True, False]}
 
-        # Serch history for specified record
+        # Search history for specified record
         for i in range(len(device.history)):
 
             # Try and find bolus wizard records
@@ -552,7 +552,7 @@ class Decoder:
         # Read current time
         now = datetime.datetime.now()
 
-        # Parse history page to find boluses
+        # Search history for specified record
         for i in range(len(device.history)):
 
             # Try and find bolus records
