@@ -46,6 +46,7 @@ import datetime
 import lib
 import reporter
 import requester
+import decoder
 
 
 
@@ -103,22 +104,35 @@ class Stick:
         # Give the stick a requester
         self.requester = requester.Requester()
 
+        # Give the stick a decoder
+        self.decoder = decoder.Decoder()
+
         # Initialize requester to speak with stick
         self.requester.initialize(recipient = "Stick", handle = self.handle)
 
-        # Define state indicators
-        stateIndicators = {"Errors": {"CRC": None, "SEQ": None, "NAK": None,
-                                      "Timeout": None},
-                           "Packets": {"Received": None, "Sent": None}}
-
-        # Initialize a state dictionary for the stick's USB and radio interfaces
-        self.state = {"USB": stateIndicators, "Radio": stateIndicators}
+        # Define stick infos dictionary
+        self.infos = {"ACK": None,
+                      "Status": None,
+                      "Frequency": None,
+                      "Description": None,
+                      "Version": None}
 
         # Ask for stick infos
         self.readInfos()
 
         # Ask for signal strength
         self.readSignalStrength()
+
+        # Define state indicators
+        stateIndicators = {"Errors": {"CRC": None,
+                                      "SEQ": None,
+                                      "NAK": None,
+                                      "Timeout": None},
+                           "Packets": {"Received": None,
+                                       "Sent": None}}
+
+        # Initialize a state dictionary for the stick's USB and radio interfaces
+        self.state = {"USB": stateIndicators, "Radio": stateIndicators}
 
         # Get state of stick
         self.readStates()
@@ -192,14 +206,6 @@ class Stick:
         ========================================================================
         """
 
-        # Define stick infos dictionary
-        self.infos = {"ACK": None,
-                      "Status": None,
-                      "Serial": None,
-                      "Frequency": None,
-                      "Description": None,
-                      "Version": None}
-
         # Define request
         self.requester.define(info = "Reading stick infos...",
                               packet = [4, 0, 0],
@@ -208,16 +214,8 @@ class Stick:
         # Make request
         self.requester.make()
 
-        # Extract infos
-        self.infos["ACK"] = self.requester.response[0]
-        self.infos["Status"] = self.requester.responseChr[1]
-        self.infos["Serial"] = "".join(x[2:] for x in
-                               self.requester.responseHex[3:6])
-        self.infos["Frequency"] = (str(self.frequencies[
-                                   self.requester.response[8]]) + " MHz")
-        self.infos["Description"] = "".join(self.requester.responseChr[9:19])
-        self.infos["Version"] = (1.00 * self.requester.response[19:21][0] +
-                                 0.01 * self.requester.response[19:21][1])
+        # Decode stick's response
+        self.decoder.decode(self, "readInfos")
 
         # Print infos
         print "Stick infos:"
@@ -258,8 +256,8 @@ class Stick:
             # Make request
             self.requester.make()
 
-            # Extract signal strength from response
-            self.signal = self.requester.response[3]
+            # Decode stick's response
+            self.decoder.decode(self, "readSignalStrength")
 
             # Print signal strength
             print "Signal strength found: " + str(self.signal)
@@ -277,22 +275,15 @@ class Stick:
         """
 
         # Define request
-        self.requester.define(info = "Reading stick USB state...",
+        self.requester.define(info = "Reading stick's USB state...",
                               packet = [5, 1, 0],
                               remote = False)
 
         # Make request
         self.requester.make()
 
-        # Extract state
-        self.state["USB"]["Errors"]["CRC"] = self.requester.response[3]
-        self.state["USB"]["Errors"]["SEQ"] = self.requester.response[4]
-        self.state["USB"]["Errors"]["NAK"] = self.requester.response[5]
-        self.state["USB"]["Errors"]["Timeout"] = self.requester.response[6]
-        self.state["USB"]["Packets"]["Received"] = (
-            lib.convertBytes(self.requester.response[7:11]))
-        self.state["USB"]["Packets"]["Sent"] = (
-            lib.convertBytes(self.requester.response[11:15]))
+        # Decode stick's response
+        self.decoder.decode(self, "readUSBState")
 
 
 
@@ -305,22 +296,15 @@ class Stick:
         """
 
         # Define request
-        self.requester.define(info = "Reading stick radio state...",
+        self.requester.define(info = "Reading stick's radio state...",
                               packet = [5, 0, 0],
                               remote = False)
 
         # Make request
         self.requester.make()
 
-        # Extract state
-        self.state["Radio"]["Errors"]["CRC"] = self.requester.response[3]
-        self.state["Radio"]["Errors"]["SEQ"] = self.requester.response[4]
-        self.state["Radio"]["Errors"]["NAK"] = self.requester.response[5]
-        self.state["Radio"]["Errors"]["Timeout"] = self.requester.response[6]
-        self.state["Radio"]["Packets"]["Received"] = (
-            lib.convertBytes(self.requester.response[7:11]))
-        self.state["Radio"]["Packets"]["Sent"] = (
-            lib.convertBytes(self.requester.response[11:15]))
+        # Decode stick's response
+        self.decoder.decode(self, "readRadioState")
 
 
 

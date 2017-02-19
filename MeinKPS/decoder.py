@@ -14,8 +14,8 @@
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
 
-    Overview: This is a script that decoding functions for all devices used
-              within MeinKPS.
+    Overview: This is a script that decodes the bytes constituting every
+              response to every device request defined and sent by MeinKPS.
 
     Notes:    ...
 
@@ -47,11 +47,73 @@ class Decoder:
         """
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READINFOS                                                            #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        if command == "readInfos":
+
+            # Decode stick infos
+            ack = device.requester.response[0]
+            status = device.requester.responseChr[1]
+            frequency = device.frequencies[device.requester.response[8]]
+            description = "".join(device.requester.responseChr[9:19])
+            version = (1.00 * device.requester.response[19] +
+                       0.01 * device.requester.response[20])
+
+            # Store infos
+            device.infos["ACK"] = ack
+            device.infos["Status"] = status
+            device.infos["Description"] = description
+            device.infos["Version"] = version
+            device.infos["Frequency"] = str(frequency) + " MHz"
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READSIGNALSTRENGTH                                                   #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        elif command == "readSignalStrength":
+
+            # Decode strength of signal received by stick
+            device.signal = device.requester.response[3]
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READUSBSTATE / READRADIOSTATE                                        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        elif (command == "readUSBState") or (command == "readRadioState"):
+
+            # Define stick's interface for which state infos will be decoded
+            if command == "readUSBState":
+                interface = "USB"
+
+            elif command == "readRadioState":
+                interface = "Radio"
+
+            # Decode stick infos
+            errorCRC = device.requester.response[3]
+            errorSEQ = device.requester.response[4]
+            errorNAK = device.requester.response[5]
+            errorTimeout = device.requester.response[6]
+            packetsReceived = lib.convertBytes(device.requester.response[7:11])
+            packetsSent = lib.convertBytes(device.requester.response[11:15])
+
+            # Store infos
+            device.state[interface]["Errors"]["CRC"] = errorCRC
+            device.state[interface]["Errors"]["SEQ"] = errorSEQ
+            device.state[interface]["Errors"]["NAK"] = errorNAK
+            device.state[interface]["Errors"]["Timeout"] = errorTimeout
+            device.state[interface]["Packets"]["Received"] = packetsReceived
+            device.state[interface]["Packets"]["Sent"] = packetsSent
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         # READTIME                                                             #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        if command == "readTime":
+        elif command == "readTime":
 
-            # Extract pump time from received data
+            # Decode pump time
             second = device.requester.data[2]
             minute = device.requester.data[1]
             hour   = device.requester.data[0]
@@ -72,7 +134,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readModel":
 
-            # Extract pump model from received data
+            # Decode pump model
             device.model = int("".join(
                 [chr(x) for x in device.requester.data[1:4]]))
 
@@ -83,7 +145,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readFirmware":
 
-            # Extract pump firmware from received data
+            # Decode pump firmware
             device.firmware = ("".join(device.requester.responseChr[17:21]) +
                          " " + "".join(device.requester.responseChr[21:24]))
 
@@ -140,7 +202,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readSettings":
 
-            # Extract pump settings from received data
+            # Decode pump settings
             device.settings = {
                 "IAC": device.requester.data[17],
                 "Max Bolus": device.requester.data[5] * device.bolusStroke,
@@ -186,11 +248,11 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readDailyTotals":
 
-            # Extract daily totals of today and yesterday
+            # Decode daily totals of today
             device.dailyTotals["Today"] = round(
                 lib.bangInt(device.requester.data[0:2]) * device.bolusStroke, 2)
 
-            # Extract daily totals of yesterday
+            # Decode daily totals of yesterday
             device.dailyTotals["Yesterday"] = round(
                 lib.bangInt(device.requester.data[2:4]) * device.bolusStroke, 2)
 
@@ -403,7 +465,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readNumberHistoryPages":
 
-            # Store number of history pages
+            # Decode and store number of history pages
             device.nHistoryPages = device.requester.data[3] + 1
 
 
@@ -418,7 +480,7 @@ class Decoder:
             # Extract TBR [U/h]
             if units == 0:
 
-                # Extract characteristics
+                # Decode TBR characteristics
                 device.TBR["Units"] = "U/h"
                 device.TBR["Value"] = round(
                     lib.bangInt(device.requester.data[2:4]) *
@@ -427,11 +489,11 @@ class Decoder:
             # Extract TBR [%]
             elif units == 1:
 
-                # Extract characteristics
+                # Decode TBR characteristics
                 device.TBR["Units"] = "%"
                 device.TBR["Value"] = round(device.requester.data[1], 2)
 
-            # Extract remaining time
+            # Decode TBR remaining time
             device.TBR["Duration"] = round(
                 lib.bangInt(device.requester.data[4:6]), 0)
 
