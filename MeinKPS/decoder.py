@@ -46,7 +46,9 @@ class Decoder:
         ========================================================================
         """
 
-        # Decode readTime command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READTIME                                                             #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         if command == "readTime":
 
             # Extract pump time from received data
@@ -65,7 +67,9 @@ class Decoder:
 
 
 
-        # Decode readModel command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READMODEL                                                            #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readModel":
 
             # Extract pump model from received data
@@ -74,7 +78,9 @@ class Decoder:
 
 
 
-        # Decode readFirmware command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READFIRMWARE                                                         #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readFirmware":
 
             # Extract pump firmware from received data
@@ -83,7 +89,9 @@ class Decoder:
 
 
 
-        # Decode readBatteryLevel command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READBATTERYLEVEL                                                     #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readBatteryLevel":
 
             # Decode battery level
@@ -100,7 +108,10 @@ class Decoder:
                 device.requester.data[2]]) / 100.0, 1)
 
 
-        # Decode readReservoirLevel command
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READRESERVOIRLEVEL                                                   #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readReservoirLevel":
 
             # Decode remaining amount of insulin
@@ -112,7 +123,9 @@ class Decoder:
 
 
 
-        # Decode readStatus command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READSTATUS                                                           #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readStatus":
 
             # Extract pump status from received data
@@ -122,7 +135,9 @@ class Decoder:
 
 
 
-        # Decode readSettings command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READSETTINGS                                                         #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readSettings":
 
             # Extract pump settings from received data
@@ -134,7 +149,9 @@ class Decoder:
 
 
 
-        # Decode readBGU command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READBGU                                                              #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readBGU":
 
             # Decode BG units set on pump
@@ -148,7 +165,9 @@ class Decoder:
 
 
 
-        # Decode readCU command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READCU                                                               #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readCU":
 
             # Decode carb units set on pump
@@ -162,7 +181,9 @@ class Decoder:
 
 
 
-        # Decode readDailyTotals command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READDAILYTOTALS                                                      #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readDailyTotals":
 
             # Extract daily totals of today and yesterday
@@ -175,7 +196,9 @@ class Decoder:
 
 
 
-        # Decode readBGTargets command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READBGTARGETS                                                        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readBGTargets":
 
             # Extract carb sensitivity units
@@ -239,7 +262,9 @@ class Decoder:
 
 
 
-        # Decode readISF command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READISF                                                              #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readISF":
 
             # Extract insulin sensitivity units
@@ -305,7 +330,9 @@ class Decoder:
 
 
 
-        # Decode readCSF command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READCSF                                                              #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readCSF":
 
             # Extract carb sensitivity units
@@ -371,7 +398,9 @@ class Decoder:
 
 
 
-        # Decode readNumberHistoryPages command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READNUMBERHISTORYPAGES                                               #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readNumberHistoryPages":
 
             # Store number of history pages
@@ -379,7 +408,9 @@ class Decoder:
 
 
 
-        # Decode readTBR command
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # READTBR                                                              #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         elif command == "readTBR":
 
             units = device.requester.data[0]
@@ -590,7 +621,6 @@ class Decoder:
                     device.bolusTimes.append(time)
 
             except:
-
                 pass
 
 
