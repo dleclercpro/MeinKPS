@@ -82,11 +82,11 @@ class Decoder:
             version = 1.00 * response[19] + 0.01 * response[20]
 
             # Store infos
-            self.device.infos["ACK"] = ACK
-            self.device.infos["Status"] = status
-            self.device.infos["Description"] = description
-            self.device.infos["Version"] = version
-            self.device.infos["Frequency"] = frequency
+            self.part.values["ACK"] = ACK
+            self.part.values["Status"] = status
+            self.part.values["Description"] = description
+            self.part.values["Version"] = version
+            self.part.values["Frequency"] = frequency
 
 
 
@@ -96,7 +96,7 @@ class Decoder:
         elif command == "readSignalStrength":
 
             # Decode strength of signal
-            self.device.signal = response[3]
+            self.part.value = response[3]
 
 
 
@@ -104,13 +104,6 @@ class Decoder:
         # READUSBSTATE / READRADIOSTATE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif (command == "readUSBState") or (command == "readRadioState"):
-
-            # Define stick's interface for which state infos will be decoded
-            if command == "readUSBState":
-                i = "USB"
-
-            elif command == "readRadioState":
-                i = "Radio"
 
             # Decode state
             errorCRC = response[3]
@@ -121,12 +114,12 @@ class Decoder:
             packetsSent = lib.convertBytes(response[11:15])
 
             # Store state
-            self.device.state[i]["Errors"]["CRC"] = errorCRC
-            self.device.state[i]["Errors"]["SEQ"] = errorSEQ
-            self.device.state[i]["Errors"]["NAK"] = errorNAK
-            self.device.state[i]["Errors"]["Timeout"] = errorTimeout
-            self.device.state[i]["Packets"]["Received"] = packetsReceived
-            self.device.state[i]["Packets"]["Sent"] = packetsSent
+            self.part.values["Errors"]["CRC"] = errorCRC
+            self.part.values["Errors"]["SEQ"] = errorSEQ
+            self.part.values["Errors"]["NAK"] = errorNAK
+            self.part.values["Errors"]["Timeout"] = errorTimeout
+            self.part.values["Packets"]["Received"] = packetsReceived
+            self.part.values["Packets"]["Sent"] = packetsSent
 
 
 
@@ -700,9 +693,9 @@ class Decoder:
 def main():
 
     """
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     MAIN
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
 
