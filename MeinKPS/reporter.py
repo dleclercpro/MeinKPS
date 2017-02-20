@@ -36,8 +36,20 @@ import lib
 
 class Reporter:
 
-    # REPORTER CHARACTERISTICS
-    source = "/home/pi/MeinKPS/MeinKPS/Reports/"
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Set source path to reports
+        self.source = "/home/pi/MeinKPS/MeinKPS/Reports/"
+
+        # Initialize looked up sections
+        self.section = [] # Should not be equal to last one!
+        self.lastSection = None
 
 
 
@@ -254,8 +266,11 @@ class Reporter:
         ========================================================================
         """
 
-        # Load report section
-        self.getSection(path, True)
+        # Look if trying to add entry in an already found section
+        if self.section != self.lastSection:
+
+            # Load report section
+            self.getSection(path, True)
 
         # Give user info
         print ("Attempting to add entry: " + self.formatPath(path) + " > " +
@@ -278,6 +293,9 @@ class Reporter:
 
             # Rewrite report
             self.save()
+
+        # Store last section in which entries were added
+        self.lastSection = self.section
 
 
 

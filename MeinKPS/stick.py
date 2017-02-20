@@ -134,7 +134,7 @@ class Stick:
         self.empty()
 
         # Initialize requester to speak with stick
-        self.requester.initialize(recipient = "Stick", handle = self.handle)
+        self.requester.start(recipient = "Stick", handle = self.handle)
 
         # Ask for stick infos
         self.readInfos()

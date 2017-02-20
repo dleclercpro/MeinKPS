@@ -68,11 +68,11 @@ class Requester:
 
 
 
-    def initialize(self, recipient = None, serial = None, handle = None):
+    def start(self, recipient = None, serial = None, handle = None):
 
         """
         ========================================================================
-        INITIALIZE
+        START
         ========================================================================
         """
 

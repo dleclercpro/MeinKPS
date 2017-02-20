@@ -34,10 +34,6 @@ import lib
 
 class Decoder:
 
-    # DECODER CHARACTERISTICS
-
-
-
     def __init__(self, device, part):
 
         """
@@ -58,9 +54,9 @@ class Decoder:
     def decode(self, command):
 
         """
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         DECODE
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Get device's response
@@ -73,9 +69,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READINFOS                                                            #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READINFOS
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if command == "readInfos":
 
             # Decode infos
@@ -94,9 +90,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READSIGNALSTRENGTH                                                   #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READSIGNALSTRENGTH
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readSignalStrength":
 
             # Decode strength of signal
@@ -104,9 +100,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READUSBSTATE / READRADIOSTATE                                        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READUSBSTATE / READRADIOSTATE
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif (command == "readUSBState") or (command == "readRadioState"):
 
             # Define stick's interface for which state infos will be decoded
@@ -134,9 +130,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READTIME                                                             #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READTIME
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readTime":
 
             # Decode pump time
@@ -155,9 +151,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READMODEL                                                            #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READMODEL
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readModel":
 
             # Decode pump model
@@ -165,9 +161,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READFIRMWARE                                                         #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READFIRMWARE
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readFirmware":
 
             # Decode pump firmware
@@ -176,9 +172,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READBATTERYLEVEL                                                     #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READBATTERYLEVEL
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readBatteryLevel":
 
             # Decode battery level
@@ -195,9 +191,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READRESERVOIRLEVEL                                                   #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READRESERVOIRLEVEL
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readReservoirLevel":
 
             # Decode remaining amount of insulin
@@ -206,9 +202,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READSTATUS                                                           #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READSTATUS
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readStatus":
 
             # Extract pump status from received data
@@ -218,22 +214,23 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READSETTINGS                                                         #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READSETTINGS
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readSettings":
 
             # Decode pump settings
-            self.part.value = {"IAC": data[17],
-                               "Max Bolus": data[5] * self.device.bolusStroke,
-                               "Max Basal": (lib.bangInt(data[6:8]) *
-                                             self.device.basalStroke / 2.0)}
+            self.part.values = {
+                "IAC": data[17],
+                "Max Bolus": data[5] * self.device.bolusStroke,
+                "Max Basal": (lib.bangInt(data[6:8]) *
+                              self.device.basalStroke / 2.0)}
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READBGU                                                              #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READBGU
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readBGU":
 
             # Decode BG units set on pump
@@ -247,9 +244,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READCU                                                               #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READCU
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readCU":
 
             # Decode carb units set on pump
@@ -263,9 +260,9 @@ class Decoder:
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READDAILYTOTALS                                                      #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READDAILYTOTALS
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readDailyTotals":
 
             # Decode daily totals
@@ -274,11 +271,11 @@ class Decoder:
                                "Yesterday": round(lib.bangInt(data[2:4]) *
                                                   self.device.bolusStroke, 2)}
 
-################################################################################
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READBGTARGETS                                                        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READBGTARGETS
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readBGTargets":
 
             # Extract carb sensitivity units
@@ -286,13 +283,13 @@ class Decoder:
 
             # Decode units
             if units == 1:
-                self.device.BGU = "mg/dL"
+                self.part.units = "mg/dL"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                self.device.BGU = "mmol/L"
+                self.part.units = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -321,8 +318,7 @@ class Decoder:
                 else:
                     # Decode entry
                     target = [entry[0] / 10 ** m, entry[1] / 10 ** m]
-                    time = entry[2] * 30 # Get time in minutes (each block
-                                         # corresponds to 30 m)
+                    time = entry[2] * self.device.timeBlock
 
                     # Format time
                     time = (str(time / 60).zfill(2) + ":" +
@@ -337,14 +333,24 @@ class Decoder:
 
             # Rearrange targets to have starting times instead of ending times
             for i in range(len(targets)):
-                self.device.BGTargets.append(targets[i])
-                self.device.BGTargetsTimes.append(times[i - 1])
+                self.part.values.append(targets[i])
+                self.part.times.append(times[i - 1])
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READISF                                                              #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READNUMBERHISTORYPAGES
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elif command == "readNumberHistoryPages":
+
+            # Decode and store number of history pages
+            self.part.size = data[3] + 1
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READISF
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readISF":
 
             # Extract insulin sensitivity units
@@ -352,15 +358,13 @@ class Decoder:
 
             # Decode units
             if units == 1:
-                self.device.ISU = "mg/dL/U"
-                self.device.BGU = "mg/dL"
+                self.part.units = "mg/dL"
                 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                self.device.ISU = "mmol/L/U"
-                self.device.BGU = "mmol/L"
+                self.part.units = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -389,8 +393,7 @@ class Decoder:
                 else:
                     # Decode entry
                     factor = entry[0] / 10 ** m
-                    time = entry[1] * 30 # Get time in minutes (each block
-                                         # corresponds to 30 m)
+                    time = entry[1] * self.device.timeBlock
 
                     # Format time
                     time = (str(time / 60).zfill(2) + ":" +
@@ -405,14 +408,14 @@ class Decoder:
 
             # Rearrange factors to have starting times instead of ending times
             for i in range(len(factors)):
-                self.device.ISF.append(factors[i])
-                self.device.ISFTimes.append(times[i - 1])
+                self.part.values.append(factors[i])
+                self.part.times.append(times[i - 1])
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READCSF                                                              #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READCSF
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readCSF":
 
             # Extract carb sensitivity units
@@ -420,15 +423,13 @@ class Decoder:
 
             # Decode units
             if units == 1:
-                self.device.CSU = "g/U"
-                self.device.CU = "g"
+                self.part.units = "g"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                self.device.CSU = "exchanges/U"
-                self.device.CU = "exchanges"
+                self.part.units = "exchanges"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -441,8 +442,8 @@ class Decoder:
             # Extract carb sensitivity factors
             while True:
 
-                # Define start (a) and end (b) indexes of current factor based on
-                # number of bytes per entry
+                # Define start (a) and end (b) indexes of current factor based
+                # on number of bytes per entry
                 n = 2
                 a = 2 + n * i
                 b = a + n
@@ -457,8 +458,7 @@ class Decoder:
                 else:
                     # Decode entry
                     factor = entry[0] / 10 ** m
-                    time = entry[1] * 30 # Get time in minutes (each block
-                                         # corresponds to 30 m)
+                    time = entry[1] * self.device.timeBlock
 
                     # Format time
                     time = (str(time / 60).zfill(2) + ":" +
@@ -473,24 +473,14 @@ class Decoder:
 
             # Rearrange factors to have starting times instead of ending times
             for i in range(len(factors)):
-                self.device.CSF.append(factors[i])
-                self.device.CSFTimes.append(times[i - 1])
+                self.part.values.append(factors[i])
+                self.part.times.append(times[i - 1])
 
 
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READNUMBERHISTORYPAGES                                               #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        elif command == "readNumberHistoryPages":
-
-            # Decode and store number of history pages
-            self.device.nHistoryPages = data[3] + 1
-
-
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # READTBR                                                              #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READTBR
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readTBR":
 
             units = data[0]
@@ -499,35 +489,91 @@ class Decoder:
             if units == 0:
 
                 # Decode TBR characteristics
-                self.device.TBR["Units"] = "U/h"
-                self.device.TBR["Value"] = round(
-                    lib.bangInt(data[2:4]) *
-                    self.device.basalStroke / 2.0, 2)
+                self.part.value["Units"] = "U/h"
+                self.part.value["Rate"] = round(lib.bangInt(data[2:4]) *
+                                                self.device.basalStroke / 2.0,
+                                                2)
 
             # Extract TBR [%]
             elif units == 1:
 
                 # Decode TBR characteristics
-                self.device.TBR["Units"] = "%"
-                self.device.TBR["Value"] = round(data[1], 2)
+                self.part.value["Units"] = "%"
+                self.part.value["Rate"] = round(data[1], 2)
 
             # Decode TBR remaining time
-            self.device.TBR["Duration"] = round(
-                lib.bangInt(data[4:6]), 0)
+            self.part.value["Duration"] = round(lib.bangInt(data[4:6]), 0)
 
 
 
-    def decodeBolusWizardRecord(self, device, code, headSize, dateSize,
-                                      bodySize):
+    def decodeBolusRecord(self, code, size):
 
         """
-        ========================================================================
-        DECODEBOLUSWIZARDRECORD
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        DECODEBOLUSRECORD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Read current time
         now = datetime.datetime.now()
+
+        # Assign history
+        history = self.device.history.pages
+
+        # Search history for specified record
+        for i in range(len(history)):
+
+            # Try and find bolus records
+            try:
+
+                # Define bolus criteria
+                if ((history[i] == code) and
+                    (history[i + 1] == history[i + 2]) and
+                    (history[i + 3] == 0)):
+            
+                    # Extract bolus from pump history
+                    bolus = round(history[i + 1] * self.device.bolusStroke, 1)
+
+                    # Extract time at which bolus was delivered
+                    t = lib.decodeTime(history[i + 4 : i + 9])
+
+                    # Check for bolus year
+                    if abs(t[0] - now.year) > 1:
+
+                        raise ValueError("Bolus can't be more than one year " +
+                                         "in the past!")
+
+                    # Build datetime object
+                    t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
+
+                    # Format bolus time
+                    t = lib.formatTime(t)
+
+                    # Give user info
+                    #print "Bolus read: " + str(bolus) + "U (" + t + ")"
+                    
+                    # Store bolus
+                    self.part.values.append(bolus)
+                    self.part.times.append(t)
+
+            except:
+                pass
+
+
+
+    def decodeBolusWizardRecord(self, code, headSize, dateSize, bodySize):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        DECODEBOLUSWIZARDRECORD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read current time
+        now = datetime.datetime.now()
+
+        # Assign history
+        history = self.device.history.pages
 
         # Define an indicator dictionary to decode BG and carb bytes
         # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
@@ -545,47 +591,46 @@ class Decoder:
                       161: ["mmol/L", "exchanges", True, False]}
 
         # Search history for specified record
-        for i in range(len(self.device.history)):
+        for i in range(len(history)):
 
             # Try and find bolus wizard records
             try:
 
                 # Look for code, with which every record should start
-                if self.device.history[i] == code:
+                if history[i] == code:
 
                     # Define a record running variable
                     x = i
             
                     # Assign record head
-                    head = self.device.history[x:x + headSize]
+                    head = history[x:x + headSize]
 
                     # Update running variable
                     x += headSize
 
                     # Assign record date
-                    date = self.device.history[x:x + dateSize]
+                    date = history[x:x + dateSize]
 
                     # Update running variable
                     x += dateSize
 
                     # Assign record body
-                    body = self.device.history[x:x + bodySize]
+                    body = history[x:x + bodySize]
 
                     # Decode time using date bytes
-                    time = lib.decodeTime(date)
+                    t = lib.decodeTime(date)
 
                     # Build datetime object
-                    time = datetime.datetime(time[0], time[1], time[2],
-                                             time[3], time[4], time[5])
+                    t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
 
                     # Proof record year
-                    if abs(time.year - now.year) > 1:
+                    if abs(t.year - now.year) > 1:
 
                         raise ValueError("Record and current year too far " +
                                          "apart!")
 
                     # Format time
-                    time = lib.formatTime(time)
+                    t = lib.formatTime(t)
 
                     # Decode units and sizes of BG and carb entries using 2nd
                     # body byte as indicator linked with the previously
@@ -635,71 +680,17 @@ class Decoder:
                     # Add carbs and times at which they were consumed to their
                     # respective vectors only if they have a given value!
                     if C:
-                        self.device.carbs.append([C, CU])
-                        self.device.carbTimes.append(time)
+                        self.part.values.append([C, CU])
+                        self.part.times.append(t)
 
                     # Give user output
-                    #print "Time: " + time
+                    #print "Time: " + t
                     #print "Response: " + str(head) + ", " + str(body)
                     #print "BG: " + str(BG) + " " + str(BGU)
                     #print "Carbs: " + str(C) + " " + str(CU)
                     #print "BG Targets: " + str(BGTargets) + " " + str(BGU)
                     #print "CSF: " + str(CSF) + " " + str(CU) + "/U"
                     #print
-
-            except:
-                pass
-
-
-
-    def decodeBolusRecord(self, device, code, size):
-
-        """
-        ========================================================================
-        DECODEBOLUSRECORD
-        ========================================================================
-        """
-
-        # Read current time
-        now = datetime.datetime.now()
-
-        # Search history for specified record
-        for i in range(len(self.device.history)):
-
-            # Try and find bolus records
-            try:
-
-                # Define bolus criteria
-                if ((self.device.history[i] == code) and
-                    (self.device.history[i + 1] == self.device.history[i + 2]) and
-                    (self.device.history[i + 3] == 0)):
-            
-                    # Extract bolus from pump history
-                    bolus = round(self.device.history[i + 1] *
-                                  self.device.bolusStroke, 1)
-
-                    # Extract time at which bolus was delivered
-                    time = lib.decodeTime(self.device.history[i + 4 : i + 9])
-
-                    # Check for bolus year
-                    if abs(time[0] - now.year) > 1:
-
-                        raise ValueError("Bolus can't be more than one year " +
-                                         "in the past!")
-
-                    # Build datetime object
-                    time = datetime.datetime(time[0], time[1], time[2],
-                                             time[3], time[4], time[5])
-
-                    # Format bolus time
-                    time = lib.formatTime(time)
-
-                    # Give user info
-                    #print "Bolus read: " + str(bolus) + "U (" + time + ")"
-                    
-                    # Store bolus
-                    self.device.boluses.append(bolus)
-                    self.device.bolusTimes.append(time)
 
             except:
                 pass
@@ -713,8 +704,6 @@ def main():
     MAIN
     ============================================================================
     """
-
-    #print command.__class__.__name__
 
 
 
