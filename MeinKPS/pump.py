@@ -120,15 +120,6 @@ class Pump:
         # Give the pump a settings instance
         self.settings = Settings(self)
 
-        # Give the pump a BG units instance
-        self.BGUnits = BGUnits(self)
-
-        # Give the pump a carb units instance
-        self.carbUnits = CarbUnits(self)
-
-        # Give the pump a TBR units instance
-        self.TBRUnits = TBRUnits(self)
-
         # Give the pump a BG targets instance
         self.BGTargets = BGTargets(self)
 
@@ -152,6 +143,9 @@ class Pump:
 
         # Give the pump a TBR instance
         self.TBR = TBR(self)
+
+        # Give the pump a units instance
+        self.units = Units(self)
 
 
 
@@ -205,10 +199,10 @@ class Power:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time a link to its corresponding device
+        # Give it a link to its corresponding device
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -305,10 +299,10 @@ class Time:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -364,10 +358,10 @@ class Model:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -426,10 +420,10 @@ class Firmware:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -488,10 +482,10 @@ class Buttons:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Buttons
@@ -536,10 +530,10 @@ class Battery:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -605,10 +599,10 @@ class Reservoir:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -673,10 +667,10 @@ class Status:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -830,10 +824,10 @@ class Settings:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
 
@@ -924,243 +918,6 @@ class Settings:
 
 
 
-class BGUnits:
-
-    def __init__(self, device):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give time an instance to the device it should be linked to
-        self.device = device
-
-        # Give time a decoder
-        self.decoder = decoder.Decoder(device, self)
-
-
-
-    def read(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define request infos
-        info = "Reading pump's BG units..."
-
-        # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 137)
-
-        # Make request
-        self.device.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode("readBGU")
-
-        # Store BG units to pump report
-        self.device.reporter.storeBGU(self.value)
-
-        # Give user info
-        print "Pump's BG units are set to: " + str(self.value)
-
-
-
-    def get(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Return instance's value
-        return self.value
-
-
-
-    def set(self, value):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Update instance's value
-        self.value = value
-
-
-
-class CarbUnits:
-
-    def __init__(self, device):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give time an instance to the device it should be linked to
-        self.device = device
-
-        # Give time a decoder
-        self.decoder = decoder.Decoder(device, self)
-
-
-
-    def read(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define request infos
-        info = "Reading pump's carb units..."
-
-        # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 136)
-
-        # Make request
-        self.device.requester.make()
-
-        # Decode pump's response
-        self.decoder.decode("readCU")
-
-        # Store BG units to pump report
-        self.device.reporter.storeCU(self.value)
-
-        # Give user info
-        print "Pump's carb units are set to: " + str(self.value)
-
-
-
-    def get(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Return instance's value
-        return self.value
-
-
-
-    def set(self, value):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Update instance's value
-        self.value = value
-
-
-
-class TBRUnits:
-
-    def __init__(self, device):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give time an instance to the device it should be linked to
-        self.device = device
-
-        # Give time a decoder
-        self.decoder = decoder.Decoder(device, self)
-
-
-
-    def read(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read current TBR in order to extract current units
-        self.device.TBR.read()
-
-        # Get units
-        self.value = self.device.TBR.get()["Units"]
-
-        # Give user info
-        print "Current TBR units: " + self.value
-
-
-
-    def set(self, units):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If request is for absolute TBR
-        if units == "U/h":
-            parameters = [0]
-
-        # If request is for TBR in percentage
-        elif units == "%":
-            parameters = [1]
-
-
-
-        # Define request infos
-        info = "Setting TBR units: " + units
-        sleepReason = ("Waiting for TBR units to be set... (" +
-                       str(self.device.executionDelay) + "s)")
-
-        # Define request
-        self.device.requester.define(info = info,
-                                     sleep = self.device.executionDelay,
-                                     sleepReason = sleepReason,
-                                     attempts = 0,
-                                     size = 1,
-                                     code = 104,
-                                     parameters = parameters)
-
-        # Make request
-        self.device.requester.make()
-
-
-
-    def get(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Return instance's value
-        return self.value
-
-
-
 class BGTargets:
 
     def __init__(self, device):
@@ -1171,10 +928,10 @@ class BGTargets:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Initialize blood glucose targets, times, and units
@@ -1248,10 +1005,10 @@ class ISF:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Initialize insulin sensitivity factors, times, and units
@@ -1326,10 +1083,10 @@ class CSF:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Initialize carb sensitivity factors, times, and units
@@ -1404,10 +1161,10 @@ class DailyTotals:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Initialize daily totals dictionary
@@ -1468,10 +1225,10 @@ class History:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Initialize pump history vector
@@ -1571,10 +1328,10 @@ class Boluses:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Initialize boluses and times vectors
@@ -1677,10 +1434,10 @@ class Carbs:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it an instance to the device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Initialize carbs and times vectors
@@ -1755,10 +1512,10 @@ class TBR:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give time an instance to the device it should be linked to
+        # Give it a device it should be linked to
         self.device = device
 
-        # Give time a decoder
+        # Give it a decoder
         self.decoder = decoder.Decoder(device, self)
 
         # Define current TBR dictionary
@@ -1797,7 +1554,7 @@ class TBR:
 
 
 
-    def set(self, rate, units, duration, n = True):
+    def set(self, rate, units, duration, cancel = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1806,13 +1563,13 @@ class TBR:
         """
 
         # Stringify TBR
-        TBR = str(rate) + " " + units + " (" + str(duration) + "m)"
+        strTBR = str(rate) + " " + units + " (" + str(duration) + "m)"
 
         # Give user info regarding the next TBR that will be set
-        print ("Trying to set new TBR: " + TBR)
+        print ("Trying to set new TBR: " + strTBR)
 
         # First run
-        if n:
+        if not cancel:
 
             # Verify pump status and settings before doing anything
             if not self.device.status.verify():
@@ -1825,28 +1582,25 @@ class TBR:
             self.read()
 
             # Store current TBR
-            liveTBR = self.get()
+            TBR = self.get()
 
             # Look if a TBR is already set
-            if ((liveTBR["Rate"] != 0) and (liveTBR["Units"] == "U/h") or
-                (liveTBR["Rate"] != 100) and (liveTBR["Units"] == "%")):
+            if TBR["Duration"] != 0:
 
                 # Give user info
                 print ("TBR must be canceled before issuing a new one...")
 
-                # Set TBR to zero. (It is crucial here to use the precedent
-                # units, otherwise it would not work! Using the cancel method
-                # would result in a useless additional reading of TBR units...)
-                self.set(0, liveTBR["Units"], 0, False)
+                # Cancel TBR
+                self.cancel(TBR["Units"])
 
             # Look if units match up
-            if units != liveTBR["Units"]:
+            if units != TBR["Units"]:
 
                 # Give user info
                 print "Old and new TBR units do not match. Adjusting them..."
 
                 # Modify units as wished by the user
-                self.device.TBRUnits.set(units)
+                self.device.units.TBR.set(units)
 
         # If request is for absolute TBR
         if units == "U/h":
@@ -1868,8 +1622,8 @@ class TBR:
         now = lib.formatTime(now)
 
         # Define request infos
-        info = "Setting TBR: " + TBR
-        sleepReason = ("Waiting for TBR [" + TBR + "] to be set... (" +
+        info = "Setting TBR: " + strTBR
+        sleepReason = ("Waiting for TBR [" + strTBR + "] to be set... (" +
                        str(self.device.executionDelay) + "s)")
 
         # Define request
@@ -1892,15 +1646,15 @@ class TBR:
         self.read()
 
         # Store current TBR
-        liveTBR = self.get()
+        TBR = self.get()
 
         # Compare to expectedly set TBR
-        if ((liveTBR["Rate"] == rate) and
-            (liveTBR["Units"] == units) and
-            (liveTBR["Duration"] == duration)):
+        if ((TBR["Rate"] == rate) and
+            (TBR["Units"] == units) and
+            (TBR["Duration"] == duration)):
 
             # Give user info
-            print "New TBR correctly set: " + TBR
+            print "New TBR correctly set: " + strTBR
             print "Storing it..."
 
             # Add bolus to insulin report
@@ -1926,7 +1680,7 @@ class TBR:
 
 
 
-    def cancel(self):
+    def cancel(self, units = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1934,18 +1688,253 @@ class TBR:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Read current units
-        self.device.TBRUnits.read()
+        # Read units if not already provided
+        if not units:
 
-        # Store them
-        units = self.device.TBRUnits.get()
+            # Read current units
+            self.device.units.TBR.read()
+
+            # Store them
+            units = self.device.units.TBR.get()
 
         # Cancel on-going TBR
         if units == "U/h":
-            self.set(0, units, 0, False)
+            self.set(0, units, 0, True)
 
         elif units == "%":
-            self.set(100, units, 0, False)
+            self.set(100, units, 0, True)
+
+
+
+class Units:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give it an instance to the device it should be linked to
+        self.device = device
+
+        # Give it a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+        # Give units all types
+        self.BG = BGUnits(device)
+        self.C = CUnits(device)
+        self.TBR = TBRUnits(device)
+
+
+
+class BGUnits:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give it an instance to the device it should be linked to
+        self.device = device
+
+        # Give it a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading pump's BG units..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 137)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readBGU")
+
+        # Store BG units to pump report
+        self.device.reporter.storeBGU(self.value)
+
+        # Give user info
+        print "Pump's BG units are set to: " + str(self.value)
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
+class CUnits:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give it an instance to the device it should be linked to
+        self.device = device
+
+        # Give it a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request infos
+        info = "Reading pump's carb units..."
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     attempts = 2,
+                                     size = 1,
+                                     code = 136)
+
+        # Make request
+        self.device.requester.make()
+
+        # Decode pump's response
+        self.decoder.decode("readCU")
+
+        # Store BG units to pump report
+        self.device.reporter.storeCU(self.value)
+
+        # Give user info
+        print "Pump's carb units are set to: " + str(self.value)
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
+
+
+
+class TBRUnits:
+
+    def __init__(self, device):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give it an instance to the device it should be linked to
+        self.device = device
+
+        # Give it a decoder
+        self.decoder = decoder.Decoder(device, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read current TBR in order to extract current units
+        self.device.TBR.read()
+
+        # Get units
+        self.value = self.device.TBR.get()["Units"]
+
+        # Give user info
+        print "Current TBR units: " + self.value
+
+
+
+    def set(self, units):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # If request is for absolute TBR
+        if units == "U/h":
+            parameters = [0]
+
+        # If request is for TBR in percentage
+        elif units == "%":
+            parameters = [1]
+
+        # Define request infos
+        info = "Setting TBR units: " + units
+        sleepReason = ("Waiting for TBR units [" + units + "] to be set... (" +
+                       str(self.device.executionDelay) + "s)")
+
+        # Define request
+        self.device.requester.define(info = info,
+                                     sleep = self.device.executionDelay,
+                                     sleepReason = sleepReason,
+                                     attempts = 0,
+                                     size = 1,
+                                     code = 104,
+                                     parameters = parameters)
+
+        # Make request
+        self.device.requester.make()
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return instance's value
+        return self.value
 
 
 
@@ -1999,10 +1988,13 @@ def main():
     #pump.dailyTotals.read()
 
     # Read BG units set in pump's bolus wizard
-    #pump.BGUnits.read()
+    #pump.units.BG.read()
 
     # Read carb units set in pump's bolus wizard
-    #pump.carbUnits.read()
+    #pump.units.C.read()
+
+    # Read current TBR units
+    #pump.units.TBR.read()
 
     # Read blood glucose targets stored in pump
     #pump.BGTargets.read()
@@ -2024,9 +2016,6 @@ def main():
 
     # Send bolus to pump
     #pump.boluses.deliver(0.1)
-
-    # Read current TBR units
-    #pump.TBRUnits.read()
 
     # Read current TBR
     #pump.TBR.read()
