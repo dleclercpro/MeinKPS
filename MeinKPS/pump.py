@@ -38,6 +38,9 @@
 #         stick
 #       - Reduce session time if looping every 5 minutes?
 #       - Deal with manually set TBR. Read end of TBR?
+#       - What if session of commands is longer than pump's remaining RF
+#         communication time? Detect long session time and compare it with 
+#         remaining one? 
 
 
 
