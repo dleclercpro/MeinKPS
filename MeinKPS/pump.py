@@ -7,9 +7,9 @@
 
     Author:   David Leclerc
 
-    Version:  0.2
+    Version:  0.3
 
-    Date:     01.06.2016
+    Date:     20.02.2017
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -189,36 +189,6 @@ class Pump:
 
         # Stop stick
         self.stick.stop()
-
-
-
-    def snoozeTBR(self, snooze):
-
-        """
-        ========================================================================
-        SNOOZETBR
-        ========================================================================
-        """
-
-        self.setTBR(0, "U/h", snooze)
-
-
-
-    def cancelTBR(self):
-
-        """
-        ========================================================================
-        CANCELTBR
-        ========================================================================
-        """
-
-        self.setTBR(0, "U/h", 0)
-
-
-
-
-
-
 
 
 
