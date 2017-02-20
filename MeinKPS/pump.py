@@ -492,7 +492,7 @@ class Buttons:
         self.decoder = decoder.Decoder(device, self)
 
         # Buttons
-        values = {"EASY": 0, "ESC": 1, "ACT": 2, "UP": 3, "DOWN": 4}
+        self.values = {"EASY": 0, "ESC": 1, "ACT": 2, "UP": 3, "DOWN": 4}
 
 
 
@@ -1599,8 +1599,8 @@ class Boluses:
 
         # Evaluating time required for bolus to be delivered (giving it some
         # additional seconds to be safe)
-        bolusDeliveryTime = (self.rate * bolus +
-                             self.self.device.bolusDelay)
+        bolusDeliveryTime = (self.device.bolusDeliveryRate * bolus +
+                             self.device.bolusDelay)
 
         # Define request infos
         info = "Sending bolus: " + str(bolus) + " U"
@@ -1960,7 +1960,7 @@ def main():
     # Start dialogue with pump
     pump.start()
 
-    # Read bolus history of pump
+    # Read pump time
     #pump.time.read()
 
     # Read pump model
