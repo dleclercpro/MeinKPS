@@ -94,11 +94,15 @@ myPump.dailyTotals.read()
 time.sleep(sleep)
 
 # Read BG units set in pump's bolus wizard
-myPump.BGUnits.read()
+myPump.units.BG.read()
 time.sleep(sleep)
 
 # Read carb units set in pump's bolus wizard
-myPump.carbUnits.read()
+myPump.units.C.read()
+time.sleep(sleep)
+
+# Read current TBR units
+myPump.units.TBR.read()
 time.sleep(sleep)
 
 # Read blood glucose targets stored in pump
@@ -127,10 +131,6 @@ time.sleep(sleep)
 
 # Send bolus to pump
 myPump.boluses.deliver(0.1)
-time.sleep(sleep)
-
-# Read current TBR units
-myPump.TBRUnits.read()
 time.sleep(sleep)
 
 # Read current TBR

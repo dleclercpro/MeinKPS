@@ -29,7 +29,7 @@
 
 # TODO
 #   - Create report entries for stick infos and state?
-#   - Monitor ACK, CRC, SEQ, and NAK bytes
+#   - Monitor ACK, CRC, SEQ, and NAK bytes?
 
 
 
@@ -75,6 +75,9 @@ class Stick:
         # Give the stick a requester
         self.requester = requester.Requester()
 
+        # Give the stick a decoder
+        self.decoder = decoder.Decoder(self)
+
         # Give the stick a buffer
         self.buffer = Buffer(self)
 
@@ -105,9 +108,9 @@ class Stick:
         # Generate serial port handle
         self.handle = serial.Serial()
         self.handle.port = "/dev/ttyUSB0"
-        self.handle.timeout = self.timeout
         self.handle.rtscts = True
         self.handle.dsrdtr = True
+        self.handle.timeout = self.timeout
 
         # Verify stick is plugged in        
         try:
@@ -155,9 +158,31 @@ class Stick:
 
 
 
+def link(recipient, stick):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        LINK
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Link recipient with stick
+    recipient.stick = stick
+
+    # Link recipient with reporter
+    recipient.reporter = stick.reporter
+
+    # Link recipient with requester
+    recipient.requester = stick.requester
+
+    # Link recipient with decoder
+    recipient.decoder = stick.decoder
+
+
+
 class Buffer:
 
-    def __init__(self, device):
+    def __init__(self, stick):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -165,11 +190,8 @@ class Buffer:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a link to stick
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with stick
+        link(self, stick)
 
         # Give buffer a default number of bytes to read
         self.nBytes = 64
@@ -207,14 +229,13 @@ class Buffer:
             now = datetime.datetime.now()
 
             # Empty buffer
-            self.device.rawResponse = self.device.handle.read(self.nBytes)
+            rawResponse = self.stick.handle.read(self.nBytes)
 
             # Update number of bytes read
-            n += len(self.device.rawResponse)
+            n += len(rawResponse)
 
             # If maximum amount of time reached, exit
             if (now - then).seconds >= self.duration:
-
                 break
 
         # Give user output
@@ -224,7 +245,7 @@ class Buffer:
 
 class Signal:
 
-    def __init__(self, device):
+    def __init__(self, stick):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -232,11 +253,8 @@ class Signal:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a link to stick
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with stick
+        link(self, stick)
 
         # Give it a minimum strength threshold
         self.threshold = 150
@@ -258,9 +276,12 @@ class Signal:
         info = "Reading stick signal strength..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     packet = [6, 0, 0],
-                                     remote = False)
+        self.requester.define(info = info,
+                              packet = [6, 0, 0],
+                              remote = False)
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Initialize reading signal strength attempt variable
         n = 0
@@ -275,7 +296,7 @@ class Signal:
             print "Looking for sufficient signal strength: " + str(n) + "/-"
 
             # Remake request
-            self.device.requester.make()
+            self.requester.make()
 
             # Decode stick's response
             self.decoder.decode("readSignalStrength")
@@ -288,7 +309,7 @@ class Signal:
 
 class Interfaces:
 
-    def __init__(self, device):
+    def __init__(self, stick):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -296,21 +317,15 @@ class Interfaces:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give interfaces a link to stick
-        self.device = device
-
-        # Give interfaces a decoder
-        self.decoder = decoder.Decoder(device, self)
-
         # Give interfaces their USB and radio instances
-        self.USB = USB(device)
-        self.radio = Radio(device)
+        self.USB = USB(stick)
+        self.radio = Radio(stick)
 
 
 
 class USB:
 
-    def __init__(self, device):
+    def __init__(self, stick):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -318,20 +333,14 @@ class USB:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a link to stick
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
-
         # Give USB interface a state
-        self.state = State(device, "USB")
+        self.state = State(stick, "USB")
 
 
 
 class Radio:
 
-    def __init__(self, device):
+    def __init__(self, stick):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -339,20 +348,14 @@ class Radio:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a link to stick
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
-
         # Give radio interface a state
-        self.state = State(device, "Radio")
+        self.state = State(stick, "Radio")
 
 
 
 class State:
 
-    def __init__(self, device, interface):
+    def __init__(self, stick, interface):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -360,11 +363,11 @@ class State:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a link to stick
-        self.device = device
+        # Link with stick
+        link(self, stick)
 
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Read interface
+        self.interface = interface
 
         # Define a dictionary of state indicators
         self.values = {"Errors": {"CRC": None,
@@ -373,9 +376,6 @@ class State:
                                   "Timeout": None},
                        "Packets": {"Received": None,
                                    "Sent": None}}
-
-        # Read interface
-        self.interface = interface
 
 
 
@@ -387,6 +387,9 @@ class State:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Update decoder's target
+        self.decoder.target = self
+
         # Read USB interface
         if self.interface == "USB":
 
@@ -394,12 +397,12 @@ class State:
             info = "Reading stick's USB state..."
 
             # Define request
-            self.device.requester.define(info = info,
-                                         packet = [5, 1, 0],
-                                         remote = False)
+            self.requester.define(info = info,
+                                  packet = [5, 1, 0],
+                                  remote = False)
 
             # Make request
-            self.device.requester.make()
+            self.requester.make()
 
             # Decode stick's response
             self.decoder.decode("readUSBState")
@@ -411,12 +414,12 @@ class State:
             info = "Reading stick's radio state..."
 
             # Define request
-            self.device.requester.define(info = info,
-                                         packet = [5, 0, 0],
-                                         remote = False)
+            self.requester.define(info = info,
+                                  packet = [5, 0, 0],
+                                  remote = False)
 
             # Make request
-            self.device.requester.make()
+            self.requester.make()
 
             # Decode stick's response
             self.decoder.decode("readRadioState")
@@ -431,7 +434,7 @@ class State:
 
 class Infos:
 
-    def __init__(self, device):
+    def __init__(self, stick):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -439,11 +442,8 @@ class Infos:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a link to stick
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with stick
+        link(self, stick)
 
         # Initialize infos dictionary
         self.values = {"ACK": None,
@@ -466,12 +466,15 @@ class Infos:
         info = "Reading stick infos..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     packet = [4, 0, 0],
-                                     remote = False)
+        self.requester.define(info = info,
+                              packet = [4, 0, 0],
+                              remote = False)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode stick's response
         self.decoder.decode("readInfos")

@@ -90,6 +90,9 @@ class Pump:
         # Give the pump a requester
         self.requester = requester.Requester()
 
+        # Give the pump a decoder
+        self.decoder = decoder.Decoder(self)
+
         # Give the pump a stick
         self.stick = stick.Stick()
 
@@ -189,9 +192,31 @@ class Pump:
 
 
 
+def link(recipient, pump):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        LINK
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Link recipient with pump
+    recipient.pump = pump
+
+    # Link recipient with reporter
+    recipient.reporter = pump.reporter
+
+    # Link recipient with requester
+    recipient.requester = pump.requester
+
+    # Link recipient with decoder
+    recipient.decoder = pump.decoder
+
+
+
 class Power:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -199,11 +224,8 @@ class Power:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a link to its corresponding device
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -216,16 +238,16 @@ class Power:
         """
 
         # Load pump's report
-        self.device.reporter.load("pump.json")
+        self.reporter.load("pump.json")
 
         # Read last time pump's radio transmitter was power up
-        then = self.device.reporter.getEntry([], "Power Up")
+        then = self.reporter.getEntry([], "Power Up")
 
         # Format time
         then = lib.formatTime(then)
 
         # Define max time allowed between RF communication sessions
-        session = datetime.timedelta(minutes = self.device.sessionTime)
+        session = datetime.timedelta(minutes = self.pump.sessionTime)
 
         # Get current time
         now = datetime.datetime.now()
@@ -246,7 +268,7 @@ class Power:
 
             # Give user info
             print ("Pump's radio transmitter is already on. Remaining time: " +
-                   str(self.device.sessionTime - delta.seconds / 60) + " m")
+                   str(self.pump.sessionTime - delta.seconds / 60) + " m")
 
 
 
@@ -260,23 +282,23 @@ class Power:
 
         # Devine infos for request
         info = ("Powering pump radio transmitter for: " +
-                       str(self.device.sessionTime) + "m")
+                       str(self.pump.sessionTime) + "m")
         sleepReason = ("Sleeping until pump radio transmitter is " +
-                              "powered up... (" + str(self.device.powerTime) +
+                              "powered up... (" + str(self.pump.powerTime) +
                               "s)")
 
         # Define request
-        self.device.requester.define(info = info,
-                                     sleep = self.device.powerTime,
-                                     sleepReason = sleepReason,
-                                     power = 85,
-                                     attempts = 0,
-                                     size = 0,
-                                     code = 93,
-                                     parameters = [1, self.device.sessionTime])
+        self.requester.define(info = info,
+                              sleep = self.pump.powerTime,
+                              sleepReason = sleepReason,
+                              power = 85,
+                              attempts = 0,
+                              size = 0,
+                              code = 93,
+                              parameters = [1, self.pump.sessionTime])
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
 
         # Get current time
         now = datetime.datetime.now()
@@ -285,13 +307,13 @@ class Power:
         now = lib.formatTime(now)
 
         # Save power up time
-        self.device.reporter.storePowerTime(now)
+        self.reporter.storePowerTime(now)
 
 
 
 class Time:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -299,11 +321,8 @@ class Time:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -319,13 +338,16 @@ class Time:
         info = "Reading pump time..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 112)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 112)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readTime")
@@ -350,7 +372,7 @@ class Time:
 
 class Model:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -358,11 +380,8 @@ class Model:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -378,19 +397,22 @@ class Model:
         info = "Reading pump model..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 141)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 141)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readModel")
 
         # Store pump model
-        self.device.reporter.storeModel(self.value)
+        self.reporter.storeModel(self.value)
 
         # Give user info
         print "Pump model: " + str(self.value)
@@ -412,7 +434,7 @@ class Model:
 
 class Firmware:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -420,11 +442,8 @@ class Firmware:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -440,19 +459,22 @@ class Firmware:
         info = "Reading pump firmware version..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 116)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 116)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readFirmware")
 
         # Store pump model
-        self.device.reporter.storeFirmware(self.value)
+        self.reporter.storeFirmware(self.value)
 
         # Give user info
         print "Pump firmware version: " + str(self.value)
@@ -474,7 +496,7 @@ class Firmware:
 
 class Buttons:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -482,11 +504,8 @@ class Buttons:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Buttons
         self.values = {"EASY": 0, "ESC": 1, "ACT": 2, "UP": 3, "DOWN": 4}
@@ -504,25 +523,25 @@ class Buttons:
         # Define request infos
         info = "Pushing button: " + button
         sleepReason = ("Waiting for button " + button + " to be pushed... (" +
-                       str(self.device.executionDelay) + "s)")
+                       str(self.pump.executionDelay) + "s)")
 
         # Define request
-        self.device.requester.define(info = info,
-                                     sleep = self.device.executionDelay,
-                                     sleepReason = sleepReason,
-                                     attempts = 1,
-                                     size = 0,
-                                     code = 91,
-                                     parameters = [int(self.values[button])])
+        self.requester.define(info = info,
+                              sleep = self.pump.executionDelay,
+                              sleepReason = sleepReason,
+                              attempts = 1,
+                              size = 0,
+                              code = 91,
+                              parameters = [int(self.values[button])])
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
 
 
 
 class Battery:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -530,11 +549,8 @@ class Battery:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -550,13 +566,16 @@ class Battery:
         info = "Reading battery level..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 114)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 114)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readBatteryLevel")
@@ -568,7 +587,7 @@ class Battery:
         now = lib.formatTime(now)
 
         # Add current reservoir level to pump report
-        self.device.reporter.addBatteryLevel(now, [self.level, self.voltage])
+        self.reporter.addBatteryLevel(now, [self.level, self.voltage])
 
         # Give user info
         print ("Pump's battery level: " +
@@ -591,7 +610,7 @@ class Battery:
 
 class Reservoir:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -599,11 +618,8 @@ class Reservoir:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -619,13 +635,16 @@ class Reservoir:
         info = "Reading amount of insulin left in pump reservoir..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 115)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 115)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readReservoirLevel")
@@ -637,7 +656,7 @@ class Reservoir:
         now = lib.formatTime(now)
 
         # Add current reservoir level to pump report
-        self.device.reporter.addReservoirLevel(now, self.value)
+        self.reporter.addReservoirLevel(now, self.value)
 
         # Give user info
         print "Amount of insulin in reservoir: " + str(self.value) + " U"
@@ -659,7 +678,7 @@ class Reservoir:
 
 class Status:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -667,11 +686,8 @@ class Status:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -731,13 +747,16 @@ class Status:
         info = "Reading pump status..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 206)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 206)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readStatus")
@@ -758,19 +777,19 @@ class Status:
         # Define request infos
         info = "Suspending pump activity..."
         sleepReason = ("Waiting for pump activity to be suspended... (" +
-                       str(self.device.executionDelay) + "s)")
+                       str(self.pump.executionDelay) + "s)")
 
         # Define request
-        self.device.requester.define(info = info,
-                                     sleep = self.device.executionDelay,
-                                     sleepReason = sleepReason,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 77,
-                                     parameters = [1])
+        self.requester.define(info = info,
+                              sleep = self.pump.executionDelay,
+                              sleepReason = sleepReason,
+                              attempts = 2,
+                              size = 1,
+                              code = 77,
+                              parameters = [1])
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
 
 
 
@@ -785,19 +804,19 @@ class Status:
         # Define request infos
         info = "Resuming pump activity..."
         sleepReason = ("Waiting for pump activity to be resumed... (" +
-                       str(self.device.executionDelay) + "s)")
+                       str(self.pump.executionDelay) + "s)")
 
         # Define request
-        self.device.requester.define(info = info,
-                                     sleep = self.device.executionDelay,
-                                     sleepReason = sleepReason,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 77,
-                                     parameters = [0])
+        self.requester.define(info = info,
+                              sleep = self.pump.executionDelay,
+                              sleepReason = sleepReason,
+                              attempts = 2,
+                              size = 1,
+                              code = 77,
+                              parameters = [0])
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
 
 
 
@@ -816,7 +835,7 @@ class Status:
 
 class Settings:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -824,11 +843,8 @@ class Settings:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -886,19 +902,22 @@ class Settings:
         info = "Reading pump settings..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 192)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 192)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readSettings")
 
         # Save pump settings to profile report
-        self.device.reporter.storeSettings(self.values)
+        self.reporter.storeSettings(self.values)
 
         # Give user info
         print "Pump settings: " + str(self.values)
@@ -920,7 +939,7 @@ class Settings:
 
 class BGTargets:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -928,11 +947,8 @@ class BGTargets:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Initialize blood glucose targets, times, and units
         self.values = []
@@ -953,22 +969,25 @@ class BGTargets:
         info = "Reading blood glucose targets from pump..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 159)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 159)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readBGTargets")
 
         # Store BG targets to pump report
-        self.device.reporter.storeBGTargets(self.times, self.values, self.units)
+        self.reporter.storeBGTargets(self.times, self.values, self.units)
 
         # Store BG units to pump report
-        self.device.reporter.storeBGU(self.units)
+        self.reporter.storeBGU(self.units)
 
         # Get number of BG targets read
         n = len(self.values)
@@ -997,7 +1016,7 @@ class BGTargets:
 
 class ISF:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1005,11 +1024,8 @@ class ISF:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Initialize insulin sensitivity factors, times, and units
         self.values = []
@@ -1030,23 +1046,25 @@ class ISF:
         info = "Reading insulin sensitivity factors from pump..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 139)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 139)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readISF")
 
         # Store insulin sensitivities factors to pump report
-        self.device.reporter.storeISF(self.times, self.values,
-                                      self.units + "/U")
+        self.reporter.storeISF(self.times, self.values, self.units + "/U")
 
         # Store BG units to pump report
-        self.device.reporter.storeBGU(self.units)
+        self.reporter.storeBGU(self.units)
 
         # Get number of ISF read
         n = len(self.values)
@@ -1075,7 +1093,7 @@ class ISF:
 
 class CSF:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1083,11 +1101,8 @@ class CSF:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Initialize carb sensitivity factors, times, and units
         self.values = []
@@ -1108,23 +1123,25 @@ class CSF:
         info = "Reading carb sensitivity factors from pump..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 138)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 138)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readCSF")
 
         # Store carb sensitivities factors to pump report
-        self.device.reporter.storeCSF(self.times, self.values,
-                                      self.units + "/U")
+        self.reporter.storeCSF(self.times, self.values, self.units + "/U")
 
         # Store BG units to pump report
-        self.device.reporter.storeCU(self.units)
+        self.reporter.storeCU(self.units)
 
         # Get number of ISF read
         n = len(self.values)
@@ -1153,7 +1170,7 @@ class CSF:
 
 class DailyTotals:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1161,11 +1178,8 @@ class DailyTotals:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Initialize daily totals dictionary
         value = {"Today": None, "Yesterday": None}
@@ -1184,13 +1198,16 @@ class DailyTotals:
         info = "Reading pump daily totals..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 121)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 121)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readDailyTotals")
@@ -1217,7 +1234,7 @@ class DailyTotals:
 
 class History:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1225,11 +1242,8 @@ class History:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Initialize pump history vector
         self.pages = []
@@ -1248,13 +1262,16 @@ class History:
         info = "Reading current pump history page number..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 157)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 157)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readNumberHistoryPages")
@@ -1287,17 +1304,17 @@ class History:
             info = "Reading pump history page: " + str(i)
 
             # Define request
-            self.device.requester.define(info = info,
+            self.requester.define(info = info,
                                   attempts = 2,
                                   size = 2,
                                   code = 128,
                                   parameters = [i])
 
             # Make request
-            self.device.requester.make()
+            self.requester.make()
 
             # Extend known history of pump
-            self.pages.extend(self.device.requester.data)
+            self.pages.extend(self.requester.data)
 
         # Print collected history pages
         print "Read " + str(n) + " page(s) of pump history:"
@@ -1320,7 +1337,7 @@ class History:
 
 class Boluses:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1328,11 +1345,8 @@ class Boluses:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Initialize boluses and times vectors
         self.values = []
@@ -1351,16 +1365,16 @@ class Boluses:
         """
 
         # Verify pump status and settings before doing anything
-        if not self.device.status.verify():
+        if not self.pump.status.verify():
             return
 
-        if not self.device.settings.verify(bolus = bolus):
+        if not self.pump.settings.verify(bolus = bolus):
             return
 
         # Evaluating time required for bolus to be delivered (giving it some
         # additional seconds to be safe)
-        bolusDeliveryTime = (self.device.bolusDeliveryRate * bolus +
-                             self.device.bolusDelay)
+        bolusDeliveryTime = (self.pump.bolusDeliveryRate * bolus +
+                             self.pump.bolusDelay)
 
         # Define request infos
         info = "Sending bolus: " + str(bolus) + " U"
@@ -1368,17 +1382,16 @@ class Boluses:
                        str(bolusDeliveryTime) + "s)")
 
         # Define request
-        self.device.requester.define(info = info,
-                                     sleep = bolusDeliveryTime,
-                                     sleepReason = sleepReason,
-                                     attempts = 0,
-                                     size = 1,
-                                     code = 66,
-                                     parameters = [int(bolus /
-                                                   self.device.bolusStroke)])
+        self.requester.define(info = info,
+                              sleep = bolusDeliveryTime,
+                              sleepReason = sleepReason,
+                              attempts = 0,
+                              size = 1,
+                              code = 66,
+                              parameters = [int(bolus / self.pump.bolusStroke)])
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
 
         # Read last page and search it for boluses, then store new one to report
         self.read(1)
@@ -1394,7 +1407,10 @@ class Boluses:
         """
 
         # Download n pages of pump history (or all of it if none is given)
-        self.device.history.read(n)
+        self.pump.history.read(n)
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump record
         self.decoder.decodeBolusRecord(code = 1, size = 9)
@@ -1407,7 +1423,7 @@ class Boluses:
             print str(self.values[i]) + " U (" + str(self.times[i]) + ")"
 
         # If boluses read, store them
-        self.device.reporter.addBoluses(self.times, self.values)
+        self.reporter.addBoluses(self.times, self.values)
 
 
 
@@ -1426,7 +1442,7 @@ class Boluses:
 
 class Carbs:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1434,11 +1450,8 @@ class Carbs:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Initialize carbs and times vectors
         self.values = []
@@ -1471,7 +1484,10 @@ class Carbs:
         """
 
         # Download n pages of pump history (or all of it if none is given)
-        self.device.history.read(n)
+        self.pump.history.read(n)
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump record
         self.decoder.decodeBolusWizardRecord(code = 91, headSize = 2,
@@ -1485,7 +1501,7 @@ class Carbs:
             print str(self.values[i]) + " U (" + str(self.times[i]) + ")"
 
         # If carbs read, store them
-        self.device.reporter.addCarbs(self.times, self.values)
+        self.reporter.addCarbs(self.times, self.values)
 
 
 
@@ -1504,7 +1520,7 @@ class Carbs:
 
 class TBR:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1512,11 +1528,8 @@ class TBR:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it a device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
         # Define current TBR dictionary
         self.value = {"Rate": None, "Units": None, "Duration": None}
@@ -1535,13 +1548,16 @@ class TBR:
         info = "Reading current TBR..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 152)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 152)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readTBR")
@@ -1572,10 +1588,10 @@ class TBR:
         if not cancel:
 
             # Verify pump status and settings before doing anything
-            if not self.device.status.verify():
+            if not self.pump.status.verify():
                 return
 
-            if not self.device.settings.verify(rate = rate, units = units):
+            if not self.pump.settings.verify(rate = rate, units = units):
                 return
 
             # Before issuing any TBR, read the current one
@@ -1600,20 +1616,20 @@ class TBR:
                 print "Old and new TBR units do not match. Adjusting them..."
 
                 # Modify units as wished by the user
-                self.device.units.TBR.set(units)
+                self.pump.units.TBR.set(units)
 
         # If request is for absolute TBR
         if units == "U/h":
             code = 76
             parameters = [0,
-                          int(round(rate / self.device.basalStroke * 2.0)),
-                          int(duration / self.device.timeBlock)]
+                          int(round(rate / self.pump.basalStroke * 2.0)),
+                          int(duration / self.pump.timeBlock)]
 
         # If request is for TBR in percentage
         elif units == "%":
             code = 105
             parameters = [int(round(rate)),
-                          int(duration / self.device.timeBlock)]
+                          int(duration / self.pump.timeBlock)]
 
         # Get current time
         now = datetime.datetime.now()
@@ -1624,19 +1640,19 @@ class TBR:
         # Define request infos
         info = "Setting TBR: " + strTBR
         sleepReason = ("Waiting for TBR [" + strTBR + "] to be set... (" +
-                       str(self.device.executionDelay) + "s)")
+                       str(self.pump.executionDelay) + "s)")
 
         # Define request
-        self.device.requester.define(info = info,
-                                     sleep = self.device.executionDelay,
-                                     sleepReason = sleepReason,
-                                     attempts = 0,
-                                     size = 1,
-                                     code = code,
-                                     parameters = parameters)
+        self.requester.define(info = info,
+                              sleep = self.pump.executionDelay,
+                              sleepReason = sleepReason,
+                              attempts = 0,
+                              size = 1,
+                              code = code,
+                              parameters = parameters)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
 
         # Give user info
         print "Verifying if new TBR was correctly set..."
@@ -1658,7 +1674,7 @@ class TBR:
             print "Storing it..."
 
             # Add bolus to insulin report
-            self.device.reporter.addTBR(now, rate, units, duration)
+            self.reporter.addTBR(now, rate, units, duration)
 
         # FIXME: Otherwise, quit
         else:
@@ -1692,10 +1708,10 @@ class TBR:
         if not units:
 
             # Read current units
-            self.device.units.TBR.read()
+            self.pump.units.TBR.read()
 
             # Store them
-            units = self.device.units.TBR.get()
+            units = self.pump.units.TBR.get()
 
         # Cancel on-going TBR
         if units == "U/h":
@@ -1708,7 +1724,7 @@ class TBR:
 
 class Units:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1716,22 +1732,16 @@ class Units:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
-
         # Give units all types
-        self.BG = BGUnits(device)
-        self.C = CUnits(device)
-        self.TBR = TBRUnits(device)
+        self.BG = BGUnits(pump)
+        self.C = CUnits(pump)
+        self.TBR = TBRUnits(pump)
 
 
 
 class BGUnits:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1739,11 +1749,8 @@ class BGUnits:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -1759,19 +1766,22 @@ class BGUnits:
         info = "Reading pump's BG units..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 137)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 137)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readBGU")
 
         # Store BG units to pump report
-        self.device.reporter.storeBGU(self.value)
+        self.reporter.storeBGU(self.value)
 
         # Give user info
         print "Pump's BG units are set to: " + str(self.value)
@@ -1793,7 +1803,7 @@ class BGUnits:
 
 class CUnits:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1801,11 +1811,8 @@ class CUnits:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -1821,19 +1828,22 @@ class CUnits:
         info = "Reading pump's carb units..."
 
         # Define request
-        self.device.requester.define(info = info,
-                                     attempts = 2,
-                                     size = 1,
-                                     code = 136)
+        self.requester.define(info = info,
+                              attempts = 2,
+                              size = 1,
+                              code = 136)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
+
+        # Update decoder's target
+        self.decoder.target = self
 
         # Decode pump's response
         self.decoder.decode("readCU")
 
         # Store BG units to pump report
-        self.device.reporter.storeCU(self.value)
+        self.reporter.storeCU(self.value)
 
         # Give user info
         print "Pump's carb units are set to: " + str(self.value)
@@ -1855,7 +1865,7 @@ class CUnits:
 
 class TBRUnits:
 
-    def __init__(self, device):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1863,11 +1873,8 @@ class TBRUnits:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give it an instance to the device it should be linked to
-        self.device = device
-
-        # Give it a decoder
-        self.decoder = decoder.Decoder(device, self)
+        # Link with pump
+        link(self, pump)
 
 
 
@@ -1880,10 +1887,10 @@ class TBRUnits:
         """
 
         # Read current TBR in order to extract current units
-        self.device.TBR.read()
+        self.pump.TBR.read()
 
         # Get units
-        self.value = self.device.TBR.get()["Units"]
+        self.value = self.pump.TBR.get()["Units"]
 
         # Give user info
         print "Current TBR units: " + self.value
@@ -1909,19 +1916,19 @@ class TBRUnits:
         # Define request infos
         info = "Setting TBR units: " + units
         sleepReason = ("Waiting for TBR units [" + units + "] to be set... (" +
-                       str(self.device.executionDelay) + "s)")
+                       str(self.pump.executionDelay) + "s)")
 
         # Define request
-        self.device.requester.define(info = info,
-                                     sleep = self.device.executionDelay,
-                                     sleepReason = sleepReason,
-                                     attempts = 0,
-                                     size = 1,
-                                     code = 104,
-                                     parameters = parameters)
+        self.requester.define(info = info,
+                              sleep = self.pump.executionDelay,
+                              sleepReason = sleepReason,
+                              attempts = 0,
+                              size = 1,
+                              code = 104,
+                              parameters = parameters)
 
         # Make request
-        self.device.requester.make()
+        self.requester.make()
 
 
 

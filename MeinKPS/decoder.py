@@ -34,7 +34,7 @@ import lib
 
 class Decoder:
 
-    def __init__(self, device, part):
+    def __init__(self, device):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,9 +45,8 @@ class Decoder:
         # Give the decoder a device from which to read bytes
         self.device = device
 
-        # Give the decoder a part of the device to which the previously decoded
-        # information should be stored
-        self.part = part
+        # Initialize target on which to store decoded responses
+        self.target = None
 
 
 
@@ -82,11 +81,11 @@ class Decoder:
             version = 1.00 * response[19] + 0.01 * response[20]
 
             # Store infos
-            self.part.values["ACK"] = ACK
-            self.part.values["Status"] = status
-            self.part.values["Description"] = description
-            self.part.values["Version"] = version
-            self.part.values["Frequency"] = frequency
+            self.target.values["ACK"] = ACK
+            self.target.values["Status"] = status
+            self.target.values["Description"] = description
+            self.target.values["Version"] = version
+            self.target.values["Frequency"] = frequency
 
 
 
@@ -96,7 +95,7 @@ class Decoder:
         elif command == "readSignalStrength":
 
             # Decode strength of signal
-            self.part.value = response[3]
+            self.target.value = response[3]
 
 
 
@@ -114,12 +113,12 @@ class Decoder:
             packetsSent = lib.convertBytes(response[11:15])
 
             # Store state
-            self.part.values["Errors"]["CRC"] = errorCRC
-            self.part.values["Errors"]["SEQ"] = errorSEQ
-            self.part.values["Errors"]["NAK"] = errorNAK
-            self.part.values["Errors"]["Timeout"] = errorTimeout
-            self.part.values["Packets"]["Received"] = packetsReceived
-            self.part.values["Packets"]["Sent"] = packetsSent
+            self.target.values["Errors"]["CRC"] = errorCRC
+            self.target.values["Errors"]["SEQ"] = errorSEQ
+            self.target.values["Errors"]["NAK"] = errorNAK
+            self.target.values["Errors"]["Timeout"] = errorTimeout
+            self.target.values["Packets"]["Received"] = packetsReceived
+            self.target.values["Packets"]["Sent"] = packetsSent
 
 
 
@@ -140,7 +139,7 @@ class Decoder:
             time = datetime.datetime(year, month, day, hour, minute, second)
 
             # Store formatted time
-            self.part.value = lib.formatTime(time)
+            self.target.value = lib.formatTime(time)
 
 
 
@@ -150,7 +149,7 @@ class Decoder:
         elif command == "readModel":
 
             # Decode pump model
-            self.part.value = int("".join([chr(x) for x in data[1:4]]))
+            self.target.value = int("".join([chr(x) for x in data[1:4]]))
 
 
 
@@ -160,8 +159,8 @@ class Decoder:
         elif command == "readFirmware":
 
             # Decode pump firmware
-            self.part.value = ("".join(responseChr[17:21]) +
-                               " " + "".join(responseChr[21:24]))
+            self.target.value = ("".join(responseChr[17:21]) +
+                                 " " + "".join(responseChr[21:24]))
 
 
 
@@ -174,13 +173,13 @@ class Decoder:
             level = data[0]
 
             if level == 0:
-                self.part.level = "Normal"
+                self.target.level = "Normal"
             elif level == 1:
-                self.part.level = "Low"
+                self.target.level = "Low"
 
             # Decode battery voltage
-            self.part.voltage = round(lib.bangInt([data[1], data[2]]) / 100.0,
-                                      1)
+            self.target.voltage = round(lib.bangInt([data[1], data[2]]) / 100.0,
+                                        1)
 
 
 
@@ -190,8 +189,8 @@ class Decoder:
         elif command == "readReservoirLevel":
 
             # Decode remaining amount of insulin
-            self.part.value = round(lib.bangInt(data[0:2]) *
-                                    self.device.bolusStroke, 1)
+            self.target.value = round(lib.bangInt(data[0:2]) *
+                                      self.device.bolusStroke, 1)
 
 
 
@@ -201,9 +200,9 @@ class Decoder:
         elif command == "readStatus":
 
             # Extract pump status from received data
-            self.part.value = {"Normal" : data[0] == 3,
-                               "Bolusing" : data[1] == 1,
-                               "Suspended" : data[2] == 1}
+            self.target.value = {"Normal" : data[0] == 3,
+                                 "Bolusing" : data[1] == 1,
+                                 "Suspended" : data[2] == 1}
 
 
 
@@ -213,7 +212,7 @@ class Decoder:
         elif command == "readSettings":
 
             # Decode pump settings
-            self.part.values = {
+            self.target.values = {
                 "IAC": data[17],
                 "Max Bolus": data[5] * self.device.bolusStroke,
                 "Max Basal": (lib.bangInt(data[6:8]) *
@@ -230,10 +229,10 @@ class Decoder:
             units = data[0]
 
             if units == 1:
-                self.part.value = "mg/dL"
+                self.target.value = "mg/dL"
 
             elif units == 2:
-                self.part.value = "mmol/L"
+                self.target.value = "mmol/L"
 
 
 
@@ -246,10 +245,10 @@ class Decoder:
             units = data[0]
             
             if units == 1:
-                self.part.value = "g"
+                self.target.value = "g"
 
             elif units == 2:
-                self.part.value = "exchanges"
+                self.target.value = "exchanges"
 
 
 
@@ -259,10 +258,10 @@ class Decoder:
         elif command == "readDailyTotals":
 
             # Decode daily totals
-            self.part.value = {"Today": round(lib.bangInt(data[0:2]) *
-                                              self.device.bolusStroke, 2),
-                               "Yesterday": round(lib.bangInt(data[2:4]) *
-                                                  self.device.bolusStroke, 2)}
+            self.target.value = {"Today": round(lib.bangInt(data[0:2]) *
+                                          self.device.bolusStroke, 2),
+                                 "Yesterday": round(lib.bangInt(data[2:4]) *
+                                              self.device.bolusStroke, 2)}
 
 
 
@@ -276,13 +275,13 @@ class Decoder:
 
             # Decode units
             if units == 1:
-                self.part.units = "mg/dL"
+                self.target.units = "mg/dL"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                self.part.units = "mmol/L"
+                self.target.units = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -326,8 +325,8 @@ class Decoder:
 
             # Rearrange targets to have starting times instead of ending times
             for i in range(len(targets)):
-                self.part.values.append(targets[i])
-                self.part.times.append(times[i - 1])
+                self.target.values.append(targets[i])
+                self.target.times.append(times[i - 1])
 
 
 
@@ -337,7 +336,7 @@ class Decoder:
         elif command == "readNumberHistoryPages":
 
             # Decode and store number of history pages
-            self.part.size = data[3] + 1
+            self.target.size = data[3] + 1
 
 
 
@@ -351,13 +350,13 @@ class Decoder:
 
             # Decode units
             if units == 1:
-                self.part.units = "mg/dL"
+                self.target.units = "mg/dL"
                 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                self.part.units = "mmol/L"
+                self.target.units = "mmol/L"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -401,8 +400,8 @@ class Decoder:
 
             # Rearrange factors to have starting times instead of ending times
             for i in range(len(factors)):
-                self.part.values.append(factors[i])
-                self.part.times.append(times[i - 1])
+                self.target.values.append(factors[i])
+                self.target.times.append(times[i - 1])
 
 
 
@@ -416,13 +415,13 @@ class Decoder:
 
             # Decode units
             if units == 1:
-                self.part.units = "g"
+                self.target.units = "g"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 0
 
             elif units == 2:
-                self.part.units = "exchanges"
+                self.target.units = "exchanges"
 
                 # Define a multiplicator to decode ISF bytes
                 m = 1.0
@@ -466,8 +465,8 @@ class Decoder:
 
             # Rearrange factors to have starting times instead of ending times
             for i in range(len(factors)):
-                self.part.values.append(factors[i])
-                self.part.times.append(times[i - 1])
+                self.target.values.append(factors[i])
+                self.target.times.append(times[i - 1])
 
 
 
@@ -482,20 +481,20 @@ class Decoder:
             if units == 0:
 
                 # Decode TBR characteristics
-                self.part.value["Units"] = "U/h"
-                self.part.value["Rate"] = round(lib.bangInt(data[2:4]) *
-                                                self.device.basalStroke / 2.0,
-                                                2)
+                self.target.value["Units"] = "U/h"
+                self.target.value["Rate"] = round(lib.bangInt(data[2:4]) *
+                                                  self.device.basalStroke / 2.0,
+                                                  2)
 
             # Extract TBR [%]
             elif units == 1:
 
                 # Decode TBR characteristics
-                self.part.value["Units"] = "%"
-                self.part.value["Rate"] = round(data[1], 2)
+                self.target.value["Units"] = "%"
+                self.target.value["Rate"] = round(data[1], 2)
 
             # Decode TBR remaining time
-            self.part.value["Duration"] = round(lib.bangInt(data[4:6]), 0)
+            self.target.value["Duration"] = round(lib.bangInt(data[4:6]), 0)
 
 
 
@@ -546,8 +545,8 @@ class Decoder:
                     #print "Bolus read: " + str(bolus) + "U (" + t + ")"
                     
                     # Store bolus
-                    self.part.values.append(bolus)
-                    self.part.times.append(t)
+                    self.target.values.append(bolus)
+                    self.target.times.append(t)
 
             except:
                 pass
@@ -673,8 +672,8 @@ class Decoder:
                     # Add carbs and times at which they were consumed to their
                     # respective vectors only if they have a given value!
                     if C:
-                        self.part.values.append([C, CU])
-                        self.part.times.append(t)
+                        self.target.values.append([C, CU])
+                        self.target.times.append(t)
 
                     # Give user output
                     #print "Time: " + t

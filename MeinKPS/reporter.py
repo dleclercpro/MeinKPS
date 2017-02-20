@@ -266,11 +266,12 @@ class Reporter:
         ========================================================================
         """
 
+        # FIXME
         # Look if trying to add entry in an already found section
-        if self.section != self.lastSection:
+        #if self.section != self.lastSection:
 
-            # Load report section
-            self.getSection(path, True)
+        # Load report section
+        self.getSection(path, True)
 
         # Give user info
         print ("Attempting to add entry: " + self.formatPath(path) + " > " +
