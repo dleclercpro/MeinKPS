@@ -66,9 +66,14 @@ class Requester:
         # Initialize data vector
         self.data = []
 
+        # Initialize a packet dictionary for the requester
+        self.packets = {"Normal": [],
+                        "Poll": [],
+                        "Download": []}
 
 
-    def start(self, recipient = None, serial = None, handle = None):
+
+    def start(self, device = None, handle = None, serial = None):
 
         """
         ========================================================================
@@ -76,29 +81,25 @@ class Requester:
         ========================================================================
         """
 
+        # FIXME: can't we make number of inputs smaller?
+
         # Verify if requester can be properly initialized
-        if (recipient == None) | (handle == None):
+        if (device == None) | (handle == None):
 
             # If user forgot to give required input, quit
-            sys.exit("Please define a request recipient as well as a handle " +
-                     "for the requester.")
+            sys.exit("Please define a device as well as a handle for the " +
+                     "requester.")
 
-        # Give requester the future recipient of its requests, that is the
-        # device
-        self.recipient = recipient
+        # Give requester the device to which it is making requests
+        self.device = device
 
-        # Read and store encoded version of recipient's serial number
+        # Read and store encoded version of device's serial number
         if serial is not None:
             self.serial = lib.encodeSerialNumber(serial)
 
         # Link requester with the previously generated USB serial handle of said
         # device
         self.handle = handle
-
-        # Initialize a packet dictionary for the requester
-        self.packets = {"Normal": [],
-                        "Poll": [],
-                        "Download": []}
 
 
 
@@ -133,7 +134,7 @@ class Requester:
 
 
 
-    def build(self, sort = "Normal"):
+    def build(self, packetType = "Normal"):
 
         """
         ========================================================================
@@ -148,16 +149,16 @@ class Requester:
         if self.packet != None:
             packet = self.packet
 
-        # If recipient is stick
-        if self.recipient == "Stick":
+        # If device is stick
+        if self.device == "Stick":
 
             pass
 
-        # If recipient is pump
-        elif self.recipient == "Pump":
+        # If device is pump
+        elif self.device == "Pump":
 
             # Build normal request packet
-            if sort == "Normal":
+            if packetType == "Normal":
                 packet.extend([1, 0, 167, 1])
                 packet.extend(self.serial)
                 packet.append(128 | lib.getByte(len(self.parameters), 1))
@@ -172,27 +173,27 @@ class Requester:
                 packet.append(lib.computeCRC8(self.parameters))
 
             # Build poll request packet
-            elif sort == "Poll":
+            elif packetType == "Poll":
                 packet = [3, 0, 0]
 
             # Build download request packet
-            elif sort == "Download":
+            elif packetType == "Download":
                 packet.extend([12, 0])
                 packet.append(lib.getByte(self.nBytesExpected, 1))
                 packet.append(lib.getByte(self.nBytesExpected, 0))
                 packet.append(lib.computeCRC8(packet))
 
-        # If recipient is CGM
-        elif self.recipient == "CGM":
+        # If device is CGM
+        elif self.device == "CGM":
 
             pass
 
         # Update requester's packet dictionary
-        self.packets[sort] = packet
+        self.packets[packetType] = packet
 
 
 
-    def send(self, sort = "Normal"):
+    def send(self, packetType = "Normal"):
 
         """
         ========================================================================
@@ -201,10 +202,10 @@ class Requester:
         """
 
         # Give user info
-        print "Sending packet: " + str(self.packets[sort])
+        print "Sending packet: " + str(self.packets[packetType])
 
         # Send request packet as bytes to device
-        self.handle.write(bytearray(self.packets[sort]))
+        self.handle.write(bytearray(self.packets[packetType]))
 
         # Give device some time to respond
         time.sleep(self.responseSleep)

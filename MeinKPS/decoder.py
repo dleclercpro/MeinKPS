@@ -34,7 +34,7 @@ import lib
 
 class Decoder:
 
-    def __init__(self, device):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,15 +42,12 @@ class Decoder:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give the decoder a device from which to read bytes
-        self.device = device
-
         # Initialize target on which to store decoded responses
         self.target = None
 
 
 
-    def decode(self, command):
+    def decode(self, command, response):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,41 +55,10 @@ class Decoder:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Get device's response
-        response = self.device.requester.response
-        responseHex = self.device.requester.responseHex
-        responseChr = self.device.requester.responseChr
-
-        # Get device's data
-        data = self.device.requester.data
-
-
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READINFOS
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if command == "readInfos":
-
-            # Decode infos
-            ACK = response[0]
-            status = responseChr[1]
-            description = "".join(responseChr[9:19])
-            frequency = str(self.device.frequencies[response[8]]) + " MHz"
-            version = 1.00 * response[19] + 0.01 * response[20]
-
-            # Store infos
-            self.target.values["ACK"] = ACK
-            self.target.values["Status"] = status
-            self.target.values["Description"] = description
-            self.target.values["Version"] = version
-            self.target.values["Frequency"] = frequency
-
-
-
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # READSIGNALSTRENGTH
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readSignalStrength":
+        if command == "ReadSignalStrength":
 
             # Decode strength of signal
             self.target.value = response[3]
@@ -102,7 +68,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # READUSBSTATE / READRADIOSTATE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif (command == "readUSBState") or (command == "readRadioState"):
+        elif (command == "ReadUSBState") or (command == "ReadRadioState"):
 
             # Decode state
             errorCRC = response[3]
@@ -119,6 +85,30 @@ class Decoder:
             self.target.values["Errors"]["Timeout"] = errorTimeout
             self.target.values["Packets"]["Received"] = packetsReceived
             self.target.values["Packets"]["Sent"] = packetsSent
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READINFOS
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elif command == "ReadInfos":
+
+            # Decode infos
+            ACK = response[0]
+            #status = responseChr[1] # FIXME
+            status = response[1]
+            #description = "".join(responseChr[9:19]) # FIXME
+            description = response[9]
+            #frequency = str(self.device.frequencies[response[8]]) + " MHz" #FIXME
+            version = 1.00 * response[19] + 0.01 * response[20]
+            frequency = response[8]
+
+            # Store infos
+            self.target.values["ACK"] = ACK
+            self.target.values["Status"] = status
+            self.target.values["Description"] = description
+            self.target.values["Version"] = version
+            self.target.values["Frequency"] = frequency
 
 
 

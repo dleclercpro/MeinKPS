@@ -7,7 +7,7 @@
 
     Author:   David Leclerc
 
-    Version:  1.2
+    Version:  0.3
 
     Date:     01.06.2016
 
@@ -45,19 +45,19 @@ import datetime
 
 # USER LIBRARIES
 import lib
-import reporter
-import requester
-import decoder
+import commands
 
 
 
 class Stick:
 
     # STICK CHARACTERISTICS
-    vendor      = 0x0a21
-    product     = 0x8001
-    timeout     = 0.1 # (s) / 0.5
-    frequencies = {0: 916.5, 1: 868.35, 255: 916.5} # MHz
+    vendor          = 0x0a21
+    product         = 0x8001
+    frequencies     = {0: 916.5, 1: 868.35, 255: 916.5} # (MHz)
+    nBytesDefault   = 64 # Default number of bytes to read from buffer
+    timeout         = 0.1 # (s) # Time to read from buffer [0.5]
+    bufferEmptyTime = 0.5 # (s)
 
 
 
@@ -69,17 +69,12 @@ class Stick:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give the stick a reporter
-        self.reporter = reporter.Reporter()
-
-        # Give the stick a requester
-        self.requester = requester.Requester()
-
-        # Give the stick a decoder
-        self.decoder = decoder.Decoder(self)
-
-        # Give the stick a buffer
-        self.buffer = Buffer(self)
+        # Generate serial port handle
+        self.handle = serial.Serial()
+        self.handle.port = "/dev/ttyUSB0"
+        self.handle.rtscts = True
+        self.handle.dsrdtr = True
+        self.handle.timeout = self.timeout
 
         # Give the stick a signal
         self.signal = Signal(self)
@@ -105,14 +100,7 @@ class Stick:
             + " vendor=" + str(self.vendor)
             + " product=" + str(self.product))
 
-        # Generate serial port handle
-        self.handle = serial.Serial()
-        self.handle.port = "/dev/ttyUSB0"
-        self.handle.rtscts = True
-        self.handle.dsrdtr = True
-        self.handle.timeout = self.timeout
-
-        # Verify stick is plugged in        
+        # Verify if stick is plugged in        
         try:
 
             # Open serial port
@@ -124,20 +112,19 @@ class Stick:
             sys.exit("There seems to be a problem with the stick. " +
                       "Are you sure it's plugged in?")
 
-        # Before anything, make sure the stick's buffer is empty
-        self.buffer.empty()
+        # Before anything, make sure buffer is empty
+        self.empty()
 
-        # Initialize requester to speak with stick
-        self.requester.start(recipient = "Stick", handle = self.handle)
-
-        # Read stick infos
+        # Read infos
         self.infos.read()
 
         # Read signal strength
         self.signal.read()
 
-        # Read state of stick's interfaces
+        # Read USB state
         self.interfaces.USB.state.read()
+
+        # Read radio state
         self.interfaces.radio.state.read()
 
 
@@ -158,68 +145,19 @@ class Stick:
 
 
 
-def link(recipient, stick):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        LINK
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Link recipient with stick
-    recipient.stick = stick
-
-    # Link recipient with reporter
-    recipient.reporter = stick.reporter
-
-    # Link recipient with requester
-    recipient.requester = stick.requester
-
-    # Link recipient with decoder
-    recipient.decoder = stick.decoder
-
-
-
-class Buffer:
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Link with stick
-        link(self, stick)
-
-        # Give buffer a default number of bytes to read
-        self.nBytes = 64
-
-        # Define a time length for emptying stick's buffer
-        self.duration = 0.5 # (s)
-
-
-
     def empty(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             EMPTY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: This seems to work, contrary to the serial object's methods
-              flushInput() and flushOutput()...
         """
 
         # Read initial time
         then = datetime.datetime.now()
 
-        # Initialize number of bytes read while emptying buffer
-        n = 0
-
         # Give user info
-        print "Emptying buffer for " + str(self.duration) + "s..."
+        print "Emptying buffer for " + str(self.bufferEmptyTime) + "s..."
 
         # Try reading for a certain number of attempts, before concluding buffer
         # must really be empty
@@ -229,13 +167,10 @@ class Buffer:
             now = datetime.datetime.now()
 
             # Empty buffer
-            rawResponse = self.stick.handle.read(self.nBytes)
-
-            # Update number of bytes read
-            n += len(rawResponse)
+            n = len(self.handle.read(self.nBytesDefault))
 
             # If maximum amount of time reached, exit
-            if (now - then).seconds >= self.duration:
+            if (now - then).seconds >= self.bufferEmptyTime:
                 break
 
         # Give user output
@@ -253,8 +188,8 @@ class Signal:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with stick
-        link(self, stick)
+        # Link with its respective command
+        self.command = commands.ReadSignalStrength(stick, self)
 
         # Give it a minimum strength threshold
         self.threshold = 150
@@ -272,16 +207,8 @@ class Signal:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request info
-        info = "Reading stick signal strength..."
-
-        # Define request
-        self.requester.define(info = info,
-                              packet = [6, 0, 0],
-                              remote = False)
-
-        # Update decoder's target
-        self.decoder.target = self
+        # Prepare command
+        self.command.prepare()
 
         # Initialize reading signal strength attempt variable
         n = 0
@@ -295,11 +222,8 @@ class Signal:
             # Keep track of attempts reading signal strength
             print "Looking for sufficient signal strength: " + str(n) + "/-"
 
-            # Remake request
-            self.requester.make()
-
-            # Decode stick's response
-            self.decoder.decode("readSignalStrength")
+            # Do command
+            self.command.do(True)
 
             # Print signal strength
             print "Signal strength found: " + str(self.value)
@@ -334,7 +258,10 @@ class USB:
         """
 
         # Give USB interface a state
-        self.state = State(stick, "USB")
+        self.state = State(self)
+
+        # Link with its respective command
+        self.command = commands.ReadUSBState(stick, self.state)
 
 
 
@@ -349,25 +276,22 @@ class Radio:
         """
 
         # Give radio interface a state
-        self.state = State(stick, "Radio")
+        self.state = State(self)
+
+        # Link with its respective command
+        self.command = commands.ReadRadioState(stick, self.state)
 
 
 
 class State:
 
-    def __init__(self, stick, interface):
+    def __init__(self, interface):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Link with stick
-        link(self, stick)
-
-        # Read interface
-        self.interface = interface
 
         # Define a dictionary of state indicators
         self.values = {"Errors": {"CRC": None,
@@ -376,6 +300,9 @@ class State:
                                   "Timeout": None},
                        "Packets": {"Received": None,
                                    "Sent": None}}
+
+        # Read interface
+        self.interface = interface
 
 
 
@@ -387,45 +314,14 @@ class State:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Update decoder's target
-        self.decoder.target = self
+        # Prepare command
+        self.interface.command.prepare()
 
-        # Read USB interface
-        if self.interface == "USB":
-
-            # Define request info
-            info = "Reading stick's USB state..."
-
-            # Define request
-            self.requester.define(info = info,
-                                  packet = [5, 1, 0],
-                                  remote = False)
-
-            # Make request
-            self.requester.make()
-
-            # Decode stick's response
-            self.decoder.decode("readUSBState")
-
-        # Read USB interface
-        elif self.interface == "Radio":
-
-            # Define request info
-            info = "Reading stick's radio state..."
-
-            # Define request
-            self.requester.define(info = info,
-                                  packet = [5, 0, 0],
-                                  remote = False)
-
-            # Make request
-            self.requester.make()
-
-            # Decode stick's response
-            self.decoder.decode("readRadioState")
+        # Do command
+        self.interface.command.do(True)
 
         # Print current stick states
-        print self.interface + " state:"
+        print self.interface.__class__.__name__ + " state:"
         print json.dumps(self.values, indent = 2,
                                       separators = (",", ": "),
                                       sort_keys = True)
@@ -442,15 +338,15 @@ class Infos:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with stick
-        link(self, stick)
-
         # Initialize infos dictionary
         self.values = {"ACK": None,
                        "Status": None,
                        "Frequency": None,
                        "Description": None,
                        "Version": None}
+
+        # Link with its respective command
+        self.command = commands.ReadInfos(stick, self)
 
 
 
@@ -462,22 +358,11 @@ class Infos:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request info
-        info = "Reading stick infos..."
+        # Prepare command
+        self.command.prepare()
 
-        # Define request
-        self.requester.define(info = info,
-                              packet = [4, 0, 0],
-                              remote = False)
-
-        # Make request
-        self.requester.make()
-
-        # Update decoder's target
-        self.decoder.target = self
-
-        # Decode stick's response
-        self.decoder.decode("readInfos")
+        # Do command
+        self.command.do(True)
 
         # Print infos
         print "Stick infos:"
@@ -500,6 +385,18 @@ def main():
 
     # Start my stick
     stick.start()
+
+    # Read stick's infos
+    #stick.infos.read()
+
+    # Read stick's signal strength
+    #stick.signal.read()
+
+    # Read stick's USB state
+    #stick.interfaces.USB.state.read()
+
+    # Read stick's radio state
+    #stick.interfaces.radio.state.read()
 
     # Stop my stick
     stick.stop()
