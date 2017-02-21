@@ -71,8 +71,7 @@ class StickCommand(object):
         """
 
         # Prepare requester
-        # FIXME
-        Requester.start(self.stick.__class__.__name__, self.stick.handle)
+        Requester.prepare(self.stick)
 
         # Define request
         Requester.define(info = self.info,

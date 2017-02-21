@@ -54,9 +54,10 @@ class Stick:
     # STICK CHARACTERISTICS
     vendor          = 0x0a21
     product         = 0x8001
+    serial          = None
     frequencies     = {0: 916.5, 1: 868.35, 255: 916.5} # (MHz)
     nBytesDefault   = 64 # Default number of bytes to read from buffer
-    timeout         = 0.1 # (s) # Time to read from buffer [0.5]
+    timeout         = 0.1 # Time to read from buffer (s) [0.5]
     bufferEmptyTime = 0.5 # (s)
 
 
@@ -70,11 +71,14 @@ class Stick:
         """
 
         # Generate serial port handle
-        self.handle = serial.Serial()
-        self.handle.port = "/dev/ttyUSB0"
-        self.handle.rtscts = True
-        self.handle.dsrdtr = True
-        self.handle.timeout = self.timeout
+        handle = serial.Serial()
+        handle.port = "/dev/ttyUSB0"
+        handle.rtscts = True
+        handle.dsrdtr = True
+        handle.timeout = self.timeout
+
+        # Give it to the stick
+        self.handle = handle
 
         # Give the stick a signal
         self.signal = Signal(self)
