@@ -37,7 +37,84 @@ Decoder = decoder.Decoder()
 
 
 
-# COMMANDS
+# PUMP COMMANDS
+class PumpCommand(object):
+
+    def __init__(self, pump, recipient):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Store pump
+        self.pump = pump
+
+        # Store recipient of command response
+        self.recipient = recipient
+
+        # Initialize request info
+        self.info = None
+
+        # Initialize request code
+        self.code = None
+
+
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Prepare requester
+        Requester.prepare(self.pump)
+
+        # Define request
+        Requester.define(info = self.info,
+                         attempts = 2,
+                         size = 1,
+                         code = self.code)
+
+        # Update decoder's target
+        Decoder.target = self.recipient
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode pump's response
+        Decoder.decode(self.__class__.__name__, Requester.response)
+
+
+
+    def do(self, decode = True):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Make request
+        Requester.make()
+
+        # If decoding needed
+        if decode:
+            self.decode()
+
+
+
+# STICK COMMANDS
 class StickCommand(object):
 
     def __init__(self, stick, recipient):
@@ -96,7 +173,7 @@ class StickCommand(object):
 
 
 
-    def do(self, decode = False):
+    def do(self, decode = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,7 +190,7 @@ class StickCommand(object):
 
 
 
-class ReadSignalStrength(StickCommand):
+class ReadStickSignalStrength(StickCommand):
 
     def __init__(self, stick, recipient):
 
@@ -134,7 +211,7 @@ class ReadSignalStrength(StickCommand):
 
 
 
-class ReadUSBState(StickCommand):
+class ReadStickUSBState(StickCommand):
 
     def __init__(self, stick, recipient):
 
@@ -155,7 +232,7 @@ class ReadUSBState(StickCommand):
 
 
 
-class ReadRadioState(StickCommand):
+class ReadStickRadioState(StickCommand):
 
     def __init__(self, stick, recipient):
 
@@ -176,7 +253,7 @@ class ReadRadioState(StickCommand):
 
 
 
-class ReadInfos(StickCommand):
+class ReadStickInfos(StickCommand):
 
     def __init__(self, stick, recipient):
 

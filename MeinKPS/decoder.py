@@ -58,7 +58,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # READSIGNALSTRENGTH
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if command == "ReadSignalStrength":
+        if command == "ReadStickSignalStrength":
 
             # Decode strength of signal
             self.target.value = response[3]
@@ -68,7 +68,8 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # READUSBSTATE / READRADIOSTATE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif (command == "ReadUSBState") or (command == "ReadRadioState"):
+        elif ((command == "ReadStickUSBState") or
+              (command == "ReadStickRadioState")):
 
             # Decode state
             errorCRC = response[3]
@@ -91,15 +92,13 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # READINFOS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "ReadInfos":
+        elif command == "ReadStickInfos":
 
             # Decode infos
             ACK = response[0]
-            #status = responseChr[1] # FIXME
-            status = response[1]
-            #description = "".join(responseChr[9:19]) # FIXME
-            description = response[9]
-            #frequency = str(self.device.frequencies[response[8]]) + " MHz" #FIXME
+            status = "".join(lib.charify(response[1]))
+            description = "".join(lib.charify(response[9:19]))
+            frequency = response[8]
             version = 1.00 * response[19] + 0.01 * response[20]
             frequency = response[8]
 

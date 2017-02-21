@@ -55,7 +55,6 @@ class Stick:
     vendor          = 0x0a21
     product         = 0x8001
     serial          = None
-    frequencies     = {0: 916.5, 1: 868.35, 255: 916.5} # (MHz)
     nBytesDefault   = 64 # Default number of bytes to read from buffer
     timeout         = 0.1 # Time to read from buffer (s) [0.5]
     bufferEmptyTime = 0.5 # (s)
@@ -193,7 +192,7 @@ class Signal:
         """
 
         # Link with its respective command
-        self.command = commands.ReadSignalStrength(stick, self)
+        self.command = commands.ReadStickSignalStrength(stick, self)
 
         # Give it a minimum strength threshold
         self.threshold = 150
@@ -227,7 +226,7 @@ class Signal:
             print "Looking for sufficient signal strength: " + str(n) + "/-"
 
             # Do command
-            self.command.do(True)
+            self.command.do()
 
             # Print signal strength
             print "Signal strength found: " + str(self.value)
@@ -265,7 +264,7 @@ class USB:
         self.state = State(self)
 
         # Link with its respective command
-        self.command = commands.ReadUSBState(stick, self.state)
+        self.command = commands.ReadStickUSBState(stick, self.state)
 
 
 
@@ -283,7 +282,7 @@ class Radio:
         self.state = State(self)
 
         # Link with its respective command
-        self.command = commands.ReadRadioState(stick, self.state)
+        self.command = commands.ReadStickRadioState(stick, self.state)
 
 
 
@@ -322,7 +321,7 @@ class State:
         self.interface.command.prepare()
 
         # Do command
-        self.interface.command.do(True)
+        self.interface.command.do()
 
         # Print current stick states
         print self.interface.__class__.__name__ + " state:"
@@ -349,8 +348,13 @@ class Infos:
                        "Description": None,
                        "Version": None}
 
+        # Define possible frequencies of operation for the stick (MHz)
+        self.frequencies = {0: 916.5,
+                            1: 868.35,
+                            255: 916.5}
+
         # Link with its respective command
-        self.command = commands.ReadInfos(stick, self)
+        self.command = commands.ReadStickInfos(stick, self)
 
 
 
@@ -366,7 +370,11 @@ class Infos:
         self.command.prepare()
 
         # Do command
-        self.command.do(True)
+        self.command.do()
+
+        # FIXME Move me!
+        # Resolve frequency
+        self.values["Frequency"] = self.frequencies[self.values["Frequency"]]
 
         # Print infos
         print "Stick infos:"

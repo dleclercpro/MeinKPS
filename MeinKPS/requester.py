@@ -293,11 +293,10 @@ class Requester:
         print "Formatting response..."
 
         # Format response to padded hexadecimals
-        self.responseHex = [lib.padHex(hex(x)) for x in self.response]
+        self.responseHex = lib.hexify(self.response)
 
         # Format response to readable characters
-        self.responseChr = ["." if (x < 32) | (x > 126)
-                                else chr(x) for x in self.response]
+        self.responseChr = lib.charify(self.response)
 
 
 
