@@ -54,7 +54,7 @@ class PumpCommand(object):
         # Store recipient of command response
         self.recipient = recipient
 
-        # Initialize request infos
+        # Initialize request info and bytes
         self.info = None
         self.packet = None
         self.remote = True
@@ -136,8 +136,7 @@ class PowerPump(PumpCommand):
         super(self.__class__, self).__init__(pump, recipient)
 
         # Define request info
-        self.info = ("Powering pump's radio transmitter for: " +
-                     str(recipient.sessionTime) + "m")
+        self.info = "Powering pump's radio transmitter..."
 
         # Define request bytes
         self.sleep = recipient.powerTime
@@ -163,7 +162,7 @@ class ReadPumpTime(PumpCommand):
         super(self.__class__, self).__init__(pump, recipient)
 
         # Define request info
-        self.info = "Reading pump time..."
+        self.info = "Reading pump's time..."
 
         # Define request bytes
         self.attempts = 2
@@ -186,7 +185,7 @@ class ReadPumpModel(PumpCommand):
         super(self.__class__, self).__init__(pump, recipient)
 
         # Define request info
-        self.info = "Reading pump model..."
+        self.info = "Reading pump's model..."
 
         # Define request bytes
         self.attempts = 2
@@ -209,7 +208,7 @@ class ReadPumpFirmware(PumpCommand):
         super(self.__class__, self).__init__(pump, recipient)
 
         # Define request info
-        self.info = "Reading pump firmware..."
+        self.info = "Reading pump's firmware..."
 
         # Define request bytes
         self.attempts = 2
@@ -249,7 +248,7 @@ class PushPumpButton(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request bytes
+        # Define rest of request bytes
         self.parameters = [int(self.recipient.values[button])]
         
         # Prepare rest of command
@@ -277,7 +276,7 @@ class StickCommand(object):
         # Store recipient of command response
         self.recipient = recipient
 
-        # Initialize request infos
+        # Initialize request info and bytes
         self.info = None
         self.packet = None
         self.remote = False

@@ -456,6 +456,9 @@ class Buttons:
         # Do command
         self.command.do(False)
 
+        # Give user info
+        print "Pushed button: " + button
+
 
 
 class Battery:
