@@ -42,12 +42,12 @@ class Decoder:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize target on which to store decoded responses
+        # Initialize target on which to store decoded data
         self.target = None
 
 
 
-    def decode(self, command, response):
+    def decode(self, command, data):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,28 +56,28 @@ class Decoder:
         """
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READSIGNALSTRENGTH
+        # READSTICKSIGNALSTRENGTH
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if command == "ReadStickSignalStrength":
 
             # Decode strength of signal
-            self.target.value = response[3]
+            self.target.value = data[3]
 
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READUSBSTATE / READRADIOSTATE
+        # READSTICKUSBSTATE / READSTICKRADIOSTATE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif ((command == "ReadStickUSBState") or
               (command == "ReadStickRadioState")):
 
             # Decode state
-            errorCRC = response[3]
-            errorSEQ = response[4]
-            errorNAK = response[5]
-            errorTimeout = response[6]
-            packetsReceived = lib.convertBytes(response[7:11])
-            packetsSent = lib.convertBytes(response[11:15])
+            errorCRC = data[3]
+            errorSEQ = data[4]
+            errorNAK = data[5]
+            errorTimeout = data[6]
+            packetsReceived = lib.convertBytes(data[7:11])
+            packetsSent = lib.convertBytes(data[11:15])
 
             # Store state
             self.target.values["Errors"]["CRC"] = errorCRC
@@ -90,17 +90,17 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READINFOS
+        # READSTICKINFOS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadStickInfos":
 
             # Decode infos
-            ACK = response[0]
-            status = "".join(lib.charify(response[1]))
-            description = "".join(lib.charify(response[9:19]))
-            frequency = response[8]
-            version = 1.00 * response[19] + 0.01 * response[20]
-            frequency = response[8]
+            ACK = data[0]
+            status = "".join(lib.charify(data[1]))
+            description = "".join(lib.charify(data[9:19]))
+            frequency = data[8]
+            version = 1.00 * data[19] + 0.01 * data[20]
+            frequency = data[8]
 
             # Store infos
             self.target.values["ACK"] = ACK
@@ -112,9 +112,9 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READTIME
+        # READPUMPTIME
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readTime":
+        elif command == "ReadPumpTime":
 
             # Decode pump time
             second = data[2]
@@ -133,9 +133,9 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READMODEL
+        # READPUMPMODEL
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readModel":
+        elif command == "ReadPumpModel":
 
             # Decode pump model
             self.target.value = int("".join([chr(x) for x in data[1:4]]))
@@ -145,11 +145,11 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # READFIRMWARE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readFirmware":
+        elif command == "ReadPumpFirmware":
 
             # Decode pump firmware
-            self.target.value = ("".join(responseChr[17:21]) +
-                                 " " + "".join(responseChr[21:24]))
+            self.target.value = ("".join(lib.charify(data[4:8])) +
+                                 " " + "".join(lib.charify(data[8:11])))
 
 
 

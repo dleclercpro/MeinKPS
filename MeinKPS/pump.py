@@ -54,10 +54,14 @@ import time
 
 # USER LIBRARIES
 import lib
-import decoder
-import reporter
-import requester
+import commands
 import stick
+import reporter
+
+
+
+# Define a reporter
+Reporter = reporter.Reporter()
 
 
 
@@ -65,8 +69,6 @@ class Pump:
 
     # PUMP CHARACTERISTICS
     serial            = 799163
-    powerTime         = 10     # Time (s) needed for pump's radio to power up
-    sessionTime       = 10     # Time (m) for which pump will listen to RFs
     executionDelay    = 5      # Time (s) needed for pump command execution
     timeBlock         = 30     # Time block (m) used by pump
     basalStroke       = 0.05   # Pump basal stroke rate (U/h)
@@ -84,17 +86,11 @@ class Pump:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give the pump a reporter
-        self.reporter = reporter.Reporter()
-
-        # Give the pump a requester
-        self.requester = requester.Requester()
-
-        # Give the pump a decoder
-        self.decoder = decoder.Decoder(self)
-
         # Give the pump a stick
         self.stick = stick.Stick()
+
+        # Link the pump to the stick's handle
+        self.handle = self.stick.handle
 
         # Give the pump a power instance
         self.power = Power(self)
@@ -112,43 +108,43 @@ class Pump:
         self.buttons = Buttons(self)
 
         # Give the pump a battery instance
-        self.battery = Battery(self)
+        #self.battery = Battery(self)
 
         # Give the pump a reservoir instance
-        self.reservoir = Reservoir(self)
+        #self.reservoir = Reservoir(self)
 
         # Give the pump a status instance
-        self.status = Status(self)
+        #self.status = Status(self)
 
         # Give the pump a settings instance
-        self.settings = Settings(self)
+        #self.settings = Settings(self)
 
         # Give the pump a BG targets instance
-        self.BGTargets = BGTargets(self)
+        #self.BGTargets = BGTargets(self)
 
         # Give the pump an ISF instance
-        self.ISF = ISF(self)
+        #self.ISF = ISF(self)
 
         # Give the pump a CSF instance
-        self.CSF = CSF(self)
+        #self.CSF = CSF(self)
 
         # Give the pump a daily totals instance
-        self.dailyTotals = DailyTotals(self)
+        #self.dailyTotals = DailyTotals(self)
 
         # Give the pump a history instance
-        self.history = History(self)
+        #self.history = History(self)
 
         # Give the pump a boluses instance
-        self.boluses = Boluses(self)
+        #self.boluses = Boluses(self)
 
         # Give the pump a carbs instance
-        self.carbs = Carbs(self)
+        #self.carbs = Carbs(self)
 
         # Give the pump a TBR instance
-        self.TBR = TBR(self)
+        #self.TBR = TBR(self)
 
         # Give the pump a units instance
-        self.units = Units(self)
+        #self.units = Units(self)
 
 
 
@@ -165,11 +161,6 @@ class Pump:
 
         # Start stick
         self.stick.start()
-
-        # Initialize requester to speak with pump
-        self.requester.start(recipient = "Pump",
-                             serial = self.serial,
-                             handle = self.stick.handle)
 
         # Power pump's radio transmitter if necessary
         self.power.verify()
@@ -192,25 +183,8 @@ class Pump:
 
 
 
-def link(recipient, pump):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        LINK
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Link recipient with pump
-    recipient.pump = pump
-
-    # Link recipient with reporter
-    recipient.reporter = pump.reporter
-
-    # Link recipient with requester
-    recipient.requester = pump.requester
-
-    # Link recipient with decoder
-    recipient.decoder = pump.decoder
+class Commands:
+    pass
 
 
 
@@ -224,8 +198,14 @@ class Power:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with pump
-        link(self, pump)
+        # Define time needed for the pump's radio to power up (s)
+        self.powerTime = 10
+
+        # Define time for which pump will listen to RFs (m)
+        self.sessionTime = 10
+
+        # Link with its respective command
+        self.command = commands.PowerPump(pump, self)
 
 
 
@@ -238,22 +218,22 @@ class Power:
         """
 
         # Load pump's report
-        self.reporter.load("pump.json")
-
-        # Read last time pump's radio transmitter was power up
-        then = self.reporter.getEntry([], "Power Up")
-
-        # Format time
-        then = lib.formatTime(then)
-
-        # Define max time allowed between RF communication sessions
-        session = datetime.timedelta(minutes = self.pump.sessionTime)
+        Reporter.load("pump.json")
 
         # Get current time
         now = datetime.datetime.now()
 
+        # Read last time pump's radio transmitter was power up
+        then = Reporter.getEntry([], "Power")
+
+        # Format time
+        then = lib.formatTime(then)
+
         # Compute time since last power up
         delta = now - then
+
+        # Generate a datetime object for the pump's RF sessions' length
+        session = datetime.timedelta(minutes = self.sessionTime)
 
         # Power up pump if necessary
         if delta > session:
@@ -268,7 +248,7 @@ class Power:
 
             # Give user info
             print ("Pump's radio transmitter is already on. Remaining time: " +
-                   str(self.pump.sessionTime - delta.seconds / 60) + " m")
+                   str(self.sessionTime - delta.seconds / 60) + " m")
 
 
 
@@ -280,34 +260,20 @@ class Power:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Devine infos for request
-        info = ("Powering pump radio transmitter for: " +
-                       str(self.pump.sessionTime) + "m")
-        sleepReason = ("Sleeping until pump radio transmitter is " +
-                              "powered up... (" + str(self.pump.powerTime) +
-                              "s)")
+        # Prepare command
+        self.command.prepare()
 
-        # Define request
-        self.requester.define(info = info,
-                              sleep = self.pump.powerTime,
-                              sleepReason = sleepReason,
-                              power = 85,
-                              attempts = 0,
-                              size = 0,
-                              code = 93,
-                              parameters = [1, self.pump.sessionTime])
-
-        # Make request
-        self.requester.make()
+        # Do command
+        self.command.do(False)
 
         # Get current time
         now = datetime.datetime.now()
 
-        # Convert time to string
+        # Format time
         now = lib.formatTime(now)
 
-        # Save power up time
-        self.reporter.storePowerTime(now)
+        # Store power up time
+        Reporter.storePowerTime(now)
 
 
 
@@ -321,8 +287,8 @@ class Time:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with pump
-        link(self, pump)
+        # Link with its respective command
+        self.command = commands.ReadPumpTime(pump, self)
 
 
 
@@ -334,23 +300,11 @@ class Time:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request infos
-        info = "Reading pump time..."
+        # Prepare command
+        self.command.prepare()
 
-        # Define request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 112)
-
-        # Make request
-        self.requester.make()
-
-        # Update decoder's target
-        self.decoder.target = self
-
-        # Decode pump's response
-        self.decoder.decode("readTime")
+        # Do command
+        self.command.do()
 
         # Give user info
         print "Pump time: " + self.value
@@ -380,8 +334,8 @@ class Model:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with pump
-        link(self, pump)
+        # Link with its respective command
+        self.command = commands.ReadPumpModel(pump, self)
 
 
 
@@ -393,26 +347,14 @@ class Model:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request infos
-        info = "Reading pump model..."
+        # Prepare command
+        self.command.prepare()
 
-        # Define request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 141)
-
-        # Make request
-        self.requester.make()
-
-        # Update decoder's target
-        self.decoder.target = self
-
-        # Decode pump's response
-        self.decoder.decode("readModel")
+        # Do command
+        self.command.do()
 
         # Store pump model
-        self.reporter.storeModel(self.value)
+        Reporter.storeModel(self.value)
 
         # Give user info
         print "Pump model: " + str(self.value)
@@ -442,8 +384,8 @@ class Firmware:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with pump
-        link(self, pump)
+        # Link with its respective command
+        self.command = commands.ReadPumpFirmware(pump, self)
 
 
 
@@ -455,29 +397,17 @@ class Firmware:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request infos
-        info = "Reading pump firmware version..."
+        # Prepare command
+        self.command.prepare()
 
-        # Define request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 116)
-
-        # Make request
-        self.requester.make()
-
-        # Update decoder's target
-        self.decoder.target = self
-
-        # Decode pump's response
-        self.decoder.decode("readFirmware")
+        # Do command
+        self.command.do()
 
         # Store pump model
-        self.reporter.storeFirmware(self.value)
+        Reporter.storeFirmware(self.value)
 
         # Give user info
-        print "Pump firmware version: " + str(self.value)
+        print "Pump firmware: " + str(self.value)
 
 
 
@@ -504,11 +434,11 @@ class Buttons:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with pump
-        link(self, pump)
-
         # Buttons
         self.values = {"EASY": 0, "ESC": 1, "ACT": 2, "UP": 3, "DOWN": 4}
+
+        # Link with its respective command
+        self.command = commands.PushPumpButton(pump, self)
 
 
 
@@ -520,22 +450,11 @@ class Buttons:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request infos
-        info = "Pushing button: " + button
-        sleepReason = ("Waiting for button " + button + " to be pushed... (" +
-                       str(self.pump.executionDelay) + "s)")
+        # Prepare command
+        self.command.prepare(button)
 
-        # Define request
-        self.requester.define(info = info,
-                              sleep = self.pump.executionDelay,
-                              sleepReason = sleepReason,
-                              attempts = 1,
-                              size = 0,
-                              code = 91,
-                              parameters = [int(self.values[button])])
-
-        # Make request
-        self.requester.make()
+        # Do command
+        self.command.do(False)
 
 
 
@@ -1945,6 +1864,28 @@ class TBRUnits:
 
 
 
+def link(recipient, pump):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        LINK
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Link recipient with pump
+    recipient.pump = pump
+
+    # Link recipient with reporter
+    recipient.reporter = pump.reporter
+
+    # Link recipient with requester
+    recipient.requester = pump.requester
+
+    # Link recipient with decoder
+    recipient.decoder = pump.decoder
+
+
+
 def main():
 
     """
@@ -1960,13 +1901,16 @@ def main():
     pump.start()
 
     # Read pump time
-    #pump.time.read()
+    pump.time.read()
+    time.sleep(5)
 
     # Read pump model
-    #pump.model.read()
+    pump.model.read()
+    time.sleep(5)
 
     # Read pump firmware version
-    #pump.firmware.read()
+    pump.firmware.read()
+    time.sleep(5)
 
     # Read pump battery level
     #pump.battery.read()
@@ -1989,7 +1933,7 @@ def main():
     #pump.buttons.push("ESC")
     #pump.buttons.push("ACT")
     #pump.buttons.push("UP")
-    #pump.buttons.push("DOWN")
+    pump.buttons.push("DOWN")
 
     # Read daily totals on pump
     #pump.dailyTotals.read()

@@ -191,14 +191,14 @@ class Signal:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with its respective command
-        self.command = commands.ReadStickSignalStrength(stick, self)
+        # Initialize signal strength
+        self.value = 0
 
         # Give it a minimum strength threshold
         self.threshold = 150
 
-        # Initialize signal strength
-        self.value = 0
+        # Link with its respective command
+        self.command = commands.ReadStickSignalStrength(stick, self)
 
 
 

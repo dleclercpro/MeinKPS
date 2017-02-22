@@ -418,10 +418,10 @@ class Reporter:
         self.load("pump.json")
 
         # Remove old entry
-        self.delete([], "Power Up")
+        self.delete([], "Power")
 
         # Add entry
-        self.addEntry([], "Power Up", t)
+        self.addEntry([], "Power", t)
 
 
 

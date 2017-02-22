@@ -105,7 +105,6 @@ class Requester:
                      packet = None,
                      remote = True,
                      sleep = 0,
-                     sleepReason = None,
                      power = 0,
                      attempts = None,
                      size = None,
@@ -123,7 +122,6 @@ class Requester:
         self.packet = packet
         self.remote = remote
         self.sleep = sleep
-        self.sleepReason = sleepReason
         self.power = power
         self.attempts = attempts
         self.size = size
@@ -527,9 +525,6 @@ class Requester:
 
         # Give enough time for last request to be executed
         if self.sleep > 0:
-
-            # Explain why sleeping is necessary
-            print self.sleepReason
 
             # Sleep
             time.sleep(self.sleep)
