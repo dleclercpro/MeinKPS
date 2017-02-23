@@ -42,12 +42,15 @@ class Decoder:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize target on which to store decoded data
+        # Initialize device from which bytes comes from
+        self.device = None
+
+        # Initialize target on which to store decoded bytes
         self.target = None
 
 
 
-    def decode(self, command, data):
+    def decode(self, command, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,7 +64,7 @@ class Decoder:
         if command == "ReadStickSignalStrength":
 
             # Decode strength of signal
-            self.target.value = data[3]
+            self.target.value = bytes[3]
 
 
 
@@ -72,12 +75,12 @@ class Decoder:
               (command == "ReadStickRadioState")):
 
             # Decode state
-            errorCRC = data[3]
-            errorSEQ = data[4]
-            errorNAK = data[5]
-            errorTimeout = data[6]
-            packetsReceived = lib.convertBytes(data[7:11])
-            packetsSent = lib.convertBytes(data[11:15])
+            errorCRC = bytes[3]
+            errorSEQ = bytes[4]
+            errorNAK = bytes[5]
+            errorTimeout = bytes[6]
+            packetsReceived = lib.convertBytes(bytes[7:11])
+            packetsSent = lib.convertBytes(bytes[11:15])
 
             # Store state
             self.target.values["Errors"]["CRC"] = errorCRC
@@ -95,12 +98,12 @@ class Decoder:
         elif command == "ReadStickInfos":
 
             # Decode infos
-            ACK = data[0]
-            status = "".join(lib.charify(data[1]))
-            description = "".join(lib.charify(data[9:19]))
-            frequency = data[8]
-            version = 1.00 * data[19] + 0.01 * data[20]
-            frequency = data[8]
+            ACK = bytes[0]
+            status = "".join(lib.charify(bytes[1]))
+            description = "".join(lib.charify(bytes[9:19]))
+            frequency = bytes[8]
+            version = 1.00 * bytes[19] + 0.01 * bytes[20]
+            frequency = bytes[8]
 
             # Store infos
             self.target.values["ACK"] = ACK
@@ -117,12 +120,12 @@ class Decoder:
         elif command == "ReadPumpTime":
 
             # Decode pump time
-            second = data[2]
-            minute = data[1]
-            hour   = data[0]
-            day    = data[6]
-            month  = data[5]
-            year   = lib.bangInt(data[3:5])
+            second = bytes[2]
+            minute = bytes[1]
+            hour   = bytes[0]
+            day    = bytes[6]
+            month  = bytes[5]
+            year   = lib.bangInt(bytes[3:5])
 
             # Generate time object
             time = datetime.datetime(year, month, day, hour, minute, second)
@@ -138,28 +141,28 @@ class Decoder:
         elif command == "ReadPumpModel":
 
             # Decode pump model
-            self.target.value = int("".join([chr(x) for x in data[1:4]]))
+            self.target.value = int("".join([chr(x) for x in bytes[1:4]]))
 
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READFIRMWARE
+        # READPUMPFIRMWARE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpFirmware":
 
             # Decode pump firmware
-            self.target.value = ("".join(lib.charify(data[4:8])) +
-                                 " " + "".join(lib.charify(data[8:11])))
+            self.target.value = ("".join(lib.charify(bytes[4:8])) +
+                                 " " + "".join(lib.charify(bytes[8:11])))
 
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READBATTERYLEVEL
+        # READPUMPBATTERY
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readBatteryLevel":
+        elif command == "ReadPumpBattery":
 
             # Decode battery level
-            level = data[0]
+            level = bytes[0]
 
             if level == 0:
                 self.target.level = "Normal"
@@ -167,55 +170,55 @@ class Decoder:
                 self.target.level = "Low"
 
             # Decode battery voltage
-            self.target.voltage = round(lib.bangInt([data[1], data[2]]) / 100.0,
-                                        1)
+            self.target.voltage = round(lib.bangInt([bytes[1],
+                                                     bytes[2]]) / 100.0, 1)
 
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READRESERVOIRLEVEL
+        # READPUMPRESERVOIR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readReservoirLevel":
+        elif command == "ReadPumpReservoir":
 
             # Decode remaining amount of insulin
-            self.target.value = round(lib.bangInt(data[0:2]) *
+            self.target.value = round(lib.bangInt(bytes[0:2]) *
                                       self.device.bolusStroke, 1)
 
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READSTATUS
+        # READPUMPSTATUS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readStatus":
+        elif command == "ReadPumpStatus":
 
-            # Extract pump status from received data
-            self.target.value = {"Normal" : data[0] == 3,
-                                 "Bolusing" : data[1] == 1,
-                                 "Suspended" : data[2] == 1}
+            # Extract pump status from received bytes
+            self.target.value = {"Normal" : bytes[0] == 3,
+                                 "Bolusing" : bytes[1] == 1,
+                                 "Suspended" : bytes[2] == 1}
 
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READSETTINGS
+        # READPUMPSETTINGS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readSettings":
+        elif command == "ReadPumpSettings":
 
             # Decode pump settings
             self.target.values = {
-                "IAC": data[17],
-                "Max Bolus": data[5] * self.device.bolusStroke,
-                "Max Basal": (lib.bangInt(data[6:8]) *
+                "IAC": bytes[17],
+                "Max Bolus": bytes[5] * self.device.bolusStroke,
+                "Max Basal": (lib.bangInt(bytes[6:8]) *
                               self.device.basalStroke / 2.0)}
 
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READBGU
+        # READPUMPBGUNITS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readBGU":
+        elif command == "ReadPumpBGUnits":
 
             # Decode BG units set on pump
-            units = data[0]
+            units = bytes[0]
 
             if units == 1:
                 self.target.value = "mg/dL"
@@ -226,12 +229,12 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READCU
+        # READPUMPCUNITS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readCU":
+        elif command == "ReadPumpCUnits":
 
             # Decode carb units set on pump
-            units = data[0]
+            units = bytes[0]
             
             if units == 1:
                 self.target.value = "g"
@@ -242,25 +245,12 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READDAILYTOTALS
+        # READPUMPBGTARGETS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readDailyTotals":
-
-            # Decode daily totals
-            self.target.value = {"Today": round(lib.bangInt(data[0:2]) *
-                                          self.device.bolusStroke, 2),
-                                 "Yesterday": round(lib.bangInt(data[2:4]) *
-                                              self.device.bolusStroke, 2)}
-
-
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READBGTARGETS
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readBGTargets":
+        elif command == "ReadPumpBGTargets":
 
             # Extract carb sensitivity units
-            units = data[0]
+            units = bytes[0]
 
             # Decode units
             if units == 1:
@@ -290,7 +280,7 @@ class Decoder:
                 b = a + n
 
                 # Get current target entry
-                entry = data[a:b]
+                entry = bytes[a:b]
 
                 # Exit condition: no more targets stored
                 if not sum(entry):
@@ -320,22 +310,12 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READNUMBERHISTORYPAGES
+        # READPUMPISF
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readNumberHistoryPages":
-
-            # Decode and store number of history pages
-            self.target.size = data[3] + 1
-
-
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READISF
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readISF":
+        elif command == "ReadPumpISF":
 
             # Extract insulin sensitivity units
-            units = data[0]
+            units = bytes[0]
 
             # Decode units
             if units == 1:
@@ -365,7 +345,7 @@ class Decoder:
                 b = a + n
 
                 # Get current factor entry
-                entry = data[a:b]
+                entry = bytes[a:b]
 
                 # Exit condition: no more factors stored
                 if not sum(entry):
@@ -395,12 +375,12 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READCSF
+        # READPUMPCSF
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readCSF":
+        elif command == "ReadPumpCSF":
 
             # Extract carb sensitivity units
-            units = data[0]
+            units = bytes[0]
 
             # Decode units
             if units == 1:
@@ -430,7 +410,7 @@ class Decoder:
                 b = a + n
 
                 # Get current factor entry
-                entry = data[a:b]
+                entry = bytes[a:b]
 
                 # Exit condition: no more factors stored
                 if not sum(entry):
@@ -460,18 +440,41 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # READDAILYTOTALS
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elif command == "ReadPumpDailyTotals":
+
+            # Decode daily totals
+            self.target.value = {"Today": round(lib.bangInt(bytes[0:2]) *
+                                          self.device.bolusStroke, 2),
+                                 "Yesterday": round(lib.bangInt(bytes[2:4]) *
+                                              self.device.bolusStroke, 2)}
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # EVALUATEPUMPHISTORY
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elif command == "EvaluatePumpHistory":
+
+            # Decode and store number of history pages
+            self.target.size = bytes[3] + 1
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # READTBR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "readTBR":
 
-            units = data[0]
+            units = bytes[0]
 
             # Extract TBR [U/h]
             if units == 0:
 
                 # Decode TBR characteristics
                 self.target.value["Units"] = "U/h"
-                self.target.value["Rate"] = round(lib.bangInt(data[2:4]) *
+                self.target.value["Rate"] = round(lib.bangInt(bytes[2:4]) *
                                                   self.device.basalStroke / 2.0,
                                                   2)
 
@@ -480,14 +483,14 @@ class Decoder:
 
                 # Decode TBR characteristics
                 self.target.value["Units"] = "%"
-                self.target.value["Rate"] = round(data[1], 2)
+                self.target.value["Rate"] = round(bytes[1], 2)
 
             # Decode TBR remaining time
-            self.target.value["Duration"] = round(lib.bangInt(data[4:6]), 0)
+            self.target.value["Duration"] = round(lib.bangInt(bytes[4:6]), 0)
 
 
 
-    def decodeBolusRecord(self, code, size):
+    def decodeBolusRecord(self, code, size, pages):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -498,25 +501,21 @@ class Decoder:
         # Read current time
         now = datetime.datetime.now()
 
-        # Assign history
-        history = self.device.history.pages
-
-        # Search history for specified record
-        for i in range(len(history)):
+        # Search history pages for specified record
+        for i in range(len(pages)):
 
             # Try and find bolus records
             try:
 
                 # Define bolus criteria
-                if ((history[i] == code) and
-                    (history[i + 1] == history[i + 2]) and
-                    (history[i + 3] == 0)):
+                if ((pages[i] == code) and (pages[i + 1] == pages[i + 2]) and
+                    (pages[i + 3] == 0)):
             
-                    # Extract bolus from pump history
-                    bolus = round(history[i + 1] * self.device.bolusStroke, 1)
+                    # Extract bolus from pump history pages
+                    bolus = round(pages[i + 1] * self.device.bolusStroke, 1)
 
                     # Extract time at which bolus was delivered
-                    t = lib.decodeTime(history[i + 4 : i + 9])
+                    t = lib.decodeTime(pages[i + 4 : i + 9])
 
                     # Check for bolus year
                     if abs(t[0] - now.year) > 1:
@@ -542,7 +541,8 @@ class Decoder:
 
 
 
-    def decodeBolusWizardRecord(self, code, headSize, dateSize, bodySize):
+    def decodeBolusWizardRecord(self, code, headSize, dateSize, bodySize,
+                                      pages):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -552,9 +552,6 @@ class Decoder:
 
         # Read current time
         now = datetime.datetime.now()
-
-        # Assign history
-        history = self.device.history.pages
 
         # Define an indicator dictionary to decode BG and carb bytes
         # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
@@ -571,32 +568,32 @@ class Decoder:
                       160: ["mmol/L", "exchanges", False, False],
                       161: ["mmol/L", "exchanges", True, False]}
 
-        # Search history for specified record
-        for i in range(len(history)):
+        # Search history pages for specified record
+        for i in range(len(pages)):
 
             # Try and find bolus wizard records
             try:
 
                 # Look for code, with which every record should start
-                if history[i] == code:
+                if pages[i] == code:
 
                     # Define a record running variable
                     x = i
             
                     # Assign record head
-                    head = history[x:x + headSize]
+                    head = pages[x:x + headSize]
 
                     # Update running variable
                     x += headSize
 
                     # Assign record date
-                    date = history[x:x + dateSize]
+                    date = pages[x:x + dateSize]
 
                     # Update running variable
                     x += dateSize
 
                     # Assign record body
-                    body = history[x:x + bodySize]
+                    body = pages[x:x + bodySize]
 
                     # Decode time using date bytes
                     t = lib.decodeTime(date)
