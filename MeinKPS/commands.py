@@ -14,8 +14,8 @@
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
 
-    Overview: This is the entirety of commands available for the Carelink stick
-              as well as the Medtronic MiniMed pump.
+    Overview: This is a collection of commands available for the Carelink stick
+              as well as the Medtronic MiniMed pumps.
 
     Notes:    ...
 

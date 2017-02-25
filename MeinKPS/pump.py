@@ -55,6 +55,7 @@ import time
 # USER LIBRARIES
 import lib
 import commands
+import records
 import stick
 import reporter
 import decoder # FIXME
