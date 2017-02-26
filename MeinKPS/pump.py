@@ -75,9 +75,9 @@ class Pump:
     executionDelay    = 5      # Time (s) needed for pump command execution
     timeBlock         = 30     # Time block (m) used by pump
     basalStroke       = 0.05   # Pump basal stroke rate (U/h)
-    bolusDeliveryRate = 40.0   # Bolus delivery rate (s/U)
     bolusStroke       = 0.1    # Pump bolus stroke (U)
-    bolusDelay        = 5.0    # Time (s) to wait after bolus delivery
+    bolusDeliveryRate = 40.0   # Bolus delivery rate (s/U)
+    bolusDelay        = 5      # Time (s) to wait after bolus delivery
 
 
 
