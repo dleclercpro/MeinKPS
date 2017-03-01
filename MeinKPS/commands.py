@@ -40,7 +40,7 @@ Decoder = decoder.Decoder()
 # PUMP COMMANDS
 class PumpCommand(object):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,8 +51,8 @@ class PumpCommand(object):
         # Store pump
         self.pump = pump
 
-        # Store recipient of command response
-        self.recipient = recipient
+        # Store target of command response
+        self.target = target
 
         # Initialize request info and bytes
         self.info = None
@@ -91,7 +91,7 @@ class PumpCommand(object):
         Decoder.device = self.pump
 
         # Update decoder's target
-        Decoder.target = self.recipient
+        Decoder.target = self.target
 
 
 
@@ -103,7 +103,7 @@ class PumpCommand(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Decode pump's response
+        # Decode pump's data
         Decoder.decode(self.__class__.__name__, Requester.data)
 
 
@@ -140,7 +140,7 @@ class PumpCommand(object):
 
 class PowerPump(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,24 +149,24 @@ class PowerPump(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Powering pump's radio transmitter..."
 
         # Define request bytes
-        self.sleep = recipient.powerTime
+        self.sleep = target.powerTime
         self.power = 85
         self.attempts = 0
         self.size = 0
         self.code = 93
-        self.parameters = [1, recipient.sessionTime]
+        self.parameters = [1, target.sessionTime]
 
 
 
 class ReadPumpTime(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,7 +175,7 @@ class ReadPumpTime(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's time..."
@@ -189,7 +189,7 @@ class ReadPumpTime(PumpCommand):
 
 class ReadPumpModel(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -198,7 +198,7 @@ class ReadPumpModel(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's model..."
@@ -212,7 +212,7 @@ class ReadPumpModel(PumpCommand):
 
 class ReadPumpFirmware(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,7 +221,7 @@ class ReadPumpFirmware(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's firmware..."
@@ -235,7 +235,7 @@ class ReadPumpFirmware(PumpCommand):
 
 class PushPumpButton(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -244,7 +244,7 @@ class PushPumpButton(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Pushing button..."
@@ -265,7 +265,7 @@ class PushPumpButton(PumpCommand):
         """
 
         # Define rest of request bytes
-        self.parameters = [int(self.recipient.values[button])]
+        self.parameters = [int(self.target.values[button])]
         
         # Prepare rest of command
         super(self.__class__, self).prepare()
@@ -274,7 +274,7 @@ class PushPumpButton(PumpCommand):
 
 class ReadPumpBattery(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -283,7 +283,7 @@ class ReadPumpBattery(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's battery..."
@@ -297,7 +297,7 @@ class ReadPumpBattery(PumpCommand):
 
 class ReadPumpReservoir(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -306,7 +306,7 @@ class ReadPumpReservoir(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's reservoir..."
@@ -320,7 +320,7 @@ class ReadPumpReservoir(PumpCommand):
 
 class ReadPumpStatus(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -329,7 +329,7 @@ class ReadPumpStatus(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's status..."
@@ -343,7 +343,7 @@ class ReadPumpStatus(PumpCommand):
 
 class SuspendPump(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -352,7 +352,7 @@ class SuspendPump(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Suspending pump..."
@@ -368,7 +368,7 @@ class SuspendPump(PumpCommand):
 
 class ResumePump(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -377,7 +377,7 @@ class ResumePump(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Resuming pump..."
@@ -393,7 +393,7 @@ class ResumePump(PumpCommand):
 
 class ReadPumpSettings(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -402,7 +402,7 @@ class ReadPumpSettings(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's settings..."
@@ -416,7 +416,7 @@ class ReadPumpSettings(PumpCommand):
 
 class ReadPumpBGUnits(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -425,7 +425,7 @@ class ReadPumpBGUnits(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's BG units..."
@@ -439,7 +439,7 @@ class ReadPumpBGUnits(PumpCommand):
 
 class ReadPumpBGUnits(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -448,7 +448,7 @@ class ReadPumpBGUnits(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's BG units..."
@@ -462,7 +462,7 @@ class ReadPumpBGUnits(PumpCommand):
 
 class ReadPumpCUnits(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -471,7 +471,7 @@ class ReadPumpCUnits(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's C units..."
@@ -485,7 +485,7 @@ class ReadPumpCUnits(PumpCommand):
 
 class SetPumpTBRUnits(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -494,7 +494,7 @@ class SetPumpTBRUnits(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Setting pump's TBR units..."
@@ -530,7 +530,7 @@ class SetPumpTBRUnits(PumpCommand):
 
 class ReadPumpBGTargets(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -539,7 +539,7 @@ class ReadPumpBGTargets(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's BG targets..."
@@ -553,7 +553,7 @@ class ReadPumpBGTargets(PumpCommand):
 
 class ReadPumpISF(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -562,7 +562,7 @@ class ReadPumpISF(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's ISF..."
@@ -576,7 +576,7 @@ class ReadPumpISF(PumpCommand):
 
 class ReadPumpCSF(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -585,7 +585,7 @@ class ReadPumpCSF(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's CSF..."
@@ -599,7 +599,7 @@ class ReadPumpCSF(PumpCommand):
 
 class ReadPumpDailyTotals(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -608,7 +608,7 @@ class ReadPumpDailyTotals(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading pump's daily totals..."
@@ -622,7 +622,7 @@ class ReadPumpDailyTotals(PumpCommand):
 
 class EvaluatePumpHistory(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -631,7 +631,7 @@ class EvaluatePumpHistory(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading number of pump history pages..."
@@ -645,7 +645,7 @@ class EvaluatePumpHistory(PumpCommand):
 
 class ReadPumpHistory(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -654,7 +654,7 @@ class ReadPumpHistory(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request info
         self.info = "Reading number of pump history pages..."
@@ -687,7 +687,7 @@ class ReadPumpHistory(PumpCommand):
 
 class DeliverPumpBolus(PumpCommand):
 
-    def __init__(self, pump, recipient):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -696,7 +696,7 @@ class DeliverPumpBolus(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(pump, recipient)
+        super(self.__class__, self).__init__(pump, target)
 
         # Define request bytes
         self.attempts = 0
@@ -725,10 +725,12 @@ class DeliverPumpBolus(PumpCommand):
 
 
 
+
+
 # STICK COMMANDS
 class StickCommand(object):
 
-    def __init__(self, stick, recipient):
+    def __init__(self, stick, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -739,8 +741,8 @@ class StickCommand(object):
         # Store stick
         self.stick = stick
 
-        # Store recipient of command response
-        self.recipient = recipient
+        # Store target of command response
+        self.target = target
 
         # Initialize request info and bytes
         self.info = None
@@ -775,7 +777,7 @@ class StickCommand(object):
         Decoder.device = self.stick
 
         # Update decoder's target
-        Decoder.target = self.recipient
+        Decoder.target = self.target
 
 
 
@@ -811,7 +813,7 @@ class StickCommand(object):
 
 class ReadStickSignalStrength(StickCommand):
 
-    def __init__(self, stick, recipient):
+    def __init__(self, stick, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -820,7 +822,7 @@ class ReadStickSignalStrength(StickCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(stick, recipient)
+        super(self.__class__, self).__init__(stick, target)
 
         # Define request info
         self.info = "Reading stick signal strength..."
@@ -832,7 +834,7 @@ class ReadStickSignalStrength(StickCommand):
 
 class ReadStickUSBState(StickCommand):
 
-    def __init__(self, stick, recipient):
+    def __init__(self, stick, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -841,7 +843,7 @@ class ReadStickUSBState(StickCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(stick, recipient)
+        super(self.__class__, self).__init__(stick, target)
 
         # Define request info
         self.info = "Reading stick's radio state..."
@@ -853,7 +855,7 @@ class ReadStickUSBState(StickCommand):
 
 class ReadStickRadioState(StickCommand):
 
-    def __init__(self, stick, recipient):
+    def __init__(self, stick, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -862,7 +864,7 @@ class ReadStickRadioState(StickCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(stick, recipient)
+        super(self.__class__, self).__init__(stick, target)
 
         # Define request info
         self.info = "Reading stick's USB state..."
@@ -874,7 +876,7 @@ class ReadStickRadioState(StickCommand):
 
 class ReadStickInfos(StickCommand):
 
-    def __init__(self, stick, recipient):
+    def __init__(self, stick, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -883,7 +885,7 @@ class ReadStickInfos(StickCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(stick, recipient)
+        super(self.__class__, self).__init__(stick, target)
 
         # Define request info
         self.info = "Reading stick's infos..."

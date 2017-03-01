@@ -52,12 +52,12 @@ import commands
 class Stick:
 
     # STICK CHARACTERISTICS
-    vendor          = 0x0a21
-    product         = 0x8001
-    serial          = None
-    nBytesDefault   = 64 # Default number of bytes to read from buffer
-    timeout         = 0.1 # Time to read from buffer (s) [0.5]
-    bufferEmptyTime = 0.5 # (s)
+    vendor        = 0x0a21
+    product       = 0x8001
+    serial        = None
+    nBytesDefault = 64 # Default number of bytes to read from buffer
+    timeout       = 0.1 # Time to read from buffer (s) [0.5]
+    flushTime     = 0.5 # (s)
 
 
 
@@ -82,8 +82,11 @@ class Stick:
         # Give the stick a signal
         self.signal = Signal(self)
 
-        # Give the stick interfaces
-        self.interfaces = Interfaces(self)
+        # Give the stick a USB interface
+        self.usb = USB(self)
+
+        # Give the stick a radio interface
+        self.radio = Radio(self)
 
         # Give the stick infos
         self.infos = Infos(self)
@@ -125,10 +128,10 @@ class Stick:
         self.signal.read()
 
         # Read USB state
-        self.interfaces.USB.state.read()
+        self.usb.read()
 
         # Read radio state
-        self.interfaces.radio.state.read()
+        self.radio.read()
 
 
 
@@ -160,7 +163,7 @@ class Stick:
         then = datetime.datetime.now()
 
         # Give user info
-        print "Emptying buffer for " + str(self.bufferEmptyTime) + "s..."
+        print "Emptying buffer for " + str(self.flushTime) + "s..."
 
         # Try reading for a certain number of attempts, before concluding buffer
         # must really be empty
@@ -173,7 +176,7 @@ class Stick:
             n = len(self.handle.read(self.nBytesDefault))
 
             # If maximum amount of time reached, exit
-            if (now - then).seconds >= self.bufferEmptyTime:
+            if (now - then).seconds >= self.flushTime:
                 break
 
         # Give user output
@@ -234,61 +237,9 @@ class Signal:
 
 
 
-class Interfaces:
+class Interface(object):
 
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give interfaces their USB and radio instances
-        self.USB = USB(stick)
-        self.radio = Radio(stick)
-
-
-
-class USB:
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give USB interface a state
-        self.state = State(self)
-
-        # Link with its respective command
-        self.command = commands.ReadStickUSBState(stick, self.state)
-
-
-
-class Radio:
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give radio interface a state
-        self.state = State(self)
-
-        # Link with its respective command
-        self.command = commands.ReadStickRadioState(stick, self.state)
-
-
-
-class State:
-
-    def __init__(self, interface):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -297,15 +248,12 @@ class State:
         """
 
         # Define a dictionary of state indicators
-        self.values = {"Errors": {"CRC": None,
-                                  "SEQ": None,
-                                  "NAK": None,
-                                  "Timeout": None},
-                       "Packets": {"Received": None,
-                                   "Sent": None}}
-
-        # Read interface
-        self.interface = interface
+        self.state = {"Errors": {"CRC": None,
+                                 "SEQ": None,
+                                 "NAK": None,
+                                 "Timeout": None},
+                     "Packets": {"Received": None,
+                                 "Sent": None}}
 
 
 
@@ -318,16 +266,52 @@ class State:
         """
 
         # Prepare command
-        self.interface.command.prepare()
+        self.command.prepare()
 
         # Do command
-        self.interface.command.do()
+        self.command.do()
 
         # Print current stick states
-        print self.interface.__class__.__name__ + " state:"
-        print json.dumps(self.values, indent = 2,
-                                      separators = (",", ": "),
-                                      sort_keys = True)
+        print self.__class__.__name__ + " state:"
+        print json.dumps(self.state, indent = 2,
+                                     separators = (",", ": "),
+                                     sort_keys = True)
+
+
+
+class USB(Interface):
+
+    def __init__(self, stick):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize interface
+        super(self.__class__, self).__init__()
+
+        # Link with its respective command
+        self.command = commands.ReadStickUSBState(stick, self)
+
+
+
+class Radio(Interface):
+
+    def __init__(self, stick):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize interface
+        super(self.__class__, self).__init__()
+
+        # Link with its respective command
+        self.command = commands.ReadStickRadioState(stick, self)
 
 
 
@@ -372,10 +356,6 @@ class Infos:
         # Do command
         self.command.do()
 
-        # FIXME Move me!
-        # Resolve frequency
-        self.values["Frequency"] = self.frequencies[self.values["Frequency"]]
-
         # Print infos
         print "Stick infos:"
         print json.dumps(self.values, indent = 2,
@@ -405,10 +385,10 @@ def main():
     #stick.signal.read()
 
     # Read stick's USB state
-    #stick.interfaces.USB.state.read()
+    #stick.USB.read()
 
     # Read stick's radio state
-    #stick.interfaces.radio.state.read()
+    #stick.radio.read()
 
     # Stop my stick
     stick.stop()

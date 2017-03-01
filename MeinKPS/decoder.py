@@ -83,12 +83,12 @@ class Decoder:
             packetsSent = lib.convertBytes(bytes[11:15])
 
             # Store state
-            self.target.values["Errors"]["CRC"] = errorCRC
-            self.target.values["Errors"]["SEQ"] = errorSEQ
-            self.target.values["Errors"]["NAK"] = errorNAK
-            self.target.values["Errors"]["Timeout"] = errorTimeout
-            self.target.values["Packets"]["Received"] = packetsReceived
-            self.target.values["Packets"]["Sent"] = packetsSent
+            self.target.state["Errors"]["CRC"] = errorCRC
+            self.target.state["Errors"]["SEQ"] = errorSEQ
+            self.target.state["Errors"]["NAK"] = errorNAK
+            self.target.state["Errors"]["Timeout"] = errorTimeout
+            self.target.state["Packets"]["Received"] = packetsReceived
+            self.target.state["Packets"]["Sent"] = packetsSent
 
 
 
@@ -110,7 +110,7 @@ class Decoder:
             self.target.values["Status"] = status
             self.target.values["Description"] = description
             self.target.values["Version"] = version
-            self.target.values["Frequency"] = frequency
+            self.target.values["Frequency"] = self.target.frequencies[frequency]
 
 
 
