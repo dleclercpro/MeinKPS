@@ -300,7 +300,7 @@ class Reporter:
 
 
 
-    def addBatteryLevel(self, t, level):
+    def addBatteryLevel(self, t, values):
 
         """
         ========================================================================
@@ -315,7 +315,8 @@ class Reporter:
         self.load("pump.json")
 
         # Add entry
-        self.addEntry(["Battery Levels"], t, level)
+        self.addEntry(["Battery Levels"], t, [values["Level"],
+                                              values["Voltage"]])
 
 
 

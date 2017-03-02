@@ -55,29 +55,24 @@ import time
 # USER LIBRARIES
 import lib
 import commands
-import records
 import stick
+import records
 import reporter
-import decoder # FIXME
 
 
 
 # Define a reporter
 Reporter = reporter.Reporter()
-Decoder = decoder.Decoder()
 
 
 
-class Pump:
+class Pump(object):
 
     # PUMP CHARACTERISTICS
-    serial            = 503593 # 799163
-    executionDelay    = 5      # Time (s) needed for pump command execution
-    timeBlock         = 30     # Time block (m) used by pump
-    basalStroke       = 0.05   # Pump basal stroke rate (U/h)
-    bolusStroke       = 0.1    # Pump bolus stroke (U)
-    bolusDeliveryRate = 40.0   # Bolus delivery rate (s/U)
-    bolusDelay        = 5      # Time (s) to wait after bolus delivery
+    serial         = 503593 # 799163
+    executionDelay = 5      # Time (s) needed for pump command execution
+    timeBlock      = 30     # Time block (m) used by pump
+    basalStroke    = 0.05   # Pump basal stroke rate (U/h)
 
 
 
@@ -122,8 +117,10 @@ class Pump:
         # Give the pump a settings instance
         self.settings = Settings(self)
 
-        # Give the pump a units instance
-        self.units = Units(self)
+        # Give the pump units
+        self.units = {"BG": BGUnits(self),
+                      "C": CUnits(self),
+                      "TBR": TBRUnits(self)}
 
         # Give the pump a BG targets instance
         self.BGTargets = BGTargets(self)
@@ -186,7 +183,7 @@ class Pump:
 
 
 
-class Power:
+class Power(object):
 
     def __init__(self, pump):
 
@@ -275,7 +272,7 @@ class Power:
 
 
 
-class Time:
+class Time(object):
 
     def __init__(self, pump):
 
@@ -284,6 +281,9 @@ class Time:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize value
+        self.value = None
 
         # Link with its respective command
         self.command = commands.ReadPumpTime(pump, self)
@@ -322,7 +322,7 @@ class Time:
 
 
 
-class Model:
+class Model(object):
 
     def __init__(self, pump):
 
@@ -331,6 +331,9 @@ class Model:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize value
+        self.value = None
 
         # Link with its respective command
         self.command = commands.ReadPumpModel(pump, self)
@@ -372,7 +375,7 @@ class Model:
 
 
 
-class Firmware:
+class Firmware(object):
 
     def __init__(self, pump):
 
@@ -381,6 +384,9 @@ class Firmware:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize value
+        self.value = None
 
         # Link with its respective command
         self.command = commands.ReadPumpFirmware(pump, self)
@@ -422,7 +428,7 @@ class Firmware:
 
 
 
-class Buttons:
+class Buttons(object):
 
     def __init__(self, pump):
 
@@ -459,7 +465,7 @@ class Buttons:
 
 
 
-class Battery:
+class Battery(object):
 
     def __init__(self, pump):
 
@@ -468,6 +474,9 @@ class Battery:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize values
+        self.values = None
 
         # Link with its respective command
         self.command = commands.ReadPumpBattery(pump, self)
@@ -498,11 +507,11 @@ class Battery:
         now = lib.formatTime(now)
 
         # Add current battery level to pump report
-        Reporter.addBatteryLevel(now, [self.level, self.voltage])
+        Reporter.addBatteryLevel(now, self.values)
 
         # Give user info
-        print ("Pump's battery level: " +
-               str([self.level, str(self.voltage) + " V"]))
+        print ("Pump's battery level: " + self.values["Level"] + " (" +
+               str(self.values["Voltage"]) + "V)")
 
 
 
@@ -515,11 +524,11 @@ class Battery:
         """
 
         # Return instance's value
-        return [self.level, self.voltage]
+        return self.values
 
 
 
-class Reservoir:
+class Reservoir(object):
 
     def __init__(self, pump):
 
@@ -528,6 +537,9 @@ class Reservoir:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize value
+        self.value = None
 
         # Link with its respective command
         self.command = commands.ReadPumpReservoir(pump, self)
@@ -575,7 +587,7 @@ class Reservoir:
 
 
 
-class Status:
+class Status(object):
 
     def __init__(self, pump):
 
@@ -584,6 +596,9 @@ class Status:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize values
+        self.values = None
 
         # Link with its respective commands
         self.commands = {"Read": commands.ReadPumpStatus(pump, self),
@@ -607,21 +622,21 @@ class Status:
         self.read()
 
         # Check if pump is ready to take action
-        if not self.value["Normal"]:
+        if not self.values["Normal"]:
 
             # Give user info
             print "There seems to be a problem with the pump. Try again later."
 
             return False
 
-        elif self.value["Bolusing"]:
+        elif self.values["Bolusing"]:
 
             # Give user info
             print "Pump is bolusing. Try again later."
 
             return False
 
-        elif self.value["Suspended"]:
+        elif self.values["Suspended"]:
 
             # Give user info
             print "Pump is suspended, but will be asked to resume activity."
@@ -629,15 +644,10 @@ class Status:
             # Resume pump activity
             self.resume()
 
-            # Double check
-            self.verify()
+        # Give user info
+        print "Pump's status allows desired course of action. Proceeding..."
 
-        else:
-
-            # Give user info
-            print "Pump status allows desired course of action. Proceeding..."
-
-            return True
+        return True
 
 
 
@@ -656,7 +666,7 @@ class Status:
         self.commands["Read"].do()
 
         # Give user info
-        print "Pump's status: " + str(self.value)
+        print "Pump's status: " + str(self.values)
 
 
 
@@ -700,12 +710,12 @@ class Status:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Return instance's value
-        return self.value
+        # Return instance's values
+        return self.values
 
 
 
-class Settings:
+class Settings(object):
 
     def __init__(self, pump):
 
@@ -714,6 +724,9 @@ class Settings:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize values
+        self.values = None
 
         # Link with its respective command
         self.command = commands.ReadPumpSettings(pump, self)
@@ -797,7 +810,51 @@ class Settings:
 
 
 
-class Units:
+class Units(object):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize value
+        self.value = None
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Prepare command
+        self.command.prepare()
+
+        # Do command
+        self.command.do()
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return units
+        return self.value
+
+
+
+class BGUnits(Units):
 
     def __init__(self, pump):
 
@@ -807,22 +864,8 @@ class Units:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give units all types
-        self.BG = BGUnits(pump)
-        self.C = CUnits(pump)
-        self.TBR = TBRUnits(pump)
-
-
-
-class BGUnits:
-
-    def __init__(self, pump):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+        # Initialize units
+        super(self.__class__, self).__init__()
 
         # Link with its respective command
         self.command = commands.ReadPumpBGUnits(pump, self)
@@ -837,11 +880,8 @@ class BGUnits:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Prepare command
-        self.command.prepare()
-
-        # Do command
-        self.command.do()
+        # Read units
+        super(self.__class__, self).read()
 
         # Store BG units to pump report
         Reporter.storeBGU(self.value)
@@ -851,20 +891,7 @@ class BGUnits:
 
 
 
-    def get(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Return instance's value
-        return self.value
-
-
-
-class CUnits:
+class CUnits(Units):
 
     def __init__(self, pump):
 
@@ -873,6 +900,9 @@ class CUnits:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize units
+        super(self.__class__, self).__init__()
 
         # Link with its respective command
         self.command = commands.ReadPumpCUnits(pump, self)
@@ -887,11 +917,8 @@ class CUnits:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Prepare command
-        self.command.prepare()
-
-        # Do command
-        self.command.do()
+        # Read units
+        super(self.__class__, self).read()
 
         # Store BG units to pump report
         Reporter.storeCU(self.value)
@@ -901,20 +928,7 @@ class CUnits:
 
 
 
-    def get(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Return instance's value
-        return self.value
-
-
-
-class TBRUnits:
+class TBRUnits(Units):
 
     def __init__(self, pump):
 
@@ -923,6 +937,9 @@ class TBRUnits:
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize units
+        super(self.__class__, self).__init__()
 
         # Link with its respective command
         self.command = commands.SetPumpTBRUnits(pump, self)
@@ -964,20 +981,7 @@ class TBRUnits:
 
 
 
-    def get(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Return instance's value
-        return self.value
-
-
-
-class BGTargets:
+class BGTargets(object):
 
     def __init__(self, pump):
 
@@ -1042,7 +1046,7 @@ class BGTargets:
 
 
 
-class ISF:
+class ISF(object):
 
     def __init__(self, pump):
 
@@ -1107,7 +1111,7 @@ class ISF:
 
 
 
-class CSF:
+class CSF(object):
 
     def __init__(self, pump):
 
@@ -1172,7 +1176,7 @@ class CSF:
 
 
 
-class DailyTotals:
+class DailyTotals(object):
 
     def __init__(self, pump):
 
@@ -1183,7 +1187,7 @@ class DailyTotals:
         """
 
         # Initialize daily totals dictionary
-        self.value = {"Today": None, "Yesterday": None}
+        self.values = {"Today": None, "Yesterday": None}
 
         # Link with its respective command
         self.command = commands.ReadPumpDailyTotals(pump, self)
@@ -1206,8 +1210,8 @@ class DailyTotals:
 
         # Give user info
         print "Daily totals:"
-        print json.dumps(self.value, indent = 2, separators = (",", ": "),
-                                     sort_keys = True)
+        print json.dumps(self.values, indent = 2, separators = (",", ": "),
+                                      sort_keys = True)
 
 
 
@@ -1224,7 +1228,7 @@ class DailyTotals:
 
 
 
-class History:
+class History(object):
 
     def __init__(self, pump):
 
@@ -1313,7 +1317,7 @@ class History:
 
 
 
-class Boluses:
+class Boluses(object):
 
     def __init__(self, pump):
 
@@ -1323,6 +1327,11 @@ class Boluses:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize bolus characteristics
+        self.stroke = 0.1  # Pump bolus stroke (U)
+        self.rate   = 40.0 # Bolus delivery rate (s/U)
+        self.delay  = 5    # Time (s) to wait after bolus delivery
+
         # Initialize boluses and times vectors
         self.values = []
         self.times = []
@@ -1330,8 +1339,10 @@ class Boluses:
         # Link with its respective command
         self.command = commands.DeliverPumpBolus(pump, self)
 
-        # FIXME
-        # Link to pump
+        # Link with its respective record
+        self.record = records.BolusRecord(pump, self)
+
+        # Link with pump
         self.pump = pump
 
 
@@ -1343,22 +1354,9 @@ class Boluses:
             READ
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-        # FIXME
 
-        # Download n pages of pump history (or all of it if none is given)
-        self.pump.history.read(n)
-
-        # Assign history pages to decode
-        pages = self.pump.history.get()
-
-        # Update decoder's device
-        Decoder.device = self.pump
-
-        # Update decoder's target
-        Decoder.target = self
-
-        # Decode pump record
-        Decoder.decodeBolusRecord(code = 1, size = 9, pages = pages)
+        # Find bolus records within a certain number of pages
+        self.record.find(n)
 
         # Give user output
         print "Found following bolus entries:"
@@ -1381,29 +1379,23 @@ class Boluses:
 
         TODO: Check if last bolus stored fits to the one just delivered
         """
-        # FIXME
 
         # Verify pump status and settings before doing anything
         if not self.pump.status.verify():
             return
 
-        if not self.pump.settings.verify(bolus = bolus):
+        if not self.pump.settings.verify(bolus):
             return
 
-        # Evaluating time required for bolus to be delivered (giving it some
+        # Compute time required for bolus to be delivered (giving it some
         # additional seconds to be safe)
-        bolusDeliveryTime = (self.pump.bolusDeliveryRate * bolus +
-                             self.pump.bolusDelay)
+        time = (self.rate * bolus + self.delay)
 
         # Prepare command
-        self.command.prepare(bolus, self.pump.bolusStroke, bolusDeliveryTime)
+        self.command.prepare(bolus, self.stroke, time)
 
         # Do command
         self.command.do(False)
-
-        # Give user output
-        print ("Waiting for bolus to be delivered... (" +
-               str(bolusDeliveryTime) + "s)")
 
         # Read last page and search it for boluses, then store new one to report
         self.read(1)
@@ -1423,7 +1415,7 @@ class Boluses:
 
 
 
-class Carbs:
+class Carbs(object):
 
     def __init__(self, pump):
 
@@ -1501,7 +1493,7 @@ class Carbs:
 
 
 
-class TBR:
+class TBR(object):
 
     def __init__(self, pump):
 
@@ -1659,7 +1651,7 @@ class TBR:
             # Add bolus to insulin report
             self.reporter.addTBR(now, rate, units, duration)
 
-        # FIXME: Otherwise, quit
+        # Otherwise, quit
         else:
             sys.exit("New TBR could not be correctly set. " +
                      "Exiting...")
@@ -1702,28 +1694,6 @@ class TBR:
 
         elif units == "%":
             self.set(100, units, 0, True)
-
-
-
-def link(recipient, pump):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        LINK
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Link recipient with pump
-    recipient.pump = pump
-
-    # Link recipient with reporter
-    recipient.reporter = pump.reporter
-
-    # Link recipient with requester
-    recipient.requester = pump.requester
-
-    # Link recipient with decoder
-    recipient.decoder = pump.decoder
 
 
 
@@ -1774,13 +1744,13 @@ def main():
     #pump.buttons.push("DOWN")
 
     # Read BG units set in pump's bolus wizard
-    #pump.units.BG.read()
+    #pump.units["BG"].read()
 
     # Read carb units set in pump's bolus wizard
-    #pump.units.C.read()
+    #pump.units["C"].read()
 
     # Read current TBR units
-    #pump.units.TBR.read()
+    #pump.units["TBR"].read()
 
     # Read BG targets stored in pump
     #pump.BGTargets.read()
@@ -1798,7 +1768,7 @@ def main():
     #pump.history.read()
 
     # Send bolus to pump
-    #pump.boluses.deliver(0.1)
+    pump.boluses.deliver(0.1)
 
     # Read boluses from pump history
     #pump.boluses.read()

@@ -46,7 +46,6 @@ sleep = 5
 
 
 # MAIN
-
 # Instanciate a pump for me
 myPump = pump.Pump()
 
@@ -94,15 +93,15 @@ myPump.dailyTotals.read()
 time.sleep(sleep)
 
 # Read BG units set in pump's bolus wizard
-myPump.units.BG.read()
+myPump.units["BG"].read()
 time.sleep(sleep)
 
 # Read carb units set in pump's bolus wizard
-myPump.units.C.read()
+myPump.units["C"].read()
 time.sleep(sleep)
 
 # Read current TBR units
-myPump.units.TBR.read()
+myPump.units["TBR"].read()
 time.sleep(sleep)
 
 # Read blood glucose targets stored in pump
@@ -126,8 +125,8 @@ myPump.boluses.read()
 time.sleep(sleep)
 
 # Read carbs from pump history
-myPump.carbs.read()
-time.sleep(sleep)
+#myPump.carbs.read()
+#time.sleep(sleep)
 
 # Send bolus to pump
 myPump.boluses.deliver(0.1)
@@ -138,12 +137,12 @@ myPump.TBR.read()
 time.sleep(sleep)
 
 # Send TBR to pump
-myPump.TBR.set(5, "U/h", 30)
-time.sleep(sleep)
-myPump.TBR.set(50, "%", 90)
-time.sleep(sleep)
-myPump.TBR.cancel()
-time.sleep(sleep)
+#myPump.TBR.set(5, "U/h", 30)
+#time.sleep(sleep)
+#myPump.TBR.set(50, "%", 90)
+#time.sleep(sleep)
+#myPump.TBR.cancel()
+#time.sleep(sleep)
 
 # Push button on pump
 myPump.buttons.push("EASY")

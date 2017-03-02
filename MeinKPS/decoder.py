@@ -83,12 +83,12 @@ class Decoder:
             packetsSent = lib.convertBytes(bytes[11:15])
 
             # Store state
-            self.target.state["Errors"]["CRC"] = errorCRC
-            self.target.state["Errors"]["SEQ"] = errorSEQ
-            self.target.state["Errors"]["NAK"] = errorNAK
-            self.target.state["Errors"]["Timeout"] = errorTimeout
-            self.target.state["Packets"]["Received"] = packetsReceived
-            self.target.state["Packets"]["Sent"] = packetsSent
+            self.target.values["Errors"]["CRC"] = errorCRC
+            self.target.values["Errors"]["SEQ"] = errorSEQ
+            self.target.values["Errors"]["NAK"] = errorNAK
+            self.target.values["Errors"]["Timeout"] = errorTimeout
+            self.target.values["Packets"]["Received"] = packetsReceived
+            self.target.values["Packets"]["Sent"] = packetsSent
 
 
 
@@ -165,13 +165,15 @@ class Decoder:
             level = bytes[0]
 
             if level == 0:
-                self.target.level = "Normal"
+                level = "Normal"
             elif level == 1:
-                self.target.level = "Low"
+                level = "Low"
 
             # Decode battery voltage
-            self.target.voltage = round(lib.bangInt([bytes[1],
-                                                     bytes[2]]) / 100.0, 1)
+            voltage = round(lib.bangInt([bytes[1], bytes[2]]) / 100.0, 1)
+
+            # Store battery level and voltage
+            self.target.values = {"Level": level, "Voltage": voltage}
 
 
 
@@ -182,7 +184,7 @@ class Decoder:
 
             # Decode remaining amount of insulin
             self.target.value = round(lib.bangInt(bytes[0:2]) *
-                                      self.device.bolusStroke, 1)
+                                      self.device.boluses.stroke, 1)
 
 
 
@@ -192,9 +194,9 @@ class Decoder:
         elif command == "ReadPumpStatus":
 
             # Extract pump status from received bytes
-            self.target.value = {"Normal" : bytes[0] == 3,
-                                 "Bolusing" : bytes[1] == 1,
-                                 "Suspended" : bytes[2] == 1}
+            self.target.values = {"Normal" : bytes[0] == 3,
+                                  "Bolusing" : bytes[1] == 1,
+                                  "Suspended" : bytes[2] == 1}
 
 
 
@@ -206,7 +208,7 @@ class Decoder:
             # Decode pump settings
             self.target.values = {
                 "IAC": bytes[17],
-                "Max Bolus": bytes[5] * self.device.bolusStroke,
+                "Max Bolus": bytes[5] * self.device.boluses.stroke,
                 "Max Basal": (lib.bangInt(bytes[6:8]) *
                               self.device.basalStroke / 2.0)}
 
@@ -445,10 +447,10 @@ class Decoder:
         elif command == "ReadPumpDailyTotals":
 
             # Decode daily totals
-            self.target.value = {"Today": round(lib.bangInt(bytes[0:2]) *
-                                          self.device.bolusStroke, 2),
-                                 "Yesterday": round(lib.bangInt(bytes[2:4]) *
-                                              self.device.bolusStroke, 2)}
+            self.target.values = {"Today": round(lib.bangInt(bytes[0:2]) *
+                                           self.device.boluses.stroke, 2),
+                                  "Yesterday": round(lib.bangInt(bytes[2:4]) *
+                                               self.device.boluses.stroke, 2)}
 
 
 
@@ -512,7 +514,7 @@ class Decoder:
                     (pages[i + 3] == 0)):
             
                     # Extract bolus from pump history pages
-                    bolus = round(pages[i + 1] * self.device.bolusStroke, 1)
+                    bolus = round(pages[i + 1] * self.device.boluses.stroke, 1)
 
                     # Extract time at which bolus was delivered
                     t = lib.decodeTime(pages[i + 4 : i + 9])

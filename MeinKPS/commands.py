@@ -60,8 +60,8 @@ class PumpCommand(object):
         self.remote = True
         self.sleep = 0
         self.power = 0
-        self.attempts = None
-        self.size = None
+        self.attempts = 2
+        self.size = 1
         self.code = None
         self.parameters = []
 
@@ -181,8 +181,6 @@ class ReadPumpTime(PumpCommand):
         self.info = "Reading pump's time..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 112
 
 
@@ -204,8 +202,6 @@ class ReadPumpModel(PumpCommand):
         self.info = "Reading pump's model..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 141
 
 
@@ -227,8 +223,6 @@ class ReadPumpFirmware(PumpCommand):
         self.info = "Reading pump's firmware..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 116
 
 
@@ -289,8 +283,6 @@ class ReadPumpBattery(PumpCommand):
         self.info = "Reading pump's battery..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 114
 
 
@@ -312,8 +304,6 @@ class ReadPumpReservoir(PumpCommand):
         self.info = "Reading pump's reservoir..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 115
 
 
@@ -335,8 +325,6 @@ class ReadPumpStatus(PumpCommand):
         self.info = "Reading pump's status..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 206
 
 
@@ -359,8 +347,6 @@ class SuspendPump(PumpCommand):
 
         # Define request bytes
         self.sleep = pump.executionDelay
-        self.attempts = 2
-        self.size = 1
         self.code = 77
         self.parameters = [1]
 
@@ -384,8 +370,6 @@ class ResumePump(PumpCommand):
 
         # Define request bytes
         self.sleep = pump.executionDelay
-        self.attempts = 2
-        self.size = 1
         self.code = 77
         self.parameters = [0]
 
@@ -408,8 +392,6 @@ class ReadPumpSettings(PumpCommand):
         self.info = "Reading pump's settings..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 192
 
 
@@ -431,8 +413,6 @@ class ReadPumpBGUnits(PumpCommand):
         self.info = "Reading pump's BG units..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 137
 
 
@@ -454,8 +434,6 @@ class ReadPumpBGUnits(PumpCommand):
         self.info = "Reading pump's BG units..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 137
 
 
@@ -477,8 +455,6 @@ class ReadPumpCUnits(PumpCommand):
         self.info = "Reading pump's C units..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 136
 
 
@@ -545,8 +521,6 @@ class ReadPumpBGTargets(PumpCommand):
         self.info = "Reading pump's BG targets..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 159
 
 
@@ -568,8 +542,6 @@ class ReadPumpISF(PumpCommand):
         self.info = "Reading pump's ISF..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 139
 
 
@@ -591,8 +563,6 @@ class ReadPumpCSF(PumpCommand):
         self.info = "Reading pump's CSF..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 138
 
 
@@ -614,8 +584,6 @@ class ReadPumpDailyTotals(PumpCommand):
         self.info = "Reading pump's daily totals..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 121
 
 
@@ -637,8 +605,6 @@ class EvaluatePumpHistory(PumpCommand):
         self.info = "Reading number of pump history pages..."
 
         # Define request bytes
-        self.attempts = 2
-        self.size = 1
         self.code = 157
 
 
@@ -660,7 +626,6 @@ class ReadPumpHistory(PumpCommand):
         self.info = "Reading number of pump history pages..."
 
         # Define request bytes
-        self.attempts = 2
         self.size = 2
         self.code = 128
 
@@ -700,7 +665,6 @@ class DeliverPumpBolus(PumpCommand):
 
         # Define request bytes
         self.attempts = 0
-        self.size = 1
         self.code = 66
 
 

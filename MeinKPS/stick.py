@@ -34,30 +34,28 @@
 
 
 # LIBRARIES
-import json
 import os
-import serial
 import sys
-import time
+import json
 import datetime
+import serial
 
 
 
 # USER LIBRARIES
-import lib
 import commands
 
 
 
-class Stick:
+class Stick(object):
 
     # STICK CHARACTERISTICS
-    vendor        = 0x0a21
-    product       = 0x8001
-    serial        = None
-    nBytesDefault = 64 # Default number of bytes to read from buffer
-    timeout       = 0.1 # Time to read from buffer (s) [0.5]
-    flushTime     = 0.5 # (s)
+    vendor    = 0x0a21
+    product   = 0x8001
+    serial    = None
+    nBytes    = 64 # Default number of bytes to read from buffer
+    timeout   = 0.1 # Time to read from buffer (s) [0.5]
+    flushTime = 0.5 # (s)
 
 
 
@@ -173,7 +171,7 @@ class Stick:
             now = datetime.datetime.now()
 
             # Empty buffer
-            n = len(self.handle.read(self.nBytesDefault))
+            n = len(self.handle.read(self.nBytes))
 
             # If maximum amount of time reached, exit
             if (now - then).seconds >= self.flushTime:
@@ -184,7 +182,7 @@ class Stick:
 
 
 
-class Signal:
+class Signal(object):
 
     def __init__(self, stick):
 
@@ -248,12 +246,15 @@ class Interface(object):
         """
 
         # Define a dictionary of state indicators
-        self.state = {"Errors": {"CRC": None,
-                                 "SEQ": None,
-                                 "NAK": None,
-                                 "Timeout": None},
-                     "Packets": {"Received": None,
-                                 "Sent": None}}
+        self.values = {"Errors": {"CRC": None,
+                                  "SEQ": None,
+                                  "NAK": None,
+                                  "Timeout": None},
+                      "Packets": {"Received": None,
+                                  "Sent": None}}
+
+        # Initialize command
+        self.command = None
 
 
 
@@ -273,9 +274,9 @@ class Interface(object):
 
         # Print current stick states
         print self.__class__.__name__ + " state:"
-        print json.dumps(self.state, indent = 2,
-                                     separators = (",", ": "),
-                                     sort_keys = True)
+        print json.dumps(self.values, indent = 2,
+                                      separators = (",", ": "),
+                                      sort_keys = True)
 
 
 
@@ -315,7 +316,7 @@ class Radio(Interface):
 
 
 
-class Infos:
+class Infos(object):
 
     def __init__(self, stick):
 
