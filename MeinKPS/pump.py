@@ -1356,7 +1356,7 @@ class Boluses(object):
         """
 
         # Find bolus records within a certain number of pages
-        self.record.find(n)
+        self.record.search(n)
 
         # Give user output
         print "Found following bolus entries:"

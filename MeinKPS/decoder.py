@@ -492,54 +492,6 @@ class Decoder:
 
 
 
-    def decodeBolusRecord(self, code, size, pages):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        DECODEBOLUSRECORD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read current time
-        now = datetime.datetime.now()
-
-        # Search history pages for specified record
-        for i in range(len(pages)):
-
-            # Try and find bolus records
-            try:
-
-                # Define bolus criteria
-                if ((pages[i] == code) and (pages[i + 1] == pages[i + 2]) and
-                    (pages[i + 3] == 0)):
-            
-                    # Extract bolus from pump history pages
-                    bolus = round(pages[i + 1] * self.device.boluses.stroke, 1)
-
-                    # Extract time at which bolus was delivered
-                    t = lib.decodeTime(pages[i + 4 : i + 9])
-
-                    # Check for bolus year
-                    if abs(t[0] - now.year) > 1:
-
-                        raise ValueError("Bolus can't be more than one year " +
-                                         "in the past!")
-
-                    # Build datetime object
-                    t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
-
-                    # Format bolus time
-                    t = lib.formatTime(t)
-
-                    # Give user info
-                    #print "Bolus read: " + str(bolus) + "U (" + t + ")"
-                    
-                    # Store bolus
-                    self.target.values.append(bolus)
-                    self.target.times.append(t)
-
-            except:
-                pass
 
 
 
@@ -674,6 +626,52 @@ class Decoder:
 
             except:
                 pass
+
+
+
+
+
+
+    def decodeRecord(self, record, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        DECODERECORD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # BOLUSRECORD
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if record == "BolusRecord":
+
+            # Read current time
+            now = datetime.datetime.now()
+
+            # Extract bolus from pump history pages
+            bolus = round(bytes[1] * self.device.boluses.stroke, 1)
+
+            # Extract time at which bolus was delivered
+            t = lib.decodeTime(bytes[4:9])
+
+            # Check for bolus year
+            if abs(t[0] - now.year) > 1:
+
+                raise ValueError("Bolus can't be more than one year " +
+                                 "in the past!")
+
+            # Build datetime object
+            t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
+
+            # Format bolus time
+            t = lib.formatTime(t)
+
+            # Give user info
+            #print "Bolus read: " + str(bolus) + "U (" + t + ")"
+            
+            # Store bolus
+            self.target.values.append(bolus)
+            self.target.times.append(t)
 
 
 

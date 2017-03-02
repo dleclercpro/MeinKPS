@@ -24,13 +24,9 @@
 
 # USER LIBRARIES
 import lib
-import requester
 import decoder
 
 
-
-# Instanciate a requester
-Requester = requester.Requester()
 
 # Instanciate a decoder
 Decoder = decoder.Decoder()
@@ -59,11 +55,11 @@ class PumpRecord(object):
 
 
 
-    def find(self, n):
+    def search(self, n):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FIND
+            SEARCH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -76,26 +72,61 @@ class PumpRecord(object):
         # Download n pages of pump history (or all of it if none is given)
         self.pump.history.read(n)
 
-        # Assign history pages to decode
-        self.pages = self.pump.history.get()
+        # Find record in precedently read pump history pages
+        self.find(self.pump.history.pages)
 
-        # Decode record
-        self.decode()
+
+
+    def find(self, pages):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FIND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Search history pages for specified record
+        for i in range(len(pages)):
+
+            # Try and find record
+            try:
+
+                # Define new possible record
+                record = pages[i:i + self.size]
+
+                # Test criteria
+                if self.criteria(record):
+
+                    # Decode record
+                    Decoder.decodeRecord(self.__class__.__name__, record)
+
+            # If not matching, move to next one
+            except:
+                pass
 
 
 
 class BolusRecord(PumpRecord):
 
-    def decode(self):
+    def __init__(self, pump, target):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
+            INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Decode pump record
-        Decoder.decodeBolusRecord(code = 1, size = 9, pages = self.pages)
+        # Initialize record
+        super(self.__class__, self).__init__(pump, target)
+
+        # Define record characteristics
+        self.code = 1
+        self.size = 9
+
+        # Define record's criteria
+        self.criteria = (lambda x: x[0] == self.code and
+                                   x[1] == x[2] and
+                                   x[3] == 0)
 
 
 
