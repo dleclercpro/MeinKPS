@@ -100,17 +100,33 @@ def encodeSerialNumber(x):
 
 
 
-def padHex(x):
+def charify(x):
 
     """
     ============================================================================
-    PADHEX
+    CHARIFY
     ============================================================================
-
-    Pad an hexadecimal string with zeros.
     """
 
-    return "0x" + x[2:].zfill(2)
+    if type(x) is not list:
+        x = [x]
+
+    return ["." if (y < 32) | (y > 126) else chr(y) for y in x]
+
+
+
+def hexify(x):
+
+    """
+    ============================================================================
+    HEXIFY
+    ============================================================================
+    """
+
+    if type(x) is not list:
+        x = [x]
+
+    return ["0x" + hex(y)[2:].zfill(2) for y in x]
 
 
 

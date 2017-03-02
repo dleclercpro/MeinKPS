@@ -36,8 +36,20 @@ import lib
 
 class Reporter:
 
-    # REPORTER CHARACTERISTICS
-    source = "/home/pi/MeinKPS/MeinKPS/Reports/"
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Set source path to reports
+        self.source = "/home/pi/MeinKPS/MeinKPS/Reports/"
+
+        # Initialize looked up sections
+        self.section = [] # Should not be equal to last one!
+        self.lastSection = None
 
 
 
@@ -254,6 +266,10 @@ class Reporter:
         ========================================================================
         """
 
+        # FIXME
+        # Look if trying to add entry in an already found section
+        #if self.section != self.lastSection:
+
         # Load report section
         self.getSection(path, True)
 
@@ -279,9 +295,12 @@ class Reporter:
             # Rewrite report
             self.save()
 
+        # Store last section in which entries were added
+        self.lastSection = self.section
 
 
-    def addBatteryLevel(self, t, level):
+
+    def addBatteryLevel(self, t, values):
 
         """
         ========================================================================
@@ -296,7 +315,8 @@ class Reporter:
         self.load("pump.json")
 
         # Add entry
-        self.addEntry(["Battery Levels"], t, level)
+        self.addEntry(["Battery Levels"], t, [values["Level"],
+                                              values["Voltage"]])
 
 
 
@@ -399,10 +419,10 @@ class Reporter:
         self.load("pump.json")
 
         # Remove old entry
-        self.delete([], "Power Up")
+        self.delete([], "Power")
 
         # Add entry
-        self.addEntry([], "Power Up", t)
+        self.addEntry([], "Power", t)
 
 
 

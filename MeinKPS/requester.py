@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Title:    requester
 
@@ -20,7 +20,7 @@
 
     Notes:    ...
 
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
 # TODO: - recover from 14 bytes expected when downloading?
@@ -55,32 +55,16 @@ class Requester:
 
 
 
-    def initialize(self, recipient = None, serial = None, handle = None):
+    def __init__(self):
 
         """
-        ========================================================================
-        INITIALIZE
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Verify if requester can be properly initialized
-        if (recipient == None) | (handle == None):
-
-            # If user forgot to give required input, quit
-            sys.exit("Please define a request recipient as well as a handle " +
-                     "for the requester.")
-
-        # Give requester the future recipient of its requests, that is the
-        # device
-        self.recipient = recipient
-
-        # Read and store encoded version of recipient's serial number
-        if serial is not None:
-            self.serial = lib.encodeSerialNumber(serial)
-
-        # Link requester with the previously generated USB serial handle of said
-        # device
-        self.handle = handle
+        # Initialize data vector
+        self.data = []
 
         # Initialize a packet dictionary for the requester
         self.packets = {"Normal": [],
@@ -89,11 +73,38 @@ class Requester:
 
 
 
+    def prepare(self, device = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Verify if requester can be properly initialized
+        if device == None:
+
+            # If user forgot to give required input, quit
+            sys.exit("Please define a device as well as a handle for the " +
+                     "requester.")
+
+        # Give requester the name of the device to which it is making requests
+        self.device = device.__class__.__name__
+
+        # Read and store encoded version of device's serial number
+        if device.serial is not None:
+            self.serial = lib.encodeSerialNumber(device.serial)
+
+        # Link requester with the previously generated USB serial handle of said
+        # device
+        self.handle = device.handle
+
+
+
     def define(self, info = None,
                      packet = None,
                      remote = True,
                      sleep = 0,
-                     sleepReason = None,
                      power = 0,
                      attempts = None,
                      size = None,
@@ -101,9 +112,9 @@ class Requester:
                      parameters = []):
 
         """
-        ========================================================================
-        DEFINE
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Store definition of request
@@ -111,7 +122,6 @@ class Requester:
         self.packet = packet
         self.remote = remote
         self.sleep = sleep
-        self.sleepReason = sleepReason
         self.power = power
         self.attempts = attempts
         self.size = size
@@ -120,12 +130,12 @@ class Requester:
 
 
 
-    def build(self, sort = "Normal"):
+    def build(self, packetType = "Normal"):
 
         """
-        ========================================================================
-        BUILD
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            BUILD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Initialize packet
@@ -135,16 +145,16 @@ class Requester:
         if self.packet != None:
             packet = self.packet
 
-        # If recipient is stick
-        if self.recipient == "Stick":
+        # If device is stick
+        if self.device == "Stick":
 
             pass
 
-        # If recipient is pump
-        elif self.recipient == "Pump":
+        # If device is pump
+        elif self.device == "Pump":
 
             # Build normal request packet
-            if sort == "Normal":
+            if packetType == "Normal":
                 packet.extend([1, 0, 167, 1])
                 packet.extend(self.serial)
                 packet.append(128 | lib.getByte(len(self.parameters), 1))
@@ -159,39 +169,39 @@ class Requester:
                 packet.append(lib.computeCRC8(self.parameters))
 
             # Build poll request packet
-            elif sort == "Poll":
+            elif packetType == "Poll":
                 packet = [3, 0, 0]
 
             # Build download request packet
-            elif sort == "Download":
+            elif packetType == "Download":
                 packet.extend([12, 0])
                 packet.append(lib.getByte(self.nBytesExpected, 1))
                 packet.append(lib.getByte(self.nBytesExpected, 0))
                 packet.append(lib.computeCRC8(packet))
 
-        # If recipient is CGM
-        elif self.recipient == "CGM":
+        # If device is CGM
+        elif self.device == "CGM":
 
             pass
 
         # Update requester's packet dictionary
-        self.packets[sort] = packet
+        self.packets[packetType] = packet
 
 
 
-    def send(self, sort = "Normal"):
+    def send(self, packetType = "Normal"):
 
         """
-        ========================================================================
-        SEND
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Give user info
-        print "Sending packet: " + str(self.packets[sort])
+        print "Sending packet: " + str(self.packets[packetType])
 
         # Send request packet as bytes to device
-        self.handle.write(bytearray(self.packets[sort]))
+        self.handle.write(bytearray(self.packets[packetType]))
 
         # Give device some time to respond
         time.sleep(self.responseSleep)
@@ -204,9 +214,9 @@ class Requester:
     def get(self):
 
         """
-        ========================================================================
-        GET
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Decide on number of bytes to read. If less bytes expected than usual,
@@ -272,30 +282,28 @@ class Requester:
     def format(self):
 
         """
-        ========================================================================
-        FORMAT
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FORMAT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Give user info
         print "Formatting response..."
 
         # Format response to padded hexadecimals
-        self.responseHex = [lib.padHex(hex(x)) for x in self.response]
+        self.responseHex = lib.hexify(self.response)
 
         # Format response to readable characters
-        self.responseChr = ["." if (x < 32) | (x > 126)
-                                 else chr(x)
-                                 for x in self.response]
+        self.responseChr = lib.charify(self.response)
 
 
 
     def show(self, n = 8):
 
         """
-        ========================================================================
-        SHOW
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Compute number of exceeding bytes
@@ -341,9 +349,9 @@ class Requester:
     def poll(self):
 
         """
-        ========================================================================
-        POLL
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            POLL
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Reset number of bytes expected
@@ -390,9 +398,9 @@ class Requester:
     def verify(self):
 
         """
-        ========================================================================
-        VERIFY
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Check for incorrect number of bytes
@@ -438,15 +446,15 @@ class Requester:
     def download(self):
 
         """
-        ========================================================================
-        DOWNLOAD
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DOWNLOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Give user info
         print "Downloading data from device..."
 
-        # Initialize data vector
+        # Reset data vector
         self.data = []
 
 	    # Initialize download attempt variable
@@ -489,9 +497,9 @@ class Requester:
     def make(self):
 
         """
-        ========================================================================
-        MAKE
-        ========================================================================
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MAKE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Print request info
@@ -518,9 +526,6 @@ class Requester:
         # Give enough time for last request to be executed
         if self.sleep > 0:
 
-            # Explain why sleeping is necessary
-            print self.sleepReason
-
             # Sleep
             time.sleep(self.sleep)
 
@@ -529,9 +534,9 @@ class Requester:
 def main():
 
     """
-    ============================================================================
-    MAIN
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
 
