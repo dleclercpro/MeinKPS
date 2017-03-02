@@ -1245,24 +1245,24 @@ class History(object):
         self.pages = []
 
         # Link with its respective command
-        self.commands = {"Evaluate": commands.EvaluatePumpHistory(pump, self),
+        self.commands = {"Measure": commands.MeasurePumpHistory(pump, self),
                          "Read": commands.ReadPumpHistory(pump, self)}
 
 
 
-    def evaluate(self):
+    def measure(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EVALUATE
+            MEASURE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Prepare command
-        self.commands["Evaluate"].prepare()
+        self.commands["Measure"].prepare()
 
         # Do command
-        self.commands["Evaluate"].do()
+        self.commands["Measure"].do()
 
         # Give user info
         print "Found " + str(self.size) + " pump history pages."
@@ -1281,7 +1281,7 @@ class History(object):
         if not n:
 
             # Find number of existing history pages
-            self.evaluate()
+            self.measure()
 
             # Assign number of pages found
             n = self.size
@@ -1741,7 +1741,7 @@ def main():
     #pump.boluses.deliver(0.1)
 
     # Read boluses from pump history
-    #pump.boluses.read()
+    pump.boluses.read()
 
     # Read carbs from pump history
     #pump.carbs.read()

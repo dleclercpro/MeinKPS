@@ -104,7 +104,7 @@ class PumpCommand(object):
         """
 
         # Decode pump's data
-        Decoder.decode(self.__class__.__name__, Requester.data)
+        Decoder.decodeResponse(self.__class__.__name__, Requester.data)
 
 
 
@@ -588,7 +588,7 @@ class ReadPumpDailyTotals(PumpCommand):
 
 
 
-class EvaluatePumpHistory(PumpCommand):
+class MeasurePumpHistory(PumpCommand):
 
     def __init__(self, pump, target):
 
@@ -821,7 +821,7 @@ class StickCommand(object):
         """
 
         # Decode stick's response
-        Decoder.decode(self.__class__.__name__, Requester.response)
+        Decoder.decodeResponse(self.__class__.__name__, Requester.response)
 
 
 

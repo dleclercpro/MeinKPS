@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Title:    decoder
 
@@ -14,12 +14,12 @@
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
 
-    Overview: This is a script that decodes the bytes constituting every
-              response to every device request defined and sent by MeinKPS.
+    Overview: This is a script that decodes bytes read from devices supported by
+              MeinKPS.
 
     Notes:    ...
 
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
 # LIBRARIES
@@ -50,16 +50,16 @@ class Decoder:
 
 
 
-    def decode(self, command, bytes):
+    def decodeResponse(self, command, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        DECODE
+            DECODERESPONSE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READSTICKSIGNALSTRENGTH
+        # 	READSTICKSIGNALSTRENGTH
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if command == "ReadStickSignalStrength":
 
@@ -69,7 +69,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READSTICKUSBSTATE / READSTICKRADIOSTATE
+        # 	READSTICKUSBSTATE / READSTICKRADIOSTATE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif ((command == "ReadStickUSBState") or
               (command == "ReadStickRadioState")):
@@ -93,7 +93,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READSTICKINFOS
+        # 	READSTICKINFOS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadStickInfos":
 
@@ -115,7 +115,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPTIME
+        # 	READPUMPTIME
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpTime":
 
@@ -136,7 +136,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPMODEL
+        # 	READPUMPMODEL
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpModel":
 
@@ -146,7 +146,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPFIRMWARE
+        # 	READPUMPFIRMWARE
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpFirmware":
 
@@ -157,7 +157,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPBATTERY
+        # 	READPUMPBATTERY
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpBattery":
 
@@ -178,7 +178,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPRESERVOIR
+        # 	READPUMPRESERVOIR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpReservoir":
 
@@ -189,7 +189,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPSTATUS
+        # 	READPUMPSTATUS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpStatus":
 
@@ -201,7 +201,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPSETTINGS
+        # 	READPUMPSETTINGS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpSettings":
 
@@ -215,7 +215,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPBGUNITS
+        # 	READPUMPBGUNITS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpBGUnits":
 
@@ -231,7 +231,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPCUNITS
+        # 	READPUMPCUNITS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpCUnits":
 
@@ -247,7 +247,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPBGTARGETS
+        # 	READPUMPBGTARGETS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpBGTargets":
 
@@ -312,7 +312,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPISF
+        # 	READPUMPISF
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpISF":
 
@@ -377,7 +377,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPCSF
+        # 	READPUMPCSF
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpCSF":
 
@@ -442,7 +442,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READDAILYTOTALS
+        # 	READDAILYTOTALS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpDailyTotals":
 
@@ -455,9 +455,9 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # EVALUATEPUMPHISTORY
+        #   MEASUREPUMPHISTORY
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "EvaluatePumpHistory":
+        elif command == "MeasurePumpHistory":
 
             # Decode and store number of history pages
             self.target.size = bytes[3] + 1
@@ -465,7 +465,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READPUMPTBR
+        # 	READPUMPTBR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpTBR":
 
@@ -496,7 +496,7 @@ class Decoder:
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        DECODERECORD
+            DECODERECORD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -504,7 +504,7 @@ class Decoder:
         now = datetime.datetime.now()
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # BOLUSRECORD
+        # 	BOLUSRECORD
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if record == "BolusRecord":
 
@@ -536,7 +536,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # BOLUSWIZARDRECORD
+        #   BOLUSWIZARDRECORD
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if record == "BolusWizardRecord":
 
@@ -636,7 +636,7 @@ def main():
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    MAIN
+        MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
