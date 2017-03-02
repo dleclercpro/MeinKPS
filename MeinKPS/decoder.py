@@ -492,147 +492,7 @@ class Decoder:
 
 
 
-
-
-
-    def decodeBolusWizardRecord(self, code, headSize, dateSize, bodySize,
-                                      pages):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        DECODEBOLUSWIZARDRECORD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read current time
-        now = datetime.datetime.now()
-
-        # Define an indicator dictionary to decode BG and carb bytes
-        # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
-        indicators = {80: ["mg/dL", "g", False, False],
-                      82: ["mg/dL", "g", True, False],
-                      84: ["mg/dL", "g", False, True],
-                      86: ["mg/dL", "g", True, True],
-                      96: ["mg/dL", "exchanges", False, False],
-                      98: ["mg/dL", "exchanges", True, False],
-                      144: ["mmol/L", "g", False, False],
-                      145: ["mmol/L", "g", True, False],
-                      148: ["mmol/L", "g", False, True],
-                      149: ["mmol/L", "g", True, True],
-                      160: ["mmol/L", "exchanges", False, False],
-                      161: ["mmol/L", "exchanges", True, False]}
-
-        # Search history pages for specified record
-        for i in range(len(pages)):
-
-            # Try and find bolus wizard records
-            try:
-
-                # Look for code, with which every record should start
-                if pages[i] == code:
-
-                    # Define a record running variable
-                    x = i
-            
-                    # Assign record head
-                    head = pages[x:x + headSize]
-
-                    # Update running variable
-                    x += headSize
-
-                    # Assign record date
-                    date = pages[x:x + dateSize]
-
-                    # Update running variable
-                    x += dateSize
-
-                    # Assign record body
-                    body = pages[x:x + bodySize]
-
-                    # Decode time using date bytes
-                    t = lib.decodeTime(date)
-
-                    # Build datetime object
-                    t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
-
-                    # Proof record year
-                    if abs(t.year - now.year) > 1:
-
-                        raise ValueError("Record and current year too far " +
-                                         "apart!")
-
-                    # Format time
-                    t = lib.formatTime(t)
-
-                    # Decode units and sizes of BG and carb entries using 2nd
-                    # body byte as indicator linked with the previously
-                    # defined dictionary
-                    [BGU, CU, largerBG, largerC] = indicators[body[1]]
-
-                    # Define rounding multiplicator for BGs and Cs
-                    if BGU == "mmol/L":
-                        mBGU = 1.0
-
-                    elif BGU == "mg/dL":
-                        mBGU = 0
-
-                    if CU == "exchanges":
-                        mCU = 1.0
-
-                    elif CU == "g":
-                        mCU = 0
-
-                    # Define number of bytes to add for larger BGs and Cs
-                    if largerBG:
-                        
-                        # Extra number of bytes depends on BG units
-                        if BGU == "mmol/L":
-                            mBG = 256
-
-                        elif BGU == "mg/dL":
-                            mBG = 512
-
-                    else:
-                        mBG = 0
-
-                    if largerC:
-                        mC = 256
-
-                    else:
-                        mC = 0
-
-                    # Decode record
-                    BG = (head[1] + mBG) / 10 ** mBGU
-                    C = (body[0] + mC) / 10 ** mCU
-
-                    # Not really necessary, but those are correct
-                    BGTargets = [body[4] / 10 ** mBGU, body[12] / 10 ** mBGU]
-                    CSF = body[2] / 10 ** mCU
-
-                    # Add carbs and times at which they were consumed to their
-                    # respective vectors only if they have a given value!
-                    if C:
-                        self.target.values.append([C, CU])
-                        self.target.times.append(t)
-
-                    # Give user output
-                    #print "Time: " + t
-                    #print "Response: " + str(head) + ", " + str(body)
-                    #print "BG: " + str(BG) + " " + str(BGU)
-                    #print "Carbs: " + str(C) + " " + str(CU)
-                    #print "BG Targets: " + str(BGTargets) + " " + str(BGU)
-                    #print "CSF: " + str(CSF) + " " + str(CU) + "/U"
-                    #print
-
-            except:
-                pass
-
-
-
-
-
-
-    def decodeRecord(self, record, bytes):
+    def decodeRecord(self, record, head, date, body):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -640,19 +500,19 @@ class Decoder:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Read current time
+        now = datetime.datetime.now()
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # BOLUSRECORD
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if record == "BolusRecord":
 
-            # Read current time
-            now = datetime.datetime.now()
-
             # Extract bolus from pump history pages
-            bolus = round(bytes[1] * self.device.boluses.stroke, 1)
+            bolus = round(head[1] * self.device.boluses.stroke, 1)
 
             # Extract time at which bolus was delivered
-            t = lib.decodeTime(bytes[4:9])
+            t = lib.decodeTime(date)
 
             # Check for bolus year
             if abs(t[0] - now.year) > 1:
@@ -672,6 +532,103 @@ class Decoder:
             # Store bolus
             self.target.values.append(bolus)
             self.target.times.append(t)
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # BOLUSWIZARDRECORD
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if record == "BolusWizardRecord":
+
+            # Define an indicator dictionary to decode BG and carb bytes
+            # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
+            indicators = {80: ["mg/dL", "g", False, False],
+                          82: ["mg/dL", "g", True, False],
+                          84: ["mg/dL", "g", False, True],
+                          86: ["mg/dL", "g", True, True],
+                          96: ["mg/dL", "exchanges", False, False],
+                          98: ["mg/dL", "exchanges", True, False],
+                          144: ["mmol/L", "g", False, False],
+                          145: ["mmol/L", "g", True, False],
+                          148: ["mmol/L", "g", False, True],
+                          149: ["mmol/L", "g", True, True],
+                          160: ["mmol/L", "exchanges", False, False],
+                          161: ["mmol/L", "exchanges", True, False]}
+
+            # Decode time
+            t = lib.decodeTime(date)
+
+            # Build datetime object
+            t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
+
+            # Proof record year
+            if abs(t.year - now.year) > 1:
+
+                raise ValueError("Record and current year too far " +
+                                 "apart!")
+
+            # Format time
+            t = lib.formatTime(t)
+
+            # Decode units and sizes of BG and carb entries using 2nd
+            # body byte as indicator linked with the previously
+            # defined dictionary
+            [BGU, CU, largerBG, largerC] = indicators[body[1]]
+
+            # Define rounding multiplicator for BGs and Cs
+            if BGU == "mmol/L":
+                mBGU = 1.0
+
+            elif BGU == "mg/dL":
+                mBGU = 0
+
+            if CU == "exchanges":
+                mCU = 1.0
+
+            elif CU == "g":
+                mCU = 0
+
+            # Define number of bytes to add for larger BGs and Cs
+            if largerBG:
+                
+                # Extra number of bytes depends on BG units
+                if BGU == "mmol/L":
+                    mBG = 256
+
+                elif BGU == "mg/dL":
+                    mBG = 512
+
+            else:
+                mBG = 0
+
+            if largerC:
+                mC = 256
+
+            else:
+                mC = 0
+
+            # Decode record
+            BG = (head[1] + mBG) / 10 ** mBGU
+            C = (body[0] + mC) / 10 ** mCU
+
+            # Not really necessary, but those are correct
+            BGTargets = [body[4] / 10 ** mBGU, body[12] / 10 ** mBGU]
+            CSF = body[2] / 10 ** mCU
+
+            # Add carbs and times at which they were consumed to their
+            # respective vectors only if they have a given value!
+            if C:
+                self.target.values.append([C, CU])
+                self.target.times.append(t)
+
+            # Give user output
+            #print "Time: " + t
+            #print "Response: " + str(head) + ", " + str(body)
+            #print "BG: " + str(BG) + " " + str(BGU)
+            #print "Carbs: " + str(C) + " " + str(CU)
+            #print "BG Targets: " + str(BGTargets) + " " + str(BGU)
+            #print "CSF: " + str(CSF) + " " + str(CU) + "/U"
+            #print
 
 
 

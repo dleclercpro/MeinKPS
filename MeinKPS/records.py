@@ -50,16 +50,16 @@ class PumpRecord(object):
         # Store target of command response
         self.target = target
 
-        # Initialize history pages in which to search for record
-        self.pages = None
+        # Compute size of record
+        self.size = self.headSize + self.dateSize + self.bodySize
 
 
 
-    def search(self, n):
+    def find(self, n = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEARCH
+            FIND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -72,18 +72,8 @@ class PumpRecord(object):
         # Download n pages of pump history (or all of it if none is given)
         self.pump.history.read(n)
 
-        # Find record in precedently read pump history pages
-        self.find(self.pump.history.pages)
-
-
-
-    def find(self, pages):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FIND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+        # Get precedently read pump history pages
+        pages = self.pump.history.pages
 
         # Search history pages for specified record
         for i in range(len(pages)):
@@ -97,8 +87,28 @@ class PumpRecord(object):
                 # Test criteria
                 if self.criteria(record):
 
+                    # Deassemble record with running variable
+                    x = 0
+
+                    # Isolate head
+                    head = record[x:self.headSize]
+
+                    # Update running variable
+                    x += self.headSize
+
+                    # Isolate date
+                    date = record[x:x + self.dateSize]
+
+                    # Update running variable
+                    x += self.dateSize
+
+                    # Isolate body
+                    body = record[x:x + self.bodySize]
+
                     # Decode record
-                    Decoder.decodeRecord(self.__class__.__name__, record)
+                    Decoder.decodeRecord(self.__class__.__name__, head,
+                                                                  date,
+                                                                  body)
 
             # If not matching, move to next one
             except:
@@ -116,17 +126,43 @@ class BolusRecord(PumpRecord):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize record
-        super(self.__class__, self).__init__(pump, target)
-
         # Define record characteristics
         self.code = 1
-        self.size = 9
+        self.headSize = 4
+        self.dateSize = 5
+        self.bodySize = 0
 
         # Define record's criteria
         self.criteria = (lambda x: x[0] == self.code and
                                    x[1] == x[2] and
                                    x[3] == 0)
+
+        # Initialize record
+        super(self.__class__, self).__init__(pump, target)
+
+
+
+class BolusWizardRecord(PumpRecord):
+
+    def __init__(self, pump, target):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define record characteristics
+        self.code = 91
+        self.headSize = 2
+        self.dateSize = 5
+        self.bodySize = 13
+
+        # Define record's criteria
+        self.criteria = lambda x: x[0] == self.code
+
+        # Initialize record
+        super(self.__class__, self).__init__(pump, target)
 
 
 

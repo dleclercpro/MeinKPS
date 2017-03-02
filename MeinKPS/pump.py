@@ -141,7 +141,7 @@ class Pump(object):
         self.boluses = Boluses(self)
 
         # Give the pump a carbs instance
-        #self.carbs = Carbs(self)
+        self.carbs = Carbs(self)
 
         # Give the pump a TBR instance
         #self.TBR = TBR(self)
@@ -1283,7 +1283,7 @@ class History(object):
             # Assign number of pages found
             n = self.size
 
-        # Download user-defined number of most recent pages of pump history
+        # Download n most recent pages of pump history
         for i in range(n):
 
             # Prepare command
@@ -1347,7 +1347,7 @@ class Boluses(object):
 
 
 
-    def read(self, n):
+    def read(self, n = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1356,7 +1356,7 @@ class Boluses(object):
         """
 
         # Find bolus records within a certain number of pages
-        self.record.search(n)
+        self.record.find(n)
 
         # Give user output
         print "Found following bolus entries:"
@@ -1429,8 +1429,11 @@ class Carbs(object):
         self.values = []
         self.times = []
 
+        # Link with its respective record
+        self.record = records.BolusWizardRecord(pump, self)
+
         # Link with pump
-        link(self, pump)
+        self.pump = pump
 
 
 
@@ -1458,15 +1461,8 @@ class Carbs(object):
                  correspond to calibration BGs...
         """
 
-        # Download n pages of pump history (or all of it if none is given)
-        self.pump.history.read(n)
-
-        # Update decoder's target
-        self.decoder.target = self
-
-        # Decode pump record
-        self.decoder.decodeBolusWizardRecord(code = 91, headSize = 2,
-                                             dateSize = 5, bodySize = 13)
+        # Find bolus wizard records within a certain number of pages
+        self.record.find(n)
 
         # Give user output
         print "Found following carb entries:"
@@ -1476,7 +1472,7 @@ class Carbs(object):
             print str(self.values[i]) + " U (" + str(self.times[i]) + ")"
 
         # If carbs read, store them
-        self.reporter.addCarbs(self.times, self.values)
+        Reporter.addCarbs(self.times, self.values)
 
 
 
@@ -1768,13 +1764,13 @@ def main():
     #pump.history.read()
 
     # Send bolus to pump
-    pump.boluses.deliver(0.1)
+    #pump.boluses.deliver(0.1)
 
     # Read boluses from pump history
     #pump.boluses.read()
 
     # Read carbs from pump history
-    #pump.carbs.read()
+    pump.carbs.read()
 
     # Read current TBR
     #pump.TBR.read()
