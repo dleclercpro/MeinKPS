@@ -71,8 +71,6 @@ class Pump(object):
     # PUMP CHARACTERISTICS
     serial         = 503593 # 799163
     executionDelay = 5      # Time (s) needed for pump command execution
-    timeBlock      = 30     # Time block (m) used by pump
-    basalStroke    = 0.05   # Pump basal stroke rate (U/h)
 
 
 
@@ -1502,6 +1500,10 @@ class TBR(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize basal characteristics
+        self.stroke = 0.05 # Pump basal stroke rate (U/h)
+        self.timeBlock = 30 # Time block (m) used by pump for basal durations
+
         # Define current TBR dictionary
         self.value = {"Rate": None, "Units": None, "Duration": None}
 
@@ -1741,7 +1743,7 @@ def main():
     #pump.boluses.deliver(0.1)
 
     # Read boluses from pump history
-    pump.boluses.read()
+    #pump.boluses.read()
 
     # Read carbs from pump history
     #pump.carbs.read()
@@ -1750,7 +1752,7 @@ def main():
     #pump.TBR.read()
 
     # Send TBR to pump
-    #pump.TBR.set(5, "U/h", 30)
+    pump.TBR.set(5, "U/h", 30)
     #pump.TBR.set(50, "%", 90)
     #pump.TBR.cancel()
 

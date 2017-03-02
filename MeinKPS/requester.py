@@ -93,7 +93,7 @@ class Requester:
 
         # Read and store encoded version of device's serial number
         if device.serial is not None:
-            self.serial = lib.encodeSerialNumber(device.serial)
+            self.serial = lib.encode(device.serial)
 
         # Link requester with the previously generated USB serial handle of said
         # device

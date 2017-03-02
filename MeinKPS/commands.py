@@ -744,14 +744,14 @@ class SetPumpTBR(PumpCommand):
         if units == "U/h":
             self.code = 76
             self.parameters = [0,
-                               int(round(rate / self.pump.basalStroke * 2.0)),
-                               int(duration / self.pump.timeBlock)]
+                               int(round(rate / self.target.stroke * 2.0)),
+                               int(duration / self.target.timeBlock)]
 
         # If request is for TBR in percentage
         elif units == "%":
             self.code = 105
             self.parameters = [int(round(rate)),
-                               int(duration / self.pump.timeBlock)]
+                               int(duration / self.target.timeBlock)]
         
         # Prepare rest of command
         super(self.__class__, self).prepare()

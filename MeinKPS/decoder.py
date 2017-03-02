@@ -210,7 +210,7 @@ class Decoder:
                 "IAC": bytes[17],
                 "Max Bolus": bytes[5] * self.device.boluses.stroke,
                 "Max Basal": (lib.bangInt(bytes[6:8]) *
-                              self.device.basalStroke / 2.0)}
+                              self.device.TBR.stroke / 2.0)}
 
 
 
@@ -477,8 +477,7 @@ class Decoder:
                 # Decode TBR characteristics
                 self.target.value["Units"] = "U/h"
                 self.target.value["Rate"] = round(lib.bangInt(bytes[2:4]) *
-                                                  self.device.basalStroke / 2.0,
-                                                  2)
+                                                  self.target.stroke / 2.0, 2)
 
             # Extract TBR [%]
             elif units == 1:

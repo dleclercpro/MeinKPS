@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Title:    model
 
@@ -18,7 +18,7 @@
 
     Notes:    ...
 
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
 # TERMINOLOGY
@@ -40,44 +40,17 @@ import scipy.special
 
 
 
-def integrate(t, f, args):
-
-    """
-    ============================================================================
-    INTEGRATE
-    ============================================================================
-
-    This is a module that approximates the integral i of a given function f from
-    a to b, given an equally spaced time vector t. In order to do that, it uses
-    the Simpson method, and uses said time vector to evaluate the number N of
-    intervals and the integration step h.
-    """
-
-    a = t[0]
-    b = t[-1]
-    N = len(t) - 1
-    h = (b - a) / float(N)
-
-    # Delete last t to not add contribution of [b, b + h] to the integral!
-    t = t[0:-1]
-
-    # Evaluate definite integral of f from a to b
-    i = np.sum(h/6 * (f(t, args) +
-                      f(t + h/2, args) * 4 +
-                      f(t + h, args)))
-
-    print "i(a = " + str(a) + ", b = " + str(b) + ") = " + str(i)
-
-    return i
+# USER LIBRARIES
+import lib
 
 
 
 def IAC(t, args):
 
     """
-    ============================================================================
-    IAC
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        IAC
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
     a = args[0]
@@ -93,9 +66,9 @@ def IAC(t, args):
 def IDC(t, args):
 
     """
-    ============================================================================
-    IDC
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        IDC
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     The equation of IDC is found using the indefinite integral I of the IAC in
     the following way:
@@ -115,9 +88,9 @@ def IDC(t, args):
     for m in range(1, len(t)):
 
         # Add new I(t) to I
-        I = np.append(I, integrate(t = t[0:(m + 1)],
-                                   f = IAC,
-                                   args = [a, b, c]))
+        I = np.append(I, lib.integrate(t = t[0:(m + 1)],
+                                       f = IAC,
+                                       args = [a, b, c]))
 
     # Tweak indefinite integral I to obtain IDC
     IDC = 1 - I
@@ -129,9 +102,9 @@ def IDC(t, args):
 def optimizeIAC(t, PIA, DIA, MID):
 
     """
-    ============================================================================
-    OPTIMIZEIAC
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        OPTIMIZEIAC
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
     # Define importance of right peak time
@@ -141,11 +114,11 @@ def optimizeIAC(t, PIA, DIA, MID):
     weightI = 1000
 
     load = lambda x:(
-            abs(t[np.argmax(IAC(t = t, args = [x[0], x[1], x[2]]))] - PIA) +
-            abs(IAC(t = t, args = [x[0], x[1], x[2]])[DIA]) +
-            abs(1.0 - integrate(t = t, f = IAC, args = [x[0], x[1], x[2]])) +
-            abs(0.5 - integrate(t = t[0:(MID * len(t) / DIA)], f = IAC,
-            args = [x[0], x[1], x[2]])))
+           abs(t[np.argmax(IAC(t = t, args = [x[0], x[1], x[2]]))] - PIA) +
+           abs(IAC(t = t, args = [x[0], x[1], x[2]])[DIA]) +
+           abs(1.0 - lib.integrate(t = t, f = IAC, args = [x[0], x[1], x[2]])) +
+           abs(0.5 - lib.integrate(t = t[0:(MID * len(t) / DIA)], f = IAC,
+           args = [x[0], x[1], x[2]])))
 
     optimizedArgs = scipy.optimize.fmin(func = load,
                                          x0 = [15.0, 4.0, 4.0],
@@ -161,9 +134,9 @@ def optimizeIAC(t, PIA, DIA, MID):
 def plotInsulinActivity(t, args, PIA, DIA, MID):
 
     """
-    ============================================================================
-    PLOTINSULINACTIVITY
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PLOTINSULINACTIVITY
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
     # Define IDC of Animas
@@ -229,9 +202,9 @@ def plotInsulinActivity(t, args, PIA, DIA, MID):
 def main():
 
     """
-    ============================================================================
-    MAIN
-    ============================================================================
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
     PIA = 1.25
