@@ -31,7 +31,7 @@
     },
     "Settings": {
         "IAC": 3,
-        "Max Basal": 2.0,
+        "Max Basal": 6.0,
         "Max Bolus": 10.0
     }
 }

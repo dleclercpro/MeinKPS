@@ -689,6 +689,73 @@ class DeliverPumpBolus(PumpCommand):
 
 
 
+class ReadPumpTBR(PumpCommand):
+
+    def __init__(self, pump, target):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(self.__class__, self).__init__(pump, target)
+
+        # Define request info
+        self.info = "Reading current TBR..."
+
+        # Define request bytes
+        self.code = 152
+
+
+
+class SetPumpTBR(PumpCommand):
+
+    def __init__(self, pump, target):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(self.__class__, self).__init__(pump, target)
+
+        # Define request bytes
+        self.attempts = 0
+
+
+
+    def prepare(self, rate, units, duration):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request info
+        info = ("Setting TBR: " + str(rate) + " " + units + " (" +
+                                  str(duration) + "m)")
+
+        # If request is for absolute TBR
+        if units == "U/h":
+            self.code = 76
+            self.parameters = [0,
+                               int(round(rate / self.pump.basalStroke * 2.0)),
+                               int(duration / self.pump.timeBlock)]
+
+        # If request is for TBR in percentage
+        elif units == "%":
+            self.code = 105
+            self.parameters = [int(round(rate)),
+                               int(duration / self.pump.timeBlock)]
+        
+        # Prepare rest of command
+        super(self.__class__, self).prepare()
+
 
 
 # STICK COMMANDS

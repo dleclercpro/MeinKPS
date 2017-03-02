@@ -144,7 +144,7 @@ class Pump(object):
         self.carbs = Carbs(self)
 
         # Give the pump a TBR instance
-        #self.TBR = TBR(self)
+        self.TBR = TBR(self)
 
 
 
@@ -944,6 +944,9 @@ class TBRUnits(Units):
         # Link with its respective command
         self.command = commands.SetPumpTBRUnits(pump, self)
 
+        # Link with pump
+        self.pump = pump
+
 
 
     def read(self):
@@ -1502,8 +1505,12 @@ class TBR(object):
         # Define current TBR dictionary
         self.value = {"Rate": None, "Units": None, "Duration": None}
 
+        # Link with its respective command
+        self.commands = {"Read": commands.ReadPumpTBR(pump, self),
+                         "Set": commands.SetPumpTBR(pump, self)}
+
         # Link with pump
-        link(self, pump)
+        self.pump = pump
 
 
 
@@ -1515,23 +1522,11 @@ class TBR(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define request infos
-        info = "Reading current TBR..."
+        # Prepare command
+        self.commands["Read"].prepare()
 
-        # Define request
-        self.requester.define(info = info,
-                              attempts = 2,
-                              size = 1,
-                              code = 152)
-
-        # Make request
-        self.requester.make()
-
-        # Update decoder's target
-        self.decoder.target = self
-
-        # Decode pump's response
-        self.decoder.decode("readTBR")
+        # Do command
+        self.commands["Read"].do()
 
         # Give user info
         print "Current TBR:"
@@ -1550,12 +1545,12 @@ class TBR(object):
         """
 
         # Stringify TBR
-        strTBR = str(rate) + " " + units + " (" + str(duration) + "m)"
+        stringTBR = str(rate) + " " + units + " (" + str(duration) + "m)"
 
         # Give user info regarding the next TBR that will be set
-        print ("Trying to set new TBR: " + strTBR)
+        print ("Trying to set new TBR: " + stringTBR)
 
-        # First run
+        # First run: check and make sure TBR can be set on pump!
         if not cancel:
 
             # Verify pump status and settings before doing anything
@@ -1587,43 +1582,22 @@ class TBR(object):
                 print "Old and new TBR units do not match. Adjusting them..."
 
                 # Modify units as wished by the user
-                self.pump.units.TBR.set(units)
+                self.pump.units["TBR"].set(units)
 
-        # If request is for absolute TBR
-        if units == "U/h":
-            code = 76
-            parameters = [0,
-                          int(round(rate / self.pump.basalStroke * 2.0)),
-                          int(duration / self.pump.timeBlock)]
 
-        # If request is for TBR in percentage
-        elif units == "%":
-            code = 105
-            parameters = [int(round(rate)),
-                          int(duration / self.pump.timeBlock)]
 
+        # Set TBR
         # Get current time
         now = datetime.datetime.now()
 
         # Format time at which TBR is requested
         now = lib.formatTime(now)
 
-        # Define request infos
-        info = "Setting TBR: " + strTBR
-        sleepReason = ("Waiting for TBR [" + strTBR + "] to be set... (" +
-                       str(self.pump.executionDelay) + "s)")
+        # Prepare command
+        self.commands["Set"].prepare(rate, units, duration)
 
-        # Define request
-        self.requester.define(info = info,
-                              sleep = self.pump.executionDelay,
-                              sleepReason = sleepReason,
-                              attempts = 0,
-                              size = 1,
-                              code = code,
-                              parameters = parameters)
-
-        # Make request
-        self.requester.make()
+        # Do command
+        self.commands["Set"].do()
 
         # Give user info
         print "Verifying if new TBR was correctly set..."
@@ -1641,11 +1615,11 @@ class TBR(object):
             (TBR["Duration"] == duration)):
 
             # Give user info
-            print "New TBR correctly set: " + strTBR
+            print "New TBR correctly set: " + stringTBR
             print "Storing it..."
 
             # Add bolus to insulin report
-            self.reporter.addTBR(now, rate, units, duration)
+            Reporter.addTBR(now, rate, units, duration)
 
         # Otherwise, quit
         else:
@@ -1679,10 +1653,10 @@ class TBR(object):
         if not units:
 
             # Read current units
-            self.pump.units.TBR.read()
+            self.pump.units["TBR"].read()
 
             # Store them
-            units = self.pump.units.TBR.get()
+            units = self.pump.units["TBR"].get()
 
         # Cancel on-going TBR
         if units == "U/h":
@@ -1770,7 +1744,7 @@ def main():
     #pump.boluses.read()
 
     # Read carbs from pump history
-    pump.carbs.read()
+    #pump.carbs.read()
 
     # Read current TBR
     #pump.TBR.read()

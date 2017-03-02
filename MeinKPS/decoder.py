@@ -465,9 +465,9 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # READTBR
+        # READPUMPTBR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "readTBR":
+        elif command == "ReadPumpTBR":
 
             units = bytes[0]
 

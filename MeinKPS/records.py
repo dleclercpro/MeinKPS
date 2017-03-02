@@ -55,6 +55,34 @@ class PumpRecord(object):
 
 
 
+    def extract(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXTRACT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Extract every part of record using a running variable
+        x = 0
+
+        # Extract head
+        self.head = self.bytes[x:self.headSize]
+
+        # Update running variable
+        x += self.headSize
+
+        # Extract date
+        self.date = self.bytes[x:x + self.dateSize]
+
+        # Update running variable
+        x += self.dateSize
+
+        # Extract body
+        self.body = self.bytes[x:x + self.bodySize]
+
+
+
     def find(self, n = False):
 
         """
@@ -82,33 +110,18 @@ class PumpRecord(object):
             try:
 
                 # Define new possible record
-                record = pages[i:i + self.size]
+                self.bytes = pages[i:i + self.size]
 
                 # Test criteria
-                if self.criteria(record):
+                if self.criteria(self.bytes):
 
-                    # Deassemble record with running variable
-                    x = 0
-
-                    # Isolate head
-                    head = record[x:self.headSize]
-
-                    # Update running variable
-                    x += self.headSize
-
-                    # Isolate date
-                    date = record[x:x + self.dateSize]
-
-                    # Update running variable
-                    x += self.dateSize
-
-                    # Isolate body
-                    body = record[x:x + self.bodySize]
+                    # Disassemble record
+                    self.extract()
 
                     # Decode record
-                    Decoder.decodeRecord(self.__class__.__name__, head,
-                                                                  date,
-                                                                  body)
+                    Decoder.decodeRecord(self.__class__.__name__, self.head,
+                                                                  self.date,
+                                                                  self.body)
 
             # If not matching, move to next one
             except:
