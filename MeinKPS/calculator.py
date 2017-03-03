@@ -101,7 +101,7 @@ class Calculator:
                                           entry_key = "ISF")
 
         # Read maximal allowed BG time-rate
-        self.max_dBG_dt = self.reporter.getEntry(report_name = "profile.json",
+        self.dBGdtMax = self.reporter.getEntry(report_name = "profile.json",
                                                  entry_type = "Settings",
                                                  entry_key = "BG Maximal Rate")
 
@@ -140,8 +140,8 @@ class Calculator:
         """
 
         # Compute time-derivative of BG
-        self.dBG_dt = lib.derivate(self.BG, self.dt)
-        print len(self.dBG_dt)
+        self.dBGdt = lib.derivate(self.BG, self.dt)
+        print len(self.dBGdt)
 
         # Compute expected BG based on BG time-rate
         self.expected_BG = 0

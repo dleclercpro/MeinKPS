@@ -47,7 +47,6 @@
 # LIBRARIES
 import datetime
 import json
-import sys
 import time
 
 
@@ -58,6 +57,7 @@ import commands
 import stick
 import records
 import reporter
+import errors
 
 
 
@@ -115,10 +115,14 @@ class Pump(object):
         # Give the pump a settings instance
         self.settings = Settings(self)
 
-        # Give the pump units
-        self.units = {"BG": BGUnits(self),
-                      "C": CUnits(self),
-                      "TBR": TBRUnits(self)}
+        # Give the pump BG units
+        self.BGU = BGU(self)
+
+        # Give the pump carb units
+        self.CU = CU(self)
+
+        # Give the pump TBR units
+        self.TBRU = TBRU(self)
 
         # Give the pump a BG targets instance
         self.BGTargets = BGTargets(self)
@@ -852,7 +856,7 @@ class Units(object):
 
 
 
-class BGUnits(Units):
+class BGU(Units):
 
     def __init__(self, pump):
 
@@ -866,7 +870,7 @@ class BGUnits(Units):
         super(self.__class__, self).__init__()
 
         # Link with its respective command
-        self.command = commands.ReadPumpBGUnits(pump, self)
+        self.command = commands.ReadPumpBGU(pump, self)
 
 
 
@@ -889,7 +893,7 @@ class BGUnits(Units):
 
 
 
-class CUnits(Units):
+class CU(Units):
 
     def __init__(self, pump):
 
@@ -903,7 +907,7 @@ class CUnits(Units):
         super(self.__class__, self).__init__()
 
         # Link with its respective command
-        self.command = commands.ReadPumpCUnits(pump, self)
+        self.command = commands.ReadPumpCU(pump, self)
 
 
 
@@ -926,7 +930,7 @@ class CUnits(Units):
 
 
 
-class TBRUnits(Units):
+class TBRU(Units):
 
     def __init__(self, pump):
 
@@ -940,7 +944,7 @@ class TBRUnits(Units):
         super(self.__class__, self).__init__()
 
         # Link with its respective command
-        self.command = commands.SetPumpTBRUnits(pump, self)
+        self.command = commands.SetPumpTBRU(pump, self)
 
         # Link with pump
         self.pump = pump
@@ -1398,8 +1402,19 @@ class Boluses(object):
         # Do command
         self.command.do(False)
 
-        # Read last page and search it for boluses, then store new one to report
-        self.read(1)
+        # Read number of pump history pages
+        self.pump.history.measure()
+
+        # Get it
+        size = self.pump.history.size
+
+        # If only one history page, read and search it for boluses
+        if size == 1:
+            self.read(1)
+
+        # Otherwise, read last two pages
+        else:
+            self.read(2)
 
 
 
@@ -1584,7 +1599,7 @@ class TBR(object):
                 print "Old and new TBR units do not match. Adjusting them..."
 
                 # Modify units as wished by the user
-                self.pump.units["TBR"].set(units)
+                self.pump.TBRU.set(units)
 
 
 
@@ -1625,8 +1640,9 @@ class TBR(object):
 
         # Otherwise, quit
         else:
-            sys.exit("New TBR could not be correctly set. " +
-                     "Exiting...")
+
+            # Raise error
+            raise errors.TBRFail(stringTBR)
 
 
 
@@ -1655,10 +1671,10 @@ class TBR(object):
         if not units:
 
             # Read current units
-            self.pump.units["TBR"].read()
+            self.pump.TBRU.read()
 
             # Store them
-            units = self.pump.units["TBR"].get()
+            units = self.pump.TBRU.get()
 
         # Cancel on-going TBR
         if units == "U/h":
@@ -1716,13 +1732,13 @@ def main():
     #pump.buttons.push("DOWN")
 
     # Read BG units set in pump's bolus wizard
-    #pump.units["BG"].read()
+    #pump.BGU.read()
 
     # Read carb units set in pump's bolus wizard
-    #pump.units["C"].read()
+    #pump.CU.read()
 
     # Read current TBR units
-    #pump.units["TBR"].read()
+    #pump.TBRU.read()
 
     # Read BG targets stored in pump
     #pump.BGTargets.read()
@@ -1752,7 +1768,7 @@ def main():
     #pump.TBR.read()
 
     # Send TBR to pump
-    pump.TBR.set(5, "U/h", 30)
+    #pump.TBR.set(5, "U/h", 30)
     #pump.TBR.set(50, "%", 90)
     #pump.TBR.cancel()
 

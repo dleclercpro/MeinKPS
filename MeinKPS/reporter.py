@@ -24,13 +24,13 @@
 # LIBRARIES
 import datetime
 import json
-import os.path
-import sys
+import os
 
 
 
 # USER LIBRARIES
 import lib
+import errors
 
 
 
@@ -181,9 +181,8 @@ class Reporter:
         # Make sure section path is of list type!
         if type(path) is not list:
 
-            # Give user output
-            sys.exit("Make sure to input paths as lists, otherwise finding " +
-                     "corresponding section won't work. Exiting...")
+            # Raise error
+            raise errors.BadPath
 
         # First level section is whole report
         self.section = self.report
@@ -212,8 +211,8 @@ class Reporter:
 
                 else:
 
-                    # Give user info
-                    sys.exit("No matching section found. Exiting...")
+                    # Raise error
+                    raise errors.NoSection
 
             # Update section
             self.section = self.section[path[i]]

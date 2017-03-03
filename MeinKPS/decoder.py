@@ -217,7 +217,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 	READPUMPBGUNITS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "ReadPumpBGUnits":
+        elif command == "ReadPumpBGU":
 
             # Decode BG units set on pump
             units = bytes[0]
@@ -233,7 +233,7 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 	READPUMPCUNITS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elif command == "ReadPumpCUnits":
+        elif command == "ReadPumpCU":
 
             # Decode carb units set on pump
             units = bytes[0]
@@ -291,7 +291,7 @@ class Decoder:
                 else:
                     # Decode entry
                     target = [entry[0] / 10 ** m, entry[1] / 10 ** m]
-                    time = entry[2] * self.device.timeBlock
+                    time = entry[2] * self.device.TBR.timeBlock
 
                     # Format time
                     time = (str(time / 60).zfill(2) + ":" +
@@ -356,7 +356,7 @@ class Decoder:
                 else:
                     # Decode entry
                     factor = entry[0] / 10 ** m
-                    time = entry[1] * self.device.timeBlock
+                    time = entry[1] * self.device.TBR.timeBlock
 
                     # Format time
                     time = (str(time / 60).zfill(2) + ":" +
@@ -421,7 +421,7 @@ class Decoder:
                 else:
                     # Decode entry
                     factor = entry[0] / 10 ** m
-                    time = entry[1] * self.device.timeBlock
+                    time = entry[1] * self.device.TBR.timeBlock
 
                     # Format time
                     time = (str(time / 60).zfill(2) + ":" +

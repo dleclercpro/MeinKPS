@@ -28,7 +28,6 @@
 
 
 # LIBRARIES
-import sys
 import time
 import datetime
 import json
@@ -38,6 +37,7 @@ import math
 
 # USER LIBRARIES
 import lib
+import errors
 
 
 
@@ -81,23 +81,35 @@ class Requester:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Verify if requester can be properly initialized
-        if device == None:
+        # Verify if a device was given to the requester
+        try:
 
-            # If user forgot to give required input, quit
-            sys.exit("Please define a device as well as a handle for the " +
-                     "requester.")
+            # Give requester the name of the device to which it is making
+            # requests
+            self.device = device.__class__.__name__
 
-        # Give requester the name of the device to which it is making requests
-        self.device = device.__class__.__name__
+        # Otherwise, quit
+        except:
 
-        # Read and store encoded version of device's serial number
+            # Raise error
+            raise errors.NoDevice
+
+        # Verify if device has a handle
+        try:
+
+            # Link requester with the previously generated USB serial handle of
+            # said device
+            self.handle = device.handle
+
+        # Otherwise, quit
+        except:
+
+            # Raise error
+            raise errors.NoHandle
+
+        # If device has a serial number, encode it
         if device.serial is not None:
             self.serial = lib.encode(device.serial)
-
-        # Link requester with the previously generated USB serial handle of said
-        # device
-        self.handle = device.handle
 
 
 
@@ -385,9 +397,8 @@ class Requester:
             # FIXME
             if n == self.nPollAttempts:
 
-                # Give user info
-                sys.exit("Error: maximal number of polling attempts (" +
-                         str(self.nPollAttempts) + ") " + "reached. Exiting...")
+                # Raise error
+                raise errors.MaxPoll(str(n))
 
         # Give user info
         print "Polled data in " + str(n) + " attempt(s)."
@@ -406,16 +417,14 @@ class Requester:
         # Check for incorrect number of bytes
         if self.nBytesExpected == 14:
 
-            # Exit
-            sys.exit("Error: a problem occured while communicating with the " +
-                     "pump (number of bytes expected: 14). Exiting...")
+            # Raise error
+            raise errors.FatalNBytes
 
         elif self.nBytesReceived != self.nBytesExpected:
 
-            # Exit
-            sys.exit("Error: expected " + str(self.nBytesExpected) +
-                     " bytes, but received " + str(self.nBytesReceived) +
-                     " instead. Exiting...")
+            # Raise error
+            raise errors.MismatchNBytes([str(self.nBytesExpected),
+                                         str(self.nBytesReceived)])
 
         # Parse data
         head = self.response[0:13]

@@ -396,7 +396,7 @@ class ReadPumpSettings(PumpCommand):
 
 
 
-class ReadPumpBGUnits(PumpCommand):
+class ReadPumpBGU(PumpCommand):
 
     def __init__(self, pump, target):
 
@@ -417,28 +417,7 @@ class ReadPumpBGUnits(PumpCommand):
 
 
 
-class ReadPumpBGUnits(PumpCommand):
-
-    def __init__(self, pump, target):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(self.__class__, self).__init__(pump, target)
-
-        # Define request info
-        self.info = "Reading pump's BG units..."
-
-        # Define request bytes
-        self.code = 137
-
-
-
-class ReadPumpCUnits(PumpCommand):
+class ReadPumpCU(PumpCommand):
 
     def __init__(self, pump, target):
 
@@ -459,7 +438,7 @@ class ReadPumpCUnits(PumpCommand):
 
 
 
-class SetPumpTBRUnits(PumpCommand):
+class SetPumpTBRU(PumpCommand):
 
     def __init__(self, pump, target):
 

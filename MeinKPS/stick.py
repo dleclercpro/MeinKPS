@@ -35,7 +35,6 @@
 
 # LIBRARIES
 import os
-import sys
 import json
 import datetime
 import serial
@@ -44,6 +43,7 @@ import serial
 
 # USER LIBRARIES
 import commands
+import errors
 
 
 
@@ -112,9 +112,8 @@ class Stick(object):
 
         except:
 
-            # Give user info
-            sys.exit("There seems to be a problem with the stick. " +
-                      "Are you sure it's plugged in?")
+            # Raise error
+            raise errors.NoStick
 
         # Before anything, make sure buffer is empty
         self.empty()
