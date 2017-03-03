@@ -77,8 +77,14 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get error type
+        errorType = self.__class__.__base__.__name__
+
+        # Get error name
+        errorName = self.__class__.__name__
+
         # Give user info about error
-        print self.__class__.__name__ + ": " + self.info
+        print errorType + " > " + errorName + ": " + self.info
 
         # Exit
         sys.exit("Exiting...")
