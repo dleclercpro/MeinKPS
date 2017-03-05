@@ -36,6 +36,11 @@ import reporter
 
 
 
+# Instanciate a reporter
+Reporter = reporter.Reporter()
+
+
+
 class Calculator:
 
     # CALCULATOR CHARACTERISTICS
@@ -47,9 +52,6 @@ class Calculator:
             START
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Give the calculator a reporter
-        self.reporter = reporter.Reporter()
 
 
 
