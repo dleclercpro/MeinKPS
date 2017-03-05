@@ -194,9 +194,9 @@ class Decoder:
         elif command == "ReadPumpStatus":
 
             # Extract pump status from received bytes
-            self.target.values = {"Normal" : bytes[0] == 3,
-                                  "Bolusing" : bytes[1] == 1,
-                                  "Suspended" : bytes[2] == 1}
+            self.target.value["Normal"] = bytes[0] == 3
+            self.target.value["Bolusing"] = bytes[1] == 1
+            self.target.value["Suspended"] = bytes[2] == 1
 
 
 
@@ -215,7 +215,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 	READPUMPBGUNITS
+        # 	READPUMPBGU
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpBGU":
 
@@ -231,7 +231,7 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 	READPUMPCUNITS
+        # 	READPUMPCU
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpCU":
 
@@ -499,31 +499,36 @@ class Decoder:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Read current time
-        now = datetime.datetime.now()
+        # Decode time
+        t = self.decodeRecordTime(date)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        #   SUSPENDRECORD
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if record == "SuspendRecord":
+
+            # Store suspend times
+            self.target.times.append(t)
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        #   RESUMERECORD
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elif record == "ResumeRecord":
+
+            # Store resume times
+            self.target.times.append(t)
+
+
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 	BOLUSRECORD
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if record == "BolusRecord":
+        elif record == "BolusRecord":
 
             # Extract bolus from pump history pages
             bolus = round(head[1] * self.device.boluses.stroke, 1)
-
-            # Extract time at which bolus was delivered
-            t = lib.decodeTime(date)
-
-            # Check for bolus year
-            if abs(t[0] - now.year) > 1:
-
-                raise ValueError("Bolus can't be more than one year " +
-                                 "in the past!")
-
-            # Build datetime object
-            t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
-
-            # Format bolus time
-            t = lib.formatTime(t)
 
             # Give user info
             #print "Bolus read: " + str(bolus) + "U (" + t + ")"
@@ -535,9 +540,9 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        #   BOLUSWIZARDRECORD
+        #   CARBSRECORD / BOLUSWIZARDRECORD
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if record == "BolusWizardRecord":
+        if record == "CarbsRecord":
 
             # Define an indicator dictionary to decode BG and carb bytes
             # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
@@ -553,21 +558,6 @@ class Decoder:
                           149: ["mmol/L", "g", True, True],
                           160: ["mmol/L", "exchanges", False, False],
                           161: ["mmol/L", "exchanges", True, False]}
-
-            # Decode time
-            t = lib.decodeTime(date)
-
-            # Build datetime object
-            t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
-
-            # Proof record year
-            if abs(t.year - now.year) > 1:
-
-                raise ValueError("Record and current year too far " +
-                                 "apart!")
-
-            # Format time
-            t = lib.formatTime(t)
 
             # Decode units and sizes of BG and carb entries using 2nd
             # body byte as indicator linked with the previously
@@ -614,8 +604,7 @@ class Decoder:
             BGTargets = [body[4] / 10 ** mBGU, body[12] / 10 ** mBGU]
             CSF = body[2] / 10 ** mCU
 
-            # Add carbs and times at which they were consumed to their
-            # respective vectors only if they have a given value!
+            # Store carbs
             if C:
                 self.target.values.append([C, CU])
                 self.target.times.append(t)
@@ -627,7 +616,38 @@ class Decoder:
             #print "Carbs: " + str(C) + " " + str(CU)
             #print "BG Targets: " + str(BGTargets) + " " + str(BGU)
             #print "CSF: " + str(CSF) + " " + str(CU) + "/U"
-            #print
+
+
+
+    def decodeRecordTime(self, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODERECORDTIME
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode record time and check if it is plausible.
+        """
+
+        # Read current time
+        now = datetime.datetime.now()
+
+        # Decode time
+        t = lib.decodeTime(bytes)
+
+        # Build datetime object
+        t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
+
+        # Proof record year
+        if abs(t.year - now.year) > 1:
+
+            raise ValueError("Record and current year too far " +
+                             "apart!")
+
+        # Format time
+        t = lib.formatTime(t)
+
+        # Return time
+        return t
 
 
 

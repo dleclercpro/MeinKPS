@@ -599,13 +599,24 @@ class Status(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize values
-        self.values = None
+        # Initialize value
+        self.value = {"Normal": None, "Bolusing": None, "Suspended": None}
+
+        # Initialize vectors for decoded suspend and resume times
+        self.suspendTimes = None
+        self.resumeTimes = None
 
         # Link with its respective commands
         self.commands = {"Read": commands.ReadPumpStatus(pump, self),
                          "Suspend": commands.SuspendPump(pump, self),
                          "Resume": commands.ResumePump(pump, self)}
+
+        # Link with corresponding records
+        self.records = {"Suspend": records.SuspendRecord(pump, self),
+                        "Resume": records.ResumeRecord(pump, self)}
+
+        # Link with pump
+        self.pump = pump
 
 
 
@@ -624,21 +635,21 @@ class Status(object):
         self.read()
 
         # Check if pump is ready to take action
-        if not self.values["Normal"]:
+        if not self.value["Normal"]:
 
             # Give user info
             print "There seems to be a problem with the pump. Try again later."
 
             return False
 
-        elif self.values["Bolusing"]:
+        elif self.value["Bolusing"]:
 
             # Give user info
             print "Pump is bolusing. Try again later."
 
             return False
 
-        elif self.values["Suspended"]:
+        elif self.value["Suspended"]:
 
             # Give user info
             print "Pump is suspended, but will be asked to resume activity."
@@ -653,7 +664,7 @@ class Status(object):
 
 
 
-    def read(self):
+    def read(self, past = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -668,7 +679,26 @@ class Status(object):
         self.commands["Read"].do()
 
         # Give user info
-        print "Pump's status: " + str(self.values)
+        print "Pump's status: " + str(self.value)
+
+        # Read past suspend and resume entries if desired
+        if past:
+
+            # Give user info
+            print "Trying to read suspend/resume entries from pump history..."
+
+            # Make sure pump history has been read
+            if len(self.pump.history.pages) == 0:
+
+                # Raise error
+                raise errors.NoHistory
+
+            # Find bolus records in pump history
+            for i in self.records:
+                self.records[i].find()
+
+            # Store them
+            # FIXME
 
 
 
@@ -713,7 +743,7 @@ class Status(object):
         """
 
         # Return instance's values
-        return self.values
+        return [self.value, self.suspendTimes, self.resumeTimes]
 
 
 
@@ -1303,8 +1333,11 @@ class History(object):
             # Extend known history of pump
             self.pages.extend(data)
 
+        # Compute number of bytes read
+        size = len(data)
+
         # Print collected history pages
-        print "Read " + str(n) + " page(s) of pump history:"
+        print "Read " + str(n) + " page(s) [or " + str(size) + " byte(s)]:"
         print self.pages
 
 
@@ -1337,14 +1370,14 @@ class Boluses(object):
         self.rate   = 40.0 # Bolus delivery rate (s/U)
         self.delay  = 5    # Time (s) to wait after bolus delivery
 
-        # Initialize boluses and times vectors
-        self.values = []
+        # Initialize vectors for decoded values and times
         self.times = []
+        self.values = []
 
         # Link with its respective command
         self.command = commands.DeliverPumpBolus(pump, self)
 
-        # Link with its respective record
+        # Link with corresponding record
         self.record = records.BolusRecord(pump, self)
 
         # Link with pump
@@ -1352,26 +1385,58 @@ class Boluses(object):
 
 
 
-    def read(self, n = False):
+    def read(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             READ
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: Pump history must have already been read in order for this
+              function to work!
         """
 
-        # Find bolus records within a certain number of pages
-        self.record.find(n)
+        # Give user info
+        print "Trying to read bolus entries from pump history..."
 
-        # Give user output
-        print "Found following bolus entries:"
+        # Make sure pump history has been read
+        if len(self.pump.history.pages) == 0:
 
-        for i in range(len(self.values)):
+            # Raise error
+            raise errors.NoHistory
 
-            print str(self.values[i]) + " U (" + str(self.times[i]) + ")"
+        # Find bolus records in pump history
+        self.record.find()
 
-        # If boluses read, store them
+        # Store them
         Reporter.addBoluses(self.times, self.values)
+
+
+
+    def verify(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get pump history
+        history = self.pump.history
+
+        # Read number of existing pump history pages
+        history.measure()
+
+        # If only one history page, read and search it for boluses
+        if history.size == 1:
+            history.read(1)
+
+        # Otherwise, read last two pages
+        else:
+            history.read(2)
+
+        # Try and decode history pages that were just read
+        self.read()
 
 
 
@@ -1402,19 +1467,8 @@ class Boluses(object):
         # Do command
         self.command.do(False)
 
-        # Read number of pump history pages
-        self.pump.history.measure()
-
-        # Get it
-        size = self.pump.history.size
-
-        # If only one history page, read and search it for boluses
-        if size == 1:
-            self.read(1)
-
-        # Otherwise, read last two pages
-        else:
-            self.read(2)
+        # Verify if last bolus was correctly enacted # FIXME
+        self.verify()
 
 
 
@@ -1426,8 +1480,8 @@ class Boluses(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Return instance's values
-        return [self.times, self.values]
+        # Return times and values
+        return [self.times, self.times]
 
 
 
@@ -1441,53 +1495,42 @@ class Carbs(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize carbs and times vectors
-        self.values = []
+        # Initialize vectors for decoded values and times
         self.times = []
+        self.values = []
 
-        # Link with its respective record
-        self.record = records.BolusWizardRecord(pump, self)
+        # Link with corresponding record
+        self.record = records.CarbsRecord(pump, self)
 
         # Link with pump
         self.pump = pump
 
 
 
-    def read(self, n = False):
+    def read(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             READ
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Note: - Boluses and carbs input seem to be stored exactly at sime time
-                in pump.
-              - No need to run readBGU and readCU functions, since units are
-                encoded in message bytes!
-              - No idea how to decode large ISF in mg/dL... information seems to
-                be stored in 4th body byte, but no other byte enables
-                differenciation between < and >= 256 ? This is not critical,
-                since those ISF only represent the ones the BolusWizard used in
-                its calculations. The ISF profiles can be read with readISF().
-
-        Warning: - Do not change units for no reason, otherwise treatments will
-                   not be read correctly!
-
-        TODOs: - Should we store BGs that were input by the user? Those could
-                 correspond to calibration BGs...
+        Note: Pump history must have already been read in order for this
+              function to work!
         """
 
-        # Find bolus wizard records within a certain number of pages
-        self.record.find(n)
+        # Give user info
+        print "Trying to read carb entries from pump history..."
 
-        # Give user output
-        print "Found following carb entries:"
+        # Make sure pump history has been read
+        if len(self.pump.history.pages) == 0:
 
-        for i in range(len(self.values)):
+            # Raise error
+            raise errors.NoHistory
 
-            print str(self.values[i]) + " U (" + str(self.times[i]) + ")"
+        # Find carbs records in previously read pump history
+        self.record.find()
 
-        # If carbs read, store them
+        # Store them
         Reporter.addCarbs(self.times, self.values)
 
 
@@ -1500,8 +1543,8 @@ class Carbs(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Return instance's values
-        return [self.times, self.values]
+        # Return times and values
+        return [self.times, self.times]
 
 
 
@@ -1714,8 +1757,11 @@ def main():
     # Read remaining amount of insulin in pump
     #pump.reservoir.read()
 
+    # Read pump history
+    pump.history.read()
+
     # Read pump status
-    #pump.status.read()
+    pump.status.read(True)
     #pump.status.verify()
     #pump.status.suspend()
     #pump.status.resume()
@@ -1751,9 +1797,6 @@ def main():
 
     # Read daily totals on pump
     #pump.dailyTotals.read()
-
-    # Read pump history
-    #pump.history.read()
 
     # Send bolus to pump
     #pump.boluses.deliver(0.1)

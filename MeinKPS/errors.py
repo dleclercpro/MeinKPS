@@ -106,6 +106,22 @@ class ReporterError(BaseError):
 
 
 # Pump related errors
+class NoHistory(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("No pump history data read yet. Make sure to do that " +
+                     "before trying to find records.")
+
+
+
 class TBRFail(PumpError):
 
     def prepare(self):

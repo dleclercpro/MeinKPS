@@ -44,14 +44,14 @@ class PumpRecord(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Compute size of record
+        self.size = self.headSize + self.dateSize + self.bodySize
+
         # Store pump
         self.pump = pump
 
-        # Store target of command response
+        # Store target
         self.target = target
-
-        # Compute size of record
-        self.size = self.headSize + self.dateSize + self.bodySize
 
 
 
@@ -83,7 +83,7 @@ class PumpRecord(object):
 
 
 
-    def find(self, n = False):
+    def find(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,9 +96,6 @@ class PumpRecord(object):
 
         # Update decoder's target
         Decoder.target = self.target
-
-        # Download n pages of pump history (or all of it if none is given)
-        self.pump.history.read(n)
 
         # Get precedently read pump history pages
         pages = self.pump.history.pages
@@ -126,6 +123,95 @@ class PumpRecord(object):
             # If not matching, move to next one
             except:
                 pass
+
+        # Print records that were found
+        self.give()
+
+
+
+    def give(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GIVE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Count number of entries found
+        n = len(self.target.times) or len(self.target.values)
+
+        # Get name of record
+        record = self.__class__.__name__
+
+        # Give user info
+        print "Found " + str(n) + " '" + record + "':"
+
+        for i in range(n):
+
+            # Get current time
+            try:
+                time = self.target.times[i]
+
+            except:
+                time = None
+
+            # Get current value
+            try:
+                value = self.target.values[i]
+
+            except:
+                value = None
+
+            # Print current record
+            print str(value) + " (" + str(time) + ")"
+
+
+
+class SuspendRecord(PumpRecord):
+
+    def __init__(self, pump, target):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define record characteristics
+        self.code = 30
+        self.headSize = 2
+        self.dateSize = 5
+        self.bodySize = 0
+
+        # Define record's criteria
+        self.criteria = lambda x: x[0] == self.code and x[1] == 0
+
+        # Initialize record
+        super(self.__class__, self).__init__(pump, target)
+
+
+
+class ResumeRecord(PumpRecord):
+
+    def __init__(self, pump, target):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define record characteristics
+        self.code = 31
+        self.headSize = 2
+        self.dateSize = 5
+        self.bodySize = 0
+
+        # Define record's criteria
+        self.criteria = lambda x: x[0] == self.code and x[1] == 0
+
+        # Initialize record
+        super(self.__class__, self).__init__(pump, target)
 
 
 
@@ -155,7 +241,7 @@ class BolusRecord(PumpRecord):
 
 
 
-class BolusWizardRecord(PumpRecord):
+class CarbsRecord(PumpRecord):
 
     def __init__(self, pump, target):
 
@@ -163,6 +249,22 @@ class BolusWizardRecord(PumpRecord):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: - Boluses and carbs input seem to be stored exactly at sime time
+                in pump.
+              - No need to run readBGU and readCU functions, since units are
+                encoded in message bytes!
+              - No idea how to decode large ISF in mg/dL... information seems to
+                be stored in 4th body byte, but no other byte enables
+                differenciation between < and >= 256 ? This is not critical,
+                since those ISF only represent the ones the BolusWizard used in
+                its calculations. The ISF profiles can be read with readISF().
+
+        Warning: - Do not change units for no reason, otherwise treatments will
+                   not be read correctly!
+
+        TODOs: - Should we store BGs that were input by the user? Those could
+                 correspond to calibration BGs...
         """
 
         # Define record characteristics
