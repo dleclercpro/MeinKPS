@@ -36,7 +36,7 @@ Decoder = decoder.Decoder()
 # PUMP RECORDS
 class PumpRecord(object):
 
-    def __init__(self, pump, target):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,14 +44,15 @@ class PumpRecord(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize vectors for record times and values
+        self.times = []
+        self.values = []
+
         # Compute size of record
         self.size = self.headSize + self.dateSize + self.bodySize
 
         # Store pump
         self.pump = pump
-
-        # Store target
-        self.target = target
 
 
 
@@ -95,7 +96,7 @@ class PumpRecord(object):
         Decoder.device = self.pump
 
         # Update decoder's target
-        Decoder.target = self.target
+        Decoder.target = self
 
         # Get precedently read pump history pages
         pages = self.pump.history.pages
@@ -125,20 +126,20 @@ class PumpRecord(object):
                 pass
 
         # Print records that were found
-        self.give()
+        self.show()
 
 
 
-    def give(self):
+    def show(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GIVE
+            SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Count number of entries found
-        n = len(self.target.times) or len(self.target.values)
+        n = len(self.times) or len(self.values)
 
         # Get name of record
         record = self.__class__.__name__
@@ -150,14 +151,14 @@ class PumpRecord(object):
 
             # Get current time
             try:
-                time = self.target.times[i]
+                time = self.times[i]
 
             except:
                 time = None
 
             # Get current value
             try:
-                value = self.target.values[i]
+                value = self.values[i]
 
             except:
                 value = None
@@ -169,7 +170,7 @@ class PumpRecord(object):
 
 class SuspendRecord(PumpRecord):
 
-    def __init__(self, pump, target):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,13 +188,13 @@ class SuspendRecord(PumpRecord):
         self.criteria = lambda x: x[0] == self.code and x[1] == 0
 
         # Initialize record
-        super(self.__class__, self).__init__(pump, target)
+        super(self.__class__, self).__init__(pump)
 
 
 
 class ResumeRecord(PumpRecord):
 
-    def __init__(self, pump, target):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,13 +212,13 @@ class ResumeRecord(PumpRecord):
         self.criteria = lambda x: x[0] == self.code and x[1] == 0
 
         # Initialize record
-        super(self.__class__, self).__init__(pump, target)
+        super(self.__class__, self).__init__(pump)
 
 
 
 class BolusRecord(PumpRecord):
 
-    def __init__(self, pump, target):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -237,13 +238,13 @@ class BolusRecord(PumpRecord):
                                    x[3] == 0)
 
         # Initialize record
-        super(self.__class__, self).__init__(pump, target)
+        super(self.__class__, self).__init__(pump)
 
 
 
 class CarbsRecord(PumpRecord):
 
-    def __init__(self, pump, target):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -277,7 +278,7 @@ class CarbsRecord(PumpRecord):
         self.criteria = lambda x: x[0] == self.code
 
         # Initialize record
-        super(self.__class__, self).__init__(pump, target)
+        super(self.__class__, self).__init__(pump)
 
 
 

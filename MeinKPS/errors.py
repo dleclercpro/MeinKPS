@@ -212,8 +212,8 @@ class MaxPoll(RequesterError):
         """
 
         # Define error info
-        self.info = ("Maximal number of polling attempts reached. (" +
-                     self.args[0] + ")")
+        self.info = ("Maximal number of polling attempts reached (" +
+                     str(self.args[0][0]) + "). Is battery too low?")
 
 
 
@@ -228,8 +228,9 @@ class FatalNBytes(RequesterError):
         """
 
         # Define error info
-        self.info = ("Incorrect number of bytes expected (14). It seems like " +
-                     "a communication problem occured between stick and pump.")
+        self.info = ("Incorrect number of bytes expected (" +
+                     str(self.args[0][0]) + "). It seems like a " +
+                     "communication problem occured between stick and pump.")
 
 
 

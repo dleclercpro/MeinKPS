@@ -251,7 +251,7 @@ class Requester:
             n += 1
 
             # Give user info every certain number of run
-            x = n / 15.0
+            x = n / 1.0 # 15.0
 
             if math.floor(x) == x:
 
@@ -398,7 +398,7 @@ class Requester:
             if n == self.nPollAttempts:
 
                 # Raise error
-                raise errors.MaxPoll(str(n))
+                raise errors.MaxPoll(n)
 
         # Give user info
         print "Polled data in " + str(n) + " attempt(s)."
@@ -418,7 +418,7 @@ class Requester:
         if self.nBytesExpected == 14:
 
             # Raise error
-            raise errors.FatalNBytes
+            raise errors.FatalNBytes(self.nBytesExpected)
 
         elif self.nBytesReceived != self.nBytesExpected:
 

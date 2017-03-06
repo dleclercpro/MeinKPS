@@ -161,19 +161,11 @@ class Decoder:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpBattery":
 
-            # Decode battery level
-            level = bytes[0]
-
-            if level == 0:
-                level = "Normal"
-            elif level == 1:
-                level = "Low"
-
             # Decode battery voltage
             voltage = round(lib.bangInt([bytes[1], bytes[2]]) / 100.0, 1)
 
-            # Store battery level and voltage
-            self.target.values = {"Level": level, "Voltage": voltage}
+            # Store battery voltage
+            self.target.value = voltage
 
 
 
@@ -184,7 +176,7 @@ class Decoder:
 
             # Decode remaining amount of insulin
             self.target.value = round(lib.bangInt(bytes[0:2]) *
-                                      self.device.boluses.stroke, 1)
+                                      self.device.bolus.stroke, 1)
 
 
 
@@ -194,9 +186,9 @@ class Decoder:
         elif command == "ReadPumpStatus":
 
             # Extract pump status from received bytes
-            self.target.value["Normal"] = bytes[0] == 3
-            self.target.value["Bolusing"] = bytes[1] == 1
-            self.target.value["Suspended"] = bytes[2] == 1
+            self.target.values["Normal"] = bytes[0] == 3
+            self.target.values["Bolusing"] = bytes[1] == 1
+            self.target.values["Suspended"] = bytes[2] == 1
 
 
 
@@ -206,11 +198,11 @@ class Decoder:
         elif command == "ReadPumpSettings":
 
             # Decode pump settings
-            self.target.values = {
-                "IAC": bytes[17],
-                "Max Bolus": bytes[5] * self.device.boluses.stroke,
-                "Max Basal": (lib.bangInt(bytes[6:8]) *
-                              self.device.TBR.stroke / 2.0)}
+            self.target.values["IAC"] = bytes[17]
+            self.target.values["Max Bolus"] = (bytes[5] *
+                                               self.device.bolus.stroke)
+            self.target.values["Max Basal"] = (lib.bangInt(bytes[6:8]) *
+                                               self.device.TBR.stroke / 2.0)
 
 
 
@@ -448,9 +440,9 @@ class Decoder:
 
             # Decode daily totals
             self.target.values = {"Today": round(lib.bangInt(bytes[0:2]) *
-                                           self.device.boluses.stroke, 2),
+                                           self.device.bolus.stroke, 2),
                                   "Yesterday": round(lib.bangInt(bytes[2:4]) *
-                                               self.device.boluses.stroke, 2)}
+                                               self.device.bolus.stroke, 2)}
 
 
 
@@ -528,7 +520,7 @@ class Decoder:
         elif record == "BolusRecord":
 
             # Extract bolus from pump history pages
-            bolus = round(head[1] * self.device.boluses.stroke, 1)
+            bolus = round(head[1] * self.device.bolus.stroke, 1)
 
             # Give user info
             #print "Bolus read: " + str(bolus) + "U (" + t + ")"

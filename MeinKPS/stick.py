@@ -50,12 +50,12 @@ import errors
 class Stick(object):
 
     # STICK CHARACTERISTICS
-    vendor    = 0x0a21
-    product   = 0x8001
-    serial    = None
-    nBytes    = 64 # Default number of bytes to read from buffer
-    timeout   = 0.1 # Time to read from buffer (s) [0.5]
-    flushTime = 0.5 # (s)
+    vendor        = 0x0a21
+    product       = 0x8001
+    serial        = None
+    nBytesDefault = 64 # Default number of bytes to read from buffer
+    timeout       = 0.1 # Time to read from buffer (s) [0.5]
+    emptyTime     = 0.5 # (s)
 
 
 
@@ -160,7 +160,7 @@ class Stick(object):
         then = datetime.datetime.now()
 
         # Give user info
-        print "Emptying buffer for " + str(self.flushTime) + "s..."
+        print "Emptying buffer for " + str(self.emptyTime) + "s..."
 
         # Try reading for a certain number of attempts, before concluding buffer
         # must really be empty
@@ -170,10 +170,10 @@ class Stick(object):
             now = datetime.datetime.now()
 
             # Empty buffer
-            n = len(self.handle.read(self.nBytes))
+            n = len(self.handle.read(self.nBytesDefault))
 
             # If maximum amount of time reached, exit
-            if (now - then).seconds >= self.flushTime:
+            if (now - then).seconds >= self.emptyTime:
                 break
 
         # Give user output
