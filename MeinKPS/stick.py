@@ -81,7 +81,7 @@ class Stick(object):
         self.signal = Signal(self)
 
         # Give the stick a USB interface
-        self.usb = USB(self)
+        self.USB = USB(self)
 
         # Give the stick a radio interface
         self.radio = Radio(self)
@@ -125,7 +125,7 @@ class Stick(object):
         self.signal.read()
 
         # Read USB state
-        self.usb.read()
+        self.USB.read()
 
         # Read radio state
         self.radio.read()
