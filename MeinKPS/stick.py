@@ -68,14 +68,10 @@ class Stick(object):
         """
 
         # Generate serial port handle
-        handle = serial.Serial()
-        handle.port = "/dev/ttyUSB0"
-        handle.rtscts = True
-        handle.dsrdtr = True
-        handle.timeout = self.timeout
-
-        # Give it to the stick
-        self.handle = handle
+        self.handle = serial.Serial(port = "/dev/ttyUSB0",
+                                    rtscts = True,
+                                    dsrdtr = True,
+                                    timeout = self.timeout)
 
         # Give the stick a signal
         self.signal = Signal(self)
