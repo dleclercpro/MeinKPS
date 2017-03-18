@@ -34,9 +34,9 @@ import lib
 
 
 # CONSTANTS
-codes = {"ReadFirmwareHeader": 11,
-         "ReadHistoryRange": 16,
-         "ReadDeviceDetails": 17,
+codes = {"ReadFirmwareHeader": 11, #
+         "ReadHistoryRange": 16, #
+         "ReadHistory": 17, #
          "ReadTransmitterID": 25,
          "ReadLanguage": 27,
          "ReadRTC": 31,
@@ -45,9 +45,10 @@ codes = {"ReadFirmwareHeader": 11,
          "ReadBGU": 37,
          "ReadBlindedMode": 39,
          "ReadClockMode": 41,
-         "ReadBatteryState": 48}
+         "ReadBatteryState": 48,
+         "ReadFirmwareSettings": 54}
 
-baseTime = datetime.datetime(2009, 1, 1)
+epochTime = datetime.datetime(2009, 1, 1)
 
 batteryStates = [None, "Charging", "NotCharging", "NTCFault", "BadBattery"]
 
@@ -66,9 +67,9 @@ specialBG = {0: None,
 
 languages = {0: None, 1033: "English"}
 
-recordTypes = ["ManufacturingParameters",
-               "FirmwareSettings",
-               "PCParameterRecord",
+recordTypes = ["ManufacturingParameters", #
+               "FirmwareSettings", #
+               "PCParameterRecord", #
                "SensorData",
                "GlucoseData",
                "CalibrationSet",
@@ -144,10 +145,7 @@ def read(code, handle, recordType = None, page = None):
         recordType = []
 
     if page is not None:
-        page = [(page / 256 ** 0) % 256,
-                (page / 256 ** 1) % 256,
-                (page / 256 ** 2) % 256,
-                (page / 256 ** 3) % 256]
+        page = unpack(page)
 
         page.append(1)
     else:
@@ -183,8 +181,8 @@ def read(code, handle, recordType = None, page = None):
     print "R: " + str(nBytesReceived)
     responseBody = [ord(x) for x in handle.read(nBytesReceived)]
     print "A: " + str(responseBody)
-    translation = translate(responseBody)
-    print "TA: " + translation
+    #translation = translate(responseBody)
+    #print "TA: " + translation
 
     # Read third response
     print "R: " + str(2)
@@ -207,41 +205,54 @@ def translate(bytes):
 
 
 
-def readHistoryRange(handle):
+def readHistoryRange(handle, recordType):
 
-    rawHistoryRange = read(codes["ReadHistoryRange"], handle, "ManufacturingParameters")
+    rawHistoryRange = read(codes["ReadHistoryRange"], handle, recordType)
 
-    historyRange = [rawHistoryRange[0] * 256 ** 0 +
-                    rawHistoryRange[1] * 256 ** 1 +
-                    rawHistoryRange[2] * 256 ** 2 +
-                    rawHistoryRange[3] * 256 ** 3,
-                    rawHistoryRange[4] * 256 ** 0 +
-                    rawHistoryRange[5] * 256 ** 1 +
-                    rawHistoryRange[6] * 256 ** 2 +
-                    rawHistoryRange[7] * 256 ** 3]
+    historyRange = [pack(rawHistoryRange[0:4]),
+                    pack(rawHistoryRange[4:8])]
 
     print "History range: " + str(historyRange)
 
     return historyRange
 
 
-def readHistory(code, record, handle):
+def readHistory(code, recordType, handle):
 
     history = []
 
-    historyRange = readHistoryRange(handle)
+    historyRange = readHistoryRange(handle, recordType)
 
     start = historyRange[0]
     end = historyRange[1] + 1
 
     for i in range(start, end):
 
-        data = read(codes[code], handle, record, i)
-        history.extend(data)
+        data = read(codes[code], handle, recordType, i)
+        headerSize = 28
+        print "Header size: " + str(headerSize)
+        header = data[:headerSize]
+        nRecords = header[4]
+        CRC = header[-2:]
+        print "Number of records in page: " + str(nRecords)
+        print "Header CRC: " + str(CRC)
+        page = data[headerSize:]
+        history.extend(page)
+
+        findRecords(page, nRecords, 20)
 
     translation = clean(history)
 
-    print "History: " + str(translation)
+    #print "History: " + str(translation)
+
+
+
+def findRecords(page, nRecords, recordSize):
+
+    for i in range(nRecords):
+
+        print page[i * recordSize: (i + 1) * recordSize]
+        
 
 
 
@@ -250,18 +261,36 @@ def clean(response):
     translation = translate(response)
     size = len(translation)
 
+    started = False
+
     for i in range(size):
 
-        if translation[i] == "<":
+        if translation[i] == "<" and not started :
             start = i
+            started = True
 
         if translation[i] == ">":
             end = i + 1
-            break
 
     return translation[start:end]
 
-    
+
+
+def unpack(x):
+
+    return [(x / 256 ** 0) % 256,
+            (x / 256 ** 1) % 256,
+            (x / 256 ** 2) % 256,
+            (x / 256 ** 3) % 256]
+
+
+
+def pack(x):
+
+    return (x[0] * 256 ** 0 +
+            x[1] * 256 ** 1 +
+            x[2] * 256 ** 2 +
+            x[3] * 256 ** 3)
 
 
 
@@ -284,11 +313,11 @@ def main():
         pass
 
     # Read stuff
-    read(codes["ReadFirmwareHeader"], handle)
-    readHistory("ReadDeviceDetails", "ManufacturingParameters", handle)
-    readHistory("ReadDeviceDetails", "FirmwareSettings", handle)
-    readHistory("ReadDeviceDetails", "PCParameterRecord", handle)
-    readHistory("ReadDeviceDetails", "GlucoseData", handle)
+    #read(codes["ReadFirmwareHeader"], handle)
+    #readHistory("ReadHistory", "ManufacturingParameters", handle)
+    #readHistory("ReadHistory", "FirmwareSettings", handle)
+    #readHistory("ReadHistory", "PCParameterRecord", handle)
+    readHistory("ReadHistory", "SensorData", handle)
 
     # Close handle
     handle.close()
