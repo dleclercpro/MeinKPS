@@ -70,7 +70,7 @@ languages = {0: None, 1033: "English"}
 recordTypes = ["ManufacturingParameters", #
                "FirmwareSettings", #
                "PCParameterRecord", #
-               "SensorData",
+               "SensorData", #
                "GlucoseData",
                "CalibrationSet",
                "Deviation",
@@ -217,7 +217,7 @@ def readHistoryRange(handle, recordType):
     return historyRange
 
 
-def readHistory(code, recordType, handle):
+def readHistory(handle, code, recordType, recordSize = None):
 
     history = []
 
@@ -239,7 +239,8 @@ def readHistory(code, recordType, handle):
         page = data[headerSize:]
         history.extend(page)
 
-        findRecords(page, nRecords, 20)
+        if recordSize is not None:
+            findRecords(page, nRecords, recordSize)
 
     translation = clean(history)
 
@@ -251,7 +252,13 @@ def findRecords(page, nRecords, recordSize):
 
     for i in range(nRecords):
 
-        print page[i * recordSize: (i + 1) * recordSize]
+        record = page[i * recordSize: (i + 1) * recordSize]
+        systemTime = epochTime + datetime.timedelta(seconds = pack(record[0:4]))
+        displayTime = epochTime + datetime.timedelta(seconds = pack(record[4:8]))
+
+        print record
+        print "System time: " + str(systemTime)
+        print "Display time: " + str(displayTime)
         
 
 
@@ -314,10 +321,11 @@ def main():
 
     # Read stuff
     #read(codes["ReadFirmwareHeader"], handle)
-    #readHistory("ReadHistory", "ManufacturingParameters", handle)
-    #readHistory("ReadHistory", "FirmwareSettings", handle)
-    #readHistory("ReadHistory", "PCParameterRecord", handle)
-    readHistory("ReadHistory", "SensorData", handle)
+    #readHistory(handle, "ReadHistory", "ManufacturingParameters")
+    #readHistory(handle, "ReadHistory", "FirmwareSettings")
+    #readHistory(handle, "ReadHistory", "PCParameterRecord")
+    #readHistory(handle, "ReadHistory", "SensorData", 20)
+    readHistory(handle, "ReadHistory", "GlucoseData", 13)
 
     # Close handle
     handle.close()
