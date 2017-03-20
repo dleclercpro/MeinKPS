@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,8 +53,16 @@ epochTime = datetime.datetime(2009, 1, 1)
 
 batteryStates = [None, "Charging", "NotCharging", "NTCFault", "BadBattery"]
 
-trendArrows = [None, "DoubleUp", "SingleUp", "45Up", "Flat", "45Down",
-                     "SingleDown", "DoubleDown", "NotComputable", "OutOfRange"]
+trendArrows = [None,
+               "↑↑",
+               "↑",
+               "↗",
+               "→",
+               "↘",
+               "↓",
+               "↓↓",
+               "NotComputable",
+               "OutOfRange"]
 
 specialBG = {0: None,
              1: "SensorNotActive",
