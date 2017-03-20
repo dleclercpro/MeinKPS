@@ -35,8 +35,8 @@ import lib
 
 # CONSTANTS
 codes = {"ReadFirmwareHeader": 11, #
-         "ReadHistoryRange": 16, #
-         "ReadHistory": 17, #
+         "ReadDatabaseRange": 16, #
+         "ReadDatabase": 17, #
          "ReadTransmitterID": 25,
          "ReadLanguage": 27,
          "ReadRTC": 31,
@@ -67,65 +67,20 @@ specialBG = {0: None,
 
 languages = {0: None, 1033: "English"}
 
-recordTypes = ["ManufacturingParameters", #
-               "FirmwareSettings", #
-               "PCParameterRecord", #
-               "SensorData", #
-               "GlucoseData",
-               "CalibrationSet",
-               "Deviation",
-               "InsertionTime",
-               "ReceiverLogData",
-               "ReceiverErrorData",
-               "MeterData",
-               "UserEventsData",
-               "UserSettingsData",
-               "MaxValues"]
-
-
-
-class Packet(object):
-
-    # PACKET CHARACTERISTICS
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize packet
-        self.head = [1, None, 0]
-        self.body = []
-        self.size = None
-        self.code = None
-        self.payload = None
-        self.CRC = None
-
-
-
-    def build(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            BUILD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-            [1, SIZE, 0, CODE, ..., PARAMETERS, CRC]
-
-        """
-
-        firstRead = [0, 0, 0, 0]
-        state = firstRead[0]
-        nBytesReceived = firstRead[1] + 256 * firstRead[2] - 6
-        command[3] = firstRead[3]
-        secondRead = []
-        thirdRead = [0, 0]
-        expectedCRC = thirdRead[0] + 256 * thirdRead[1]
-        parameters = []
-        self.CRC = [CRC % 256, CRC / 256]
+databases = ["ManufacturingParameters", #
+             "FirmwareSettings", #
+             "PCParameterRecord", #
+             "SensorData", #
+             "GlucoseData",
+             "CalibrationSet",
+             "Deviation",
+             "InsertionTime",
+             "ReceiverLogData",
+             "ReceiverErrorData",
+             "MeterData",
+             "UserEventsData",
+             "UserSettingsData",
+             "MaxValues"]
 
 
 
@@ -137,65 +92,450 @@ class CGM(object):
 
 
 
-def read(code, handle, recordType = None, page = None):
+    def __init__(self):
 
-    if recordType is not None:
-        recordType = [recordTypes.index(recordType)]
-    else:
-        recordType = []
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-    if page is not None:
-        page = unpack(page)
+        # Give CGM a serial port handle
+        self.handle = serial.Serial(port = "/dev/ttyACM0",
+                                    baudrate = 115200)
 
-        page.append(1)
-    else:
-        page = []
+        # Give CGM a packet instance
+        self.packet = Packet()
 
-    # Define packet
-    packet = []
-    head = [1, None, 0]
-    packet.extend(head)
-    packet.append(code)
-    packet.extend(recordType)
-    packet.extend(page)
-    size = len(packet) + 2
-    packet[1] = size
-    CRC = lib.computeCRC16(packet)
-    CRC = [CRC % 256, CRC / 256]
-    packet.extend(CRC)
+        # Give CGM an database instance
+        self.database = Database(self)
 
-    # Send command
-    print "W: " + str(packet)
-    handle.write(bytearray(packet))
+        # Initialize CGM response
+        self.responses = None
 
-    # Read first response
-    print "R: " + str(4)
-    responseHead = [ord(x) for x in handle.read(4)]
-    print "A: " + str(responseHead)
-    nBytesReceived = responseHead[1] + 256 * responseHead[2]
+        # Initialize records
+        self.records = {"BG": Record(13),
+                        "Sensor": Record(20)}
 
-    if nBytesReceived > 6:
-        nBytesReceived -= 6
 
-    # Read second response
-    print "R: " + str(nBytesReceived)
-    responseBody = [ord(x) for x in handle.read(nBytesReceived)]
-    print "A: " + str(responseBody)
-    #translation = translate(responseBody)
-    #print "TA: " + translation
 
-    # Read third response
-    print "R: " + str(2)
-    expectedCRC = [ord(x) for x in handle.read(2)]
-    print "A: " + str(expectedCRC)
+    def connect(self):
 
-    # CRC computation and verification
-    expectedCRC = expectedCRC[0] + expectedCRC[1] * 256
-    computedCRC = lib.computeCRC16(responseHead + responseBody)
-    print "Expected CRC: " + str(expectedCRC)
-    print "Computed CRC: " + str(computedCRC)
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CONNECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-    return responseBody
+        # Add serial port
+        os.system("modprobe --quiet --first-time usbserial"
+            + " vendor=" + str(self.vendor)
+            + " product=" + str(self.product))
+
+        # Open handle
+        try:
+            self.handle.open()
+
+        except:
+            pass
+
+
+
+    def disconnect(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DISCONNECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Close handle
+        self.handle.close()
+
+
+
+    def write(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            WRITE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Send packet
+        self.handle.write(bytearray(self.packet.value))
+
+        # Give user info
+        print "Sent packet: " + str(self.packet.value)
+
+
+
+    def read(self, n):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read raw bytes
+        self.rawResponse = self.handle.read(n)
+
+        # Convert raw bytes
+        self.response = [ord(x) for x in self.rawResponse]
+
+        # Give user info
+        print "Received bytes: " + str(self.response)
+
+
+
+    def ask(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ASK
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset responses
+        self.responses = {"Head": None,
+                          "Body": None,
+                          "CRC": None}
+
+        # Send command packet
+        self.write()
+
+        # First read
+        self.read(4)
+
+        # Store response part
+        self.responses["Head"] = self.response
+
+        # Compute number of bytes received
+        nBytesReceived = pack(self.responses["Head"][1:3])
+
+        # Minimum number of bytes received: 6
+        if nBytesReceived > 6:
+            nBytesReceived -= 6
+
+        # Second read
+        self.read(nBytesReceived)
+
+        # Store response part
+        self.responses["Body"] = self.response
+
+        # Third read
+        self.read(2)
+
+        # Store response part
+        self.responses["CRC"] = self.response
+
+        # CRC computation and verification
+        expectedCRC = pack(self.responses["CRC"])
+        computedCRC = lib.computeCRC16(self.responses["Head"] +
+                                       self.responses["Body"])
+
+        # Give user info
+        print "Expected CRC: " + str(expectedCRC)
+        print "Computed CRC: " + str(computedCRC)
+
+
+
+class Packet(object):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize packet
+        self.value = None
+
+        # Initialize packet characteristics
+        self.size = None
+        self.code = None
+        self.database = None
+        self.page = None
+        self.CRC = None
+
+
+
+    def build(self, code, database = None, page = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            BUILD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset packet
+        self.value = [1, 0, 0]
+
+        # Build code byte
+        code = codes[code]
+
+        # Build database byte
+        if database is not None:
+            database = [databases.index(database)]
+
+        else:
+            database = []
+
+        # Build page bytes
+        if page is not None:
+            page = unpack(page, 4)
+            page.append(1)
+
+        else:
+            page = []
+
+        # Build packet
+        self.value.append(code)
+        self.value.extend(database)
+        self.value.extend(page)
+
+        # Build size byte
+        size = len(self.value) + 2
+
+        # Update packet
+        self.value[1] = size
+
+        # Build CRC bytes
+        CRC = lib.computeCRC16(self.value)
+        CRC = unpack(CRC, 2)
+
+        # Finish packet
+        self.value.extend(CRC)
+
+        # Store packet characteristics
+        self.size = size
+        self.code = code
+        self.database = database
+        self.page = page
+        self.CRC = CRC
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Return packet
+        return self.value
+
+
+
+class Database(object):
+
+    # DATABASE CHARACTERISTICS
+    headerSize = 28
+
+
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize database vector
+        self.value = []
+
+        # Initialize database range
+        self.range = None
+
+        # Link with CGM
+        self.cgm = cgm
+
+
+
+    def measure(self, database):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MEASURE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset database range
+        self.range = []
+
+        # Prepare command packet
+        self.cgm.packet.build("ReadDatabaseRange", database)
+
+        # Read database range
+        self.cgm.ask()
+
+        # Decode database range
+        self.range.append(pack(self.cgm.responses["Body"][0:4]))
+        self.range.append(pack(self.cgm.responses["Body"][4:8]))
+
+        # Give user info
+        print "Database range: " + str(self.range)
+
+
+
+    def read(self, database, record = None, XML = False):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get database range for selected database
+        self.measure(database)
+
+        # Read database
+        for i in range(self.range[0], self.range[1] + 1):
+
+            # Build packet to read page i
+            self.cgm.packet.build("ReadDatabase", database, i)
+
+            # Read page i
+            self.cgm.ask()
+
+            # Get page i
+            data = self.cgm.responses["Body"]
+
+            # Extract page header
+            header = data[:self.headerSize]
+
+            # Get number of records in page
+            n = header[4]
+
+            # Get CRC
+            CRC = header[-2:]
+
+            # Give user info
+            print "Number of records in page: " + str(n)
+            print "Header CRC: " + str(CRC)
+
+            # Get actual page of data
+            page = data[self.headerSize:]
+            
+            # Extend database
+            self.value.extend(page)
+
+            # Extract records from page if corresponding size given
+            if record is not None:
+                record.find(page, n)
+
+        # "Clean" database if desired
+        if XML:
+            print XMLify(self.value)
+
+
+
+class Record(object):
+
+    def __init__(self, size):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Store record size
+        self.size = size
+
+        # Initialize record values
+        self.values = []
+
+
+
+    def find(self, page, n):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FIND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Extract records from page
+        for i in range(n):
+
+            # Extract ith record
+            record = page[i * self.size: (i + 1) * self.size]
+
+            # Store it
+            self.values.append(record)
+
+            # Decode it
+            self.decode(record)
+
+
+
+    def decode(self, record):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # FIXME: Move somewhere else?
+
+        # Extract system time
+        systemTime = datetime.timedelta(seconds = pack(record[0:4]))
+        systemTime += epochTime
+
+        # Extract display time
+        displayTime = datetime.timedelta(seconds = pack(record[4:8]))
+        displayTime += epochTime
+
+        # Extract BG
+        BG = round(record[8] / 18.0, 1)
+
+        # Extract trend arrow
+        trendArrow = trendArrows[record[10] & 15]
+
+        # Give user info
+        print "Record: " + str(record)
+        print "System time: " + str(systemTime)
+        print "Display time: " + str(displayTime)
+        print "BG: " + str(BG)
+        print "Trend arrow: " + str(trendArrow)
+
+
+
+def unpack(x, n):
+
+    # Initialize bytes
+    bytes = []
+
+    # Unpack x in n
+    for i in range(n):
+
+        # Compute ith byte
+        bytes.append((x / 256 ** i) % 256)
+
+    return bytes
+
+
+
+def pack(bytes):
+
+    # Initialize result
+    x = 0
+
+    # Pack bytes in x
+    for i in range(len(bytes)):
+
+        # Add ith byte
+        x += bytes[i] * 256 ** i
+
+    return x
 
 
 
@@ -205,99 +545,27 @@ def translate(bytes):
 
 
 
-def readHistoryRange(handle, recordType):
+def XMLify(bytes):
 
-    rawHistoryRange = read(codes["ReadHistoryRange"], handle, recordType)
+    # Get number of bytes
+    n = len(bytes)
 
-    historyRange = [pack(rawHistoryRange[0:4]),
-                    pack(rawHistoryRange[4:8])]
+    # Translate bytes
+    bytes = translate(bytes)
 
-    print "History range: " + str(historyRange)
+    # Extract XML structure from bytes
+    begun = False
 
-    return historyRange
+    for i in range(n):
 
+        if bytes[i] == "<" and not begun :
+            a = i
+            begun = True
 
-def readHistory(handle, code, recordType, recordSize = None):
+        if bytes[i] == ">":
+            b = i + 1
 
-    history = []
-
-    historyRange = readHistoryRange(handle, recordType)
-
-    start = historyRange[0]
-    end = historyRange[1] + 1
-
-    for i in range(start, end):
-
-        data = read(codes[code], handle, recordType, i)
-        headerSize = 28
-        print "Header size: " + str(headerSize)
-        header = data[:headerSize]
-        nRecords = header[4]
-        CRC = header[-2:]
-        print "Number of records in page: " + str(nRecords)
-        print "Header CRC: " + str(CRC)
-        page = data[headerSize:]
-        history.extend(page)
-
-        if recordSize is not None:
-            findRecords(page, nRecords, recordSize)
-
-    translation = clean(history)
-
-    #print "History: " + str(translation)
-
-
-
-def findRecords(page, nRecords, recordSize):
-
-    for i in range(nRecords):
-
-        record = page[i * recordSize: (i + 1) * recordSize]
-        systemTime = epochTime + datetime.timedelta(seconds = pack(record[0:4]))
-        displayTime = epochTime + datetime.timedelta(seconds = pack(record[4:8]))
-
-        print record
-        print "System time: " + str(systemTime)
-        print "Display time: " + str(displayTime)
-        
-
-
-
-def clean(response):
-
-    translation = translate(response)
-    size = len(translation)
-
-    started = False
-
-    for i in range(size):
-
-        if translation[i] == "<" and not started :
-            start = i
-            started = True
-
-        if translation[i] == ">":
-            end = i + 1
-
-    return translation[start:end]
-
-
-
-def unpack(x):
-
-    return [(x / 256 ** 0) % 256,
-            (x / 256 ** 1) % 256,
-            (x / 256 ** 2) % 256,
-            (x / 256 ** 3) % 256]
-
-
-
-def pack(x):
-
-    return (x[0] * 256 ** 0 +
-            x[1] * 256 ** 1 +
-            x[2] * 256 ** 2 +
-            x[3] * 256 ** 3)
+    return bytes[a:b]
 
 
 
@@ -309,26 +577,21 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Generate serial port handle
-    handle = serial.Serial(port = "/dev/ttyACM0", baudrate = 115200)
+    # Instanciate CGM
+    cgm = CGM()
 
-    # Open handle
-    try:
-        handle.open()
+    # Establish connection with CGM
+    cgm.connect()
 
-    except:
-        pass
+    # Read database
+    #cgm.database.read("ManufacturingParameters", None, True)
+    #cgm.database.read("FirmwareSettings", None, True)
+    #cgm.database.read("PCParameterRecord", None, True)
+    #cgm.database.read("SensorData", cgm.records["Sensor"])
+    cgm.database.read("GlucoseData", cgm.records["BG"])
 
-    # Read stuff
-    #read(codes["ReadFirmwareHeader"], handle)
-    #readHistory(handle, "ReadHistory", "ManufacturingParameters")
-    #readHistory(handle, "ReadHistory", "FirmwareSettings")
-    #readHistory(handle, "ReadHistory", "PCParameterRecord")
-    #readHistory(handle, "ReadHistory", "SensorData", 20)
-    readHistory(handle, "ReadHistory", "GlucoseData", 13)
-
-    # Close handle
-    handle.close()
+    # End connection with CGM
+    cgm.disconnect()
 
 
 
