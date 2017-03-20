@@ -51,7 +51,11 @@ codes = {"ReadFirmwareHeader": 11, #
 
 epochTime = datetime.datetime(2009, 1, 1)
 
-batteryStates = [None, "Charging", "NotCharging", "NTCFault", "BadBattery"]
+batteryStates = [None,
+                 "Charging",
+                 "NotCharging",
+                 "NTCFault",
+                 "BadBattery"]
 
 trendArrows = [None,
                "↑↑",
@@ -523,7 +527,7 @@ def unpack(x, n):
     # Initialize bytes
     bytes = []
 
-    # Unpack x in n
+    # Unpack x in n bytes
     for i in range(n):
 
         # Compute ith byte
