@@ -37,38 +37,32 @@ import lib
 
 
 # CONSTANTS
-codes = {"ReadFirmwareHeader": 11, #
-         "ReadDatabaseRange": 16, #
-         "ReadDatabase": 17, #
+codes = {"ReadFirmwareHeader": 11,
+         "ReadDatabaseRange": 16,
+         "ReadDatabase": 17,
          "ReadTransmitterID": 25,
          "ReadLanguage": 27,
-         "ReadRTC": 31,
          "ReadBatteryLevel": 33,
          "ReadSystemTime": 34,
          "ReadBGU": 37,
-         "ReadBlindedMode": 39,
          "ReadClockMode": 41,
          "ReadBatteryState": 48,
          "ReadFirmwareSettings": 54}
 
-epochTime = datetime.datetime(2009, 1, 1)
+batteryStates = {1: "Charging",
+                 2: "NotCharging",
+                 3: "NTCFault",
+                 4: "BadBattery"}
 
-batteryStates = [None,
-                 "Charging",
-                 "NotCharging",
-                 "NTCFault",
-                 "BadBattery"]
-
-trendArrows = [None,
-               "↑↑",
-               "↑",
-               "↗",
-               "→",
-               "↘",
-               "↓",
-               "↓↓",
-               "NotComputable",
-               "OutOfRange"]
+trendArrows = {1: "↑↑",
+               2: "↑",
+               3: "↗",
+               4: "→",
+               5: "↘",
+               6: "↓",
+               7: "↓↓",
+               8: "NotComputable",
+               9: "OutOfRange"}
 
 specialBG = {0: None,
              1: "SensorNotActive",
@@ -80,22 +74,41 @@ specialBG = {0: None,
             10: "PowerDeviation",
             12: "BadRF"}
 
-languages = {0: None, 1033: "English"}
+languages = {1029: "Czech",
+             1030: "Danish",
+             1031: "German",
+             1033: "English",
+             1034: "Spanish",
+             1035: "Finnish",
+             1036: "French (FR)",
+             1038: "Hungarian",
+             1040: "Italian",
+             1043: "Dutch",
+             1044: "Norwegian",
+             1045: "Polish",
+             1046: "Portuguese",
+             1053: "Swedish",
+             1055: "Turkish",
+             3084: "French (CA)"}
 
-databases = ["ManufacturingParameters", #
-             "FirmwareSettings", #
-             "PCParameterRecord", #
-             "SensorData", #
-             "GlucoseData",
-             "CalibrationSet",
-             "Deviation",
-             "InsertionTime",
-             "ReceiverLogData",
-             "ReceiverErrorData",
-             "MeterData",
-             "UserEventsData",
-             "UserSettingsData",
-             "MaxValues"]
+databases = {"ManufacturingParameters": 0,
+             "FirmwareSettings": 1,
+             "PCParameterRecord": 2,
+             "SensorData": 3,
+             "GlucoseData": 4,
+             "CalibrationSet": 5,
+             "InsertionTime": 7,
+             "ReceiverLogData": 8,
+             "MeterData": 10,
+             "UserSettingsData": 12}
+
+BGU = {1: "mg/dL",
+       2: "mmol/L"}
+
+clockModes = {0: "24h",
+              1: "AM/PM"}
+
+epochTime = datetime.datetime(2009, 1, 1)
 
 
 
@@ -125,7 +138,7 @@ class CGM(object):
         self.handle = serial.Serial()
 
         # Initialize CGM response
-        self.responses = None
+        self.response = None
 
         # Initialize records
         self.records = {"BG": BGRecord(),
@@ -142,21 +155,16 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define handle
         try:
+            # Define handle
             self.handle.port = "/dev/ttyACM0"
-            #self.handle.port = "COM7"
             self.handle.baudrate = 115200
 
-        except:
-            sys.exit("Can't connect to port. Is CGM plugged in? Exiting...")
-
-        # Open handle
-        try:
+            # Open handle
             self.handle.open()
 
         except:
-            print "Port already open? Continuing..."
+            sys.exit("Can't connect to CGM. Is it plugged in? Exiting...")
 
 
 
@@ -198,17 +206,20 @@ class CGM(object):
         """
 
         # Read raw bytes
-        self.rawResponse = self.handle.read(n)
+        rawResponse = self.handle.read(n)
 
         # Convert raw bytes
-        self.response = [ord(x) for x in self.rawResponse]
+        response = [ord(x) for x in rawResponse]
 
         # Give user info
-        print "Received bytes: " + str(self.response)
+        print "Received bytes: " + str(response)
+
+        # Return response
+        return response
 
 
 
-    def ask(self):
+    def ask(self, XML = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,47 +227,42 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Reset responses
-        self.responses = {"Head": None,
-                          "Body": None,
-                          "CRC": None}
+        # Reset response
+        self.response = {"Head": None,
+                         "Body": None,
+                         "CRC": None}
 
         # Send command packet
         self.write()
 
         # First read
-        self.read(4)
-
-        # Store response part
-        self.responses["Head"] = self.response
+        self.response["Head"] = self.read(4)
 
         # Compute number of bytes received
-        nBytesReceived = pack(self.responses["Head"][1:3])
+        nBytesReceived = pack(self.response["Head"][1:3])
 
         # Minimum number of bytes received: 6
         if nBytesReceived > 6:
             nBytesReceived -= 6
 
         # Second read
-        self.read(nBytesReceived)
-
-        # Store response part
-        self.responses["Body"] = self.response
+        self.response["Body"] = self.read(nBytesReceived)
 
         # Third read
-        self.read(2)
-
-        # Store response part
-        self.responses["CRC"] = self.response
+        self.response["CRC"] = self.read(2)
 
         # CRC computation and verification
-        expectedCRC = pack(self.responses["CRC"])
-        computedCRC = lib.computeCRC16(self.responses["Head"] +
-                                       self.responses["Body"])
+        expectedCRC = pack(self.response["CRC"])
+        computedCRC = lib.computeCRC16(self.response["Head"] +
+                                       self.response["Body"])
 
         # Give user info
         print "Expected CRC: " + str(expectedCRC)
         print "Computed CRC: " + str(computedCRC)
+
+        # Translate response to XML if desired
+        if XML:
+            print XMLify(self.response["Body"])
 
 
 
@@ -298,7 +304,7 @@ class Packet(object):
 
         # Build database byte
         if database is not None:
-            database = [databases.index(database)]
+            database = [databases[database]]
 
         else:
             database = []
@@ -395,15 +401,15 @@ class Database(object):
         self.cgm.ask()
 
         # Decode database range
-        self.range.append(pack(self.cgm.responses["Body"][0:4]))
-        self.range.append(pack(self.cgm.responses["Body"][4:8]))
+        self.range.append(pack(self.cgm.response["Body"][0:4]))
+        self.range.append(pack(self.cgm.response["Body"][4:8]))
 
         # Give user info
         print "Database range: " + str(self.range)
 
 
 
-    def read(self, database, record = None, XML = False):
+    def read(self, database, record = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -431,7 +437,7 @@ class Database(object):
             self.cgm.ask()
 
             # Get page i
-            data = self.cgm.responses["Body"]
+            data = self.cgm.response["Body"]
 
             # Extract page header
             header = data[:self.headerSize]
@@ -455,10 +461,6 @@ class Database(object):
             # Extract records from page if corresponding size given
             if record is not None:
                 self.cgm.records[record].find(page, n)
-
-        # "Clean" database if desired
-        if XML:
-            print XMLify(self.value)
 
 
 
@@ -677,6 +679,8 @@ def XMLify(bytes):
     bytes = translate(bytes)
 
     # Extract XML structure from bytes
+    a = 0
+    b = 0
     begun = False
 
     for i in range(n):
@@ -706,13 +710,46 @@ def main():
     # Establish connection with CGM
     cgm.connect()
 
+    # Read XML
+    #cgm.packet.build("ReadFirmwareHeader")
+    #cgm.ask(True)
+    #cgm.packet.build("ReadTransmitterID")
+    #cgm.ask()
+    #print translate(cgm.response["Body"])
+    #cgm.packet.build("ReadLanguage")
+    #cgm.ask()
+    #print languages[pack(cgm.response["Body"])]
+    #cgm.packet.build("ReadBatteryLevel")
+    #cgm.ask()
+    #print str(pack(cgm.response["Body"])) + "%"
+    #cgm.packet.build("ReadSystemTime")
+    #cgm.ask()
+    #print (epochTime + datetime.timedelta(seconds = pack(cgm.response["Body"])))
+    #cgm.packet.build("ReadBGU")
+    #cgm.ask()
+    #print BGU[pack(cgm.response["Body"])]
+    #cgm.packet.build("ReadFirmwareSettings")
+    #cgm.ask(True)
+    #cgm.packet.build("ReadBatteryState")
+    #cgm.ask()
+    #print batteryStates[pack(cgm.response["Body"])]
+    #cgm.packet.build("ReadClockMode")
+    #cgm.ask()
+    #print clockModes[pack(cgm.response["Body"])]
+
+
     # Read database
-    #cgm.database.read("ManufacturingParameters", None, True)
-    #cgm.database.read("FirmwareSettings", None, True)
-    #cgm.database.read("PCParameterRecord", None, True)
+    #cgm.database.read("ManufacturingParameters")
+    #cgm.database.read("FirmwareSettings")
+    #cgm.database.read("PCParameterRecord")
+
     #cgm.database.read("SensorData", "Sensor")
     #cgm.database.read("GlucoseData", "BG")
-    cgm.database.read("InsertionTime", "Insertion")
+    #cgm.database.read("InsertionTime", "Insertion")
+    #cgm.database.read("CalibrationSet")
+    #cgm.database.read("ReceiverLogData")
+    #cgm.database.read("MeterData")
+    #cgm.database.read("UserSettingsData")
 
     # End connection with CGM
     cgm.disconnect()
