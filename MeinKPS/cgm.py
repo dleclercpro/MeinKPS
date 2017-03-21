@@ -128,8 +128,9 @@ class CGM(object):
         self.responses = None
 
         # Initialize records
-        self.records = {"BG": Record(13),
-                        "Sensor": Record(20)}
+        self.records = {"BG": BGRecord(),
+                        "Sensor": SensorRecord(),
+                        "Insertion": InsertionRecord()}
 
 
 
@@ -141,15 +142,10 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Add serial port
-        #os.system("modprobe --quiet --first-time usbserial"
-        #    + " vendor=" + str(self.vendor)
-        #    + " product=" + str(self.product))
-
         # Define handle
         try:
-            #self.handle.port = "/dev/ttyACM0"
-            self.handle.port = "COM7"
+            self.handle.port = "/dev/ttyACM0"
+            #self.handle.port = "COM7"
             self.handle.baudrate = 115200
 
         except:
@@ -427,7 +423,6 @@ class Database(object):
 
             # Give user info
             print "Reading database page " + str(i) + "/" + str(end) + "..."
-            time.sleep(0.1)
 
             # Build packet to read page i
             self.cgm.packet.build("ReadDatabase", database, i)
@@ -459,7 +454,7 @@ class Database(object):
 
             # Extract records from page if corresponding size given
             if record is not None:
-                record.find(page, n)
+                self.cgm.records[record].find(page, n)
 
         # "Clean" database if desired
         if XML:
@@ -469,16 +464,13 @@ class Database(object):
 
 class Record(object):
 
-    def __init__(self, size):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Store record size
-        self.size = size
 
         # Initialize record values
         self.values = []
@@ -507,7 +499,7 @@ class Record(object):
 
 
 
-    def decode(self, record):
+    def decode(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -515,34 +507,128 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # FIXME: Move somewhere else?
-
         # Extract system time
-        systemTime = datetime.timedelta(seconds = pack(record[0:4]))
+        systemTime = datetime.timedelta(seconds = pack(bytes[0:4]))
         systemTime += epochTime
 
-        # Extract display time
-        displayTime = datetime.timedelta(seconds = pack(record[4:8]))
-        displayTime += epochTime
-
-        # Extract BG
-        BG = record[8]
-
-        if BG == 5:
-            BG = None
-
-        else:
-            BG = round(BG / 18.0, 1)
-
-        # Extract trend arrow
-        trendArrow = trendArrows[record[10] & 15]
+        # Extract local time
+        localTime = datetime.timedelta(seconds = pack(bytes[4:8]))
+        localTime += epochTime
 
         # Give user info
-        print "Record: " + str(record)
+        print "Record: " + str(bytes)
         print "System time: " + str(systemTime)
-        print "Display time: " + str(displayTime)
-        print "BG: " + str(BG)
+        print "Local time: " + str(localTime)
+
+
+
+class BGRecord(Record):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(self.__class__, self).__init__()
+
+        # Initialize value
+        self.value = None
+
+        # Define record size
+        self.size = 13
+
+
+
+    def decode(self, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize decoding
+        super(self.__class__, self).decode(bytes)
+
+        # Extract BG
+        if bytes[8] != 5:
+            self.value = round(bytes[8] / 18.0, 1)
+
+        else:
+            self.value = None
+
+        # Extract trend arrow
+        trendArrow = trendArrows[bytes[10] & 15]
+
+        # Give user info
+        print "BG: " + str(self.value)
         print "Trend arrow: " + str(trendArrow)
+
+
+
+class SensorRecord(Record):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(self.__class__, self).__init__()
+
+        # Define record size
+        self.size = 20
+
+
+
+class InsertionRecord(Record):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(self.__class__, self).__init__()
+
+        # Initialize type
+        self.type = None
+
+        # Define record size
+        self.size = 15
+
+
+
+    def decode(self, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize decoding
+        super(self.__class__, self).decode(bytes)
+
+        # Decode insertion type
+        if bytes[12] == 7:
+            self.type = "Start"
+
+        elif bytes[12] == 1:
+            self.type = "Stop"
+
+        # Give user info
+        print "Sensor: " + str(self.type)
 
 
 
@@ -624,8 +710,9 @@ def main():
     #cgm.database.read("ManufacturingParameters", None, True)
     #cgm.database.read("FirmwareSettings", None, True)
     #cgm.database.read("PCParameterRecord", None, True)
-    #cgm.database.read("SensorData", cgm.records["Sensor"])
-    cgm.database.read("GlucoseData", cgm.records["BG"])
+    #cgm.database.read("SensorData", "Sensor")
+    #cgm.database.read("GlucoseData", "BG")
+    cgm.database.read("InsertionTime", "Insertion")
 
     # End connection with CGM
     cgm.disconnect()
