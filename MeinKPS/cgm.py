@@ -24,8 +24,10 @@
 
 # LIBRARIES
 import os
+import sys
 import datetime
 import serial
+import time
 
 
 
@@ -113,15 +115,14 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give CGM a serial port handle
-        self.handle = serial.Serial(port = "/dev/ttyACM0",
-                                    baudrate = 115200)
-
         # Give CGM a packet instance
         self.packet = Packet()
 
         # Give CGM an database instance
         self.database = Database(self)
+
+        # Initialize handle
+        self.handle = serial.Serial()
 
         # Initialize CGM response
         self.responses = None
@@ -141,16 +142,25 @@ class CGM(object):
         """
 
         # Add serial port
-        os.system("modprobe --quiet --first-time usbserial"
-            + " vendor=" + str(self.vendor)
-            + " product=" + str(self.product))
+        #os.system("modprobe --quiet --first-time usbserial"
+        #    + " vendor=" + str(self.vendor)
+        #    + " product=" + str(self.product))
+
+        # Define handle
+        try:
+            #self.handle.port = "/dev/ttyACM0"
+            self.handle.port = "COM7"
+            self.handle.baudrate = 115200
+
+        except:
+            sys.exit("Can't connect to port. Is CGM plugged in? Exiting...")
 
         # Open handle
         try:
             self.handle.open()
 
         except:
-            pass
+            print "Port already open? Continuing..."
 
 
 
@@ -408,8 +418,16 @@ class Database(object):
         # Get database range for selected database
         self.measure(database)
 
+        # Get ends of database range
+        start = self.range[0]
+        end = self.range[1]
+
         # Read database
-        for i in range(self.range[0], self.range[1] + 1):
+        for i in range(start, end + 1):
+
+            # Give user info
+            print "Reading database page " + str(i) + "/" + str(end) + "..."
+            time.sleep(0.1)
 
             # Build packet to read page i
             self.cgm.packet.build("ReadDatabase", database, i)
@@ -508,7 +526,13 @@ class Record(object):
         displayTime += epochTime
 
         # Extract BG
-        BG = round(record[8] / 18.0, 1)
+        BG = record[8]
+
+        if BG == 5:
+            BG = None
+
+        else:
+            BG = round(BG / 18.0, 1)
 
         # Extract trend arrow
         trendArrow = trendArrows[record[10] & 15]
