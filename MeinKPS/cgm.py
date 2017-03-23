@@ -37,78 +37,14 @@ import lib
 
 
 # CONSTANTS
-codes = {"ReadFirmwareHeader": 11,
-         "ReadDatabaseRange": 16,
-         "ReadDatabase": 17,
-         "ReadTransmitterID": 25,
-         "ReadLanguage": 27,
-         "ReadBatteryLevel": 33,
-         "ReadSystemTime": 34,
-         "ReadBGU": 37,
-         "ReadClockMode": 41,
-         "ReadBatteryState": 48,
-         "ReadFirmwareSettings": 54}
-
-batteryStates = {1: "Charging",
-                 2: "NotCharging",
-                 3: "NTCFault",
-                 4: "BadBattery"}
-
-trendArrows = {1: "↑↑",
-               2: "↑",
-               3: "↗",
-               4: "→",
-               5: "↘",
-               6: "↓",
-               7: "↓↓",
-               8: "NotComputable",
-               9: "OutOfRange"}
-
-specialBG = {0: None,
-             1: "SensorNotActive",
+specialBG = {1: "SensorNotActive",
              2: "MinimalDeviation",
              3: "NoAntenna",
              5: "SensorNotCalibrated",
              6: "CountsDeviation",
              9: "AbsoluteDeviation",
-            10: "PowerDeviation",
-            12: "BadRF"}
-
-languages = {1029: "Czech",
-             1030: "Danish",
-             1031: "German",
-             1033: "English",
-             1034: "Spanish",
-             1035: "Finnish",
-             1036: "French (FR)",
-             1038: "Hungarian",
-             1040: "Italian",
-             1043: "Dutch",
-             1044: "Norwegian",
-             1045: "Polish",
-             1046: "Portuguese",
-             1053: "Swedish",
-             1055: "Turkish",
-             3084: "French (CA)"}
-
-databases = {"ManufacturingParameters": 0,
-             "FirmwareSettings": 1,
-             "PCParameterRecord": 2,
-             "SensorData": 3,
-             "GlucoseData": 4,
-             "CalibrationSet": 5,
-             "InsertionTime": 7,
-             "ReceiverLogData": 8,
-             "MeterData": 10,
-             "UserSettingsData": 12}
-
-BGU = {1: "mg/dL",
-       2: "mmol/L"}
-
-clockModes = {0: "24h",
-              1: "AM/PM"}
-
-epochTime = datetime.datetime(2009, 1, 1)
+             10: "PowerDeviation",
+             12: "BadRF"}
 
 
 
@@ -118,8 +54,6 @@ class CGM(object):
     vendor  = 0x22a3
     product = 0x0047
 
-
-
     def __init__(self):
 
         """
@@ -128,22 +62,54 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give CGM a packet instance
-        self.packet = Packet()
-
-        # Give CGM an database instance
-        self.database = Database(self)
-
         # Initialize handle
         self.handle = serial.Serial()
+
+        # Give CGM a packet
+        self.packet = Packet(self)
 
         # Initialize CGM response
         self.response = None
 
-        # Initialize records
-        self.records = {"BG": BGRecord(),
-                        "Sensor": SensorRecord(),
-                        "Insertion": InsertionRecord()}
+        # Give CGM databases
+        self.databases = {"ManufacturingParameters": ManufacturingParametersDatabase(self),
+                          "FirmwareSettings": FirmwareSettingsDatabase(self),
+                          "PCParameterRecord": PCParameterRecordDatabase(self),
+                          "Sensor": SensorDatabase(self),
+                          "BG": BGDatabase(self),
+                          "Calibration": CalibrationDatabase(self),
+                          "Insertion": InsertionDatabase(self),
+                          "Receiver": ReceiverDatabase(self),
+                          "Meter": MeterDatabase(self),
+                          "UserSettings": UserSettingsDatabase(self)}
+
+        # Give CGM commands
+        self.commands = {"ReadFirmwareHeader": 11,
+                         "ReadDatabaseRange": 16,
+                         "ReadDatabase": 17,
+                         "ReadTransmitterID": 25,
+                         "ReadLanguage": 27,
+                         "ReadBatteryLevel": 33,
+                         "ReadSystemTime": 34,
+                         "ReadBGU": 37,
+                         "ReadClockMode": 41,
+                         "ReadBatteryState": 48,
+                         "ReadFirmwareSettings": 54}
+
+        # Give CGM a battery
+        self.battery = Battery(self)
+
+        # Give CGM a language
+        self.language = Language(self)
+
+        # Give CGM a clock
+        self.clock = Clock(self)
+
+        # Give CGM BG units
+        self.BGU = BGU(self)
+
+        # Give CGM a firmware
+        self.firmware = Firmware(self)
 
 
 
@@ -190,10 +156,10 @@ class CGM(object):
         """
 
         # Send packet
-        self.handle.write(bytearray(self.packet.value))
+        self.handle.write(bytearray(self.packet.bytes))
 
         # Give user info
-        print "Sent packet: " + str(self.packet.value)
+        print "Sent packet: " + str(self.packet.bytes)
 
 
 
@@ -268,7 +234,7 @@ class CGM(object):
 
 class Packet(object):
 
-    def __init__(self):
+    def __init__(self, cgm):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -277,18 +243,21 @@ class Packet(object):
         """
 
         # Initialize packet
-        self.value = None
+        self.bytes = None
 
         # Initialize packet characteristics
         self.size = None
-        self.code = None
+        self.command = None
         self.database = None
         self.page = None
         self.CRC = None
 
+        # Link with CGM
+        self.cgm = cgm
 
 
-    def build(self, code, database = None, page = None):
+
+    def build(self, command, database = None, page = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -297,14 +266,14 @@ class Packet(object):
         """
 
         # Reset packet
-        self.value = [1, 0, 0]
+        self.bytes = [1, 0, 0]
 
-        # Build code byte
-        code = codes[code]
+        # Build command byte
+        command = self.cgm.commands[command]
 
         # Build database byte
         if database is not None:
-            database = [databases[database]]
+            database = [database]
 
         else:
             database = []
@@ -318,26 +287,26 @@ class Packet(object):
             page = []
 
         # Build packet
-        self.value.append(code)
-        self.value.extend(database)
-        self.value.extend(page)
+        self.bytes.append(command)
+        self.bytes.extend(database)
+        self.bytes.extend(page)
 
         # Build size byte
-        size = len(self.value) + 2
+        size = len(self.bytes) + 2
 
         # Update packet
-        self.value[1] = size
+        self.bytes[1] = size
 
         # Build CRC bytes
-        CRC = lib.computeCRC16(self.value)
+        CRC = lib.computeCRC16(self.bytes)
         CRC = unpack(CRC, 2)
 
         # Finish packet
-        self.value.extend(CRC)
+        self.bytes.extend(CRC)
 
         # Store packet characteristics
         self.size = size
-        self.code = code
+        self.command = command
         self.database = database
         self.page = page
         self.CRC = CRC
@@ -353,7 +322,7 @@ class Packet(object):
         """
 
         # Return packet
-        return self.value
+        return self.bytes
 
 
 
@@ -361,8 +330,6 @@ class Database(object):
 
     # DATABASE CHARACTERISTICS
     headerSize = 28
-
-
 
     def __init__(self, cgm):
 
@@ -372,18 +339,24 @@ class Database(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize database vector
-        self.value = []
+        # Initialize database data
+        self.data = None
 
         # Initialize database range
         self.range = None
+
+        # Initialize database code
+        self.code = None
+
+        # Initialize database record
+        self.record = None
 
         # Link with CGM
         self.cgm = cgm
 
 
 
-    def measure(self, database):
+    def measure(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -395,7 +368,7 @@ class Database(object):
         self.range = []
 
         # Prepare command packet
-        self.cgm.packet.build("ReadDatabaseRange", database)
+        self.cgm.packet.build("ReadDatabaseRange", self.code)
 
         # Read database range
         self.cgm.ask()
@@ -409,7 +382,7 @@ class Database(object):
 
 
 
-    def read(self, database, record = None):
+    def read(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -417,8 +390,11 @@ class Database(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Reset database data
+        self.data = []
+
         # Get database range for selected database
-        self.measure(database)
+        self.measure()
 
         # Get ends of database range
         start = self.range[0]
@@ -431,16 +407,16 @@ class Database(object):
             print "Reading database page " + str(i) + "/" + str(end) + "..."
 
             # Build packet to read page i
-            self.cgm.packet.build("ReadDatabase", database, i)
+            self.cgm.packet.build("ReadDatabase", self.code, i)
 
             # Read page i
             self.cgm.ask()
 
             # Get page i
-            data = self.cgm.response["Body"]
+            page = self.cgm.response["Body"]
 
             # Extract page header
-            header = data[:self.headerSize]
+            header = page[:self.headerSize]
 
             # Get number of records in page
             n = header[4]
@@ -453,20 +429,20 @@ class Database(object):
             print "Header CRC: " + str(CRC)
 
             # Get actual page of data
-            page = data[self.headerSize:]
+            page = page[self.headerSize:]
             
             # Extend database
-            self.value.extend(page)
+            self.data.extend(page)
 
-            # Extract records from page if corresponding size given
-            if record is not None:
-                self.cgm.records[record].find(page, n)
+            # Extract records from page if defined
+            if self.record is not None:
+                self.record.find(page, n)
 
 
 
-class Record(object):
+class ManufacturingParametersDatabase(Database):
 
-    def __init__(self):
+    def __init__(self, cgm):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -474,8 +450,203 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize record values
-        self.values = []
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 0
+
+
+
+class FirmwareSettingsDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 1
+
+
+
+class PCParameterRecordDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 2
+
+
+
+class SensorDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 3
+
+        # Link with record
+        self.record = SensorRecord(cgm)
+
+
+
+class BGDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 4
+
+        # Link with record
+        self.record = BGRecord(cgm)
+
+
+
+class CalibrationDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 5
+
+
+
+class InsertionDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 7
+
+        # Link with record
+        self.record = InsertionRecord(cgm)
+
+
+
+class ReceiverDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 8
+
+
+
+class MeterDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 10
+
+
+
+class UserSettingsDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 12
+
+
+
+class Record(object):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize last record vector
+        self.last = None
+
+        # Initialize all records vector
+        self.all = None
+
+        # Link with CGM
+        self.cgm = cgm
 
 
 
@@ -487,21 +658,28 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Reset record vectors
+        self.last = None
+        self.all = []
+
         # Extract records from page
         for i in range(n):
 
             # Extract ith record
-            record = page[i * self.size: (i + 1) * self.size]
+            bytes = page[i * self.size: (i + 1) * self.size]
 
-            # Store it
-            self.values.append(record)
+            # Store it as current record
+            self.last = bytes
+
+            # Store it with rest of records
+            self.all.append(bytes)
 
             # Decode it
-            self.decode(record)
+            self.decode()
 
 
 
-    def decode(self, bytes):
+    def decode(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -510,15 +688,15 @@ class Record(object):
         """
 
         # Extract system time
-        systemTime = datetime.timedelta(seconds = pack(bytes[0:4]))
-        systemTime += epochTime
+        systemTime = datetime.timedelta(seconds = pack(self.last[0:4]))
+        systemTime += self.cgm.clock.epoch
 
         # Extract local time
-        localTime = datetime.timedelta(seconds = pack(bytes[4:8]))
-        localTime += epochTime
+        localTime = datetime.timedelta(seconds = pack(self.last[4:8]))
+        localTime += self.cgm.clock.epoch
 
         # Give user info
-        print "Record: " + str(bytes)
+        print "Record: " + str(self.last)
         print "System time: " + str(systemTime)
         print "Local time: " + str(localTime)
 
@@ -526,7 +704,7 @@ class Record(object):
 
 class BGRecord(Record):
 
-    def __init__(self):
+    def __init__(self, cgm):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -535,17 +713,29 @@ class BGRecord(Record):
         """
 
         # Initialize record
-        super(self.__class__, self).__init__()
-
-        # Initialize value
-        self.value = None
+        super(self.__class__, self).__init__(cgm)
 
         # Define record size
         self.size = 13
 
+        # Initialize record values
+        self.BG = None
+        self.trendArrow = None
+
+        # Define dictionary for trend arrows
+        self.trendArrows = {1: "↑↑",
+                            2: "↑",
+                            3: "↗",
+                            4: "→",
+                            5: "↘",
+                            6: "↓",
+                            7: "↓↓",
+                            8: "NotComputable",
+                            9: "OutOfRange"}
 
 
-    def decode(self, bytes):
+
+    def decode(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -554,27 +744,24 @@ class BGRecord(Record):
         """
 
         # Initialize decoding
-        super(self.__class__, self).decode(bytes)
+        super(self.__class__, self).decode()
 
         # Extract BG
-        if bytes[8] != 5:
-            self.value = round(bytes[8] / 18.0, 1)
-
-        else:
-            self.value = None
+        if self.last[8] != 5:
+            self.BG = round(self.last[8] / 18.0, 1)
 
         # Extract trend arrow
-        trendArrow = trendArrows[bytes[10] & 15]
+        self.trendArrow = self.trendArrows[self.last[10] & 15]
 
         # Give user info
-        print "BG: " + str(self.value)
-        print "Trend arrow: " + str(trendArrow)
+        print "BG: " + str(self.BG)
+        print "Trend arrow: " + str(self.trendArrow)
 
 
 
 class SensorRecord(Record):
 
-    def __init__(self):
+    def __init__(self, cgm):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -583,7 +770,7 @@ class SensorRecord(Record):
         """
 
         # Initialize record
-        super(self.__class__, self).__init__()
+        super(self.__class__, self).__init__(cgm)
 
         # Define record size
         self.size = 20
@@ -592,7 +779,7 @@ class SensorRecord(Record):
 
 class InsertionRecord(Record):
 
-    def __init__(self):
+    def __init__(self, cgm):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -601,17 +788,17 @@ class InsertionRecord(Record):
         """
 
         # Initialize record
-        super(self.__class__, self).__init__()
-
-        # Initialize type
-        self.type = None
+        super(self.__class__, self).__init__(cgm)
 
         # Define record size
         self.size = 15
 
+        # Initialize type
+        self.type = None
 
 
-    def decode(self, bytes):
+
+    def decode(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -620,17 +807,256 @@ class InsertionRecord(Record):
         """
 
         # Initialize decoding
-        super(self.__class__, self).decode(bytes)
+        super(self.__class__, self).decode()
 
         # Decode insertion type
-        if bytes[12] == 7:
+        if self.last[12] == 7:
             self.type = "Start"
 
-        elif bytes[12] == 1:
+        elif self.last[12] == 1:
             self.type = "Stop"
 
         # Give user info
         print "Sensor: " + str(self.type)
+
+
+
+class Battery(object):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize battery level
+        self.level = None
+
+        # Initialize battery state
+        self.state = None
+
+        # Define battery states
+        self.states = {1: "Charging",
+                       2: "NotCharging",
+                       3: "NTCFault",
+                       4: "BadBattery"}
+
+        # Link with CGM
+        self.cgm = cgm
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Request battery level
+        self.cgm.packet.build("ReadBatteryLevel")
+        self.cgm.ask()
+
+        # Store it
+        self.level = str(pack(self.cgm.response["Body"])) + "%"
+
+        # Give user info
+        print "Battery level: " + self.level
+
+        # Request battery state
+        self.cgm.packet.build("ReadBatteryState")
+        self.cgm.ask()
+
+        # Store it
+        self.state = self.states[pack(self.cgm.response["Body"])]
+
+        # Give user info
+        print "Battery state: " + self.state
+
+
+
+class Language(object):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize value
+        self.value = None
+
+        # Define languages
+        self.values = {1029: "Czech",
+                       1030: "Danish",
+                       1031: "German",
+                       1033: "English",
+                       1034: "Spanish",
+                       1035: "Finnish",
+                       1036: "French (FR)",
+                       1038: "Hungarian",
+                       1040: "Italian",
+                       1043: "Dutch",
+                       1044: "Norwegian",
+                       1045: "Polish",
+                       1046: "Portuguese",
+                       1053: "Swedish",
+                       1055: "Turkish",
+                       3084: "French (CA)"}
+
+        # Link with CGM
+        self.cgm = cgm
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Request language
+        self.cgm.packet.build("ReadLanguage")
+        self.cgm.ask()
+
+        # Store it
+        self.value = self.values[pack(self.cgm.response["Body"])]
+
+        # Give user info
+        print "Language: " + self.value
+
+
+
+class Clock(object):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize mode
+        self.mode = None
+
+        # Initialize system time
+        self.systemTime = None
+
+        # Define epoch
+        self.epoch = datetime.datetime(2009, 1, 1)
+
+        # Define modes
+        self.modes = {0: "24h", 1: "AM/PM"}
+
+        # Link with CGM
+        self.cgm = cgm
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Request system time
+        self.cgm.packet.build("ReadSystemTime")
+        self.cgm.ask()
+
+        # Compute time delta since epoch
+        delta = datetime.timedelta(seconds = pack(self.cgm.response["Body"]))
+
+        # Store it
+        self.systemTime = self.epoch + delta
+
+        # Give user info
+        print "System time: " + str(self.systemTime)
+
+        # Request mode
+        self.cgm.packet.build("ReadClockMode")
+        self.cgm.ask()
+
+        # Store it
+        self.mode = self.modes[pack(self.cgm.response["Body"])]
+
+        # Give user info
+        print "Clock mode: " + self.mode
+
+
+
+class BGU(object):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize value
+        self.value = None
+
+        # Define values
+        self.values = {1: "mg/dL", 2: "mmol/L"}
+
+        # Link with CGM
+        self.cgm = cgm
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Request system time
+        self.cgm.packet.build("ReadBGU")
+        self.cgm.ask()
+
+        # Store it
+        self.value = self.values[pack(self.cgm.response["Body"])]
+
+        # Give user info
+        print "BGU: " + self.value
+
+
+
+class Firmware(object):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link with CGM
+        self.cgm = cgm
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
 
 
@@ -710,46 +1136,38 @@ def main():
     # Establish connection with CGM
     cgm.connect()
 
-    # Read XML
+    # Read battery
+    #cgm.battery.read()
+
+    # Read language
+    #cgm.language.read()
+
+    # Read clock
+    #cgm.clock.read()
+
+    # Read BGU
+    #cgm.BGU.read()
+
+    # Read databases
+    #cgm.databases["ManufacturingParameters"].read()
+    #cgm.databases["FirmwareSettings"].read()
+    #cgm.databases["PCParameterRecord"].read()
+    #cgm.databases["Sensor"].read()
+    #cgm.databases["BG"].read()
+    #cgm.databases["Calibration"].read()
+    #cgm.databases["Insertion"].read()
+    #cgm.databases["Receiver"].read()
+    #cgm.databases["Meter"].read()
+    #cgm.databases["UserSettings"].read()
+
+    # FIXME
     #cgm.packet.build("ReadFirmwareHeader")
     #cgm.ask(True)
     #cgm.packet.build("ReadTransmitterID")
     #cgm.ask()
     #print translate(cgm.response["Body"])
-    #cgm.packet.build("ReadLanguage")
-    #cgm.ask()
-    #print languages[pack(cgm.response["Body"])]
-    #cgm.packet.build("ReadBatteryLevel")
-    #cgm.ask()
-    #print str(pack(cgm.response["Body"])) + "%"
-    #cgm.packet.build("ReadSystemTime")
-    #cgm.ask()
-    #print (epochTime + datetime.timedelta(seconds = pack(cgm.response["Body"])))
-    #cgm.packet.build("ReadBGU")
-    #cgm.ask()
-    #print BGU[pack(cgm.response["Body"])]
     #cgm.packet.build("ReadFirmwareSettings")
     #cgm.ask(True)
-    #cgm.packet.build("ReadBatteryState")
-    #cgm.ask()
-    #print batteryStates[pack(cgm.response["Body"])]
-    #cgm.packet.build("ReadClockMode")
-    #cgm.ask()
-    #print clockModes[pack(cgm.response["Body"])]
-
-
-    # Read database
-    #cgm.database.read("ManufacturingParameters")
-    #cgm.database.read("FirmwareSettings")
-    #cgm.database.read("PCParameterRecord")
-
-    #cgm.database.read("SensorData", "Sensor")
-    #cgm.database.read("GlucoseData", "BG")
-    #cgm.database.read("InsertionTime", "Insertion")
-    #cgm.database.read("CalibrationSet")
-    #cgm.database.read("ReceiverLogData")
-    #cgm.database.read("MeterData")
-    #cgm.database.read("UserSettingsData")
 
     # End connection with CGM
     cgm.disconnect()
