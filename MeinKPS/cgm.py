@@ -27,24 +27,11 @@ import os
 import sys
 import datetime
 import serial
-import time
 
 
 
 # USER LIBRARIES
 import lib
-
-
-
-# CONSTANTS
-specialBG = {1: "SensorNotActive",
-             2: "MinimalDeviation",
-             3: "NoAntenna",
-             5: "SensorNotCalibrated",
-             6: "CountsDeviation",
-             9: "AbsoluteDeviation",
-             10: "PowerDeviation",
-             12: "BadRF"}
 
 
 
@@ -65,36 +52,17 @@ class CGM(object):
         # Initialize handle
         self.handle = serial.Serial()
 
-        # Give CGM a packet
-        self.packet = Packet(self)
-
-        # Initialize CGM response
-        self.response = None
-
         # Give CGM databases
-        self.databases = {"ManufacturingParameters": ManufacturingParametersDatabase(self),
-                          "FirmwareSettings": FirmwareSettingsDatabase(self),
-                          "PCParameterRecord": PCParameterRecordDatabase(self),
-                          "Sensor": SensorDatabase(self),
-                          "BG": BGDatabase(self),
-                          "Calibration": CalibrationDatabase(self),
-                          "Insertion": InsertionDatabase(self),
-                          "Receiver": ReceiverDatabase(self),
-                          "Meter": MeterDatabase(self),
-                          "UserSettings": UserSettingsDatabase(self)}
-
-        # Give CGM commands
-        self.commands = {"ReadFirmwareHeader": 11,
-                         "ReadDatabaseRange": 16,
-                         "ReadDatabase": 17,
-                         "ReadTransmitterID": 25,
-                         "ReadLanguage": 27,
-                         "ReadBatteryLevel": 33,
-                         "ReadSystemTime": 34,
-                         "ReadBGU": 37,
-                         "ReadClockMode": 41,
-                         "ReadBatteryState": 48,
-                         "ReadFirmwareSettings": 54}
+        self.databases = {
+            "ManufacturingParameters": ManufacturingParametersDatabase(self),
+            "FirmwareSettings": FirmwareSettingsDatabase(self),
+            "PCParameterRecord": PCParameterRecordDatabase(self),
+            "Sensor": SensorDatabase(self),
+            "BG": BGDatabase(self),
+            "Insertion": InsertionDatabase(self),
+            "Receiver": ReceiverDatabase(self),
+            "Calibration": CalibrationDatabase(self),
+            "UserSettings": UserSettingsDatabase(self)}
 
         # Give CGM a battery
         self.battery = Battery(self)
@@ -105,11 +73,14 @@ class CGM(object):
         # Give CGM a clock
         self.clock = Clock(self)
 
-        # Give CGM BG units
-        self.BGU = BGU(self)
+        # Give CGM units
+        self.units = Units(self)
 
         # Give CGM a firmware
         self.firmware = Firmware(self)
+
+        # Give CGM a transmitter
+        self.transmitter = Transmitter(self)
 
 
 
@@ -147,7 +118,7 @@ class CGM(object):
 
 
 
-    def write(self):
+    def write(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,10 +127,10 @@ class CGM(object):
         """
 
         # Send packet
-        self.handle.write(bytearray(self.packet.bytes))
+        self.handle.write(bytearray(bytes))
 
         # Give user info
-        print "Sent packet: " + str(self.packet.bytes)
+        print "Sent packet: " + str(bytes)
 
 
 
@@ -185,56 +156,9 @@ class CGM(object):
 
 
 
-    def ask(self, XML = False):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ASK
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Reset response
-        self.response = {"Head": None,
-                         "Body": None,
-                         "CRC": None}
-
-        # Send command packet
-        self.write()
-
-        # First read
-        self.response["Head"] = self.read(4)
-
-        # Compute number of bytes received
-        nBytesReceived = pack(self.response["Head"][1:3])
-
-        # Minimum number of bytes received: 6
-        if nBytesReceived > 6:
-            nBytesReceived -= 6
-
-        # Second read
-        self.response["Body"] = self.read(nBytesReceived)
-
-        # Third read
-        self.response["CRC"] = self.read(2)
-
-        # CRC computation and verification
-        expectedCRC = pack(self.response["CRC"])
-        computedCRC = lib.computeCRC16(self.response["Head"] +
-                                       self.response["Body"])
-
-        # Give user info
-        print "Expected CRC: " + str(expectedCRC)
-        print "Computed CRC: " + str(computedCRC)
-
-        # Translate response to XML if desired
-        if XML:
-            print XMLify(self.response["Body"])
-
-
-
 class Packet(object):
 
-    def __init__(self, cgm):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -247,17 +171,14 @@ class Packet(object):
 
         # Initialize packet characteristics
         self.size = None
-        self.command = None
+        self.code = None
         self.database = None
         self.page = None
         self.CRC = None
 
-        # Link with CGM
-        self.cgm = cgm
 
 
-
-    def build(self, command, database = None, page = None):
+    def build(self, code, database, page):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -268,9 +189,6 @@ class Packet(object):
         # Reset packet
         self.bytes = [1, 0, 0]
 
-        # Build command byte
-        command = self.cgm.commands[command]
-
         # Build database byte
         if database is not None:
             database = [database]
@@ -280,14 +198,14 @@ class Packet(object):
 
         # Build page bytes
         if page is not None:
-            page = unpack(page, 4)
+            page = lib.unpack(page, 4)
             page.append(1)
 
         else:
             page = []
 
         # Build packet
-        self.bytes.append(command)
+        self.bytes.append(code)
         self.bytes.extend(database)
         self.bytes.extend(page)
 
@@ -299,14 +217,14 @@ class Packet(object):
 
         # Build CRC bytes
         CRC = lib.computeCRC16(self.bytes)
-        CRC = unpack(CRC, 2)
+        CRC = lib.unpack(CRC, 2)
 
         # Finish packet
         self.bytes.extend(CRC)
 
         # Store packet characteristics
         self.size = size
-        self.command = command
+        self.code = code
         self.database = database
         self.page = page
         self.CRC = CRC
@@ -326,10 +244,7 @@ class Packet(object):
 
 
 
-class Database(object):
-
-    # DATABASE CHARACTERISTICS
-    headerSize = 28
+class Request(object):
 
     def __init__(self, cgm):
 
@@ -339,17 +254,305 @@ class Database(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize database data
-        self.data = None
+        # Initialize request code byte
+        self.code = None
 
-        # Initialize database range
-        self.range = None
+        # Initialize request database byte
+        self.database = None
+
+        # Initialize request page byte
+        self.page = None
+
+        # Initialize request response
+        self.response = None
+
+        # Initialize request CRCs
+        self.expectedCRC = None
+        self.computedCRC = None
+
+        # Give the request a packet
+        self.packet = Packet()
+
+        # Link with CGM
+        self.cgm = cgm
+
+
+
+    def execute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXECUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset response
+        self.response = {"Head": None,
+                         "Body": None,
+                         "CRC": None}
+
+        # Prepare packet
+        self.packet.build(self.code, self.database, self.page)
+
+        # Send packet
+        self.cgm.write(self.packet.bytes)
+
+        # First read
+        self.response["Head"] = self.cgm.read(4)
+
+        # Compute number of bytes received
+        nBytesReceived = lib.pack(self.response["Head"][1:3])
+
+        # Minimum number of bytes received: 6
+        if nBytesReceived > 6:
+            nBytesReceived -= 6
+
+        # Second read
+        self.response["Body"] = self.cgm.read(nBytesReceived)
+
+        # Try and find XML structure in response
+        print "XML: " + str(lib.XMLify(self.response["Body"]))
+
+        # Third read
+        self.response["CRC"] = self.cgm.read(2)
+
+        # CRC computation and verification
+        self.expectedCRC = lib.pack(self.response["CRC"])
+        self.computedCRC = lib.computeCRC16(self.response["Head"] +
+                                            self.response["Body"])
+
+        # Give user info
+        print "Expected CRC: " + str(self.expectedCRC)
+        print "Computed CRC: " + str(self.computedCRC)
+
+
+
+class ReadDatabaseRangeRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 16
+
+
+
+class ReadDatabaseRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 17
+
+
+
+class ReadFirmwareHeaderRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 11
+
+
+
+class ReadTransmitterIDRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 25
+
+
+
+class ReadFirmwareSettingsRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 54
+
+
+
+class ReadBatteryLevelRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 33
+
+
+
+class ReadBatteryStateRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 48
+
+
+
+class ReadLanguageRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 27
+
+
+
+class ReadSystemTimeRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 34
+
+
+
+class ReadClockModeRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 41
+
+
+
+class ReadUnitsRequest(Request):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Initialize request code
+        self.code = 37
+
+
+
+class Database(object):
+
+    # DATABASE CHARACTERISTICS
+    headSize = 28
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
         # Initialize database code
         self.code = None
 
         # Initialize database record
         self.record = None
+
+        # Initialize database range
+        self.range = None
+
+        # Initialize database data
+        self.data = None
+
+        # Define request(s)
+        self.requests = {"ReadDatabaseRange": ReadDatabaseRangeRequest(cgm),
+                         "ReadDatabase": ReadDatabaseRequest(cgm)}
 
         # Link with CGM
         self.cgm = cgm
@@ -367,15 +570,18 @@ class Database(object):
         # Reset database range
         self.range = []
 
-        # Prepare command packet
-        self.cgm.packet.build("ReadDatabaseRange", self.code)
+        # Link to database range request
+        request = self.requests["ReadDatabaseRange"]
 
-        # Read database range
-        self.cgm.ask()
+        # Tell request which database to read from
+        request.database = self.code
 
-        # Decode database range
-        self.range.append(pack(self.cgm.response["Body"][0:4]))
-        self.range.append(pack(self.cgm.response["Body"][4:8]))
+        # Read range
+        request.execute()
+
+        # Decode it
+        self.range.append(lib.pack(request.response["Body"][0:4]))
+        self.range.append(lib.pack(request.response["Body"][4:8]))
 
         # Give user info
         print "Database range: " + str(self.range)
@@ -400,23 +606,29 @@ class Database(object):
         start = self.range[0]
         end = self.range[1]
 
+        # Link to read database request
+        request = self.requests["ReadDatabase"]
+
+        # Tell request which database to read from
+        request.database = self.code
+
         # Read database
         for i in range(start, end + 1):
 
             # Give user info
             print "Reading database page " + str(i) + "/" + str(end) + "..."
 
-            # Build packet to read page i
-            self.cgm.packet.build("ReadDatabase", self.code, i)
+            # Tell request which page to read
+            request.page = i
 
-            # Read page i
-            self.cgm.ask()
+            # Read page
+            request.execute()
 
-            # Get page i
-            page = self.cgm.response["Body"]
+            # Get page
+            page = request.response["Body"]
 
             # Extract page header
-            header = page[:self.headerSize]
+            header = page[:self.headSize]
 
             # Get number of records in page
             n = header[4]
@@ -429,7 +641,7 @@ class Database(object):
             print "Header CRC: " + str(CRC)
 
             # Get actual page of data
-            page = page[self.headerSize:]
+            page = page[self.headSize:]
             
             # Extend database
             self.data.extend(page)
@@ -536,24 +748,6 @@ class BGDatabase(Database):
 
 
 
-class CalibrationDatabase(Database):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(self.__class__, self).__init__(cgm)
-
-        # Define database code
-        self.code = 5
-
-
-
 class InsertionDatabase(Database):
 
     def __init__(self, cgm):
@@ -593,7 +787,7 @@ class ReceiverDatabase(Database):
 
 
 
-class MeterDatabase(Database):
+class CalibrationDatabase(Database):
 
     def __init__(self, cgm):
 
@@ -608,6 +802,9 @@ class MeterDatabase(Database):
 
         # Define database code
         self.code = 10
+
+        # Link with record
+        self.record = CalibrationRecord(cgm)
 
 
 
@@ -639,11 +836,10 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize last record vector
-        self.last = None
-
-        # Initialize all records vector
-        self.all = None
+        # Initialize record vectors
+        self.t = None
+        self.values = None
+        self.bytes = None
 
         # Link with CGM
         self.cgm = cgm
@@ -659,22 +855,20 @@ class Record(object):
         """
 
         # Reset record vectors
-        self.last = None
-        self.all = []
+        self.t = []
+        self.values = []
+        self.bytes = []
 
         # Extract records from page
         for i in range(n):
 
-            # Extract ith record
+            # Extract ith record's bytes
             bytes = page[i * self.size: (i + 1) * self.size]
 
-            # Store it as current record
-            self.last = bytes
+            # Store them
+            self.bytes.append(bytes)
 
-            # Store it with rest of records
-            self.all.append(bytes)
-
-            # Decode it
+            # Decode them
             self.decode()
 
 
@@ -687,18 +881,16 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Extract system time
-        systemTime = datetime.timedelta(seconds = pack(self.last[0:4]))
-        systemTime += self.cgm.clock.epoch
+        # Decode local time
+        t = (datetime.timedelta(seconds = lib.pack(self.bytes[-1][4:8])) +
+             self.cgm.clock.epoch)
 
-        # Extract local time
-        localTime = datetime.timedelta(seconds = pack(self.last[4:8]))
-        localTime += self.cgm.clock.epoch
+        # Store local time
+        self.t.append(t)
 
         # Give user info
-        print "Record: " + str(self.last)
-        print "System time: " + str(systemTime)
-        print "Local time: " + str(localTime)
+        print "Record bytes: " + str(self.bytes[-1])
+        print "Time: " + str(t)
 
 
 
@@ -718,20 +910,16 @@ class BGRecord(Record):
         # Define record size
         self.size = 13
 
-        # Initialize record values
-        self.BG = None
-        self.trendArrow = None
-
         # Define dictionary for trend arrows
-        self.trendArrows = {1: "↑↑",
-                            2: "↑",
-                            3: "↗",
-                            4: "→",
-                            5: "↘",
-                            6: "↓",
-                            7: "↓↓",
-                            8: "NotComputable",
-                            9: "OutOfRange"}
+        self.arrows = {1: "↑↑",
+                       2: "↑",
+                       3: "↗",
+                       4: "→",
+                       5: "↘",
+                       6: "↓",
+                       7: "↓↓",
+                       8: "NotComputable",
+                       9: "OutOfRange"}
 
 
 
@@ -746,16 +934,21 @@ class BGRecord(Record):
         # Initialize decoding
         super(self.__class__, self).decode()
 
-        # Extract BG
-        if self.last[8] != 5:
-            self.BG = round(self.last[8] / 18.0, 1)
+        # Decode BG
+        if self.bytes[-1][8] != 5:
+            BG = round(self.bytes[-1][8] / 18.0, 1)
 
-        # Extract trend arrow
-        self.trendArrow = self.trendArrows[self.last[10] & 15]
+        else:
+            BG = None
+
+        # Decode trend arrow
+        arrow = self.arrows[self.bytes[-1][10] & 15]
+
+        # Store them
+        self.values.append([BG, arrow])
 
         # Give user info
-        print "BG: " + str(self.BG)
-        print "Trend arrow: " + str(self.trendArrow)
+        print "BG: " + str(BG) + " " + str(arrow)
 
 
 
@@ -793,8 +986,49 @@ class InsertionRecord(Record):
         # Define record size
         self.size = 15
 
-        # Initialize type
-        self.type = None
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize decoding
+        super(self.__class__, self).decode()
+
+        # Decode insertion event
+        if self.bytes[-1][12] == 7:
+            event = "Start"
+
+        elif self.bytes[-1][12] == 1:
+            event = "Stop" 
+
+        # Store it
+        self.values.append(event)
+
+        # Give user info
+        print "Sensor event: " + str(event)
+
+
+
+class CalibrationRecord(Record):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(self.__class__, self).__init__(cgm)
+
+        # Define record size
+        self.size = 16
 
 
 
@@ -809,15 +1043,14 @@ class InsertionRecord(Record):
         # Initialize decoding
         super(self.__class__, self).decode()
 
-        # Decode insertion type
-        if self.last[12] == 7:
-            self.type = "Start"
+        # Decode BG
+        BG = round(lib.pack(self.bytes[-1][8:10]) / 18.0, 1)
 
-        elif self.last[12] == 1:
-            self.type = "Stop"
+        # Store it
+        self.values.append(BG)
 
         # Give user info
-        print "Sensor: " + str(self.type)
+        print "BG: " + str(BG) + " " + self.cgm.units.value
 
 
 
@@ -843,8 +1076,9 @@ class Battery(object):
                        3: "NTCFault",
                        4: "BadBattery"}
 
-        # Link with CGM
-        self.cgm = cgm
+        # Define request(s)
+        self.requests = {"ReadBatteryLevel": ReadBatteryLevelRequest(cgm),
+                         "ReadBatteryState": ReadBatteryStateRequest(cgm)}
 
 
 
@@ -856,22 +1090,26 @@ class Battery(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Request battery level
-        self.cgm.packet.build("ReadBatteryLevel")
-        self.cgm.ask()
+        # Link to request
+        request = self.requests["ReadBatteryLevel"]
 
-        # Store it
-        self.level = str(pack(self.cgm.response["Body"])) + "%"
+        # Execute request
+        request.execute()
+
+        # Store response
+        self.level = str(lib.pack(request.response["Body"])) + "%"
 
         # Give user info
         print "Battery level: " + self.level
 
-        # Request battery state
-        self.cgm.packet.build("ReadBatteryState")
-        self.cgm.ask()
+        # Link to battery state request
+        request = self.requests["ReadBatteryState"]
 
-        # Store it
-        self.state = self.states[pack(self.cgm.response["Body"])]
+        # Execute request
+        request.execute()
+
+        # Store response
+        self.state = self.states[lib.pack(request.response["Body"])]
 
         # Give user info
         print "Battery state: " + self.state
@@ -909,8 +1147,8 @@ class Language(object):
                        1055: "Turkish",
                        3084: "French (CA)"}
 
-        # Link with CGM
-        self.cgm = cgm
+        # Define request(s)
+        self.request = ReadLanguageRequest(cgm)
 
 
 
@@ -922,12 +1160,14 @@ class Language(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Request language
-        self.cgm.packet.build("ReadLanguage")
-        self.cgm.ask()
+        # Link to request
+        request = self.request
 
-        # Store it
-        self.value = self.values[pack(self.cgm.response["Body"])]
+        # Execute request
+        request.execute()
+
+        # Store response
+        self.value = self.values[lib.pack(request.response["Body"])]
 
         # Give user info
         print "Language: " + self.value
@@ -944,20 +1184,21 @@ class Clock(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize mode
-        self.mode = None
-
         # Initialize system time
         self.systemTime = None
 
-        # Define epoch
-        self.epoch = datetime.datetime(2009, 1, 1)
+        # Initialize mode
+        self.mode = None
 
         # Define modes
         self.modes = {0: "24h", 1: "AM/PM"}
 
-        # Link with CGM
-        self.cgm = cgm
+        # Define epoch
+        self.epoch = datetime.datetime(2009, 1, 1)
+
+        # Define request(s)
+        self.requests = {"ReadSystemTime": ReadSystemTimeRequest(cgm),
+                         "ReadMode": ReadClockModeRequest(cgm)}
 
 
 
@@ -969,32 +1210,36 @@ class Clock(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Request system time
-        self.cgm.packet.build("ReadSystemTime")
-        self.cgm.ask()
+        # Link to request
+        request = self.requests["ReadSystemTime"]
+
+        # Execute request
+        request.execute()
 
         # Compute time delta since epoch
-        delta = datetime.timedelta(seconds = pack(self.cgm.response["Body"]))
+        delta = datetime.timedelta(seconds = lib.pack(request.response["Body"]))
 
-        # Store it
+        # Store response
         self.systemTime = self.epoch + delta
 
         # Give user info
         print "System time: " + str(self.systemTime)
 
-        # Request mode
-        self.cgm.packet.build("ReadClockMode")
-        self.cgm.ask()
+        # Link to request
+        request = self.requests["ReadMode"]
 
-        # Store it
-        self.mode = self.modes[pack(self.cgm.response["Body"])]
+        # Execute request
+        request.execute()
+
+        # Store response
+        self.mode = self.modes[lib.pack(request.response["Body"])]
 
         # Give user info
         print "Clock mode: " + self.mode
 
 
 
-class BGU(object):
+class Units(object):
 
     def __init__(self, cgm):
 
@@ -1004,14 +1249,14 @@ class BGU(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize value
-        self.value = None
+        # Initialize value to default
+        self.value = "mmol/L"
 
         # Define values
         self.values = {1: "mg/dL", 2: "mmol/L"}
 
-        # Link with CGM
-        self.cgm = cgm
+        # Define request(s)
+        self.request = ReadUnitsRequest(cgm)
 
 
 
@@ -1023,15 +1268,17 @@ class BGU(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Request system time
-        self.cgm.packet.build("ReadBGU")
-        self.cgm.ask()
+        # Link to request
+        request = self.request
 
-        # Store it
-        self.value = self.values[pack(self.cgm.response["Body"])]
+        # Execute request
+        request.execute()
+
+        # Store response
+        self.value = self.values[lib.pack(request.response["Body"])]
 
         # Give user info
-        print "BGU: " + self.value
+        print "Units: " + self.value
 
 
 
@@ -1045,8 +1292,9 @@ class Firmware(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with CGM
-        self.cgm = cgm
+        # Define request(s)
+        self.requests = {"ReadFirmwareHeader": ReadFirmwareHeaderRequest(cgm),
+                         "ReadFirmwareSettings": ReadFirmwareSettingsRequest(cgm)}
 
 
 
@@ -1058,67 +1306,57 @@ class Firmware(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Link to request
+        request = self.requests["ReadFirmwareHeader"]
 
+        # Execute request
+        request.execute()
 
-def unpack(x, n):
+        # Link to request
+        request = self.requests["ReadFirmwareSettings"]
 
-    # Initialize bytes
-    bytes = []
-
-    # Unpack x in n bytes
-    for i in range(n):
-
-        # Compute ith byte
-        bytes.append((x / 256 ** i) % 256)
-
-    return bytes
+        # Execute request
+        request.execute()
 
 
 
-def pack(bytes):
+class Transmitter(object):
 
-    # Initialize result
-    x = 0
+    def __init__(self, cgm):
 
-    # Pack bytes in x
-    for i in range(len(bytes)):
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-        # Add ith byte
-        x += bytes[i] * 256 ** i
+        # Initialize ID
+        self.id = None
 
-    return x
-
-
-
-def translate(bytes):
-
-    return "".join([chr(x) for x in bytes])
+        # Define request(s)
+        self.request = ReadTransmitterIDRequest(cgm)
 
 
 
-def XMLify(bytes):
+    def read(self):
 
-    # Get number of bytes
-    n = len(bytes)
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-    # Translate bytes
-    bytes = translate(bytes)
+        # Link to request
+        request = self.request
 
-    # Extract XML structure from bytes
-    a = 0
-    b = 0
-    begun = False
+        # Execute request
+        request.execute()
 
-    for i in range(n):
+        # Store response
+        self.id = lib.translate(request.response["Body"])
 
-        if bytes[i] == "<" and not begun :
-            a = i
-            begun = True
-
-        if bytes[i] == ">":
-            b = i + 1
-
-    return bytes[a:b]
+        # Give user info
+        print "Transmitter ID: " + str(self.id)
 
 
 
@@ -1137,37 +1375,33 @@ def main():
     cgm.connect()
 
     # Read battery
-    #cgm.battery.read()
+    cgm.battery.read()
 
     # Read language
-    #cgm.language.read()
+    cgm.language.read()
 
     # Read clock
-    #cgm.clock.read()
+    cgm.clock.read()
 
-    # Read BGU
-    #cgm.BGU.read()
+    # Read units
+    cgm.units.read()
+
+    # Read firmware
+    cgm.firmware.read()
+
+    # Read transmitter
+    cgm.transmitter.read()
 
     # Read databases
-    #cgm.databases["ManufacturingParameters"].read()
+    cgm.databases["ManufacturingParameters"].read()
     #cgm.databases["FirmwareSettings"].read()
     #cgm.databases["PCParameterRecord"].read()
     #cgm.databases["Sensor"].read()
     #cgm.databases["BG"].read()
-    #cgm.databases["Calibration"].read()
     #cgm.databases["Insertion"].read()
     #cgm.databases["Receiver"].read()
-    #cgm.databases["Meter"].read()
+    #cgm.databases["Calibration"].read()
     #cgm.databases["UserSettings"].read()
-
-    # FIXME
-    #cgm.packet.build("ReadFirmwareHeader")
-    #cgm.ask(True)
-    #cgm.packet.build("ReadTransmitterID")
-    #cgm.ask()
-    #print translate(cgm.response["Body"])
-    #cgm.packet.build("ReadFirmwareSettings")
-    #cgm.ask(True)
 
     # End connection with CGM
     cgm.disconnect()

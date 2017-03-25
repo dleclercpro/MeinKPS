@@ -162,6 +162,38 @@ def hexify(x):
 
 
 
+def XMLify(bytes):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        XMLIFY
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Get number of bytes
+    n = len(bytes)
+
+    # Translate bytes
+    bytes = translate(bytes)
+
+    # Extract XML structure from bytes
+    a = 0
+    b = 0
+    begun = False
+
+    for i in range(n):
+
+        if bytes[i] == "<" and not begun :
+            a = i
+            begun = True
+
+        if bytes[i] == ">":
+            b = i + 1
+
+    return bytes[a:b]
+
+
+
 def bangInt(z):
 
     """
@@ -207,6 +239,60 @@ def getByte(x, n):
     """
 
     return x / 256 ** n % 256
+
+
+
+def unpack(x, n):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        UNPACK
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Initialize bytes
+    bytes = []
+
+    # Unpack x in n bytes
+    for i in range(n):
+
+        # Compute ith byte
+        bytes.append((x / 256 ** i) % 256)
+
+    return bytes
+
+
+
+def pack(bytes):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PACK
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Initialize result
+    x = 0
+
+    # Pack bytes in x
+    for i in range(len(bytes)):
+
+        # Add ith byte
+        x += bytes[i] * 256 ** i
+
+    return x
+
+
+
+def translate(bytes):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        TRANSLATE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    return "".join([chr(x) for x in bytes])
 
 
 
