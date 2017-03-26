@@ -27,11 +27,18 @@ import os
 import sys
 import datetime
 import serial
+import time
 
 
 
 # USER LIBRARIES
 import lib
+import reporter
+
+
+
+# Define a reporter
+Reporter = reporter.Reporter()
 
 
 
@@ -59,7 +66,7 @@ class CGM(object):
             "PCParameterRecord": PCParameterRecordDatabase(self),
             "Sensor": SensorDatabase(self),
             "BG": BGDatabase(self),
-            "Insertion": InsertionDatabase(self),
+            "Session": SessionDatabase(self),
             "Receiver": ReceiverDatabase(self),
             "Calibration": CalibrationDatabase(self),
             "UserSettings": UserSettingsDatabase(self)}
@@ -748,7 +755,7 @@ class BGDatabase(Database):
 
 
 
-class InsertionDatabase(Database):
+class SessionDatabase(Database):
 
     def __init__(self, cgm):
 
@@ -765,7 +772,7 @@ class InsertionDatabase(Database):
         self.code = 7
 
         # Link with record
-        self.record = InsertionRecord(cgm)
+        self.record = SessionRecord(cgm)
 
 
 
@@ -871,6 +878,9 @@ class Record(object):
             # Decode them
             self.decode()
 
+        # Store records
+        self.store()
+
 
 
     def decode(self):
@@ -885,12 +895,27 @@ class Record(object):
         t = (datetime.timedelta(seconds = lib.pack(self.bytes[-1][4:8])) +
              self.cgm.clock.epoch)
 
-        # Store local time
+        # Format it
+        t = lib.formatTime(t)
+
+        # Store it
         self.t.append(t)
 
         # Give user info
         print "Record bytes: " + str(self.bytes[-1])
         print "Time: " + str(t)
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
 
 
 
@@ -910,15 +935,15 @@ class BGRecord(Record):
         # Define record size
         self.size = 13
 
-        # Define dictionary for trend arrows
-        self.arrows = {1: "↑↑",
+        # Define dictionary for trends
+        self.trends = {1: "↑↑",
                        2: "↑",
                        3: "↗",
                        4: "→",
                        5: "↘",
                        6: "↓",
                        7: "↓↓",
-                       8: "NotComputable",
+                       8: "None",
                        9: "OutOfRange"}
 
 
@@ -935,20 +960,53 @@ class BGRecord(Record):
         super(self.__class__, self).decode()
 
         # Decode BG
-        if self.bytes[-1][8] != 5:
-            BG = round(self.bytes[-1][8] / 18.0, 1)
+        BG = lib.pack(self.bytes[-1][8:10]) & 1023
 
-        else:
+        # Deal with start of sensor
+        if BG == 5:
+
+            # No BG reading
             BG = None
 
-        # Decode trend arrow
-        arrow = self.arrows[self.bytes[-1][10] & 15]
+            # Give user info
+            print "Starting sensor... No readings until double calibration!"
+
+        # Convert BG units from mg/dL to mmol/L
+        else:
+            BG = round(BG / 18.0, 1)
+
+        # Decode trend
+        trend = self.trends[self.bytes[-1][10] & 15]
 
         # Store them
-        self.values.append([BG, arrow])
+        if BG is not None:
+            self.values.append({"BG": BG, "Trend": trend})
 
         # Give user info
-        print "BG: " + str(BG) + " " + str(arrow)
+        print "BG: " + str(BG) + " " + str(trend)
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding BG records to report: 'BG.json'..."
+
+        # Load report
+        Reporter.load("BG.json")
+
+        # Get number of records found
+        n = len(self.values)
+
+        # Add entries
+        for i in range(n):
+            Reporter.addEntry([], self.t[i], self.values[i]["BG"])
 
 
 
@@ -970,7 +1028,7 @@ class SensorRecord(Record):
 
 
 
-class InsertionRecord(Record):
+class SessionRecord(Record):
 
     def __init__(self, cgm):
 
@@ -999,7 +1057,7 @@ class InsertionRecord(Record):
         # Initialize decoding
         super(self.__class__, self).decode()
 
-        # Decode insertion event
+        # Decode session event
         if self.bytes[-1][12] == 7:
             event = "Start"
 
@@ -1010,7 +1068,7 @@ class InsertionRecord(Record):
         self.values.append(event)
 
         # Give user info
-        print "Sensor event: " + str(event)
+        print "Session event: " + str(event)
 
 
 
@@ -1393,12 +1451,12 @@ def main():
     cgm.transmitter.read()
 
     # Read databases
-    cgm.databases["ManufacturingParameters"].read()
+    #cgm.databases["ManufacturingParameters"].read()
     #cgm.databases["FirmwareSettings"].read()
     #cgm.databases["PCParameterRecord"].read()
     #cgm.databases["Sensor"].read()
-    #cgm.databases["BG"].read()
-    #cgm.databases["Insertion"].read()
+    cgm.databases["BG"].read()
+    #cgm.databases["Session"].read()
     #cgm.databases["Receiver"].read()
     #cgm.databases["Calibration"].read()
     #cgm.databases["UserSettings"].read()
