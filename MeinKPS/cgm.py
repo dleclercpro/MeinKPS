@@ -22,16 +22,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# TODO: CRC checks
-
-
-
 # LIBRARIES
 import os
 import sys
 import datetime
 import serial
-import time
 
 
 
@@ -72,7 +67,8 @@ class CGM(object):
             "Sensor": SensorDatabase(self),
             "Receiver": ReceiverDatabase(self),
             "Calibration": CalibrationDatabase(self),
-            "UserSettings": UserSettingsDatabase(self)}
+            "Events": EventsDatabase(self),
+            "Settings": SettingsDatabase(self)}
 
         # Give CGM a battery
         self.battery = Battery(self)
@@ -539,6 +535,7 @@ class Database(object):
 
     # DATABASE CHARACTERISTICS
     headSize = 28
+    emptyRange = [lib.pack([255] * 4)] * 2
 
     def __init__(self, cgm):
 
@@ -556,6 +553,12 @@ class Database(object):
 
         # Initialize database range
         self.range = None
+
+        # Initialize database number of pages
+        self.n = None
+
+        # Initialize database page
+        self.page = None
 
         # Initialize database data
         self.data = None
@@ -593,8 +596,20 @@ class Database(object):
         self.range.append(lib.pack(request.response["Body"][0:4]))
         self.range.append(lib.pack(request.response["Body"][4:8]))
 
-        # Give user info
-        print "Database range: " + str(self.range)
+        # Deal with empty database
+        if self.range == self.emptyRange:
+
+            # Give user info
+            print "Database empty."
+
+            return False
+
+        else:
+
+            # Give user info
+            print "Database range: " + str(self.range)
+
+            return True
 
 
 
@@ -609,56 +624,81 @@ class Database(object):
         # Reset database data
         self.data = []
 
-        # Get database range for selected database
-        self.measure()
+        # Read database range and read database if not empty
+        if self.measure():
 
-        # Get ends of database range
-        start = self.range[0]
-        end = self.range[1]
+            # Get ends of database range
+            start = self.range[0]
+            end = self.range[1]
 
-        # Link to read database request
-        request = self.requests["ReadDatabase"]
+            # Link to read database request
+            request = self.requests["ReadDatabase"]
 
-        # Tell request which database to read from
-        request.database = self.code
+            # Tell request which database to read from
+            request.database = self.code
 
-        # Read database
-        for i in range(start, end + 1):
+            # Read database
+            for i in range(start, end + 1):
+
+                # Reset database page
+                self.page = {"Header": None, "Data": None}
+
+                # Give user info
+                print "Reading database page " + str(i) + "/" + str(end) + "..."
+
+                # Tell request which page to read
+                request.page = i
+
+                # Read page
+                request.execute()
+
+                # Get page
+                self.page["Header"] = request.response["Body"][:self.headSize]
+                self.page["Data"] = request.response["Body"][self.headSize:]
+                
+                # Extend database
+                self.data.extend(self.page["Data"])
+
+                # Analyze page
+                self.analyze()
+
+                # Extract records from page if defined
+                if self.record is not None:
+                    self.record.find(self.page["Data"], self.n)
+
+
+
+    def analyze(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ANALYZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link to header
+        header = self.page["Header"]
+
+        # Get number of records in page
+        self.n = header[4]
+
+        # Give user info
+        print "Number of records in page: " + str(self.n)
+
+        # Get and compute header CRCs
+        expectedCRC = lib.pack(header[-2:])
+        computedCRC = lib.computeCRC16(header[:-2])
+
+        # Give user info
+        print "Expected header CRC: " + str(expectedCRC)
+        print "Computed header CRC: " + str(computedCRC)
+
+        # Exit if CRCs mismatch
+        if computedCRC != expectedCRC:
 
             # Give user info
-            print "Reading database page " + str(i) + "/" + str(end) + "..."
-
-            # Tell request which page to read
-            request.page = i
-
-            # Read page
-            request.execute()
-
-            # Get page
-            page = request.response["Body"]
-
-            # Extract page header
-            header = page[:self.headSize]
-
-            # Get number of records in page
-            n = header[4]
-
-            # Get CRC
-            CRC = header[-2:]
-
-            # Give user info
-            print "Number of records in page: " + str(n)
-            print "Header CRC: " + str(CRC)
-
-            # Get actual page of data
-            page = page[self.headSize:]
-            
-            # Extend database
-            self.data.extend(page)
-
-            # Extract records from page if defined
-            if self.record is not None:
-                self.record.find(page, n)
+            sys.exit("Expected and computed header CRCs do not match. " +
+                     "Exiting...")
 
 
 
@@ -797,7 +837,28 @@ class CalibrationDatabase(Database):
 
 
 
-class UserSettingsDatabase(Database):
+class EventsDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(cgm)
+
+        # Define database code
+        self.code = 11
+
+        # Link with record
+        self.record = EventRecord(cgm)
+
+
+
+class SettingsDatabase(Database):
 
     def __init__(self, cgm):
 
@@ -854,6 +915,9 @@ class Record(object):
             # Extract ith record's bytes
             bytes = page[i * self.size: (i + 1) * self.size]
 
+            # Give user info
+            print "Record bytes: " + str(bytes)
+
             # Store them
             self.bytes.append(bytes)
 
@@ -873,6 +937,9 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Verify packet before decoding
+        self.verify()
+
         # Decode local time
         t = (datetime.timedelta(seconds = lib.pack(self.bytes[-1][4:8])) +
              self.cgm.clock.epoch)
@@ -884,8 +951,31 @@ class Record(object):
         self.t.append(t)
 
         # Give user info
-        print "Record bytes: " + str(self.bytes[-1])
         print "Time: " + str(t)
+
+
+
+    def verify(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode and compute CRCs
+        expectedCRC = lib.pack(self.bytes[-1][-2:])
+        computedCRC = lib.computeCRC16(self.bytes[-1][:-2])
+
+        # Give user info
+        print "Expected CRC: " + str(expectedCRC)
+        print "Computed CRC: " + str(computedCRC)
+
+        # Exit if CRCs mismatch
+        if computedCRC != expectedCRC:
+
+            # Give user info
+            sys.exit("Expected and computed CRCs do not match. Exiting...")
 
 
 
@@ -951,7 +1041,7 @@ class BGRecord(Record):
             BG = None
 
             # Give user info
-            print "Starting sensor... No readings until double calibration!"
+            print "Starting sensor... No readings until double calibration."
 
         # Convert BG units from mg/dL to mmol/L
         else:
@@ -1073,6 +1163,37 @@ class CalibrationRecord(Record):
 
         # Give user info
         print "BG: " + str(BG) + " " + self.cgm.units.value
+
+
+
+class EventRecord(Record):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(self.__class__, self).__init__(cgm)
+
+        # Define record size
+        self.size = 20
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize decoding
+        super(self.__class__, self).decode()
 
 
 
@@ -1397,22 +1518,22 @@ def main():
     cgm.connect()
 
     # Read battery
-    #cgm.battery.read()
+    cgm.battery.read()
 
     # Read language
-    #cgm.language.read()
+    cgm.language.read()
 
     # Read clock
-    #cgm.clock.read()
+    cgm.clock.read()
 
     # Read units
-    #cgm.units.read()
+    cgm.units.read()
 
     # Read firmware
-    #cgm.firmware.read()
+    cgm.firmware.read()
 
     # Read transmitter
-    #cgm.transmitter.read()
+    cgm.transmitter.read()
 
     # Read databases
     #cgm.databases["ManufacturingParameters"].read()
@@ -1422,7 +1543,8 @@ def main():
     #cgm.databases["Sensor"].read()
     #cgm.databases["Receiver"].read()
     #cgm.databases["Calibration"].read()
-    #cgm.databases["UserSettings"].read()
+    #cgm.databases["Events"].read()
+    #cgm.databases["Settings"].read()
 
     # End connection with CGM
     cgm.disconnect()
