@@ -47,9 +47,8 @@ class Reporter:
         # Set source path to reports
         self.source = "./Reports/"
 
-        # Initialize looked up sections
-        self.section = [] # Should not be equal to last one!
-        self.lastSection = None
+        # Initialize section
+        self.section = []
 
 
 
@@ -257,17 +256,13 @@ class Reporter:
 
 
 
-    def addEntry(self, path, key, entry):
+    def addEntry(self, path, key, entry, overwrite = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             ADDENTRY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # FIXME
-        # Look if trying to add entry in an already found section
-        #if self.section != self.lastSection:
 
         # Load report section
         self.getSection(path, True)
@@ -277,7 +272,7 @@ class Reporter:
                str(key) + " > " + json.dumps(entry))
 
         # Look if entry is already in report
-        if key in self.section:
+        if key in self.section and not overwrite:
 
             # Give user info
             print "Entry already exists."
@@ -293,9 +288,6 @@ class Reporter:
 
             # Rewrite report
             self.save()
-
-        # Store last section in which entries were added
-        self.lastSection = self.section
 
 
 
@@ -416,11 +408,8 @@ class Reporter:
         # Load report
         self.load("pump.json")
 
-        # Remove old entry
-        self.delete([], "Power")
-
         # Add entry
-        self.addEntry([], "Power", t)
+        self.addEntry([], "Power", t, True)
 
 
 
@@ -438,11 +427,8 @@ class Reporter:
         # Load report
         self.load("pump.json")
 
-        # Remove old entry
-        self.delete([], "Model")
-
         # Add entry
-        self.addEntry([], "Model", model)
+        self.addEntry([], "Model", model, True)
 
 
 
@@ -460,11 +446,8 @@ class Reporter:
         # Load report
         self.load("pump.json")
 
-        # Remove old entry
-        self.delete([], "Firmware")
-
         # Add entry
-        self.addEntry([], "Firmware", firmware)
+        self.addEntry([], "Firmware", firmware, True)
 
 
 
@@ -477,16 +460,13 @@ class Reporter:
         """
 
         # Give user info
-        print "Adding pump settings to report: 'profile.json'..."
+        print "Adding pump settings to report: 'pump.json'..."
 
         # Load report
-        self.load("profile.json")
-
-        # Remove old entry
-        self.delete([], "Settings")
+        self.load("pump.json")
 
         # Add entry
-        self.addEntry([], "Settings", settings)
+        self.addEntry([], "Settings", settings, True)
 
 
 
@@ -499,10 +479,10 @@ class Reporter:
         """
 
         # Give user info
-        print "Adding ISF to report: 'profile.json'..."
+        print "Adding ISF to report: 'pump.json'..."
 
         # Load report
-        self.load("profile.json")
+        self.load("pump.json")
 
         # Define path
         path = ["ISF (" + units + ")"]
@@ -510,7 +490,7 @@ class Reporter:
         # Remove old entries
         self.delete([], path[0])
 
-        # Read number of entries to add (if 0, no entries will be added)
+        # Read number of entries to add
         n = len(factors)
 
         # Add entries
@@ -528,10 +508,10 @@ class Reporter:
         """
 
         # Give user info
-        print "Adding CSF to report: 'profile.json'..."
+        print "Adding CSF to report: 'pump.json'..."
 
         # Load report
-        self.load("profile.json")
+        self.load("pump.json")
 
         # Define path
         path = ["CSF (" + units + ")"]
@@ -539,7 +519,7 @@ class Reporter:
         # Remove old entries
         self.delete([], path[0])
 
-        # Read number of entries to add (if 0, no entries will be added)
+        # Read number of entries to add
         n = len(factors)
 
         # Add entries
@@ -557,10 +537,10 @@ class Reporter:
         """
 
         # Give user info
-        print "Adding BG targets to report: 'profile.json'..."
+        print "Adding BG targets to report: 'pump.json'..."
 
         # Load report
-        self.load("profile.json")
+        self.load("pump.json")
 
         # Define path
         path = ["BG Targets (" + units + ")"]
@@ -568,7 +548,7 @@ class Reporter:
         # Remove old entries
         self.delete([], path[0])
 
-        # Read number of entries to add (if 0, no entries will be added)
+        # Read number of entries to add
         n = len(targets)
 
         # Add entries
@@ -591,11 +571,8 @@ class Reporter:
         # Load report
         self.load("pump.json")
 
-        # Remove old entry
-        self.delete([], "BG Units")
-
         # Add entry
-        self.addEntry([], "BG Units", BGU)
+        self.addEntry([], "BG Units", BGU, True)
 
 
 
@@ -613,11 +590,8 @@ class Reporter:
         # Load report
         self.load("pump.json")
 
-        # Remove old entry
-        self.delete([], "Carb Units")
-
         # Add entry
-        self.addEntry([], "Carb Units", CU)
+        self.addEntry([], "Carb Units", CU, True)
 
 
 
