@@ -272,10 +272,6 @@ class Request(object):
         # Initialize request response
         self.response = None
 
-        # Initialize request CRCs
-        self.expectedCRC = None
-        self.computedCRC = None
-
         # Give the request a packet
         self.packet = Packet()
 
@@ -322,14 +318,33 @@ class Request(object):
         # Third read
         self.response["CRC"] = self.cgm.read(2)
 
-        # CRC computation and verification
-        self.expectedCRC = lib.pack(self.response["CRC"])
-        self.computedCRC = lib.computeCRC16(self.response["Head"] +
-                                            self.response["Body"])
+        # Verify response
+        self.verify()
+
+
+
+    def verify(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get and compute response CRCs
+        expectedCRC = lib.pack(self.response["CRC"])
+        computedCRC = lib.computeCRC16(self.response["Head"] +
+                                       self.response["Body"])
 
         # Give user info
-        print "Expected CRC: " + str(self.expectedCRC)
-        print "Computed CRC: " + str(self.computedCRC)
+        print "Expected CRC: " + str(expectedCRC)
+        print "Computed CRC: " + str(computedCRC)
+
+        # Exit if CRCs mismatch
+        if computedCRC != expectedCRC:
+
+            # Give user info
+            sys.exit("Expected and computed CRCs do not match. Exiting...")
 
 
 
@@ -659,8 +674,14 @@ class Database(object):
                 # Extend database
                 self.data.extend(self.page["Data"])
 
-                # Analyze page
-                self.analyze()
+                # Verify page
+                self.verify()
+
+                # Get number of records in page
+                self.n = self.page["Header"][4]
+
+                # Give user info
+                print "Number of records in page: " + str(self.n)
 
                 # Extract records from page if defined
                 if self.record is not None:
@@ -668,22 +689,16 @@ class Database(object):
 
 
 
-    def analyze(self):
+    def verify(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ANALYZE
+            VERIFY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Link to header
         header = self.page["Header"]
-
-        # Get number of records in page
-        self.n = header[4]
-
-        # Give user info
-        print "Number of records in page: " + str(self.n)
 
         # Get and compute header CRCs
         expectedCRC = lib.pack(header[-2:])
@@ -921,37 +936,14 @@ class Record(object):
             # Store them
             self.bytes.append(bytes)
 
+            # Verify them
+            self.verify()
+
             # Decode them
             self.decode()
 
         # Store records
         self.store()
-
-
-
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Verify packet before decoding
-        self.verify()
-
-        # Decode local time
-        t = (datetime.timedelta(seconds = lib.pack(self.bytes[-1][4:8])) +
-             self.cgm.clock.epoch)
-
-        # Format it
-        t = lib.formatTime(t)
-
-        # Store it
-        self.t.append(t)
-
-        # Give user info
-        print "Time: " + str(t)
 
 
 
@@ -976,6 +968,29 @@ class Record(object):
 
             # Give user info
             sys.exit("Expected and computed CRCs do not match. Exiting...")
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode local time
+        t = (datetime.timedelta(seconds = lib.pack(self.bytes[-1][4:8])) +
+             self.cgm.clock.epoch)
+
+        # Format it
+        t = lib.formatTime(t)
+
+        # Store it
+        self.t.append(t)
+
+        # Give user info
+        print "Time: " + str(t)
 
 
 
@@ -1079,11 +1094,14 @@ class BGRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "BG.json"
+
         # Give user info
-        print "Adding BG records to report: 'BG.json'..."
+        print "Adding BG records to report: '" + report + "'..."
 
         # Load report
-        Reporter.load("BG.json")
+        Reporter.load(report)
 
         # Get number of records found
         n = len(self.values)
@@ -1138,6 +1156,33 @@ class SensorRecord(Record):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "CGM.json"
+
+        # Give user info
+        print "Adding sensor events to report: '" + report + "'..."
+
+        # Load report
+        Reporter.load(report)
+
+        # Get number of records found
+        n = len(self.values)
+
+        # Add entries
+        for i in range(n):
+            Reporter.addEntry(["Sensor Events"],
+                              self.t[i], self.values[i])
+
+
+
 class CalibrationRecord(Record):
 
     def __init__(self, cgm):
@@ -1175,6 +1220,32 @@ class CalibrationRecord(Record):
 
         # Give user info
         print "BG: " + str(BG) + " " + self.cgm.units.value
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "CGM.json"
+
+        # Give user info
+        print "Adding sensor calibrations to report: '" + report + "'..."
+
+        # Load report
+        Reporter.load(report)
+
+        # Get number of records found
+        n = len(self.values)
+
+        # Add entries
+        for i in range(n):
+            Reporter.addEntry(["Calibrations"], self.t[i], self.values[i])
 
 
 
@@ -1219,6 +1290,9 @@ class Battery(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize current time
+        self.t = None
+
         # Initialize battery level
         self.level = None
 
@@ -1245,13 +1319,19 @@ class Battery(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get current time
+        self.t = datetime.datetime.now()
+
+        # Format current time
+        self.t = lib.formatTime(self.t)
+
         # Link to request
         request = self.requests["ReadLevel"]
 
         # Execute request
         request.execute()
 
-        # Store response
+        # Assign response
         self.level = str(lib.pack(request.response["Body"])) + "%"
 
         # Give user info
@@ -1263,11 +1343,36 @@ class Battery(object):
         # Execute request
         request.execute()
 
-        # Store response
+        # Assign response
         self.state = self.states[lib.pack(request.response["Body"])]
 
         # Give user info
         print "Battery state: " + self.state
+
+        # Store battery level
+        self.store()
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "CGM.json"
+
+        # Give user info
+        print "Storing BG units to report: '" + report + "'..."
+
+        # Load report
+        Reporter.load(report)
+
+        # Add entry
+        Reporter.addEntry(["Battery Levels"], self.t, self.level)
 
 
 
@@ -1321,11 +1426,36 @@ class Language(object):
         # Execute request
         request.execute()
 
-        # Store response
+        # Assign response
         self.value = self.values[lib.pack(request.response["Body"])]
 
         # Give user info
         print "Language: " + self.value
+
+        # Store it
+        self.store()
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "CGM.json"
+
+        # Give user info
+        print "Storing language to report: '" + report + "'..."
+
+        # Load report
+        Reporter.load(report)
+
+        # Add entry
+        Reporter.addEntry([], "Language", self.value, True)
 
 
 
@@ -1374,7 +1504,7 @@ class Clock(object):
         # Compute time delta since epoch
         delta = datetime.timedelta(seconds = lib.pack(request.response["Body"]))
 
-        # Store response
+        # Assign response
         self.systemTime = self.epoch + delta
 
         # Give user info
@@ -1386,11 +1516,36 @@ class Clock(object):
         # Execute request
         request.execute()
 
-        # Store response
+        # Assign response
         self.mode = self.modes[lib.pack(request.response["Body"])]
 
         # Give user info
         print "Clock mode: " + self.mode
+
+        # Store clock mode
+        self.store()
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "CGM.json"
+
+        # Give user info
+        print "Storing clock mode to report: '" + report + "'..."
+
+        # Load report
+        Reporter.load(report)
+
+        # Add entry
+        Reporter.addEntry([], "Clock Mode", self.mode, True)
 
 
 
@@ -1429,11 +1584,36 @@ class Units(object):
         # Execute request
         request.execute()
 
-        # Store response
+        # Assign response
         self.value = self.values[lib.pack(request.response["Body"])]
 
         # Give user info
         print "Units: " + self.value
+
+        # Store it
+        self.store()
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "CGM.json"
+
+        # Give user info
+        print "Storing BG units to report: '" + report + "'..."
+
+        # Load report
+        Reporter.load(report)
+
+        # Add entry
+        Reporter.addEntry([], "Units", self.value, True)
 
 
 
@@ -1507,11 +1687,36 @@ class Transmitter(object):
         # Execute request
         request.execute()
 
-        # Store response
+        # Assign response
         self.id = lib.translate(request.response["Body"])
 
         # Give user info
         print "Transmitter ID: " + str(self.id)
+
+        # Store it
+        self.store()
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "CGM.json"
+
+        # Give user info
+        print "Storing current transmitter ID to report: '" + report + "'..."
+
+        # Load report
+        Reporter.load(report)
+
+        # Add entry
+        Reporter.addEntry([], "Transmitter ID", self.id, True)
 
 
 
@@ -1548,15 +1753,15 @@ def main():
     cgm.transmitter.read()
 
     # Read databases
-    #cgm.databases["ManufacturingParameters"].read()
-    #cgm.databases["FirmwareSettings"].read()
-    #cgm.databases["PCParameterRecord"].read()
-    #cgm.databases["BG"].read()
-    #cgm.databases["Sensor"].read()
-    #cgm.databases["Receiver"].read()
-    #cgm.databases["Calibration"].read()
-    #cgm.databases["Events"].read()
-    #cgm.databases["Settings"].read()
+    cgm.databases["ManufacturingParameters"].read()
+    cgm.databases["FirmwareSettings"].read()
+    cgm.databases["PCParameterRecord"].read()
+    cgm.databases["BG"].read()
+    cgm.databases["Sensor"].read()
+    cgm.databases["Receiver"].read()
+    cgm.databases["Calibration"].read()
+    cgm.databases["Events"].read()
+    cgm.databases["Settings"].read()
 
     # End connection with CGM
     cgm.disconnect()
