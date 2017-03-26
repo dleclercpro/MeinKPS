@@ -64,9 +64,8 @@ class CGM(object):
             "ManufacturingParameters": ManufacturingParametersDatabase(self),
             "FirmwareSettings": FirmwareSettingsDatabase(self),
             "PCParameterRecord": PCParameterRecordDatabase(self),
-            "Sensor": SensorDatabase(self),
             "BG": BGDatabase(self),
-            "Session": SessionDatabase(self),
+            "Sensor": SensorDatabase(self),
             "Receiver": ReceiverDatabase(self),
             "Calibration": CalibrationDatabase(self),
             "UserSettings": UserSettingsDatabase(self)}
@@ -713,27 +712,6 @@ class PCParameterRecordDatabase(Database):
 
 
 
-class SensorDatabase(Database):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(self.__class__, self).__init__(cgm)
-
-        # Define database code
-        self.code = 3
-
-        # Link with record
-        self.record = SensorRecord(cgm)
-
-
-
 class BGDatabase(Database):
 
     def __init__(self, cgm):
@@ -755,7 +733,7 @@ class BGDatabase(Database):
 
 
 
-class SessionDatabase(Database):
+class SensorDatabase(Database):
 
     def __init__(self, cgm):
 
@@ -772,7 +750,7 @@ class SessionDatabase(Database):
         self.code = 7
 
         # Link with record
-        self.record = SessionRecord(cgm)
+        self.record = SensorRecord(cgm)
 
 
 
@@ -1024,24 +1002,6 @@ class SensorRecord(Record):
         super(self.__class__, self).__init__(cgm)
 
         # Define record size
-        self.size = 20
-
-
-
-class SessionRecord(Record):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize record
-        super(self.__class__, self).__init__(cgm)
-
-        # Define record size
         self.size = 15
 
 
@@ -1057,7 +1017,7 @@ class SessionRecord(Record):
         # Initialize decoding
         super(self.__class__, self).decode()
 
-        # Decode session event
+        # Decode sensor event
         if self.bytes[-1][12] == 7:
             event = "Start"
 
@@ -1068,7 +1028,7 @@ class SessionRecord(Record):
         self.values.append(event)
 
         # Give user info
-        print "Session event: " + str(event)
+        print "Sensor event: " + str(event)
 
 
 
@@ -1135,8 +1095,8 @@ class Battery(object):
                        4: "BadBattery"}
 
         # Define request(s)
-        self.requests = {"ReadBatteryLevel": ReadBatteryLevelRequest(cgm),
-                         "ReadBatteryState": ReadBatteryStateRequest(cgm)}
+        self.requests = {"ReadLevel": ReadBatteryLevelRequest(cgm),
+                         "ReadState": ReadBatteryStateRequest(cgm)}
 
 
 
@@ -1149,7 +1109,7 @@ class Battery(object):
         """
 
         # Link to request
-        request = self.requests["ReadBatteryLevel"]
+        request = self.requests["ReadLevel"]
 
         # Execute request
         request.execute()
@@ -1161,7 +1121,7 @@ class Battery(object):
         print "Battery level: " + self.level
 
         # Link to battery state request
-        request = self.requests["ReadBatteryState"]
+        request = self.requests["ReadState"]
 
         # Execute request
         request.execute()
@@ -1351,8 +1311,8 @@ class Firmware(object):
         """
 
         # Define request(s)
-        self.requests = {"ReadFirmwareHeader": ReadFirmwareHeaderRequest(cgm),
-                         "ReadFirmwareSettings": ReadFirmwareSettingsRequest(cgm)}
+        self.requests = {"ReadHeader": ReadFirmwareHeaderRequest(cgm),
+                         "ReadSettings": ReadFirmwareSettingsRequest(cgm)}
 
 
 
@@ -1365,13 +1325,13 @@ class Firmware(object):
         """
 
         # Link to request
-        request = self.requests["ReadFirmwareHeader"]
+        request = self.requests["ReadHeader"]
 
         # Execute request
         request.execute()
 
         # Link to request
-        request = self.requests["ReadFirmwareSettings"]
+        request = self.requests["ReadSettings"]
 
         # Execute request
         request.execute()
@@ -1433,30 +1393,29 @@ def main():
     cgm.connect()
 
     # Read battery
-    cgm.battery.read()
+    #cgm.battery.read()
 
     # Read language
-    cgm.language.read()
+    #cgm.language.read()
 
     # Read clock
-    cgm.clock.read()
+    #cgm.clock.read()
 
     # Read units
-    cgm.units.read()
+    #cgm.units.read()
 
     # Read firmware
-    cgm.firmware.read()
+    #cgm.firmware.read()
 
     # Read transmitter
-    cgm.transmitter.read()
+    #cgm.transmitter.read()
 
     # Read databases
     #cgm.databases["ManufacturingParameters"].read()
     #cgm.databases["FirmwareSettings"].read()
     #cgm.databases["PCParameterRecord"].read()
+    #cgm.databases["BG"].read()
     #cgm.databases["Sensor"].read()
-    cgm.databases["BG"].read()
-    #cgm.databases["Session"].read()
     #cgm.databases["Receiver"].read()
     #cgm.databases["Calibration"].read()
     #cgm.databases["UserSettings"].read()
