@@ -1018,6 +1018,20 @@ class BGRecord(Record):
                        8: "None",
                        9: "OutOfRange"}
 
+        # Define dictionary for special values
+        self.special = {0: None,
+                        1: 'SensorInactive',
+                        2: 'MinimalDeviation',
+                        3: 'NoAntenna',
+                        5: 'SensorInitialization',
+                        6: 'DeviationCount',
+                        9: 'AbsoluteDeviation',
+                        10: 'PowerDeviation',
+                        12: 'BadRF'}
+
+        # Define if conversion from mg/dL to mmol/L is needed
+        self.convert = True
+
 
 
     def decode(self):
@@ -1034,28 +1048,26 @@ class BGRecord(Record):
         # Decode BG
         BG = lib.pack(self.bytes[-1][8:10]) & 1023
 
-        # Deal with start of sensor
-        if BG == 5:
-
-            # No BG reading
-            BG = None
+        # Deal with special values
+        if BG in self.special:
 
             # Give user info
-            print "Starting sensor... No readings until double calibration."
+            print "Special value: " + self.special[BG]
 
-        # Convert BG units from mg/dL to mmol/L
         else:
-            BG = round(BG / 18.0, 1)
 
-        # Decode trend
-        trend = self.trends[self.bytes[-1][10] & 15]
+            # Convert BG units if desired
+            if self.convert:
+                BG = round(BG / 18.0, 1)
 
-        # Store them
-        if BG is not None:
+            # Decode trend
+            trend = self.trends[self.bytes[-1][10] & 15]
+
+            # Store them
             self.values.append({"BG": BG, "Trend": trend})
 
-        # Give user info
-        print "BG: " + str(BG) + " " + str(trend)
+            # Give user info
+            print "BG: " + str(BG) + " " + str(trend)
 
 
 
