@@ -299,11 +299,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding battery level to report: 'pump.json'..."
+        print "Adding battery level to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry(["Battery Levels"], t, value)
@@ -318,11 +321,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding reservoir level to report: 'pump.json'..."
+        print "Adding reservoir level to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry(["Reservoir Levels"], t, level)
@@ -337,11 +343,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "treatments.json"
+
         # Give user info
-        print "Adding boluses to report: 'treatments.json'..."
+        print "Adding boluses to report: '" + report + "'..."
 
         # Load report
-        self.load("treatments.json")
+        self.load(report)
 
         # Read number of entries to add
         n = len(boluses)
@@ -360,11 +369,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "treatments.json"
+
         # Give user info
-        print "Adding carbs to report: 'treatments.json'..."
+        print "Adding carbs to report: '" + report + "'..."
 
         # Load report
-        self.load("treatments.json")
+        self.load(report)
 
         # Read number of entries to add
         n = len(carbs)
@@ -383,11 +395,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "treatments.json"
+
         # Give user info
-        print "Adding TBR to report: 'treatments.json'..."
+        print "Adding TBR to report: '" + report + "'..."
 
         # Load report
-        self.load("treatments.json")
+        self.load(report)
 
         # Add entry
         self.addEntry(["Temporary Basals"], t, [rate, units, duration])
@@ -402,11 +417,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding pump radio's last power up to report: 'pump.json'..."
+        print "Adding pump radio's last power up to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry([], "Power", t, True)
@@ -421,11 +439,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding pump model to report: 'pump.json'..."
+        print "Adding pump model to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry([], "Model", model, True)
@@ -440,11 +461,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding pump firmware to report: 'pump.json'..."
+        print "Adding pump firmware to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry([], "Firmware", firmware, True)
@@ -459,11 +483,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding pump settings to report: 'pump.json'..."
+        print "Adding pump settings to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry([], "Settings", settings, True)
@@ -478,11 +505,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding ISF to report: 'pump.json'..."
+        print "Adding ISF to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Define path
         path = ["ISF (" + units + ")"]
@@ -507,11 +537,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding CSF to report: 'pump.json'..."
+        print "Adding CSF to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Define path
         path = ["CSF (" + units + ")"]
@@ -532,15 +565,18 @@ class Reporter:
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        STOREBGTargets
+        STOREBGTARGETS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding BG targets to report: 'pump.json'..."
+        print "Adding BG targets to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Define path
         path = ["BG Targets (" + units + ")"]
@@ -557,6 +593,38 @@ class Reporter:
 
 
 
+    def storeBasalProfile(self, t, rates):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        STOREBASALPROFILE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        report = "pump.json"
+
+        # Give user info
+        print "Adding basal profile to report: '" + report + "'..."
+
+        # Load report
+        self.load(report)
+
+        # Define path
+        path = ["Basal Profile"]
+
+        # Remove old entries
+        self.delete([], path[0])
+
+        # Read number of entries to add
+        n = len(rates)
+
+        # Add entries
+        for i in range(n):
+            self.addEntry(path, t[i], rates[i])
+
+
+
     def storeBGU(self, BGU):
 
         """
@@ -565,11 +633,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding pump BG units to report: 'pump.json'..."
+        print "Adding pump BG units to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry([], "BG Units", BGU, True)
@@ -584,11 +655,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report
+        report = "pump.json"
+
         # Give user info
-        print "Adding pump carb units to report: 'pump.json'..."
+        print "Adding pump carb units to report: '" + report + "'..."
 
         # Load report
-        self.load("pump.json")
+        self.load(report)
 
         # Add entry
         self.addEntry([], "Carb Units", CU, True)

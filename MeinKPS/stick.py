@@ -67,11 +67,8 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Generate serial port handle
-        self.handle = serial.Serial(port = "/dev/ttyUSB0",
-                                    rtscts = True,
-                                    dsrdtr = True,
-                                    timeout = self.timeout)
+        # Initialize handle
+        self.handle = None
 
         # Give the stick a signal
         self.signal = Signal(self)
@@ -95,12 +92,28 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Add serial port
-        os.system("modprobe --quiet --first-time usbserial"
-            + " vendor=" + str(self.vendor)
-            + " product=" + str(self.product))
+        # TODO: detection of stick's existence
 
-        # Verify if stick is plugged in        
+        # Define serial port
+        os.system("modprobe --quiet --first-time usbserial" + " " +
+                  "vendor=" + str(self.vendor) + " " +
+                  "product=" + str(self.product))
+
+        # Try defining handle
+        try:
+
+            # Define handle
+            self.handle = serial.Serial(port = "/dev/ttyUSB0",
+                                        rtscts = True,
+                                        dsrdtr = True,
+                                        timeout = self.timeout)
+
+        except:
+
+            # Raise error
+            raise errors.NoStick
+
+        # Try opening serial port
         try:
 
             # Open serial port
@@ -108,8 +121,8 @@ class Stick(object):
 
         except:
 
-            # Raise error
-            raise errors.NoStick
+            # Give user info
+            print "Port already opened."
 
         # Before anything, make sure buffer is empty
         self.empty()

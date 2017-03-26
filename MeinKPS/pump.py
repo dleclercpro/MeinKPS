@@ -82,11 +82,11 @@ class Pump(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize handle
+        self.handle = None
+
         # Give the pump a stick
         self.stick = stick.Stick()
-
-        # Link the pump to the stick's handle
-        self.handle = self.stick.handle
 
         # Give the pump a power instance
         self.power = Power(self)
@@ -123,6 +123,9 @@ class Pump(object):
         # Give the pump a BG targets instance
         self.BGTargets = BGTargets(self)
 
+        # Give the pump a basal profile instance
+        self.basalProfile = BasalProfile(self)
+
         # Give the pump an ISF instance
         self.ISF = ISF(self)
 
@@ -156,6 +159,9 @@ class Pump(object):
 
         # Start stick
         self.stick.start()
+
+        # Link the pump to the stick's handle
+        self.handle = self.stick.handle
 
         # Power pump's radio transmitter if necessary
         self.power.verify()
@@ -946,6 +952,54 @@ class BGTargets(object):
 
 
 
+class BasalProfile(object):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize insulin sensitivity factors, times, and units
+        self.values = []
+        self.times = []
+        self.units = None
+
+        # Link with its respective command
+        self.command = commands.ReadPumpBasalProfile(pump, self)
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Prepare command
+        self.command.prepare()
+
+        # Do command
+        self.command.do()
+
+        # Store insulin sensitivities factors to pump report
+        Reporter.storeBasalProfile(self.times, self.values)
+
+        # Get number of rates read
+        n = len(self.values)
+
+        # Give user info
+        print "Found " + str(n) + " bolus profile entries:"
+
+        for i in range(n):
+            print (self.times[i] + " - " + str(self.values[i]) + " U/h")
+
+
+
 class ISF(object):
 
     def __init__(self, pump):
@@ -1496,7 +1550,7 @@ def main():
     #pump.firmware.read()
 
     # Read pump battery level
-    pump.battery.read()
+    #pump.battery.read()
 
     # Read remaining amount of insulin in pump
     #pump.reservoir.read()
@@ -1535,6 +1589,9 @@ def main():
 
     # Read carb sensitivity factors stored in pump
     #pump.CSF.read()
+
+    # Read basal profile stored in pump
+    #pump.basalProfile.read()
 
     # Read daily totals on pump
     #pump.dailyTotals.read()

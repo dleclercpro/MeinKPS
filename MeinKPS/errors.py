@@ -153,21 +153,6 @@ class NoStick(StickError):
 
 
 
-class NoResponse(StickError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = "No stick detected. Are you sure it's plugged in?"
-
-
-
 # Requester related errors
 class NoDevice(RequesterError):
 

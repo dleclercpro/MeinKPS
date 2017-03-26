@@ -434,6 +434,50 @@ class Decoder:
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 	READPUMPBASALPROFILE
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elif command == "ReadPumpBasalProfile":
+
+            # Initialize index as well as factors and times vectors
+            i = 0
+            rates = []
+            times = []
+
+            # Extract insulin sensitivity factors
+            while True:
+
+                # Define start (a) and end (b) indexes of current rate based on
+                # number of bytes per entry
+                n = 3
+                a = n * i
+                b = a + n
+
+                # Get current factor entry
+                entry = bytes[a:b]
+
+                # Exit condition: no more factors stored
+                if not sum(entry):
+                    break
+
+                else:
+                    # Decode entry
+                    rate = entry[0] / 40.0
+                    time = entry[2] * self.device.TBR.timeBlock
+
+                    # Format time
+                    time = (str(time / 60).zfill(2) + ":" +
+                            str(time % 60).zfill(2))
+
+                    # Store decoded rate and its corresponding begining time
+                    self.target.values.append(rate)
+                    self.target.times.append(time)
+
+                # Increment index
+                i += 1
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 	READDAILYTOTALS
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         elif command == "ReadPumpDailyTotals":

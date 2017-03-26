@@ -501,6 +501,8 @@ class Requester:
         # Give user info
         print "Downloaded data in " + str(n) + " attempt(s)."
 
+        print self.data
+
 
 
     def make(self):

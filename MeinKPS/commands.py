@@ -546,6 +546,30 @@ class ReadPumpCSF(PumpCommand):
 
 
 
+class ReadPumpBasalProfile(PumpCommand):
+
+    def __init__(self, pump, target):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(self.__class__, self).__init__(pump, target)
+
+        # Define request info
+        self.info = "Reading pump's basal profile..."
+
+        # Define request bytes
+        self.size = 2
+        self.code = 146 # Standard
+        #self.code = 147 # A
+        #self.code = 148 # B
+
+
+
 class ReadPumpDailyTotals(PumpCommand):
 
     def __init__(self, pump, target):
