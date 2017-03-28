@@ -542,6 +542,521 @@ class Requester:
 
 
 
+class Packet(object):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize packet
+        self.bytes = None
+
+
+
+    def set(self, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Set packet
+        self.bytes = bytes
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset packet bytes
+        self.bytes = []
+
+
+
+class StickPacket(Packet):
+    pass
+
+
+
+class PumpPacket(Packet):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Initialize packet characteristics
+        self.serial = None
+        self.power = None
+        self.attempts = None
+        self.size = None
+        self.code = None
+        self.parameters = None
+
+
+
+    def build(self, packetType):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            BUILD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset packet
+        self.reset()
+
+        # Normal packet
+        if packetType == "Normal":
+
+            # Build packet
+            self.bytes.extend([1, 0, 167, 1])
+            self.bytes.extend(self.serial)
+            self.bytes.append(128 | lib.getByte(len(self.parameters), 1))
+            self.bytes.append(lib.getByte(len(self.parameters), 0))
+            self.bytes.append(self.power)
+            self.bytes.append(self.attempts)
+            self.bytes.append(self.size)
+            self.bytes.append(0)
+            self.bytes.append(self.code)
+
+            # Compute and add packet CRC
+            self.bytes.append(lib.computeCRC8(self.bytes))
+
+            # Build packet
+            self.bytes.extend(self.parameters)
+
+            # Compute and add parameters CRC
+            self.bytes.append(lib.computeCRC8(self.parameters))
+
+        # Poll packet
+        elif packetType == "Poll":
+
+            # Build packet
+            self.bytes.extend([3, 0, 0])
+
+        # Download packet
+        elif packetType == "Download":
+
+            # Build packet
+            self.bytes.extend([12, 0])
+            self.bytes.append(lib.getByte(self.nBytesExpected, 1))
+            self.bytes.append(lib.getByte(self.nBytesExpected, 0))
+
+            # Compute and add packet CRC
+            self.bytes.append(lib.computeCRC8(self.bytes))
+
+
+
+class Command(object):
+
+    def __init__(self, stick):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give command a packet
+        self.packet = Packet()
+
+        # Initialize info
+        self.info = None
+
+        # Initialize response
+        self.response = None
+
+        # Initialize downloaded data
+        self.data = None
+
+        # Initialize byte counts
+        self.nBytesDefault = 64
+        self.nBytesExpected = 0
+        self.nBytesReceived = 0
+        self.EOD = 128
+
+        # Initialize attempts
+        self.nPollAttempts = 100
+
+        # Initialize times
+        self.writeSleep = 0
+        self.readSleep = 0
+        self.commandSleep = 0.1
+        self.pollSleep = 0.1        
+
+        # Link with stick
+        self.stick = stick
+
+
+
+    def send(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Sending packet: " + str(self.packet.bytes)
+
+        # Send request packet as bytes to device
+        self.stick.write(self.packet.bytes)
+
+        # Give device some time to respond
+        time.sleep(self.writeSleep)
+
+
+
+    def receive(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RECEIVE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decide on number of bytes to read. If less bytes expected than usual,
+        # set to default value. Otherwise, read expected number of bytes.
+        nBytes = self.nBytesExpected or self.nBytesDefault
+
+        # Give user info
+        print "Trying to read " + str(nBytes) + " bytes from device..."
+
+        # Initialize reading attempt variable
+        n = 0
+
+        # Read until there is a response
+        while True:
+
+            # Update reading attempt variable
+            n += 1
+
+            print "Reading attempt: " + str(n) + "/-"
+
+            # Read raw request response from device
+            rawResponse = self.stick.read(nBytes)
+
+            # Exit condition
+            if len(rawResponse) > 0:
+
+                break
+
+            else:
+
+                # Give device a break before reading again
+                time.sleep(self.readSleep)
+
+        # Give user info
+        print "Read data in " + str(n) + " attempt(s)."
+
+        # Vectorize raw response, transform its bytes to decimals, and
+        # append it to the response vector
+        self.response = [ord(x) for x in rawResponse]
+
+        # Store number of bytes read from device
+        self.nBytesReceived = len(self.response)
+
+        # Give user info
+        print "Number of bytes received: " + str(self.nBytesReceived)
+
+        # Print response in readable formats
+        self.show()
+
+        # Verify response
+        self.verify("Normal")
+
+
+
+    def show(self, n = 8):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Compute number of exceeding bytes
+        nBytesExceeding = self.nBytesReceived % n
+
+        # Define number of rows to be printed 
+        nRows = self.nBytesReceived / n + int(nBytesExceeding != 0)
+
+        # Format response
+        responseHex = lib.hexify(self.response)
+        responseChr = lib.charify(self.response)
+
+        # Print response
+        print "Device response to precedent request: "
+
+        # Print formatted response
+        for i in range(nRows):
+
+            # Define line in all formats
+            lineHex = " ".join(responseHex[i * n : (i + 1) * n])
+            lineChr = "".join(responseChr[i * n : (i + 1) * n])
+            lineDec = "".join(str(self.response[i * n : (i + 1) * n]))
+
+            # On last line, some extra space may be needed
+            if (i == nRows - 1) and (nBytesExceeding != 0):
+
+                # Define line
+                line = (lineHex + (n - nBytesExceeding) * 5 * " " + " " +
+                        lineChr + (n - nBytesExceeding) * " " + " " +
+                        lineDec)
+
+            # First lines don't need extra space
+            else:
+
+                # Define line
+                line = lineHex + " " + lineChr + " " + lineDec
+
+            # Show response
+            print line
+
+
+
+    def poll(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            POLL
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset number of bytes expected
+        self.nBytesExpected = 0
+
+        # Build poll packet
+        self.packet.build("Poll")
+
+        # Define polling attempt variable
+        n = 0
+
+        # Poll until data is ready to be read
+        while self.nBytesExpected == 0:
+
+            # Update attempt variable
+            n += 1
+
+            # Poll sleep
+            time.sleep(self.pollSleep)
+
+            # Keep track of attempts
+            print "Polling data: " + str(n) + "/" + str(self.nPollAttempts)
+
+            # Send packet
+            self.send()
+
+            # Receive response
+            self.receive()
+
+            # Get size of response waiting in radio buffer
+            self.nBytesExpected = self.response[7]
+
+            # Exit after a maximal number of poll attempts
+            if n == self.nPollAttempts:
+
+                # Raise error
+                raise errors.MaxPoll(n)
+
+        # Give user info
+        print "Polled data in " + str(n) + " attempt(s)."
+        print "Number of bytes expected: " + str(self.nBytesExpected)
+
+
+
+    def download(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DOWNLOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Downloading data from pump..."
+
+        # Reset data vector
+        self.data = []
+
+	    # Initialize download attempt variable
+        n = 0
+
+        # Download whole data on device
+        while True:
+
+		    # Update download attempt variable
+            n += 1
+
+            # Keep track of download process
+            print "Downloading data: " + str(n) + "/-"
+
+            # Poll data
+            self.poll()
+
+            # Build download packet
+            self.build("Download")
+
+		    # Send packet
+            self.send()
+
+            # Receive response
+            self.receive()
+
+            # Verify if downloaded data corresponds to expectations
+            self.verify("Download")
+
+	        # Look for end of data (EOD) condition
+            if self.response[5] >= self.EOD:
+
+                # Give user info
+                print "End of data. Exiting download loop."
+
+                break
+
+        # Give user info
+        print "Downloaded data in " + str(n) + " attempt(s).\n" + str(self.data)
+
+
+
+    def verify(self, verificationType):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Stick commands
+        if verificationType == "Normal":
+            pass
+
+        # Pump commands
+        elif verificationType == "Download":
+
+            # Check for incorrect number of bytes
+            if self.nBytesExpected == 14:
+
+                # Raise error
+                raise errors.FatalNBytes(self.nBytesExpected)
+
+            elif self.nBytesReceived != self.nBytesExpected:
+
+                # Raise error
+                raise errors.MismatchNBytes([self.nBytesExpected,
+                                             self.nBytesReceived])
+
+            # Parse response
+            responseHead = self.response[0:13]
+            responseBody = self.response[13:-1]
+            responseCRC = self.response[-1]
+
+            # Compute CRC based on received data
+            computedCRC = lib.computeCRC8(responseBody)
+
+            # Check for CRC mismatch
+            if computedCRC != responseCRC:
+
+                # Give user info
+                print ("Error: computed CRC (" + str(computedCRC) + ") does " +
+                       "not match received CRC (" + str(responseCRC) + "). " +
+                       "Ignoring...")
+
+                # Exit, ignore faulty data!
+                return
+
+            # Give user info
+            print ("Data passed integrity checks. Storing it...")
+
+	        # Store body of request response
+            self.data.extend(responseBody)
+
+
+
+    def do(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info about command
+        print self.info
+
+        # Send command
+        self.send()
+
+        # Receive response
+        self.receive()
+
+
+
+class StickCommand(Command):
+    pass
+
+
+
+class PumpCommand(Command):
+
+    def do(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Build packet
+        self.packet.build()
+
+        # Start command
+        super(self.__class__, self).do()
+
+        # Download data
+        self.download()
+
+        # Give enough time for last command to be executed
+        time.sleep(self.commandSleep)
+
+
+
+class ReadStickSignalStrength(StickCommand):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give the command a packet
+        self.packet = StickPacket()
+
+        # Define packet
+        self.packet.set([6, 0, 0])
+
+
+
 def main():
 
     """
@@ -549,6 +1064,9 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
+
+    command = ReadStickSignalStrength()
+    command.do()
 
 
 

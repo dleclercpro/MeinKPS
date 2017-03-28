@@ -230,8 +230,8 @@ class MismatchNBytes(RequesterError):
         """
 
         # Define error info
-        self.info = ("Expected " + self.args[0] + " bytes." +
-                     "Received " + self.args[1] + " bytes.")
+        self.info = ("Expected " + str(self.args[0]) + " bytes." +
+                     "Received " + str(self.args[1]) + " bytes.")
 
 
 

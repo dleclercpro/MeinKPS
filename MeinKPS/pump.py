@@ -1585,7 +1585,7 @@ def main():
     #pump.BGTargets.read()
 
     # Read insulin sensitivity factors stored in pump
-    #pump.ISF.read()
+    pump.ISF.read()
 
     # Read carb sensitivity factors stored in pump
     #pump.CSF.read()

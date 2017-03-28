@@ -157,6 +157,44 @@ class Stick(object):
 
 
 
+    def write(self, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            WRITE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Sending packet: " + str(bytes)
+
+        # Send packet
+        self.handle.write(bytearray(bytes))
+
+
+
+    def read(self, n):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read raw bytes
+        rawResponse = self.handle.read(n)
+
+        # Convert raw bytes
+        response = [ord(x) for x in rawResponse]
+
+        # Give user info
+        print "Received bytes: " + str(response)
+
+        # Return response
+        return response
+
+
+
     def empty(self):
 
         """

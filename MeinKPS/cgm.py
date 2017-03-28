@@ -43,10 +43,6 @@ Reporter = reporter.Reporter()
 
 class CGM(object):
 
-    # CGM CHARACTERISTICS
-    vendor  = 0x22a3
-    product = 0x0047
-
     def __init__(self):
 
         """
@@ -55,7 +51,13 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize handle
+        # Define vendor
+        self.vendor = 0x22a3
+
+        # Define product
+        self.product = 0x0047
+
+        # Give CGM a handle
         self.handle = serial.Serial()
 
         # Give CGM databases
@@ -132,11 +134,11 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Give user info
+        print "Sending packet: " + str(bytes)
+
         # Send packet
         self.handle.write(bytearray(bytes))
-
-        # Give user info
-        print "Sent packet: " + str(bytes)
 
 
 
@@ -180,7 +182,6 @@ class Packet(object):
         self.code = None
         self.database = None
         self.page = None
-        self.CRC = None
 
 
 
@@ -193,7 +194,7 @@ class Packet(object):
         """
 
         # Reset packet
-        self.bytes = [1, 0, 0]
+        self.bytes = []
 
         # Build database byte
         if database is not None:
@@ -211,6 +212,7 @@ class Packet(object):
             page = []
 
         # Build packet
+        self.bytes.extend([1, 0, 0])
         self.bytes.append(code)
         self.bytes.extend(database)
         self.bytes.extend(page)
@@ -233,7 +235,6 @@ class Packet(object):
         self.code = code
         self.database = database
         self.page = page
-        self.CRC = CRC
 
 
 
@@ -548,10 +549,6 @@ class ReadUnitsRequest(Request):
 
 class Database(object):
 
-    # DATABASE CHARACTERISTICS
-    headSize = 28
-    emptyRange = [lib.pack([255] * 4)] * 2
-
     def __init__(self, cgm):
 
         """
@@ -577,6 +574,12 @@ class Database(object):
 
         # Initialize database data
         self.data = None
+
+        # Define response head size
+        self.headSize = 28
+
+        # Define empty range response
+        self.emptyRange = [lib.pack([255] * 4)] * 2
 
         # Define request(s)
         self.requests = {"ReadDatabaseRange": ReadDatabaseRangeRequest(cgm),
