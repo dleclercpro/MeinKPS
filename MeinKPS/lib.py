@@ -23,8 +23,9 @@
 """
 
 # LIBRARIES
-import numpy as np
 import datetime
+import json
+import numpy as np
 
 
 
@@ -209,24 +210,6 @@ def bangInt(z):
 
 
 
-def convertBytes(x):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        CONVERTBYTES
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    This is a function that converts a number expressed in an array of bytes
-    to its decimal equivalent.
-    """
-
-    # Vectorize input
-    x = np.array(x)
-
-    return sum(x * 256 ** np.arange(len(x) - 1, -1, -1))
-
-
-
 def getByte(x, n):
 
     """
@@ -263,22 +246,37 @@ def unpack(x, n):
 
 
 
-def pack(bytes):
+def pack(bytes, order):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         PACK
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This is a function that converts a number expressed in an array of bytes
+    to its decimal equivalent.
     """
+
+    # Compute number of bytes
+    n = len(bytes)
 
     # Initialize result
     x = 0
 
     # Pack bytes in x
-    for i in range(len(bytes)):
+    for i in range(n):
 
-        # Add ith byte
-        x += bytes[i] * 256 ** i
+        # Smaller bytes first
+        if order == "<":
+
+            # Add ith byte
+            x += bytes[i] * 256 ** i
+
+        # Larger bytes first
+        elif order == ">":
+
+            # Add ith byte
+            x += bytes[i] * 256 ** (n - 1 - i)
 
     return x
 
@@ -293,6 +291,20 @@ def translate(bytes):
     """
 
     return "".join([chr(x) for x in bytes])
+
+
+
+def printJSON(x):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        printJSON
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Print a dictionary using a particular JSON formatting.
+    """
+
+    print json.dumps(x, indent = 2, separators = (",", ": "), sort_keys = True)
 
 
 
