@@ -22,6 +22,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# TODO: - reading BGs gets slow with time?
+
+
+
 # LIBRARIES
 import os
 import sys
