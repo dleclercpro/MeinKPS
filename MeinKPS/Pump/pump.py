@@ -24,20 +24,14 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# TODO: - Make sure the maximal TBR and bolus are correctly
-#         set, that is higher than or equal to the TBR and/or bolus that will be
-#         issued.
-#       - Test with alarm set on pump
+# TODO: - Test with alarm set on pump
 #       - Test with pump reservoir empty or almost empty
 #       - Deal with timezones, DST, year switch
 #       - Run series of tests overnight
-#       X Make sure enacted bolus are detected!
-#       - No point in reissuing same TBR?
-#       - Decode square/dual boluses?
-#       - Add "change battery" suggestion when no more response received from
-#         stick
-#       - Reduce session time if looping every 5 minutes?
-#       - Deal with manually set TBR. Read end of TBR?
+#       - No point in reissuing same TBR
+#       - Decode square/dual boluses
+#       - Add "change battery" suggestion
+#       - Reduce session time if looping every 5 minutes
 #       - What if session of commands is longer than pump's remaining RF
 #         communication time? Detect long session time and compare it with 
 #         remaining one? 
@@ -83,7 +77,7 @@ class Pump(object):
         self.power = Power(self)
 
         # Give the pump a time instance
-        #self.time = Time(self)
+        self.time = Time(self)
 
         # Give the pump a model instance
         #self.model = Model(self)
@@ -184,7 +178,7 @@ class Power(object):
         """
 
         # Link with its respective command
-        self.command = commands.PowerPump(pump.stick)
+        self.command = commands.PowerPump(pump)
 
 
 
@@ -267,7 +261,7 @@ class Time(object):
         self.value = None
 
         # Link with its respective command
-        self.command = commands.ReadPumpTime(pump, self)
+        self.command = commands.ReadPumpTime(pump)
 
 
 
@@ -279,11 +273,11 @@ class Time(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Prepare command
-        self.command.prepare()
-
         # Do command
         self.command.do()
+
+        # Get command response
+        self.value = self.command.response
 
         # Give user info
         print "Pump time: " + self.value
@@ -1521,7 +1515,7 @@ def main():
     pump.start()
 
     # Read pump time
-    #pump.time.read()
+    pump.time.read()
 
     # Read pump model
     #pump.model.read()

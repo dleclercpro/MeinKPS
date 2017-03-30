@@ -109,8 +109,8 @@ class PumpPacket(Packet):
         # Initialize packet type
         self.type = None
 
-        # Initialize packet bytes
-        self.parameters = None
+        # Initialize packet parameters
+        self.parameters = []
 
         # Define typical packet bytes
         self.serial = 503593 # 799163

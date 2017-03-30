@@ -24,6 +24,7 @@
 
 # LIBRARIES
 import time
+import datetime
 
 
 
@@ -219,9 +220,6 @@ class Command(object):
         # Send command
         self.send()
 
-        # Decode response
-        self.decode()
-
 
 
 class StickCommand(Command):
@@ -242,9 +240,25 @@ class StickCommand(Command):
 
 
 
+    def do(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start doing
+        super(StickCommand, self).do()
+
+        # Decode response
+        self.decode()
+
+
+
 class PumpCommand(Command):
 
-    def __init__(self, stick):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -253,7 +267,7 @@ class PumpCommand(Command):
         """
 
         # Start initialization
-        super(PumpCommand, self).__init__(stick)
+        super(PumpCommand, self).__init__(pump.stick)
 
         # Initialize downloaded data
         self.data = None
@@ -266,10 +280,13 @@ class PumpCommand(Command):
 
         # Define sleep times
         self.pollSleep = 0.1
-        self.commandSleep = 0.1
+        self.executionSleep = 0.1
 
         # Give the command a packet
         self.packet = packets.PumpPacket(self)
+
+        # Link with pump
+        self.pump = pump
 
 
 
@@ -437,8 +454,11 @@ class PumpCommand(Command):
         # Download data
         self.download()
 
+        # Decode response
+        self.decode()
+
         # Give enough time for last command to be executed
-        time.sleep(self.commandSleep)
+        time.sleep(self.executionSleep)
 
 
 
@@ -456,15 +476,6 @@ class ReadStickInfos(StickCommand):
         # Start initialization
         super(self.__class__, self).__init__(stick)
 
-        # Define possible statuses
-        self.statuses = {85: "OK",
-                         102: "Error"}
-
-        # Define possible frequencies of operation for the stick (MHz)
-        self.frequencies = {0: 916.5,
-                            1: 868.35,
-                            255: 916.5}
-
         # Define info
         self.info = "Reading stick's infos..."
 
@@ -481,12 +492,21 @@ class ReadStickInfos(StickCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define possible statuses
+        statuses = {85: "OK",
+                    102: "Error"}
+
+        # Define possible frequencies of operation for the stick (MHz)
+        frequencies = {0: 916.5,
+                       1: 868.35,
+                       255: 916.5}
+
         # Decode and assign infos
         self.response = {"ACK": self.bytes[0],
-                         "Status": self.statuses[self.bytes[1]],
+                         "Status": statuses[self.bytes[1]],
                          "Description": "".join(lib.charify(self.bytes[9:19])),
                          "Version": self.bytes[19] + self.bytes[20] / 100.0,
-                         "Frequency": self.frequencies[self.bytes[8]]}
+                         "Frequency": frequencies[self.bytes[8]]}
 
 
 
@@ -589,7 +609,7 @@ class ReadStickRadioState(ReadStickState):
 # PUMP COMMANDS
 class PowerPump(PumpCommand):
 
-    def __init__(self, stick):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -598,7 +618,7 @@ class PowerPump(PumpCommand):
         """
 
         # Initialize command
-        super(self.__class__, self).__init__(stick)
+        super(self.__class__, self).__init__(pump)
 
         # Define info
         self.info = "Powering pump's radio transmitter..."
@@ -614,7 +634,52 @@ class PowerPump(PumpCommand):
         self.packet.parameters = [1, self.sessionTime]
 
         # Define time needed for the pump's radio to power up (s)
-        self.commandSleep = 10
+        self.executionSleep = 10
+
+
+
+class ReadPumpTime(PumpCommand):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(self.__class__, self).__init__(pump)
+
+        # Define request info
+        self.info = "Reading pump's time..."
+
+        # Define packet bytes
+        self.packet.code = 112
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode pump time
+        second = self.data[2]
+        minute = self.data[1]
+        hour   = self.data[0]
+        day    = self.data[6]
+        month  = self.data[5]
+        year   = lib.bangInt(self.data[3:5])
+
+        # Generate time object
+        time = datetime.datetime(year, month, day, hour, minute, second)
+
+        # Store formatted time
+        self.response = lib.formatTime(time)
 
 
 

@@ -51,26 +51,12 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define vendor
+        # Define CGM characteristics
         self.vendor = 0x22a3
-
-        # Define product
         self.product = 0x0047
 
         # Give CGM a handle
         self.handle = serial.Serial()
-
-        # Give CGM databases
-        self.databases = {
-            "ManufacturingParameters": ManufacturingParametersDatabase(self),
-            "FirmwareSettings": FirmwareSettingsDatabase(self),
-            "PCParameterRecord": PCParameterRecordDatabase(self),
-            "BG": BGDatabase(self),
-            "Sensor": SensorDatabase(self),
-            "Receiver": ReceiverDatabase(self),
-            "Calibration": CalibrationDatabase(self),
-            "Events": EventsDatabase(self),
-            "Settings": SettingsDatabase(self)}
 
         # Give CGM a battery
         self.battery = Battery(self)
@@ -89,6 +75,17 @@ class CGM(object):
 
         # Give CGM a transmitter
         self.transmitter = Transmitter(self)
+
+        # Give CGM databases
+        self.databases = {"ManufacturingParameters": ManufacturingParametersDatabase(self),
+                          "FirmwareSettings": FirmwareSettingsDatabase(self),
+                          "PCParameterRecord": PCParameterRecordDatabase(self),
+                          "BG": BGDatabase(self),
+                          "Sensor": SensorDatabase(self),
+                          "Receiver": ReceiverDatabase(self),
+                          "Calibration": CalibrationDatabase(self),
+                          "Events": EventsDatabase(self),
+                          "Settings": SettingsDatabase(self)}
 
 
 
