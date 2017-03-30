@@ -251,8 +251,10 @@ class Infos(object):
         # Get command response
         self.values = self.command.response
 
-        # Print infos
+        # Give user info
         print "Stick infos:"
+
+        # Print infos
         lib.printJSON(self.values)
 
 
@@ -342,8 +344,10 @@ class Interface(object):
         # Get command response
         self.values = self.command.response
 
-        # Print current stick states
+        # Give user info
         print self.__class__.__name__ + " state:"
+
+        # Print current stick states
         lib.printJSON(self.values)
 
 
