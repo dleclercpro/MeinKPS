@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -593,7 +594,7 @@ class Reporter:
 
 
 
-    def storeBasalProfile(self, t, rates):
+    def storeBasalProfile(self, profile, t, rates):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -611,7 +612,7 @@ class Reporter:
         self.load(report)
 
         # Define path
-        path = ["Basal Profile"]
+        path = ["Basal Profile (" + profile + ")"]
 
         # Remove old entries
         self.delete([], path[0])

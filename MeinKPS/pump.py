@@ -1585,13 +1585,13 @@ def main():
     #pump.BGTargets.read()
 
     # Read insulin sensitivity factors stored in pump
-    pump.ISF.read()
+    #pump.ISF.read()
 
     # Read carb sensitivity factors stored in pump
     #pump.CSF.read()
 
     # Read basal profile stored in pump
-    #pump.basalProfile.read()
+    pump.basalProfile.read()
 
     # Read daily totals on pump
     #pump.dailyTotals.read()
@@ -1618,3 +1618,4 @@ def main():
 # Run this when script is called from terminal
 if __name__ == "__main__":
     main()
+

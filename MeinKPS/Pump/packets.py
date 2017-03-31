@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,9 +107,6 @@ class PumpPacket(Packet):
         # Start initialization
         super(self.__class__, self).__init__(command)
 
-        # Initialize packet type
-        self.type = None
-
         # Initialize packet parameters
         self.parameters = []
 
@@ -120,7 +118,7 @@ class PumpPacket(Packet):
 
 
 
-    def build(self):
+    def build(self, packetType = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -132,13 +130,13 @@ class PumpPacket(Packet):
         self.reset()
 
         # Poll packet
-        if self.type == "Poll":
+        if packetType == "Poll":
 
             # Build packet
             self.bytes.extend([3, 0, 0])
 
         # Download packet
-        elif self.type == "Download":
+        elif packetType == "Download":
 
             # Build packet
             self.bytes.extend([12, 0])

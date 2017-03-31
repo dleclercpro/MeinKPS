@@ -79,8 +79,8 @@ class Decoder:
             errorSEQ = bytes[4]
             errorNAK = bytes[5]
             errorTimeout = bytes[6]
-            packetsReceived = lib.convertBytes(bytes[7:11])
-            packetsSent = lib.convertBytes(bytes[11:15])
+            packetsReceived = lib.pack(bytes[7:11])
+            packetsSent = lib.pack(bytes[11:15])
 
             # Store state
             self.target.values["Errors"]["CRC"] = errorCRC
