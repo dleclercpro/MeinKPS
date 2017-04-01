@@ -384,6 +384,9 @@ class PumpCommand(Command):
 
                 break
 
+        # Reset number of bytes expected after download
+        self.nBytesExpected = 0
+
         # Give user info
         print "Downloaded data in " + str(n) + " attempt(s)."
 
@@ -1604,13 +1607,87 @@ class ReadPumpHistory(PumpCommand):
         """
 
         # Define request info
-        self.info = "Reading pump's history page: " + str(page)
+        self.info = "Reading pump's history page: " + str(page) + "..."
 
         # Define packet parameters byte
         self.packet.parameters = [page]
         
         # Do rest of command
         super(self.__class__, self).do()
+
+        # Link with pump history
+        records = self.pump.history.records
+
+        # Find records within page and decode them
+        for record in records:
+            records[record].find(self.data)
+
+        # Return pump history page
+        self.response = self.data
+
+
+
+class DeliverPumpBolus(PumpCommand):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(self.__class__, self).__init__(pump)
+
+        # Define packet bytes
+        self.packet.attempts = 0
+        self.packet.code = 66
+
+
+
+    def do(self, bolus):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define request info
+        self.info = "Sending bolus: " + str(bolus) + " U"
+
+        # Compute time required for bolus to be delivered (giving it some
+        # additional seconds to be safe)
+        self.executionSleep = (self.pump.bolus.rate * bolus +
+                               self.pump.bolus.sleep)
+
+        # Define parameters byte
+        self.packet.parameters = [int(bolus / self.pump.bolus.stroke)]
+        
+        # Do rest of command
+        super(self.__class__, self).do()
+
+
+
+class ReadPumpTBR(PumpCommand):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(self.__class__, self).__init__(pump)
+
+        # Define info
+        self.info = "Reading current TBR..."
+
+        # Define packet bytes
+        self.packet.code = 152
 
 
 
@@ -1622,46 +1699,79 @@ class ReadPumpHistory(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
-        print "Decoding pump history..."
+        # Initialize response
+        self.response = {"Units": None,
+                         "Rate": None,
+                         "Duration": None}
 
-        # Find records within pump's history pages
-        for i in self.records:
-            self.records[i].find()
+        # Decode TBR [U/h]
+        if self.data[0] == 0:
 
-        # Store decoded records
-        #self.store()
+            # Decode TBR characteristics
+            self.response["Units"] = "U/h"
+            self.response["Rate"] = round(lib.bangInt(self.data[2:4]) *
+                                          self.pump.TBR.stroke / 2.0, 2)
 
-        # Decode pump history page
-        self.response = self.data
+        # Decode TBR [%]
+        elif self.data[0] == 1:
+
+            # Decode TBR characteristics
+            self.response["Units"] = "%"
+            self.response["Rate"] = round(self.data[1], 2)
+
+        # Decode TBR remaining time
+        self.response["Duration"] = round(lib.bangInt(self.data[4:6]), 0)
 
 
 
-    def store(self):
+class SetPumpTBR(PumpCommand):
+
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
+            INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Store suspend times
-        # FIXME
+        # Initialize command
+        super(self.__class__, self).__init__(pump)
 
-        # Store resume times
-        # FIXME
+        # Define packet bytes
+        self.packet.attempts = 0
 
-        # Get boluses
-        boluses = self.records["Bolus"]
 
-        # Store boluses
-        Reporter.addBoluses(boluses.times, boluses.values)
 
-        # Get carbs
-        carbs = self.records["Carbs"]
+    def do(self, TBR):
 
-        # Store carbs
-        Reporter.addCarbs(carbs.times, carbs.values)
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define info
+        self.info = ("Setting TBR: " + str(TBR["Rate"]) + " " +
+                                       TBR["Units"] + " (" +
+                                       str(TBR["Duration"]) + "m)")
+
+        # If absolute TBR
+        if TBR["Units"] == "U/h":
+            self.packet.code = 76
+            self.packet.parameters = [0, int(round(TBR["Rate"] /
+                                                   self.pump.TBR.stroke * 2.0)),
+                                         int(TBR["Duration"] /
+                                             self.pump.TBR.timeBlock)]
+
+        # If percentage TBR
+        elif TBR["Units"] == "%":
+            self.packet.code = 105
+            self.packet.parameters = [int(round(TBR["Rate"])),
+                                      int(TBR["Duration"] /
+                                      self.pump.TBR.timeBlock)]
+
+        # Do rest of command
+        super(self.__class__, self).do()
 
 
 

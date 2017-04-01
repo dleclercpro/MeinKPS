@@ -384,11 +384,14 @@ class Reporter:
 
         # Add entries
         for i in range(n):
-            self.addEntry(["Carbs"], t[i], carbs[i])
+
+            # If carb entry is not 0
+            if carbs[i][0]:
+                self.addEntry(["Carbs"], t[i], carbs[i])
 
 
 
-    def addTBR(self, t, rate, units, duration):
+    def addTBR(self, t, TBR):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -406,7 +409,9 @@ class Reporter:
         self.load(report)
 
         # Add entry
-        self.addEntry(["Temporary Basals"], t, [rate, units, duration])
+        self.addEntry(["Temporary Basals"], t, [TBR["Rate"],
+                                                TBR["Units"],
+                                                TBR["Duration"]])
 
 
 
