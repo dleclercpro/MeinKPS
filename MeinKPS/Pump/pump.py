@@ -36,7 +36,6 @@
 #       - What if session of commands is longer than pump's remaining RF
 #         communication time? Detect long session time and compare it with 
 #         remaining one?
-#       - Sometimes, session finishes before the requested amount of time!
 #       - Bolus need to be checked after being enacted!
 
 
