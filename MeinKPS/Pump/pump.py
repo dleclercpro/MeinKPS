@@ -37,13 +37,12 @@
 #         communication time? Detect long session time and compare it with 
 #         remaining one?
 #       - Sometimes, session finishes before the requested amount of time!
+#       - Bolus need to be checked after being enacted!
 
 
 
 # LIBRARIES
 import datetime
-import json
-import time
 
 
 
@@ -186,6 +185,28 @@ class Power(object):
 
 
 
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump's report
+        Reporter.load("pump.json")
+
+        # Read last time pump's radio transmitter was power up
+        then = Reporter.getEntry([], "Power")
+
+        # Format time
+        then = lib.formatTime(then)
+
+        # Return last power up time
+        return then
+
+
+
     def verify(self):
 
         """
@@ -194,23 +215,18 @@ class Power(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load pump's report
-        Reporter.load("pump.json")
-
         # Get current time
         now = datetime.datetime.now()
 
-        # Read last time pump's radio transmitter was power up
-        then = Reporter.getEntry([], "Power")
-
-        # Format time
-        then = lib.formatTime(then)
-
         # Compute time since last power up
-        delta = now - then
+        delta = now - self.read()
 
         # Generate a datetime object for the pump's RF sessions' length
         session = datetime.timedelta(minutes = self.command.sessionTime)
+
+        # Time buffer added to delta in order to eliminate dead calls at the end
+        # of an RF session with the pump
+        delta += datetime.timedelta(minutes = 2)
 
         # Power up pump if necessary
         if delta > session:
@@ -239,15 +255,6 @@ class Power(object):
 
         # Do command
         self.command.do()
-
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Format time
-        now = lib.formatTime(now)
-
-        # Store power up time
-        Reporter.storePowerTime(now)
 
 
 
@@ -320,9 +327,6 @@ class Model(object):
         # Get command response
         self.value = self.command.response
 
-        # Store pump model
-        Reporter.storeModel(self.value)
-
         # Give user info
         print "Pump model: " + str(self.value)
 
@@ -359,9 +363,6 @@ class Firmware(object):
 
         # Get command response
         self.value = self.command.response
-
-        # Store pump model
-        Reporter.storeFirmware(self.value)
 
         # Give user info
         print "Pump firmware: " + str(self.value)
@@ -437,15 +438,6 @@ class Battery(object):
         # Give user info
         print "Pump's battery level: " + str(self.value) + " V"
 
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Format time
-        now = lib.formatTime(now)
-
-        # Add current battery level to pump report
-        Reporter.addBatteryLevel(now, self.value)
-
 
 
 class Reservoir(object):
@@ -483,15 +475,6 @@ class Reservoir(object):
         # Give user info
         print "Remaining amount of insulin: " + str(self.value) + " U"
 
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Format time
-        now = lib.formatTime(now)
-
-        # Add current reservoir level to pump report
-        Reporter.addReservoirLevel(now, self.value)
-
 
 
 class Status(object):
@@ -505,7 +488,7 @@ class Status(object):
         """
 
         # Initialize values
-        self.values = None
+        self.value = None
 
         # Link with its respective commands
         self.commands = {"Read": commands.ReadPumpStatus(pump),
@@ -529,21 +512,21 @@ class Status(object):
         self.read()
 
         # Check if pump is ready to take action
-        if not self.values["Normal"]:
+        if not self.value["Normal"]:
 
             # Give user info
             print "There seems to be a problem with the pump. Try again later."
 
             return False
 
-        elif self.values["Bolusing"]:
+        elif self.value["Bolusing"]:
 
             # Give user info
             print "Pump is bolusing. Try again later."
 
             return False
 
-        elif self.values["Suspended"]:
+        elif self.value["Suspended"]:
 
             # Give user info
             print "Pump is suspended, but will be asked to resume activity."
@@ -570,10 +553,10 @@ class Status(object):
         self.commands["Read"].do()
 
         # Get command response
-        self.values = self.commands["Read"].response
+        self.value = self.commands["Read"].response
 
         # Give user info
-        print "Pump's status: " + str(self.values)
+        print "Pump's status: " + str(self.value)
 
 
 
@@ -613,8 +596,8 @@ class Settings(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize values
-        self.values = None
+        # Initialize value
+        self.value = None
 
         # Link with its respective command
         self.command = commands.ReadPumpSettings(pump)
@@ -635,7 +618,7 @@ class Settings(object):
         # Check if pump is ready to take action
         if bolus is not None:
 
-            if bolus > self.values["Max Bolus"]:
+            if bolus > self.value["Max Bolus"]:
 
                 # Give user info
                 print ("Pump cannot issue bolus since it is bigger than its " +
@@ -646,7 +629,7 @@ class Settings(object):
 
         elif (rate is not None) and (units is not None):
 
-            if ((units == "U/h") and (rate > self.values["Max Basal"]) or
+            if ((units == "U/h") and (rate > self.value["Max Basal"]) or
                 (units == "%") and (rate > 200)):
 
                 # Give user info
@@ -675,13 +658,10 @@ class Settings(object):
         self.command.do()
 
         # Get command response
-        self.values = self.command.response
+        self.value = self.command.response
 
         # Give user info
-        print "Pump settings: " + str(self.values)
-
-        # Store pump settings to profile report
-        Reporter.storeSettings(self.values)
+        print "Pump settings: " + str(self.value)
 
 
 
@@ -753,22 +733,6 @@ class BGU(Unit):
 
 
 
-    def read(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read units
-        super(self.__class__, self).read()
-
-        # Store BG units to pump report
-        Reporter.storeBGU(self.value)
-
-
-
 class CU(Unit):
 
     def __init__(self, pump):
@@ -784,22 +748,6 @@ class CU(Unit):
 
         # Link with its respective command
         self.command = commands.ReadPumpCU(pump)
-
-
-
-    def read(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read units
-        super(self.__class__, self).read()
-
-        # Store BG units to pump report
-        Reporter.storeCU(self.value)
 
 
 
@@ -888,14 +836,6 @@ class BGTargets(object):
         # Get command response
         self.values = self.command.response
 
-        # Store BG targets to pump report
-        Reporter.storeBGTargets(self.values["Times"],
-                                self.values["Targets"],
-                                self.values["Units"])
-
-        # Store BG units to pump report
-        Reporter.storeBGU(self.values["Units"])
-
         # Get number of BG targets read
         n = len(self.values["Times"])
 
@@ -942,14 +882,6 @@ class ISF(object):
         # Get command response
         self.values = self.command.response
 
-        # Store insulin sensitivity factors to pump report
-        Reporter.storeISF(self.values["Times"],
-                          self.values["Factors"],
-                          self.values["Units"] + "/U")
-
-        # Store BG units to pump report
-        Reporter.storeBGU(self.values["Units"])
-
         # Get number of ISF read
         n = len(self.values["Times"])
 
@@ -960,7 +892,7 @@ class ISF(object):
         for i in range(n):
             print (self.values["Times"][i] + " - " +
                    str(self.values["Factors"][i]) + " " +
-                   self.values["Units"] + "/U")
+                   self.values["Units"])
 
 
 
@@ -996,14 +928,6 @@ class CSF(object):
         # Get command response
         self.values = self.command.response
 
-        # Store carb sensitivity factors to pump report
-        Reporter.storeCSF(self.values["Times"],
-                          self.values["Factors"],
-                          self.values["Units"] + "/U")
-
-        # Store BG units to pump report
-        Reporter.storeCU(self.values["Units"])
-
         # Get number of ISF read
         n = len(self.values["Times"])
 
@@ -1014,7 +938,7 @@ class CSF(object):
         for i in range(n):
             print (self.values["Times"][i] + " - " +
                    str(self.values["Factors"][i]) + " " +
-                   self.values["Units"] + "/U")
+                   self.values["Units"])
 
 
 
@@ -1050,11 +974,6 @@ class BasalProfile(object):
         # Get command response
         self.values = self.command.response
 
-        # Store insulin sensitivities factors to pump report
-        Reporter.storeBasalProfile(profile,
-                                   self.values["Times"],
-                                   self.values["Rates"])
-
         # Get number of rates read
         n = len(self.values["Times"])
 
@@ -1079,7 +998,7 @@ class DailyTotals(object):
         """
 
         # Initialize values
-        self.values = None
+        self.value = None
 
         # Link with its respective command
         self.command = commands.ReadPumpDailyTotals(pump)
@@ -1098,10 +1017,10 @@ class DailyTotals(object):
         self.command.do()
 
         # Get command response
-        self.values = self.command.response
+        self.value = self.command.response
 
         # Give user info
-        print "Daily totals: " + str(self.values)
+        print "Daily totals: " + str(self.value)
 
 
 
@@ -1372,9 +1291,6 @@ class TBR(object):
         if not cancel:
             self.verify(newTBR)
 
-        # Get current formatted time at which TBR is set
-        now = lib.formatTime(datetime.datetime.now())
-
         # Do command
         self.commands["Set"].do(newTBR)
 
@@ -1390,10 +1306,6 @@ class TBR(object):
 
             # Give user info
             print "New TBR correctly set: " + newTBR_
-            print "Storing it..."
-
-            # Add bolus to insulin report
-            Reporter.addTBR(now, newTBR)
 
         # Otherwise, quit
         else:
@@ -1515,11 +1427,9 @@ def main():
     #pump.TBR.read()
 
     # Send TBR to pump
-    pump.TBR.set(5, "U/h", 30)
-    time.sleep(5)
-    pump.TBR.set(50, "%", 90)
-    time.sleep(5)
-    pump.TBR.cancel()
+    #pump.TBR.set(5, "U/h", 30)
+    #pump.TBR.set(50, "%", 90)
+    #pump.TBR.cancel()
 
     # Stop dialogue with pump
     pump.stop()

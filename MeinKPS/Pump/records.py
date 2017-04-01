@@ -49,6 +49,9 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize record's report
+        self.report = None
+
         # Initialize record's bytes
         self.bytes = None
 
@@ -161,6 +164,18 @@ class Record(object):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
+
+
+
     def show(self):
 
         """
@@ -197,18 +212,6 @@ class Record(object):
 
             # Print current record
             print str(value) + " (" + str(t) + ")"
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        pass
 
 
 
@@ -284,6 +287,9 @@ class BolusRecord(Record):
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
 
+        # Define record's report
+        self.report = "treatments.json"
+
 
 
     def decode(self):
@@ -294,7 +300,7 @@ class BolusRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start decoding record
+        # Decode record time
         super(self.__class__, self).decode()
 
         # Decode bolus
@@ -313,8 +319,18 @@ class BolusRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Store bolus
-        Reporter.addBoluses(self.times, self.values)
+        # Give user info
+        print "Adding boluses to report: '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Read number of entries to add
+        n = len(self.times)
+
+        # Add entries
+        for i in range(n):
+            Reporter.addEntry(["Boluses"], self.times[i], self.values[i])
 
 
 
@@ -356,6 +372,9 @@ class CarbsRecord(Record):
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
 
+        # Define record's report
+        self.report = "treatments.json"
+
 
 
     def decode(self):
@@ -366,7 +385,7 @@ class CarbsRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start decoding record
+        # Decode record time
         super(self.__class__, self).decode()
 
         # Define an indicator dictionary to decode BG and carb bytes
@@ -442,8 +461,18 @@ class CarbsRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Store bolus
-        Reporter.addCarbs(self.times, self.values)
+        # Give user info
+        print "Adding carbs to report: '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Read number of entries to add
+        n = len(self.times)
+
+        # Add entries
+        for i in range(n):
+            Reporter.addEntry(["Carbs"], self.times[i], self.values[i])
 
 
 

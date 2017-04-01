@@ -33,6 +33,12 @@ import datetime
 import lib
 import errors
 import packets
+import reporter
+
+
+
+# Define a reporter
+Reporter = reporter.Reporter()
 
 
 
@@ -54,6 +60,9 @@ class Command(object):
 
         # Initialize decoded response
         self.response = None
+
+        # Initialize report
+        self.report = None
 
         # Define byte counts
         self.nBytesDefault = 64
@@ -204,6 +213,18 @@ class Command(object):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
+
+
+
     def do(self):
 
         """
@@ -235,6 +256,9 @@ class StickCommand(Command):
 
         # Start initialization
         super(StickCommand, self).__init__(stick)
+
+        # Define report
+        self.report = "stick.json"
 
         # Give the command a packet
         self.packet = packets.StickPacket(self)
@@ -281,7 +305,10 @@ class PumpCommand(Command):
 
         # Define sleep times
         self.pollSleep = 0.1
-        self.executionSleep = 0.1
+        self.executionSleep = 0.5 # FIXME
+
+        # Define report
+        self.report = "pump.json"
 
         # Give the command a packet
         self.packet = packets.PumpPacket(self)
@@ -454,6 +481,9 @@ class PumpCommand(Command):
 
         # Decode response
         self.decode()
+
+        # Store response
+        self.store()
 
         # Give enough time for last command to be executed
         time.sleep(self.executionSleep)
@@ -636,6 +666,28 @@ class PowerPump(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's last power up to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Get formatted current time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.addEntry([], "Power", now, True)
+
+
+
 class ReadPumpTime(PumpCommand):
 
     def __init__(self, pump):
@@ -715,6 +767,25 @@ class ReadPumpModel(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's model to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entry
+        Reporter.addEntry([], "Model", self.response, True)
+
+
+
 class ReadPumpFirmware(PumpCommand):
 
     def __init__(self, pump):
@@ -747,6 +818,25 @@ class ReadPumpFirmware(PumpCommand):
         # Decode pump firmware
         self.response = ("".join(lib.charify(self.data[4:8])) + " " +
                          "".join(lib.charify(self.data[8:11])))
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's firmware to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entry
+        Reporter.addEntry([], "Firmware", self.response, True)
 
 
 
@@ -831,6 +921,28 @@ class ReadPumpBattery(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's battery level to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Get formatted current time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.addEntry(["Battery Levels"], now, self.response)
+
+
+
 class ReadPumpReservoir(PumpCommand):
 
     def __init__(self, pump):
@@ -863,6 +975,28 @@ class ReadPumpReservoir(PumpCommand):
         # Decode reservoir level
         self.response = round(lib.bangInt(self.data[0:2]) *
                               self.pump.bolus.stroke, 1)
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's reservoir level to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Get formatted current time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.addEntry(["Reservoir Levels"], now, self.response)
 
 
 
@@ -983,6 +1117,28 @@ class ReadPumpSettings(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's settings to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Get formatted current time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.addEntry([], "Settings", self.response, True)
+
+
+
 class ReadPumpBGU(PumpCommand):
 
     def __init__(self, pump):
@@ -1021,6 +1177,25 @@ class ReadPumpBGU(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's BG units to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entry
+        Reporter.addEntry([], "BG Units", self.response, True)
+
+
+
 class ReadPumpCU(PumpCommand):
 
     def __init__(self, pump):
@@ -1056,6 +1231,25 @@ class ReadPumpCU(PumpCommand):
 
         elif self.data[0] == 2:
             self.response = "exchanges"
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's carb units to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entry
+        Reporter.addEntry([], "Carb Units", self.response, True)
 
 
 
@@ -1198,6 +1392,43 @@ class ReadPumpBGTargets(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link with values
+        t = self.response["Times"]
+        targets = self.response["Targets"]
+        units = self.response["Units"]
+
+        # Give user info
+        print "Adding pump's BG targets to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Define path
+        path = ["BG Targets (" + units + ")"]
+
+        # Remove old entries
+        Reporter.delete([], path[0])
+
+        # Read number of entries to add
+        n = len(t)
+
+        # Store targets
+        for i in range(n):
+            Reporter.addEntry(path, t[i], targets[i])
+
+        # Store BG units
+        Reporter.addEntry([], "BG Units", units, True)
+
+
+
 class ReadPumpISF(PumpCommand):
 
     def __init__(self, pump):
@@ -1234,13 +1465,13 @@ class ReadPumpISF(PumpCommand):
 
         # Decode units
         if self.data[0] == 1:
-            self.response["Units"] = "mg/dL"
+            self.response["Units"] = "mg/dL/U"
 
             # Define a multiplicator to decode bytes
             m = 0
 
         elif self.data[0] == 2:
-            self.response["Units"] = "mmol/L"
+            self.response["Units"] = "mmol/L/U"
 
             # Define a multiplicator to decode bytes
             m = 1.0
@@ -1290,6 +1521,43 @@ class ReadPumpISF(PumpCommand):
         for i in range(len(factors)):
             self.response["Times"].append(times[i - 1])
             self.response["Factors"].append(factors[i])
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link with values
+        t = self.response["Times"]
+        factors = self.response["Factors"]
+        units = self.response["Units"]
+
+        # Give user info
+        print "Adding pump's ISF(s) to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Define path
+        path = ["ISF (" + units + ")"]
+
+        # Remove old entries
+        Reporter.delete([], path[0])
+
+        # Read number of entries to add
+        n = len(t)
+
+        # Store targets
+        for i in range(n):
+            Reporter.addEntry(path, t[i], factors[i])
+
+        # Store BG units (without insulin units)
+        Reporter.addEntry([], "BG Units", units[:-2], True)
 
 
 
@@ -1329,13 +1597,13 @@ class ReadPumpCSF(PumpCommand):
 
         # Decode units
         if self.data[0] == 1:
-            self.response["Units"] = "g"
+            self.response["Units"] = "g/U"
 
             # Define a multiplicator to decode bytes
             m = 0
 
         elif self.data[0] == 2:
-            self.response["Units"] = "exchanges"
+            self.response["Units"] = "U/exchange"
 
             # Define a multiplicator to decode bytes
             m = 1.0
@@ -1388,6 +1656,47 @@ class ReadPumpCSF(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link with values
+        t = self.response["Times"]
+        factors = self.response["Factors"]
+        units = self.response["Units"]
+
+        # Give user info
+        print "Adding pump's CSF(s) to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Define path
+        path = ["CSF (" + units + ")"]
+
+        # Remove old entries
+        Reporter.delete([], path[0])
+
+        # Read number of entries to add
+        n = len(t)
+
+        # Store targets
+        for i in range(n):
+            Reporter.addEntry(path, t[i], factors[i])
+
+        # Store carb units (without insulin units)
+        if units == "g/U":
+            Reporter.addEntry([], "Carb Units", units[:-2], True)
+
+        elif units == "U/exchange":
+            Reporter.addEntry([], "Carb Units", units[2:] + "s", True)
+
+
+
 class ReadPumpBasalProfile(PumpCommand):
 
     def __init__(self, pump):
@@ -1400,6 +1709,9 @@ class ReadPumpBasalProfile(PumpCommand):
 
         # Initialize command
         super(self.__class__, self).__init__(pump)
+
+        # Initialize profile
+        self.profile = None
 
         # Define packet bytes
         self.packet.size = 2
@@ -1428,6 +1740,9 @@ class ReadPumpBasalProfile(PumpCommand):
         # If profile B
         elif value == "B":
             self.packet.code = 148
+
+        # Store profile
+        self.profile = value
         
         # Do rest of command
         super(self.__class__, self).do()
@@ -1445,19 +1760,6 @@ class ReadPumpBasalProfile(PumpCommand):
         # Initialize response
         self.response = {"Times": [],
                          "Rates": []}
-
-        # Decode units
-        if self.data[0] == 1:
-            self.response["Units"] = "g"
-
-            # Define a multiplicator to decode bytes
-            m = 0
-
-        elif self.data[0] == 2:
-            self.response["Units"] = "exchanges"
-
-            # Define a multiplicator to decode bytes
-            m = 1.0
 
         # Initialize index as well as times and rates
         i = 0
@@ -1505,6 +1807,40 @@ class ReadPumpBasalProfile(PumpCommand):
         for i in range(len(rates)):
             self.response["Times"].append(times[i])
             self.response["Rates"].append(rates[i])
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link with values
+        t = self.response["Times"]
+        rates = self.response["Rates"]
+
+        # Give user info
+        print ("Adding pump's basal profile " + self.profile + " to '" + 
+               self.report + "'...")
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Define path
+        path = ["Basal Profile (" + self.profile + ")"]
+
+        # Remove old entries
+        Reporter.delete([], path[0])
+
+        # Read number of entries to add
+        n = len(t)
+
+        # Store targets
+        for i in range(n):
+            Reporter.addEntry(path, t[i], rates[i])
 
 
 
@@ -1721,6 +2057,36 @@ class ReadPumpTBR(PumpCommand):
 
         # Decode TBR remaining time
         self.response["Duration"] = round(lib.bangInt(self.data[4:6]), 0)
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define report
+        self.report = "treatments.json"
+
+        # Link with values
+        rate = self.response["Rate"]
+        units = self.response["Units"]
+        duration = self.response["Duration"]
+
+        # Give user info
+        print "Adding TBR to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Get current formatted time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.addEntry(["Temporary Basals"], now, [rate, units, duration])
 
 
 
