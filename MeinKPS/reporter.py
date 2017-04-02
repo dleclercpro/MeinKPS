@@ -243,7 +243,14 @@ class Reporter:
             entry = self.section[key]
 
             # Give user info
-            print "Entry found: " + json.dumps(entry)
+            print "Entry found:"
+
+            # Print entry based on type
+            if type(entry) is dict:
+                lib.printJSON(entry)
+
+            else:
+                print entry
 
             # Return entry for external access
             return entry

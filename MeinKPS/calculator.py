@@ -23,10 +23,6 @@
 """
 
 # LIBRARIES
-import os
-import sys
-import time
-import datetime
 import numpy as np
 
 
@@ -42,95 +38,29 @@ Reporter = reporter.Reporter()
 
 
 
-class Calculator:
+class Calculator(object):
 
-    # CALCULATOR CHARACTERISTICS
-
-    def start(self):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            START
+            INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize important values for calculator
+        self.BGScale = None
+        self.BGTargets = None
+        self.ISF = None
+        self.CSF = None
+        self.dt = None
+        self.dBGdtMax = None
 
+        # Give calculator an IOB
+        self.iob = IOB()
 
-    def stop(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STOP
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-
-
-    def inform(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INFORM
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store input about current situation
-        TB = [0.5, "U/h", 30]
-
-        # Read user profile
-        # Read time interval between BG readings
-        self.dt = self.reporter.getEntry(report_name = "profile.json",
-                                         entry_type = "Settings",
-                                         entry_key = "BG Time Interval")
-
-        # Read BG scale
-        self.scale = self.reporter.getEntry(report_name = "profile.json",
-                                            entry_type = "Settings",
-                                            entry_key = "BG Scale")
-
-        # Read duration of insulin action
-        self.DIA = self.reporter.getEntry(report_name = "profile.json",
-                                          entry_type = "Settings",
-                                          entry_key = "DIA")
-
-        # Read insulin to carbs factors
-        self.ICF = self.reporter.getEntry(report_name = "profile.json",
-                                          entry_type = "Settings",
-                                          entry_key = "ICF")
-
-        # Read insulin sensitivities factors
-        self.ISF = self.reporter.getEntry(report_name = "profile.json",
-                                          entry_type = "Settings",
-                                          entry_key = "ISF")
-
-        # Read maximal allowed BG time-rate
-        self.dBGdtMax = self.reporter.getEntry(report_name = "profile.json",
-                                                 entry_type = "Settings",
-                                                 entry_key = "BG Maximal Rate")
-
-
-
-    def computeIOB(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTEIOB
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        IOB = 5
-
-
-
-    def computeCOB(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTECOB
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        COB = 5
+        # Give calculator a COB
+        self.cob = COB()
 
 
 
@@ -142,18 +72,95 @@ class Calculator:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Compute time-derivative of BG
-        self.dBGdt = lib.derivate(self.BG, self.dt)
-        print len(self.dBGdt)
+        # Compute IOB
+        self.iob.compute()
 
-        # Compute expected BG based on BG time-rate
-        self.expected_BG = 0
+        # Compute COB
+        self.cob.compute()
 
-        # Reset temporary recommendation
-        self.recommendation = 0
 
-        # Compute temporary basal recommendation
-        self.recommendation = 0
+
+class IOB(object):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize DIA
+        self.DIA = None
+
+        # Initialize basal profile
+        self.basal = None
+
+        # Initialize TBRs
+        self.TBRs = None
+
+        # Initialize boluses
+        self.boluses = None
+
+
+
+    def compute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load("pump.json")
+
+        # Read DIA
+        self.DIA = Reporter.getEntry(["Settings"], "DIA")
+
+        # Read basal profile
+        self.basal = Reporter.getEntry([], "Basal Profile (Standard)")
+
+        # Load treatments report
+        Reporter.load("treatments.json")
+
+        # Read past TBRs
+        self.TBRs = Reporter.getEntry([], "Temporary Basals")
+
+        # Read past boluses
+        self.boluses = Reporter.getEntry([], "Boluses")
+
+        # Give user info
+        print "Number of steps in basal profile: " + str(len(self.basal))
+        print "Number of TBRs enacted: " + str(len(self.TBRs))
+        print "Number of boluses enacted: " + str(len(self.boluses))
+
+
+
+class COB(object):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize DCA
+        self.DCA = None
+
+
+
+    def compute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
 
 
 
@@ -168,20 +175,8 @@ def main():
     # Instanciate a basal calculator for me
     calculator = Calculator()
 
-    # Start calculator
-    calculator.start()
-
-    # Inform calculator
-    calculator.inform()
-
     # Run calculator
     calculator.run()
-
-    # Stop calculator
-    #calculator.stop()
-
-    # End of script
-    print "Done!"
 
 
 
