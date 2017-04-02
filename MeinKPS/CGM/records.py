@@ -382,12 +382,8 @@ class SensorRecord(Record):
         # Load report
         Reporter.load(self.report)
 
-        # Get number of records found
-        n = len(self.values)
-
         # Add entries
-        for i in range(n):
-            Reporter.addEntries(["Sensor Statuses"], self.t[i], self.values[i])
+        Reporter.addEntries(["Sensor Statuses"], self.t, self.values)
 
 
 
@@ -448,12 +444,8 @@ class CalibrationRecord(Record):
         # Load report
         Reporter.load(self.report)
 
-        # Get number of records found
-        n = len(self.values)
-
         # Add entries
-        for i in range(n):
-            Reporter.addEntries(["Calibrations"], self.t[i], self.values[i])
+        Reporter.addEntries(["Calibrations"], self.t, self.values)
 
 
 
