@@ -1355,26 +1355,26 @@ def main():
     pump.start()
 
     # Read pump time
-    #pump.time.read()
+    pump.time.read()
 
     # Read pump model
-    #pump.model.read()
+    pump.model.read()
 
     # Read pump firmware version
-    #pump.firmware.read()
+    pump.firmware.read()
 
     # Push button on pump
     #pump.buttons.push("EASY")
     #pump.buttons.push("ESC")
     #pump.buttons.push("ACT")
     #pump.buttons.push("UP")
-    #pump.buttons.push("DOWN")
+    pump.buttons.push("DOWN")
 
     # Read pump battery level
-    #pump.battery.read()
+    pump.battery.read()
 
     # Read remaining amount of insulin in pump
-    #pump.reservoir.read()
+    pump.reservoir.read()
 
     # Read pump status
     #pump.status.read()
@@ -1387,48 +1387,48 @@ def main():
     #pump.settings.verify()
 
     # Read BG units set in pump's bolus wizard
-    #pump.units["BG"].read()
+    pump.units["BG"].read()
 
     # Read carb units set in pump's bolus wizard
-    #pump.units["C"].read()
+    pump.units["C"].read()
 
     # Read current TBR units
-    #pump.units["TBR"].read()
+    pump.units["TBR"].read()
 
     # Set TBR units
-    #pump.units["TBR"].set("U/h")
-    #pump.units["TBR"].set("%")
+    pump.units["TBR"].set("U/h")
+    pump.units["TBR"].set("%")
 
     # Read BG targets stored in pump
-    #pump.BGTargets.read()
+    pump.BGTargets.read()
 
     # Read insulin sensitivity factors stored in pump
-    #pump.ISF.read()
+    pump.ISF.read()
 
     # Read carb sensitivity factors stored in pump
-    #pump.CSF.read()
+    pump.CSF.read()
 
     # Read basal profile stored in pump
-    #pump.basalProfile.read("Standard")
-    #pump.basalProfile.read("A")
-    #pump.basalProfile.read("B")
+    pump.basalProfile.read("Standard")
+    pump.basalProfile.read("A")
+    pump.basalProfile.read("B")
 
     # Read daily totals on pump
-    #pump.dailyTotals.read()
+    pump.dailyTotals.read()
 
     # Read pump history
-    #pump.history.read()
+    pump.history.read()
 
     # Send bolus to pump
-    #pump.bolus.deliver(0.1)
+    pump.bolus.deliver(0.1)
 
     # Read current TBR
     #pump.TBR.read()
 
     # Send TBR to pump
-    #pump.TBR.set(5, "U/h", 30)
-    #pump.TBR.set(50, "%", 90)
-    #pump.TBR.cancel()
+    pump.TBR.set(5, "U/h", 30)
+    pump.TBR.set(50, "%", 90)
+    pump.TBR.cancel()
 
     # Stop dialogue with pump
     pump.stop()
