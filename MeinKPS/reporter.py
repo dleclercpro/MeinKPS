@@ -256,41 +256,6 @@ class Reporter:
 
 
 
-    def addEntry(self, path, key, entry, overwrite = False):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ADDENTRY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load report section
-        self.getSection(path, True)
-
-        # Give user info
-        print ("Attempting to add entry: " + self.formatPath(path) + " > " +
-               str(key) + " > " + json.dumps(entry))
-
-        # Look if entry is already in report
-        if key in self.section and not overwrite:
-
-            # Give user info
-            print "Entry already exists."
-
-        # If not, write it down
-        else:
-
-            # Add entry to report
-            self.section[key] = entry
-
-            # Give user info
-            print "Entry added."
-
-            # Rewrite report
-            self.save()
-
-
-
     def addEntries(self, path, keys, entries, overwrite = False):
 
         """

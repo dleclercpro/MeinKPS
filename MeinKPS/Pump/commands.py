@@ -684,7 +684,7 @@ class PowerPump(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntry([], "Power", now, True)
+        Reporter.addEntries([], "Power", now, True)
 
 
 
@@ -782,7 +782,7 @@ class ReadPumpModel(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "Model", self.response, True)
+        Reporter.addEntries([], "Model", self.response, True)
 
 
 
@@ -836,7 +836,7 @@ class ReadPumpFirmware(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "Firmware", self.response, True)
+        Reporter.addEntries([], "Firmware", self.response, True)
 
 
 
@@ -939,7 +939,7 @@ class ReadPumpBattery(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntry(["Battery Levels"], now, self.response)
+        Reporter.addEntries(["Battery Levels"], now, self.response)
 
 
 
@@ -996,7 +996,7 @@ class ReadPumpReservoir(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntry(["Reservoir Levels"], now, self.response)
+        Reporter.addEntries(["Reservoir Levels"], now, self.response)
 
 
 
@@ -1135,7 +1135,7 @@ class ReadPumpSettings(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntry([], "Settings", self.response, True)
+        Reporter.addEntries([], "Settings", self.response, True)
 
 
 
@@ -1192,7 +1192,7 @@ class ReadPumpBGU(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "BG Units", self.response, True)
+        Reporter.addEntries([], "BG Units", self.response, True)
 
 
 
@@ -1249,7 +1249,7 @@ class ReadPumpCU(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "Carb Units", self.response, True)
+        Reporter.addEntries([], "Carb Units", self.response, True)
 
 
 
@@ -1311,7 +1311,7 @@ class ReadPumpBGTargets(PumpCommand):
         super(self.__class__, self).__init__(pump)
 
         # Define info
-        self.info = "Reading pump's BG targets..."
+        self.info = "Reading pump's BG target(s)..."
 
         # Define packet bytes
         self.packet.code = 159
@@ -1422,10 +1422,10 @@ class ReadPumpBGTargets(PumpCommand):
 
         # Store targets
         for i in range(n):
-            Reporter.addEntry(path, t[i], targets[i])
+            Reporter.addEntries(path, t[i], targets[i])
 
         # Store BG units
-        Reporter.addEntry([], "BG Units", units, True)
+        Reporter.addEntries([], "BG Units", units, True)
 
 
 
@@ -1443,7 +1443,7 @@ class ReadPumpISF(PumpCommand):
         super(self.__class__, self).__init__(pump)
 
         # Define info
-        self.info = "Reading pump's ISF..."
+        self.info = "Reading pump's ISF(s)..."
 
         # Define packet bytes
         self.packet.code = 139
@@ -1554,10 +1554,13 @@ class ReadPumpISF(PumpCommand):
 
         # Store targets
         for i in range(n):
-            Reporter.addEntry(path, t[i], factors[i])
+            Reporter.addEntries(path, t[i], factors[i])
+
+        # Update units for BGs
+        units = units[:-2]
 
         # Store BG units (without insulin units)
-        Reporter.addEntry([], "BG Units", units[:-2], True)
+        Reporter.addEntries([], "BG Units", units, True)
 
 
 
@@ -1575,7 +1578,7 @@ class ReadPumpCSF(PumpCommand):
         super(self.__class__, self).__init__(pump)
 
         # Define info
-        self.info = "Reading pump's CSF..."
+        self.info = "Reading pump's CSF(s)..."
 
         # Define packet bytes
         self.packet.code = 138
@@ -1686,14 +1689,17 @@ class ReadPumpCSF(PumpCommand):
 
         # Store targets
         for i in range(n):
-            Reporter.addEntry(path, t[i], factors[i])
+            Reporter.addEntries(path, t[i], factors[i])
+
+        # Update units for carbs
+        if units == "g/U":
+            units = units[:-2]
+
+        else:
+            units = units[2:] + "s"
 
         # Store carb units (without insulin units)
-        if units == "g/U":
-            Reporter.addEntry([], "Carb Units", units[:-2], True)
-
-        elif units == "U/exchange":
-            Reporter.addEntry([], "Carb Units", units[2:] + "s", True)
+        Reporter.addEntries([], "Carb Units", units, True)
 
 
 
@@ -1840,7 +1846,7 @@ class ReadPumpBasalProfile(PumpCommand):
 
         # Store targets
         for i in range(n):
-            Reporter.addEntry(path, t[i], rates[i])
+            Reporter.addEntries(path, t[i], rates[i])
 
 
 
@@ -2086,7 +2092,7 @@ class ReadPumpTBR(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntry(["Temporary Basals"], now, [rate, units, duration])
+        Reporter.addEntries(["Temporary Basals"], now, [rate, units, duration])
 
 
 

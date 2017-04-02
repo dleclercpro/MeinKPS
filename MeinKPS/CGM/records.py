@@ -387,7 +387,7 @@ class SensorRecord(Record):
 
         # Add entries
         for i in range(n):
-            Reporter.addEntry(["Sensor Statuses"], self.t[i], self.values[i])
+            Reporter.addEntries(["Sensor Statuses"], self.t[i], self.values[i])
 
 
 
@@ -453,7 +453,7 @@ class CalibrationRecord(Record):
 
         # Add entries
         for i in range(n):
-            Reporter.addEntry(["Calibrations"], self.t[i], self.values[i])
+            Reporter.addEntries(["Calibrations"], self.t[i], self.values[i])
 
 
 

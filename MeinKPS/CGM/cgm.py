@@ -259,7 +259,7 @@ class Battery(object):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry(["Battery Levels"], self.t, self.level)
+        Reporter.addEntries(["Battery Levels"], self.t, self.level)
 
 
 
@@ -342,7 +342,7 @@ class Language(object):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "Language", self.value, True)
+        Reporter.addEntries([], "Language", self.value, True)
 
 
 
@@ -432,7 +432,7 @@ class Clock(object):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "Clock Mode", self.mode, True)
+        Reporter.addEntries([], "Clock Mode", self.mode, True)
 
 
 
@@ -500,7 +500,7 @@ class Units(object):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "Units", self.value, True)
+        Reporter.addEntries([], "Units", self.value, True)
 
 
 
@@ -603,7 +603,7 @@ class Transmitter(object):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntry([], "Transmitter ID", self.id, True)
+        Reporter.addEntries([], "Transmitter ID", self.id, True)
 
 
 

@@ -330,7 +330,7 @@ class BolusRecord(Record):
 
         # Add entries
         for i in range(n):
-            Reporter.addEntry(["Boluses"], self.times[i], self.values[i])
+            Reporter.addEntries(["Boluses"], self.times[i], self.values[i])
 
 
 
@@ -472,7 +472,7 @@ class CarbsRecord(Record):
 
         # Add entries
         for i in range(n):
-            Reporter.addEntry(["Carbs"], self.times[i], self.values[i])
+            Reporter.addEntries(["Carbs"], self.times[i], self.values[i])
 
 
 
