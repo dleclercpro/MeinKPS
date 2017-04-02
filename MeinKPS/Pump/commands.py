@@ -1417,12 +1417,8 @@ class ReadPumpBGTargets(PumpCommand):
         # Remove old entries
         Reporter.delete([], path[0])
 
-        # Read number of entries to add
-        n = len(t)
-
         # Store targets
-        for i in range(n):
-            Reporter.addEntries(path, t[i], targets[i])
+        Reporter.addEntries(path, t, targets)
 
         # Store BG units
         Reporter.addEntries([], "BG Units", units, True)
@@ -1549,12 +1545,8 @@ class ReadPumpISF(PumpCommand):
         # Remove old entries
         Reporter.delete([], path[0])
 
-        # Read number of entries to add
-        n = len(t)
-
         # Store targets
-        for i in range(n):
-            Reporter.addEntries(path, t[i], factors[i])
+        Reporter.addEntries(path, t, factors)
 
         # Update units for BGs
         units = units[:-2]
@@ -1684,12 +1676,8 @@ class ReadPumpCSF(PumpCommand):
         # Remove old entries
         Reporter.delete([], path[0])
 
-        # Read number of entries to add
-        n = len(t)
-
         # Store targets
-        for i in range(n):
-            Reporter.addEntries(path, t[i], factors[i])
+        Reporter.addEntries(path, t, factors)
 
         # Update units for carbs
         if units == "g/U":
@@ -1841,12 +1829,8 @@ class ReadPumpBasalProfile(PumpCommand):
         # Remove old entries
         Reporter.delete([], path[0])
 
-        # Read number of entries to add
-        n = len(t)
-
         # Store targets
-        for i in range(n):
-            Reporter.addEntries(path, t[i], rates[i])
+        Reporter.addEntries(path, t, rates)
 
 
 
