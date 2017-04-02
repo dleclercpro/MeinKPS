@@ -23,7 +23,7 @@
 """
 
 # LIBRARIES
-import json
+import ujson as json
 import os
 
 
