@@ -24,6 +24,7 @@
 
 # LIBRARIES
 import datetime
+import sys
 
 
 
@@ -48,6 +49,12 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize record's report
+        self.report = None
+
+        # Initialize record size
+        self.size = None
+
         # Initialize record vectors
         self.t = None
         self.values = None
@@ -58,7 +65,7 @@ class Record(object):
 
 
 
-    def find(self, page, n):
+    def find(self, data):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,11 +78,14 @@ class Record(object):
         self.values = []
         self.bytes = []
 
-        # Extract records from page
+        # Compute number of records in data
+        n = len(data) / self.size
+
+        # Extract records
         for i in range(n):
 
             # Extract ith record's bytes
-            bytes = page[i * self.size: (i + 1) * self.size]
+            bytes = data[i * self.size: (i + 1) * self.size]
 
             # Give user info
             print "Record bytes: " + str(bytes)
@@ -141,6 +151,18 @@ class Record(object):
 
 
 
+    def filter(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FILTER
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
+
+
+
     def store(self):
 
         """
@@ -165,6 +187,9 @@ class BGRecord(Record):
 
         # Initialize record
         super(self.__class__, self).__init__(cgm)
+
+        # Define record's report
+        self.report = "BG.json"
 
         # Define record size
         self.size = 13
@@ -210,26 +235,60 @@ class BGRecord(Record):
         # Decode BG
         BG = lib.pack(self.bytes[-1][8:10]) & 1023
 
+        # Decode trend
+        trend = self.trends[self.bytes[-1][10] & 15]
+
         # Deal with special values
         if BG in self.special:
 
-            # Give user info
-            print "Special value: " + self.special[BG]
+            # Decode special BG
+            BG = self.special[BG]
 
+            # Give user info
+            print "Special value: " + BG
+
+        # Deal with normal values
         else:
 
             # Convert BG units if desired
             if self.convert:
                 BG = round(BG / 18.0, 1)
 
-            # Decode trend
-            trend = self.trends[self.bytes[-1][10] & 15]
-
-            # Store them
-            self.values.append({"BG": BG, "Trend": trend})
-
             # Give user info
             print "BG: " + str(BG) + " " + str(trend)
+
+        # Store them
+        self.values.append({"BG": BG, "Trend": trend})
+
+
+
+    def filter(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FILTER
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize new BGs and their respective times
+        t = []
+        BGs = []
+
+        # Compute number of decoded records
+        n = len(self.t)
+
+        # Filter records
+        for i in range(n):
+
+            # Only keep normal (numeric) BG values
+            if type(self.values[i]["BG"]) is float:
+
+                # Fill new vectors
+                t.append(self.t[i])
+                BGs.append(self.values[i]["BG"])
+
+        # Return them
+        return [t, BGs]
 
 
 
@@ -241,21 +300,17 @@ class BGRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "BG.json"
-
         # Give user info
-        print "Adding BG records to report: '" + report + "'..."
+        print "Adding BG records to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
-        # Get number of records found
-        n = len(self.values)
+        # Filter BGs
+        [t, BGs] = self.filter()
 
         # Add entries
-        for i in range(n):
-            Reporter.addEntry([], self.t[i], self.values[i]["BG"])
+        Reporter.addEntries([], t, BGs)
 
 
 
@@ -271,6 +326,9 @@ class SensorRecord(Record):
 
         # Initialize record
         super(self.__class__, self).__init__(cgm)
+
+        # Define record's report
+        self.report = "CGM.json"
 
         # Define record size
         self.size = 15
@@ -318,14 +376,11 @@ class SensorRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "CGM.json"
-
         # Give user info
-        print "Adding sensor statuses to report: '" + report + "'..."
+        print "Adding sensor statuses to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
         # Get number of records found
         n = len(self.values)
@@ -348,6 +403,9 @@ class CalibrationRecord(Record):
 
         # Initialize record
         super(self.__class__, self).__init__(cgm)
+
+        # Define record's report
+        self.report = "CGM.json"
 
         # Define record size
         self.size = 16
@@ -384,14 +442,11 @@ class CalibrationRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "CGM.json"
-
         # Give user info
-        print "Adding sensor calibrations to report: '" + report + "'..."
+        print "Adding sensor calibrations to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
         # Get number of records found
         n = len(self.values)

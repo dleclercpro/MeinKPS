@@ -48,9 +48,6 @@ class Database(object):
         # Initialize database range
         self.range = None
 
-        # Initialize database number of pages
-        self.n = None
-
         # Initialize database page
         self.page = None
 
@@ -113,6 +110,40 @@ class Database(object):
 
 
 
+    def parse(self, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PARSE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset database page
+        self.page = {"Header": None, "Data": None}
+
+        # Get page header
+        self.page["Header"] = bytes[:self.headSize]
+
+        # Parse data, in case record is defined (discard empty bytes)
+        if self.record is not None:
+
+            # Get number of records in current page
+            n = bytes[4]
+
+            # Get page data
+            self.page["Data"] = bytes[self.headSize:
+                                      self.headSize + n * self.record.size]
+
+        else:
+
+            # Get page data
+            self.page["Data"] = bytes[self.headSize:]
+        
+        # Extend data
+        self.data.extend(self.page["Data"])
+
+
+
     def read(self):
 
         """
@@ -140,9 +171,6 @@ class Database(object):
             # Read database
             for i in range(start, end + 1):
 
-                # Reset database page
-                self.page = {"Header": None, "Data": None}
-
                 # Give user info
                 print "Reading database page " + str(i) + "/" + str(end) + "..."
 
@@ -152,25 +180,15 @@ class Database(object):
                 # Read page
                 command.execute()
 
-                # Get page
-                self.page["Header"] = command.response["Body"][:self.headSize]
-                self.page["Data"] = command.response["Body"][self.headSize:]
-                
-                # Extend database
-                self.data.extend(self.page["Data"])
+                # Parse page
+                self.parse(command.response["Body"])
 
                 # Verify page
                 self.verify()
 
-                # Get number of records in page
-                self.n = self.page["Header"][4]
-
-                # Give user info
-                print "Number of records in page: " + str(self.n)
-
-                # Extract records from page if defined
-                if self.record is not None:
-                    self.record.find(self.page["Data"], self.n)
+            # Extract defined records from data
+            if self.record is not None:
+                self.record.find(self.data)
 
 
 
@@ -182,12 +200,9 @@ class Database(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link to header
-        header = self.page["Header"]
-
         # Get and compute header CRCs
-        expectedCRC = lib.pack(header[-2:])
-        computedCRC = lib.computeCRC16(header[:-2])
+        expectedCRC = lib.pack(self.page["Header"][-2:])
+        computedCRC = lib.computeCRC16(self.page["Header"][:-2])
 
         # Give user info
         print "Expected header CRC: " + str(expectedCRC)

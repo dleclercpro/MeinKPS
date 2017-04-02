@@ -23,7 +23,7 @@
 """
 
 # LIBRARIES
-import ujson as json
+import json
 import os
 
 
@@ -288,6 +288,52 @@ class Reporter:
 
             # Rewrite report
             self.save()
+
+
+
+    def addEntries(self, path, keys, entries, overwrite = False):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ADDENTRIES
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load report section
+        self.getSection(path, True)
+
+        # Make sure input is of list type
+        if type(keys) is not list:
+            keys = [keys]
+            entries = [entries]
+
+        # Compute number of entries
+        n = len(keys)
+
+        # Add entries
+        for i in range(n):
+
+            # Give user info
+            print ("Attempting to add entry: " + self.formatPath(path) + " > " +
+                   str(keys[i]) + " > " + json.dumps(entries[i]))
+
+            # Look if entry is already in report
+            if keys[i] in self.section and not overwrite:
+
+                # Give user info
+                print "Entry already exists."
+
+            # If not, write it down
+            else:
+
+                # Add entry to report
+                self.section[keys[i]] = entries[i]
+
+                # Give user info
+                print "Entry added."
+
+        # Rewrite report
+        self.save()
 
 
 

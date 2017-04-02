@@ -196,6 +196,9 @@ class Battery(object):
         self.commands = {"ReadLevel": commands.ReadBatteryLevel(cgm),
                          "ReadState": commands.ReadBatteryState(cgm)}
 
+        # Define report
+        self.report = "CGM.json"
+
 
 
     def read(self):
@@ -249,14 +252,11 @@ class Battery(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "CGM.json"
-
         # Give user info
-        print "Storing BG units to report: '" + report + "'..."
+        print "Storing BG units to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
         # Add entry
         Reporter.addEntry(["Battery Levels"], self.t, self.level)
@@ -297,6 +297,9 @@ class Language(object):
         # Define command(s)
         self.command = commands.ReadLanguage(cgm)
 
+        # Define report
+        self.report = "CGM.json"
+
 
 
     def read(self):
@@ -332,14 +335,11 @@ class Language(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "CGM.json"
-
         # Give user info
-        print "Storing language to report: '" + report + "'..."
+        print "Storing language to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
         # Add entry
         Reporter.addEntry([], "Language", self.value, True)
@@ -371,6 +371,9 @@ class Clock(object):
         # Define command(s)
         self.commands = {"ReadSystemTime": commands.ReadSystemTime(cgm),
                          "ReadMode": commands.ReadClockMode(cgm)}
+
+        # Define report
+        self.report = "CGM.json"
 
 
 
@@ -422,14 +425,11 @@ class Clock(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "CGM.json"
-
         # Give user info
-        print "Storing clock mode to report: '" + report + "'..."
+        print "Storing clock mode to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
         # Add entry
         Reporter.addEntry([], "Clock Mode", self.mode, True)
@@ -454,6 +454,9 @@ class Units(object):
 
         # Define command(s)
         self.command = commands.ReadUnits(cgm)
+
+        # Define report
+        self.report = "CGM.json"
 
 
 
@@ -490,14 +493,11 @@ class Units(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "CGM.json"
-
         # Give user info
-        print "Storing BG units to report: '" + report + "'..."
+        print "Storing BG units to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
         # Add entry
         Reporter.addEntry([], "Units", self.value, True)
@@ -558,6 +558,9 @@ class Transmitter(object):
         # Define command(s)
         self.command = commands.ReadTransmitterID(cgm)
 
+        # Define report
+        self.report = "CGM.json"
+
 
 
     def read(self):
@@ -593,14 +596,11 @@ class Transmitter(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define report
-        report = "CGM.json"
-
         # Give user info
-        print "Storing current transmitter ID to report: '" + report + "'..."
+        print "Storing current transmitter ID to report: '" + self.report + "'..."
 
         # Load report
-        Reporter.load(report)
+        Reporter.load(self.report)
 
         # Add entry
         Reporter.addEntry([], "Transmitter ID", self.id, True)
