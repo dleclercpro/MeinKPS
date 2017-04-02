@@ -110,13 +110,16 @@ def formatTime(x):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Define string format
+    stringFormat = "%Y.%m.%d - %H:%M:%S"
+
     if type(x) == datetime.datetime:
 
-        t = datetime.datetime.strftime(x, "%Y.%m.%d - %H:%M:%S")
+        t = datetime.datetime.strftime(x, stringFormat)
 
     else:
 
-        t = datetime.datetime.strptime(x, "%Y.%m.%d - %H:%M:%S")
+        t = datetime.datetime.strptime(x, stringFormat)
 
     return t
 
