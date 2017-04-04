@@ -102,7 +102,10 @@ class IOB(object):
         self.DIA = None
 
         # Initialize basal profile
-        self.basal = None
+        self.basalProfile = None
+
+        # Initialize TBR profile
+        self.TBRProfile = None
 
         # Initialize TBRs
         self.TBRs = None
@@ -164,10 +167,10 @@ class IOB(object):
         # Define TBR units
         units = "U/h"
 
-        # Keep TBRs that are within DIA (+1 in case if extends over DIA)
+        # Keep TBRs that are within DIA (+1 in case it overlaps DIA)
         for t in sorted(self.TBRs):
 
-            # Compare to time limit
+            # Compare to time limit (is it within DIA?)
             if lib.formatTime(t) >= self.then:
 
                 # Check for units mismatch
@@ -191,10 +194,10 @@ class IOB(object):
         # Update TBRs
         self.TBRs = TBRs
 
-        # Keep boluses that are within DIA (+1 in case if extends over DIA)
+        # Keep boluses that are within DIA (+1 in case it overlaps DIA)
         for t in sorted(self.boluses):
 
-            # Compare to time limit
+            # Compare to time limit (is it within DIA?)
             if lib.formatTime(t) >= self.then:
 
                 # Store active TBR
@@ -213,16 +216,136 @@ class IOB(object):
         self.boluses = boluses
 
         # Give user info
-        print "Active TBRs:"
+        print "Filtered TBRs:"
 
-        # Print active TBRs
+        # Print filtered TBRs
         lib.printJSON(self.TBRs)
 
         # Give user info
-        print "Active boluses:"
+        print "Filtered boluses:"
 
-        # Print active TBRs
+        # Print filtered TBRs
         lib.printJSON(self.boluses)
+
+
+
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize TBR components
+        t = []
+        rates = []
+        units = []
+        durations = []
+
+        # Decouple TBR components
+        for i in sorted(self.TBRs):
+
+            # Get time
+            t.append(lib.formatTime(i))
+
+            # Get rate
+            rates.append(self.TBRs[i][0])
+
+            # Get units
+            units.append(self.TBRs[i][1])
+
+            # Get duration
+            durations.append(self.TBRs[i][2])
+
+        # Return decoupled TBRs
+        return [t, rates, units, durations]
+
+
+
+    def profilize(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PROFILIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize TBR profile
+        profile = {"Times": [],
+                 "Rates": []}
+
+        # Decouple TBRs
+        [t, rates, units, durations] = self.decouple()
+
+        # Add fake current TBR
+        t.append(self.now)
+        rates.append(None)
+        units.append(None)
+        durations.append(None)
+
+        # Compute number of TBRs
+        n = len(t)
+        
+        # Inject natural TBR ends
+        for i in range(n - 1):
+
+            # Add time
+            profile["Times"].append(t[i])
+
+            # Add rate
+            profile["Rates"].append(rates[i])
+
+            # Read planed duration
+            d = datetime.timedelta(minutes = durations[i])
+
+            # Compute time between current TBR and next one
+            dt = t[i + 1] - t[i]
+
+            # Add a zero to profile (normal basal) if necessary
+            if d < dt:
+
+                # Add time
+                profile["Times"].append(t[i] + d)
+
+                # Add rate
+                profile["Rates"].append(None)
+
+        # Update number of TBRs
+        n = len(profile["Times"])
+
+        # Extract index of first TBR within DIA
+        for i in range(n):
+
+            # Is it within DIA?
+            if profile["Times"][i] >= self.then:
+
+                # Exit
+                break
+
+        # Add first TBR, which should be end of DIA, if not already there
+        if profile["Times"][i] != self.then:
+
+            # Add time
+            profile["Times"].insert(i, self.then)
+
+            # Add rate
+            profile["Rates"].insert(i, profile["Rates"][i - 1])
+
+        # Discard TBRs outside DIA
+        profile["Times"] = profile["Times"][i:]
+        profile["Rates"] = profile["Rates"][i:]
+
+        # Update number of TBRs
+        n = len(profile["Times"])
+
+        # Give user info
+        print "TBR profile:"
+
+        # Show TBR profile
+        for i in range(n):
+            print (str(profile["Rates"][i]) + " (" +
+                   str(profile["Times"][i]) + ")")
 
 
 
@@ -235,6 +358,7 @@ class IOB(object):
         """
 
         # FIXME: take into account bolus enacting time
+        # TODO: deal with uncompleted bolus
 
         # Load necessary components in order to compute IOB
         self.load()
@@ -248,38 +372,10 @@ class IOB(object):
         # Filter TBRs and boluses to keep only the active ones
         self.filter()
 
-        # Build active TBRs profile
-        t = []
-        TBRs = [] 
-        activeTBRs = []
-
-        for i in sorted(self.TBRs):
-            t.append(lib.formatTime(i))
-            TBRs.append(self.TBRs[i])
-
-        # Check if last TBR is relevant
-        # FIXME
-        if t[0] + datetime.timedelta(minutes = TBRs[0][2]) > self.then:
-            pass
-
-        # Add current time to compute last TBR duration
-        t.append(self.now)
-
-        for i in range(len(t) - 1):
-
-            dt = datetime.timedelta(minutes = TBRs[i][2])
-            dT = t[i + 1] - t[i]
-
-            if dT < dt:
-                print str(TBRs[i][0]) + " (" + str(dT) + ")"
-                activeTBRs.append([dt])
-
-            else:
-                print str(TBRs[i][0]) + " (" + str(dt) + ")"
+        # Build TBR profile
+        self.profilize()
 
         # Compute difference between basal and TBRs
-        #lib.printJSON(self.basal)
-        #lib.printJSON(self.TBRs)
 
 
 
