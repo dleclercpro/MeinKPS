@@ -288,7 +288,7 @@ class IOB(object):
         n = len(t)
         
         # Inject natural TBR ends
-        for i in range(n - 1):
+        for i in range(n):
 
             # Add time
             profile["Times"].append(t[i])
@@ -296,23 +296,34 @@ class IOB(object):
             # Add rate
             profile["Rates"].append(rates[i])
 
-            # Read planed duration
-            d = datetime.timedelta(minutes = durations[i])
+            # Do not do on fake current TBR!
+            if i < n - 1:
 
-            # Compute time between current TBR and next one
-            dt = t[i + 1] - t[i]
+                # Read planed duration
+                d = datetime.timedelta(minutes = durations[i])
 
-            # Add a zero to profile (normal basal) if necessary
-            if d < dt:
+                # Compute time between current TBR and next one
+                dt = t[i + 1] - t[i]
 
-                # Add time
-                profile["Times"].append(t[i] + d)
+                # Add a zero to profile (normal basal) if necessary
+                if d < dt:
 
-                # Add rate
-                profile["Rates"].append(None)
+                    # Add time
+                    profile["Times"].append(t[i] + d)
+
+                    # Add rate
+                    profile["Rates"].append(None)
 
         # Update number of TBRs
         n = len(profile["Times"])
+
+        # Give user info
+        print "TBR steps:"
+
+        # Show TBR steps
+        for i in range(n):
+            print (str(profile["Rates"][i]) + " (" +
+                   str(profile["Times"][i]) + ")")
 
         # Extract index of first TBR within DIA
         for i in range(n):
