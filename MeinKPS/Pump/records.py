@@ -288,8 +288,8 @@ class BolusRecord(Record):
         # Define record's criteria
         # TODO: do something with incomplete boluses?
         self.criteria = (lambda x: x[0] == self.code and
-                                   x[1] <= maxBolus and
-                                   x[2] <= maxBolus and
+                                   x[1] <= (maxBolus / pump.bolus.stroke) and
+                                   x[2] <= (maxBolus / pump.bolus.stroke) and
                                    x[1] >= x[2] and
                                    x[3] == 0)
 
