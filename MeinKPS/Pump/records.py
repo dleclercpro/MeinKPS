@@ -282,9 +282,14 @@ class BolusRecord(Record):
                       "Date": 5,
                       "Body": 0}
 
+        # Define theoretical max bolus
+        maxBolus = 25.0
+
         # Define record's criteria
         # TODO: do something with incomplete boluses?
         self.criteria = (lambda x: x[0] == self.code and
+                                   x[1] <= maxBolus and
+                                   x[2] <= maxBolus and
                                    x[1] >= x[2] and
                                    x[3] == 0)
 
