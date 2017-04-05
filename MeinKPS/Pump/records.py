@@ -67,34 +67,6 @@ class Record(object):
 
 
 
-    def parse(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PARSE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Extract every part of record using a running variable
-        x = 0
-
-        # Extract head
-        self.head = self.bytes[x:self.sizes["Head"]]
-
-        # Update running variable
-        x += self.sizes["Head"]
-
-        # Extract date
-        self.date = self.bytes[x:x + self.sizes["Date"]]
-
-        # Update running variable
-        x += self.sizes["Date"]
-
-        # Extract body
-        self.body = self.bytes[x:x + self.sizes["Body"]]
-
-
-
     def find(self, page):
 
         """
@@ -130,6 +102,34 @@ class Record(object):
 
         # Store records
         self.store()
+
+
+
+    def parse(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PARSE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Extract every part of record using a running variable
+        x = 0
+
+        # Extract head
+        self.head = self.bytes[x:self.sizes["Head"]]
+
+        # Update running variable
+        x += self.sizes["Head"]
+
+        # Extract date
+        self.date = self.bytes[x:x + self.sizes["Date"]]
+
+        # Update running variable
+        x += self.sizes["Date"]
+
+        # Extract body
+        self.body = self.bytes[x:x + self.sizes["Body"]]
 
 
 
@@ -280,8 +280,9 @@ class BolusRecord(Record):
                       "Body": 0}
 
         # Define record's criteria
+        # TODO: do something with incomplete boluses?
         self.criteria = (lambda x: x[0] == self.code and
-                                   x[1] == x[2] and
+                                   x[1] >= x[2] and
                                    x[3] == 0)
 
         # Initialize rest of record
@@ -304,7 +305,7 @@ class BolusRecord(Record):
         super(self.__class__, self).decode()
 
         # Decode bolus
-        bolus = round(self.head[1] * self.pump.bolus.stroke, 1)
+        bolus = round(self.head[2] * self.pump.bolus.stroke, 1)
         
         # Store bolus
         self.values.append(bolus)
