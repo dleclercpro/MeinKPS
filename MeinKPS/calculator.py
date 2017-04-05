@@ -92,30 +92,18 @@ class IOB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize current time
-        self.now = None
+        # Give IOB a basal profile
+        self.basalProfile = BasalProfile()
 
-        # Initialize end time of insulin action based on DIA
-        self.then = None
+        # Give IOB a TBR profile
+        self.TBRProfile = TBRProfile()
 
-        # Initialize DIA
-        self.DIA = None
-
-        # Initialize basal profile
-        self.basalProfile = None
-
-        # Initialize TBR profile
-        self.TBRProfile = None
-
-        # Initialize TBRs
-        self.TBRs = None
-
-        # Initialize boluses
-        self.boluses = None
+        # Give IOB a bolus profile
+        self.bolusProfile = BolusProfile()
 
 
 
-    def load(self):
+    def compute(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,7 +111,194 @@ class IOB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # TODO: deal with various basal profiles?
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Build TBR profile
+        self.TBRProfile.compute(now)
+
+
+
+class COB(object):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize DCA
+        self.DCA = None
+
+
+
+    def compute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
+
+
+
+class Profile(object):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize time axis
+        self.t = None
+
+        # Initialize y-axis
+        self.y = None
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset time axis
+        self.t = []
+
+        # Reset y-axis
+        self.y = []
+
+
+
+class BasalProfile(Profile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Initialize basal
+        self.basal = None
+
+
+
+    def compute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset TBR profile
+        self.reset()
+
+        # Load necessary components
+        self.load()
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load("pump.json")
+
+        # Read basal profile
+        # TODO: deal with various basal profiles
+        self.basal = Reporter.getEntry([], "Basal Profile (Standard)")
+
+        # Give user info
+        print "Number of steps in basal profile: " + str(len(self.basal))
+
+
+
+class TBRProfile(Profile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Initialize TBRs
+        self.TBRs = None
+
+        # Initialize DIA
+        self.DIA = None
+
+        # Initialize current time
+        self.now = None
+
+
+
+    def compute(self, now):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset TBR profile
+        self.reset()
+
+        # Load necessary components
+        self.load()
+
+        # Store current time
+        self.now = now
+
+        # Compute time limit of insulin action
+        self.then = now - datetime.timedelta(hours = self.DIA)
+
+        # Filter TBRs and keep only active ones
+        self.filter()
+
+        # Build TBR profile steps
+        self.build()
+
+        # Cut TBRs outside of DIA
+        self.cut()
+
+        # Print TBR profile
+        self.show()
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
         # Load pump report
         Reporter.load("pump.json")
@@ -131,22 +306,14 @@ class IOB(object):
         # Read DIA
         self.DIA = Reporter.getEntry(["Settings"], "DIA") 
 
-        # Read basal profile
-        self.basal = Reporter.getEntry([], "Basal Profile (Standard)")
-
         # Load treatments report
         Reporter.load("treatments.json")
 
         # Read past TBRs
         self.TBRs = Reporter.getEntry([], "Temporary Basals")
 
-        # Read past boluses
-        self.boluses = Reporter.getEntry([], "Boluses")
-
         # Give user info
-        print "Number of steps in basal profile: " + str(len(self.basal))
         print "Number of TBRs enacted: " + str(len(self.TBRs))
-        print "Number of boluses enacted: " + str(len(self.boluses))
 
 
 
@@ -161,17 +328,17 @@ class IOB(object):
         # Initialize temporary dictionary for active TBRs
         TBRs = {}
 
-        # Initialize temporary dictionary for active boluses
-        boluses = {}
-
-        # Define TBR units
+        # Define correct TBR units
         units = "U/h"
 
         # Keep TBRs that are within DIA (+1 in case it overlaps DIA)
         for t in sorted(self.TBRs):
 
+            # Format time
+            T = lib.formatTime(t)
+
             # Compare to time limit (is it within DIA?)
-            if lib.formatTime(t) >= self.then:
+            if T >= self.then and T <= self.now:
 
                 # Check for units mismatch
                 if self.TBRs[t][1] != units:
@@ -182,8 +349,8 @@ class IOB(object):
                 # Store active TBR
                 TBRs[t] = self.TBRs[t]
 
-            # Find last TBR until begin of insulin action time
-            else:
+            # Find last TBR enacted before DIA, which may overlap
+            elif T < self.then:
 
                 # Store its corresponding time
                 last = t
@@ -193,39 +360,6 @@ class IOB(object):
 
         # Update TBRs
         self.TBRs = TBRs
-
-        # Keep boluses that are within DIA (+1 in case it overlaps DIA)
-        for t in sorted(self.boluses):
-
-            # Compare to time limit (is it within DIA?)
-            if lib.formatTime(t) >= self.then:
-
-                # Store active TBR
-                boluses[t] = self.boluses[t]
-
-            # Find last bolus until begin of insulin action time
-            else:
-
-                # Store its corresponding time
-                last = t
-
-        # Add last bolus
-        boluses[last] = self.boluses[last]
-
-        # Update boluses
-        self.boluses = boluses
-
-        # Give user info
-        print "Filtered TBRs:"
-
-        # Print filtered TBRs
-        lib.printJSON(self.TBRs)
-
-        # Give user info
-        print "Filtered boluses:"
-
-        # Print filtered TBRs
-        lib.printJSON(self.boluses)
 
 
 
@@ -263,40 +397,39 @@ class IOB(object):
 
 
 
-    def profilize(self):
+    def build(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PROFILIZE
+            BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Initialize TBR profile
-        profile = {"Times": [],
-                 "Rates": []}
 
         # Decouple TBRs
         [t, rates, units, durations] = self.decouple()
 
-        # Add fake current TBR
-        t.append(self.now)
-        rates.append(None)
-        units.append(None)
-        durations.append(None)
+        # End of TBR profile should be current TBR
+        if t[-1] != self.now:
+
+            # Generate fake current TBR
+            t.append(self.now)
+            rates.append(None)
+            units.append(None)
+            durations.append(None)
 
         # Compute number of TBRs
         n = len(t)
         
-        # Inject natural TBR ends
+        # Start building TBR profile and inject natural TBR ends when needed
         for i in range(n):
 
             # Add time
-            profile["Times"].append(t[i])
+            self.t.append(t[i])
 
             # Add rate
-            profile["Rates"].append(rates[i])
+            self.y.append(rates[i])
 
-            # Do not do on fake current TBR!
+            # Not computable for current TBR!
             if i < n - 1:
 
                 # Read planed duration
@@ -305,92 +438,76 @@ class IOB(object):
                 # Compute time between current TBR and next one
                 dt = t[i + 1] - t[i]
 
-                # Add a zero to profile (normal basal) if necessary
+                # Add a "None" to profile (to be replaced later by normal basal)
                 if d < dt:
 
                     # Add time
-                    profile["Times"].append(t[i] + d)
+                    self.t.append(t[i] + d)
 
                     # Add rate
-                    profile["Rates"].append(None)
+                    self.y.append(None)
 
-        # Update number of TBRs
-        n = len(profile["Times"])
 
-        # Give user info
-        print "TBR steps:"
 
-        # Show TBR steps
-        for i in range(n):
-            print (str(profile["Rates"][i]) + " (" +
-                   str(profile["Times"][i]) + ")")
+    def cut(self):
 
-        # Extract index of first TBR within DIA
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CUT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get number of TBRs
+        n = len(self.t)
+
+        # Find index "i" of first TBR within DIA
         for i in range(n):
 
             # Is it within DIA?
-            if profile["Times"][i] >= self.then:
+            if self.t[i] >= self.then:
 
-                # Exit
+                # Index found, exit
                 break
 
-        # Add first TBR, which should be end of DIA, if not already there
-        if profile["Times"][i] != self.then:
+        # Start of TBR profile should be TBR at beginning of DIA
+        if self.t[i] != self.then:
 
             # Add time
-            profile["Times"].insert(i, self.then)
+            self.t.insert(i, self.then)
 
             # Add rate
-            profile["Rates"].insert(i, profile["Rates"][i - 1])
+            self.y.insert(i, self.y[i - 1])
 
-        # Discard TBRs outside DIA
-        profile["Times"] = profile["Times"][i:]
-        profile["Rates"] = profile["Rates"][i:]
+        # Cut TBRs outside DIA
+        del self.t[:i]
+        del self.y[:i]
 
-        # Update number of TBRs
-        n = len(profile["Times"])
+
+
+    def show(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get number of TBRs
+        n = len(self.t)
 
         # Give user info
         print "TBR profile:"
 
         # Show TBR profile
         for i in range(n):
-            print (str(profile["Rates"][i]) + " (" +
-                   str(profile["Times"][i]) + ")")
+            print str(self.t[i]) + " - " + str(self.y[i])
 
 
 
-    def compute(self):
+class BolusProfile(Profile):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # FIXME: take into account bolus enacting time
-        # TODO: deal with uncompleted bolus
-
-        # Load necessary components in order to compute IOB
-        self.load()
-
-        # Get current time
-        self.now = datetime.datetime.now()
-
-        # Get time limit of insulin action
-        self.then = self.now - datetime.timedelta(hours = self.DIA)
-
-        # Filter TBRs and boluses to keep only the active ones
-        self.filter()
-
-        # Build TBR profile
-        self.profilize()
-
-        # Compute difference between basal and TBRs
-
-
-
-class COB(object):
+    # FIXME: take into account bolus enacting time
+    # TODO: deal with uncompleted bolus
 
     def __init__(self):
 
@@ -400,8 +517,11 @@ class COB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize DCA
-        self.DCA = None
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Initialize boluses
+        self.boluses = None
 
 
 
@@ -413,7 +533,30 @@ class COB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        pass
+        # Reset TBR profile
+        self.reset()
+
+        # Load necessary components
+        self.load()
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load treatments report
+        Reporter.load("treatments.json")
+
+        # Read past boluses
+        self.boluses = Reporter.getEntry([], "Boluses")
+
+        # Give user info
+        print "Number of boluses enacted: " + str(len(self.boluses))
 
 
 
