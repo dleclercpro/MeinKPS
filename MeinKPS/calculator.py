@@ -124,13 +124,13 @@ class IOB(object):
         self.load()
 
         # Build basal profile
-        self.basalProfile.compute("Standard")
+        self.basalProfile.compute(self.now, self.DIA, "Standard")
 
         # Build TBR profile
-        self.TBRProfile.compute(self.now, self.DIA)
+        #self.TBRProfile.compute(self.now, self.DIA)
 
         # Build bolus profile
-        self.bolusProfile.compute(self.now, self.DIA)
+        #self.bolusProfile.compute(self.now, self.DIA)
 
 
 
@@ -214,6 +214,26 @@ class Profile(object):
 
 
 
+    def show(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get number of profile steps
+        n = len(self.t)
+
+        # Give user info
+        print "Profile '" + self.__class__.__name__ + "':"
+
+        # Show profile
+        for i in range(n):
+            print str(self.t[i]) + " - " + str(self.y[i])
+
+
+
 class BasalProfile(Profile):
 
     def __init__(self):
@@ -235,13 +255,19 @@ class BasalProfile(Profile):
 
 
 
-    def compute(self, choice):
+    def compute(self, now, DIA, choice):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             COMPUTE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Store current time
+        self.now = now
+
+        # Compute time limit of insulin action
+        self.then = now - datetime.timedelta(hours = DIA)
 
         # Store basal profile choice
         self.choice = choice
@@ -251,6 +277,18 @@ class BasalProfile(Profile):
 
         # Load necessary components
         self.load()
+
+        # Filter basal steps and keep only active ones
+        self.filter()
+
+        # Build basal steps
+        self.build()
+
+        # Cut basal steps outside of DIA
+        self.cut()
+
+        # Show basal profile
+        self.show()
 
 
 
@@ -272,6 +310,173 @@ class BasalProfile(Profile):
         # Give user info
         print ("Number of steps in basal profile '" + self.choice + "': " +
                str(len(self.basal)))
+
+
+
+    def filter(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FILTER
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decouple basal
+        [t, rates] = self.decouple()
+
+        # Get number of basal steps
+        n = len(t)
+
+        # Convert times
+        for i in range(n):
+
+            # Get current time step
+            T = t[i]
+
+            # Generate time object
+            T = datetime.time(hour = int(T[:2]), minute = int(T[3:]))
+
+            # Generate datetime object
+            T = datetime.datetime.combine(self.now, T)
+
+            # Update current time step
+            t[i] = T
+
+        # Initialize current basal index
+        index = None
+
+        # Find current basal
+        for i in range(n):
+
+            # Current basal criteria
+            if t[i % n] <= self.now and t[(i + 1) % n] > self.now:
+
+                # Store index
+                index = i
+
+                # Index found, exit
+                break
+
+        # Give user info
+        print "Current basal: " + str(rates[index]) + " (" + str(t[index]) + ")"
+
+        # Update basal steps
+        for i in range(n):
+
+            # Find basal in future
+            if t[i] > t[index]:
+
+                # Update basal
+                t[i] -= datetime.timedelta(days = 1)
+
+        # Keep basal steps that are within DIA (+1 in case it overlaps DIA)
+        for i in range(n):
+
+            # Compare to time limit (is it within DIA?)
+            if t[i] >= self.then and t[i] <= self.now:
+
+                # Store time
+                self.t.append(t[i])
+
+                # Store active basal
+                self.y.append(rates[i])
+
+            # Find last basal step before DIA, which may overlap
+            elif t[i] < self.then:
+
+                # Store its corresponding time
+                last = i
+
+        # Add last time
+        self.t.append(t[last])
+
+        # Add last basal
+        self.y.append(rates[last])
+
+        # Zip and sort basal profile lists
+        z = sorted(zip(self.t, self.y))
+
+        # Reassign basal profile
+        self.t = [x for x, y in z]
+        self.y = [y for x, y in z]
+
+
+
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize basal components
+        t = []
+        rates = []
+
+        # Decouple basal components
+        for i in sorted(self.basal):
+
+            # Get time
+            t.append(i)
+
+            # Get rate
+            rates.append(self.basal[i])
+
+        # Return decoupled basal
+        return [t, rates]
+
+
+
+    def build(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            BUILD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # End of basal profile should be current basal
+        if self.t[-1] != self.now:
+
+            # Generate current basal
+            self.t.append(self.now)
+            self.y.append(self.y[-1])
+
+
+
+    def cut(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CUT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get number of basal steps
+        n = len(self.t)
+
+        # Find index "i" of first basal within DIA
+        for i in range(n):
+
+            # Is it within DIA?
+            if self.t[i] >= self.then:
+
+                # Index found, exit
+                break
+
+        # Start of basal profile should be at beginning of DIA
+        if self.t[i] != self.then:
+
+            # Add time
+            self.t.insert(i, self.then)
+
+            # Add rate
+            self.y.insert(i, self.y[i - 1])
+
+        # Discard basal steps outside of DIA
+        del self.t[:i]
+        del self.y[:i]
 
 
 
@@ -519,26 +724,6 @@ class TBRProfile(Profile):
 
 
 
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get number of TBRs
-        n = len(self.t)
-
-        # Give user info
-        print "TBR profile:"
-
-        # Show TBR profile
-        for i in range(n):
-            print str(self.t[i]) + " - " + str(self.y[i])
-
-
-
 class BolusProfile(Profile):
 
     # TODO: - Take into account bolus enacting time
@@ -776,26 +961,6 @@ class BolusProfile(Profile):
         # Discard boluses outside of DIA
         del self.t[:i]
         del self.y[:i]
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get number of boluses
-        n = len(self.t)
-
-        # Give user info
-        print "Bolus profile:"
-
-        # Show bolus profile
-        for i in range(n):
-            print str(self.t[i]) + " - " + str(self.y[i])
 
 
 
