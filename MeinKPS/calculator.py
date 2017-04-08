@@ -133,10 +133,13 @@ class IOB(object):
         self.basalProfile.compute(self.then, self.now)
 
         # Build TBR profile
-        #self.TBRProfile.compute(self.then, self.now)
+        self.TBRProfile.compute(self.then, self.now)
 
         # Build bolus profile
-        #self.bolusProfile.compute(self.then, self.now)
+        self.bolusProfile.compute(self.then, self.now)
+
+        # Add profiles
+        self.basalProfile.subtract.do(self.TBRProfile)
 
 
 
@@ -186,6 +189,173 @@ class COB(object):
 
 
 
+class ProfileOperation(object):
+
+    def __init__(self, profile):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize operation
+        self.operation = None
+
+        # Link with profile
+        self.profile = profile
+
+
+
+    def do(self, *kwds):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get number of steps within base profile
+        n = len(self.profile.t)
+
+        # Regroup profiles to subtract
+        profiles = list(kwds)
+
+        # Get number of profiles to subtract
+        o = len(profiles)
+
+        # Find all steps
+        steps = lib.uniqify(self.profile.t +
+                            lib.flatten([x.t for x in profiles]))
+
+        # Get global number of steps
+        m = len(steps)
+
+        # Initialize new profile
+        new = []
+
+        # Compute each step of new profile
+        for i in range(m):
+
+            # Initialize result for current step
+            result = 0
+
+            # Look for current index within base profile
+            for j in range(n):
+
+                # For all steps except last one
+                if j < n - 1:
+
+                    # Matching criteria
+                    if (self.profile.t[j] <= steps[i] and
+                        steps[i] < self.profile.t[j + 1]):
+
+                        # If value exists
+                        if self.profile.y[j]:
+
+                            # Add to result
+                            result += self.profile.y[j]
+
+                        # Matching step found, exit
+                        break
+
+                # For last step
+                else:
+
+                    # If value exists
+                    if self.profile.y[j]:
+
+                        # Add to result
+                        result += self.profile.y[j]
+
+            # Look for current index within each profile
+            for j in range(o):
+
+                # Get components of current profile to subtract
+                t = profiles[j].t
+                y = profiles[j].y
+
+                # Get number of steps within current profile
+                p = len(t)
+
+                # Match with global step
+                for k in range(p):
+
+                    # For all steps except last one
+                    if k < p - 1:
+
+                        # Matching criteria
+                        if t[k] <= steps[i] and steps[i] < t[k + 1]:
+
+                            # If value exists
+                            if y[k]:
+
+                                # Do operation on result
+                                result = self.operation(result, y[k])
+
+                            # Matching step found, exit
+                            break
+
+                    # For last step
+                    else:
+
+                        # If value exists
+                        if y[k]:
+
+                            # Do operation on result
+                            result = self.operation(result, y[k])
+
+            # Store result for current step
+            new.append(result)
+
+        # Give user info
+        print "New profile:"
+
+        # Print new profile
+        for i in range(m):
+            print str(new[i]) + " - (" + lib.formatTime(steps[i]) + ")"
+
+        # Return new profile
+        return [steps, new]
+
+
+
+class ProfileAdd(ProfileOperation):
+
+    def __init__(self, profile):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(profile)
+
+        # Define operation
+        self.operation = lambda x, y: x + y
+
+
+
+class ProfileSubtract(ProfileOperation):
+
+    def __init__(self, profile):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(profile)
+
+        # Define operation
+        self.operation = lambda x, y: x - y
+
+
+
 class Profile(object):
 
     def __init__(self):
@@ -221,6 +391,10 @@ class Profile(object):
         self.report = None
         self.path = None
         self.key = None
+
+        # Give profile operations
+        self.add = ProfileAdd(self)
+        self.subtract = ProfileSubtract(self)
 
 
 
@@ -291,12 +465,6 @@ class Profile(object):
         # Read data
         self.data = Reporter.getEntry(self.path, self.key)
 
-        # Get number of profile steps
-        n = len(self.data)
-
-        # Give user info
-        print "Number of steps in '" + self.__class__.__name__ + "': " + str(n)
-
 
 
     def decouple(self, convert = False):
@@ -326,7 +494,7 @@ class Profile(object):
 
 
 
-    def filter(self, last = True):
+    def filter(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -337,6 +505,7 @@ class Profile(object):
         # Initialize profile components
         t = []
         y = []
+        d = []
 
         # Initialize index for last step
         index = None
@@ -353,8 +522,14 @@ class Profile(object):
                 # Store time
                 t.append(self.t[i])
 
-                # Store data
+                # Store value
                 y.append(self.y[i])
+
+                # If durations set
+                if self.d:
+
+                    # Store duration
+                    d.append(self.d[i])
 
             # Find last step before start, which may overlap
             elif self.t[i] < self.start:
@@ -362,18 +537,22 @@ class Profile(object):
                 # Store its corresponding time
                 index = i
 
-        # If last step desired, add it
-        if last:
+        # Add last step's time
+        t.insert(0, self.t[index])
 
-            # Add last step
-            t.append(self.t[index])
+        # Add last step's value
+        y.insert(0, self.y[index])
 
-            # Add last step
-            y.append(self.y[index])
+        # If durations set
+        if self.d:
+
+            # Add last step's duration
+            d.insert(0, self.d[index])
 
         # Reassign profile
         self.t = t
         self.y = y
+        self.d = d
 
 
 
@@ -411,7 +590,7 @@ class Profile(object):
             else:
 
                 # Compute time between current step and profile end
-                dt = self.start - self.t[i]
+                dt = self.end - self.t[i]
 
             # Inject zero in profile
             if self.d and self.d[i] < dt:
@@ -467,6 +646,16 @@ class Profile(object):
         # Discard steps outside profile
         del self.t[:i]
         del self.y[:i]
+
+
+
+    def fill(self, filler):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FILL
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
 
 
@@ -585,7 +774,7 @@ class BasalProfile(Profile):
         self.map()
 
         # Finish filtering
-        super(self.__class__, self).filter(False)
+        super(self.__class__, self).filter()
 
 
 
