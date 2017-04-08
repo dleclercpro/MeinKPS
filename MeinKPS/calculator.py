@@ -197,16 +197,22 @@ class Profile(object):
         """
 
         # Initialize time axis
-        self.t = None
+        self.t = []
 
         # Initialize y-axis
-        self.y = None
+        self.y = []
+
+        # Initialize step durations
+        self.d = []
 
         # Initialize start of profile
         self.start = None
 
         # Initialize end of profile
         self.end = None
+
+        # Initialize zero
+        self.zero = None
 
         # Initialize data
         self.data = None
@@ -215,6 +221,43 @@ class Profile(object):
         self.report = None
         self.path = None
         self.key = None
+
+
+
+    def compute(self, start, end):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define start of profile
+        self.start = start
+
+        # Define end of profile
+        self.end = end
+
+        # Reset profile
+        self.reset()
+
+        # Load profile components
+        self.load()
+
+        # Decouple profile components
+        self.decouple()
+
+        # Filter profile steps
+        self.filter()
+
+        # Inject zeros between profile steps if required
+        self.inject()
+
+        # Cut steps outside of profile and make sure limits are respected
+        self.cut()
+
+        # Show profile
+        self.show()
 
 
 
@@ -283,7 +326,7 @@ class Profile(object):
 
 
 
-    def filter(self):
+    def filter(self, last = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -291,15 +334,54 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        pass
+        # Initialize profile components
+        t = []
+        y = []
+
+        # Initialize index for last step
+        index = None
+
+        # Get number of steps
+        n = len(self.t)
+
+        # Keep steps within start and end (+1 in case of overlapping)
+        for i in range(n):
+
+            # Compare to time limits
+            if self.t[i] >= self.start and self.t[i] <= self.end:
+
+                # Store time
+                t.append(self.t[i])
+
+                # Store data
+                y.append(self.y[i])
+
+            # Find last step before start, which may overlap
+            elif self.t[i] < self.start:
+
+                # Store its corresponding time
+                index = i
+
+        # If last step desired, add it
+        if last:
+
+            # Add last step
+            t.append(self.t[index])
+
+            # Add last step
+            y.append(self.y[index])
+
+        # Reassign profile
+        self.t = t
+        self.y = y
 
 
 
-    def build(self, d = None, zero = None):
+    def inject(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            BUILD
+            INJECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -332,13 +414,13 @@ class Profile(object):
                 dt = self.start - self.t[i]
 
             # Inject zero in profile
-            if d and d[i] < dt:
+            if self.d and self.d[i] < dt:
 
                 # Add time
-                t.append(self.t[i] + d)
+                t.append(self.t[i] + self.d[i])
 
                 # Add zero
-                y.append(zero)
+                y.append(self.zero)
 
         # Update profile components
         self.t = t
@@ -408,43 +490,6 @@ class Profile(object):
 
 
 
-    def compute(self, start, end):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define start of profile
-        self.start = start
-
-        # Define end of profile
-        self.end = end
-
-        # Reset profile
-        self.reset()
-
-        # Load profile components
-        self.load()
-
-        # Decouple profile components
-        self.decouple()
-
-        # Filter profile steps
-        self.filter()
-
-        # Build profile and inject zeros between steps if required
-        self.build()
-
-        # Cut steps outside of profile and make sure limits are respected
-        self.cut()
-
-        # Show profile
-        self.show()
-
-
-
 class BasalProfile(Profile):
 
     def __init__(self, choice):
@@ -473,7 +518,7 @@ class BasalProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Get number of basal steps
+        # Get number of steps
         n = len(self.t)
 
         # Convert times
@@ -519,6 +564,13 @@ class BasalProfile(Profile):
                 # Update basal
                 self.t[i] -= datetime.timedelta(days = 1)
 
+        # Zip and sort basal profile
+        z = sorted(zip(self.t, self.y))
+
+        # Reassign sorted basal profile
+        self.t = [x for x, y in z]
+        self.y = [y for x, y in z]
+
 
 
     def filter(self):
@@ -532,43 +584,8 @@ class BasalProfile(Profile):
         # Map basal profile onto DIA
         self.map()
 
-        # Initialize temporary profile components
-        t = []
-        y = []
-
-        # Get number of basal steps
-        n = len(self.t)
-
-        # Keep basal steps that are within DIA (+1 in case it overlaps DIA)
-        for i in range(n):
-
-            # Compare to time limit (is it within DIA?)
-            if self.t[i] >= self.start and self.t[i] <= self.end:
-
-                # Store time
-                t.append(self.t[i])
-
-                # Store active basal
-                y.append(self.y[i])
-
-            # Find last basal step before DIA, which may overlap
-            elif self.t[i] < self.start:
-
-                # Store its corresponding time
-                last = i
-
-        # Add last time
-        t.append(self.t[last])
-
-        # Add last basal
-        y.append(self.y[last])
-
-        # Zip and sort basal profile lists
-        z = sorted(zip(t, y))
-
-        # Reassign basal profile
-        self.t = [x for x, y in z]
-        self.y = [y for x, y in z]
+        # Finish filtering
+        super(self.__class__, self).filter(False)
 
 
 
@@ -590,15 +607,12 @@ class TBRProfile(Profile):
         self.path = []
         self.key = "Temporary Basals"
 
-        # Initialize TBR units
+        # Initialize units
         self.u = []
 
-        # Initialize TBR durations
-        self.d = []
 
 
-
-    def decouple(self, convert = False):
+    def decouple(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -607,7 +621,7 @@ class TBRProfile(Profile):
         """
 
         # Start decoupling
-        super(self.__class__, self).decouple(convert)
+        super(self.__class__, self).decouple(True)
 
         # Get number of steps
         n = len(self.t)
@@ -616,7 +630,7 @@ class TBRProfile(Profile):
         for i in range(n):
 
             # Get duration
-            self.d.append(self.y[i][2])
+            self.d.append(datetime.timedelta(minutes = self.y[i][2]))
 
             # Get units
             self.u.append(self.y[i][1])
@@ -634,101 +648,24 @@ class TBRProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize temporary dictionary for active TBRs
-        TBRs = {}
-
-        # Define correct TBR units
-        units = "U/h"
+        # Start filtering
+        super(self.__class__, self).filter()
 
         # Get number of steps
         n = len(self.t)
 
-        # Keep TBRs that are within DIA (+1 in case it overlaps DIA)
+        # Check for incorrect units
         for i in range(n):
 
-            # Format time
-            T = lib.formatTime(self.t[i])
+            # Units currently supported
+            if self.u[i] != "U/h":
 
-            # Compare to time limit (is it within DIA?)
-            if T >= self.start and T <= self.end:
-
-                # Check for units mismatch
-                if self.u[i] != units:
-
-                    # TODO: deal with % TBRs?
-                    sys.exit("TBR units mismatch. Exiting...")
-
-                # Store active TBR
-                TBRs[self.t[i]] = self.y[i]
-
-            # Find last TBR enacted before DIA, which may overlap
-            elif T < self.start:
-
-                # Store its corresponding time
-                last = t
-
-        # Add last TBR
-        TBRs[last] = self.data[last]
-
-        # Update TBRs
-        self.data = TBRs
-
-
-
-    def build(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            BUILD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decouple TBRs
-        [t, TBRs] = self.decouple(True)
-
-        # End of TBR profile should be current TBR
-        if t[-1] != self.end:
-
-            # Generate current TBR
-            t.append(self.end)
-            TBRs.append([None] * 3)
-
-        # Get number of TBRs
-        n = len(t)
-        
-        # Start building TBR profile and inject natural TBR ends when needed
-        for i in range(n):
-
-            # Add time
-            self.t.append(t[i])
-
-            # Add rate
-            self.y.append(TBRs[i][0])
-
-            # Not computable for current TBR!
-            if i < n - 1:
-
-                # Read planed duration
-                d = datetime.timedelta(minutes = TBRs[i][2])
-
-                # Compute time between current TBR and next one
-                dt = t[i + 1] - t[i]
-
-                # Add a "None" to profile (to be replaced later by normal basal)
-                if d < dt:
-
-                    # Add time
-                    self.t.append(t[i] + d)
-
-                    # Add rate
-                    self.y.append(None)
+                # Give user info
+                sys.exit("TBR units mismatch. Exiting...")
 
 
 
 class BolusProfile(Profile):
-
-    # TODO: - Take into account bolus enacting time
-    #       - Deal with uncompleted bolus
 
     def __init__(self):
 
@@ -741,144 +678,41 @@ class BolusProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
+        # Define bolus profile zero
+        self.zero = 0
+
+        # Define bolus delivery rate
+        self.rate = 40.0 # (s/U)
+
         # Define report info
         self.report = "treatments.json"
         self.path = []
         self.key = "Boluses"
 
-        # Define bolus delivery rate
-        self.rate = 40.0 # (s/U)
 
 
-
-    def filter(self):
+    def decouple(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILTER
+            DECOUPLE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize temporary dictionary for active boluses
-        boluses = {}
+        # Start decoupling
+        super(self.__class__, self).decouple(True)
 
-        # Keep boluses that are within DIA (+1 in case it overlaps DIA)
-        for t in sorted(self.data):
-
-            # Format time
-            T = lib.formatTime(t)
-
-            # Compare to time limit (is it within DIA?)
-            if T >= self.start and T <= self.end:
-
-                # Store active bolus
-                boluses[t] = self.data[t]
-
-            # Find last bolus enacted before DIA, which may overlap
-            elif T < self.start:
-
-                # Store its corresponding time
-                last = t
-
-        # Add last bolus
-        boluses[last] = self.data[last]
-
-        # Update boluses
-        self.data = boluses
-
-
-
-    def build(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            BUILD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decouple boluses
-        [t, boluses] = self.decouple(True)
-
-        # End of bolus profile should be current time
-        if t[-1] != self.end:
-
-            # Generate fake current bolus
-            t.append(self.end)
-            boluses.append(0)
-
-        # Get number of boluses
-        n = len(t)
-        
-        # Start building bolus profile and inject natural bolus ends according
-        # to bolus delivery rate
-        for i in range(n):
-
-            # Add time
-            self.t.append(t[i])
-
-            # If bolus
-            if boluses[i]:
-
-                # Add rate
-                self.y.append(1 / self.rate)
-
-            else:
-
-                # Add rate
-                self.y.append(0)
-
-            # Not computable for current TBR!
-            if i < n - 1:
-
-                # Compute delivery time
-                d = datetime.timedelta(seconds = self.rate * boluses[i])
-
-                # Compute time between current TBR and next one
-                dt = t[i + 1] - t[i]
-
-                # Add a "None" to profile (to be replaced later by normal basal)
-                if d < dt:
-
-                    # Add time
-                    self.t.append(t[i] + d)
-
-                    # Add rate
-                    self.y.append(0)
-
-
-
-    def cut(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CUT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get number of boluses
+        # Get number of steps
         n = len(self.t)
 
-        # Find index "i" of first bolus within DIA
+        # Decouple components
         for i in range(n):
 
-            # Is it within DIA?
-            if self.t[i] >= self.start:
+            # Compute delivery time
+            self.d.append(datetime.timedelta(seconds = self.rate * self.y[i]))
 
-                # Index found, exit
-                break
-
-        # Start of bolus profile should be at beginning of DIA
-        if self.t[i] != self.start:
-
-            # Add time
-            self.t.insert(i, self.start)
-
-            # Add rate
-            self.y.insert(i, self.y[i - 1])
-
-        # Discard boluses outside of DIA
-        del self.t[:i]
-        del self.y[:i]
+            # Convert bolus to delivery rate
+            self.y[i] = 1 / self.rate
 
 
 
