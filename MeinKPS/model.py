@@ -115,16 +115,24 @@ def optimizeIAC(t, PIA, DIA, MID):
     weightI = 1000
 
     load = lambda x:(
+
+           # Deviation from peak of insulin action
            abs(t[np.argmax(IAC(t = t, args = [x[0], x[1], x[2]]))] - PIA) +
+
+           # Deviation from 0 of insulin action at DIA
            abs(IAC(t = t, args = [x[0], x[1], x[2]])[DIA]) +
+
+           # Deviation from 1 of integral of insulin action from 0 to DIA
            abs(1.0 - lib.integrate(t = t, f = IAC, args = [x[0], x[1], x[2]])) +
+
+           # Deviation from 0.5 of integral of insulin action from 0 to DIA / 2
            abs(0.5 - lib.integrate(t = t[0:(MID * len(t) / DIA)], f = IAC,
-           args = [x[0], x[1], x[2]])))
+                                   args = [x[0], x[1], x[2]])))
 
     optimizedArgs = scipy.optimize.fmin(func = load,
-                                         x0 = [15.0, 4.0, 4.0],
-                                         maxiter = 5000,
-                                         maxfun = 5000)
+                                        x0 = [15.0, 4.0, 4.0],
+                                        maxiter = 5000,
+                                        maxfun = 5000)
 
     print "Optimized function parameters: " + str(optimizedArgs)
 
@@ -190,10 +198,10 @@ def plotInsulinActivity(t, args, PIA, DIA, MID):
     legend = plt.legend(title = "Insulin activity and decay curves", loc = 1,
                         borderaxespad = 1.5, numpoints = 1, markerscale = 2)
 
-    plt.setp(legend.gettitle(), fontweight = "semibold")
+    plt.setp(legend.get_title(), fontweight = "semibold")
 
     # Tighten up
-    plt.tightlayout()
+    plt.tight_layout()
 
     # Show plot
     plt.show()
@@ -209,8 +217,8 @@ def main():
     """
 
     PIA = 1.25
-    DIA = 6.0
-    MID = 2.0
+    DIA = 3.0
+    MID = DIA / 2
     N = 1000
 
     t = np.linspace(0, DIA, N)
