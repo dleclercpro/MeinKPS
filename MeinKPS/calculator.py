@@ -140,10 +140,12 @@ class IOB(object):
         self.TBRProfile.compute(self.then, self.now, self.basalProfile)
 
         # Build bolus profile
-        #self.bolusProfile.compute(self.then, self.now)
+        self.bolusProfile.compute(self.then, self.now)
 
         # Compute net basal profile
-        self.subtract.do(self.TBRProfile, self.basalProfile)
+        netProfile = self.add.do(self.subtract.do(self.TBRProfile,
+                                                  self.basalProfile),
+                                                  self.bolusProfile)
 
 
 
@@ -257,8 +259,11 @@ class Profile(object):
         # Filter profile steps
         self.filter()
 
-        # Inject zeros between profile steps if required
-        self.inject()
+        # If step durations are set
+        if self.d:
+
+            # Inject zeros between profile steps
+            self.inject()
 
         # Cut steps outside of profile and make sure limits are respected
         self.cut()
@@ -277,6 +282,8 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RESET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Reset profile components.
         """
 
         # Give user info
@@ -296,6 +303,8 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Load profile from specified report.
         """
 
         # Give user info
@@ -318,6 +327,8 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECOUPLE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Decouple profile components in time and data.
         """
 
         # Give user info
@@ -348,6 +359,10 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             FILTER
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Filter profile entries only to keep the ones between previously defined
+        profile start and end. Keep last one before start of profile in case of
+        overlapping.
         """
 
         # Give user info
@@ -359,7 +374,7 @@ class Profile(object):
         d = []
 
         # Initialize index for last step
-        index = -1
+        index = None
 
         # Get number of steps
         n = len(self.t)
@@ -368,31 +383,30 @@ class Profile(object):
         for i in range(n):
 
             # Compare to time limits
-            if self.t[i] >= self.start and self.t[i] <= self.end:
+            if self.start <= self.t[i] and self.t[i] <= self.end:
 
-                # Store time
+                # Add step
                 t.append(self.t[i])
-
-                # Store value
                 y.append(self.y[i])
 
                 # If durations set
                 if self.d:
 
-                    # Store duration
+                    # Add duration
                     d.append(self.d[i])
 
-                # Store index of last step before start
-                if index == -1:
+            # Check for last step
+            elif self.t[i] < self.start:
 
-                    # Store it
-                    index = i - 1
+                # Store index
+                index = i
 
-        # Add last step's time
-        t.insert(0, self.t[index])
+        # If last step was found
+        if index is not None:
 
-        # Add last step's value
-        y.insert(0, self.y[index])
+            # Add last step
+            t.insert(0, self.t[index])
+            y.insert(0, self.y[index])
 
         # If durations set
         if self.d:
@@ -416,6 +430,9 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INJECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Inject zeros after theoretical end of steps. Will only work if step
+        durations are defined!
         """
 
         # Give user info
@@ -428,34 +445,30 @@ class Profile(object):
         # Get number of steps
         n = len(self.t)
         
-        # Build profile and inject zeros where needed
+        # Rebuild profile and inject zeros where needed
         for i in range(n):
 
-            # Add time
+            # Add step
             t.append(self.t[i])
-
-            # Add data
             y.append(self.y[i])
 
-            # For all steps
+            # For all steps, except last one
             if i < n - 1:
 
                 # Compute time between current and next steps
                 dt = self.t[i + 1] - self.t[i]
 
-            # For profile end
+            # Last step
             else:
 
-                # Compute time between current step and profile end
+                # Compute time between last step and profile end
                 dt = self.end - self.t[i]
 
             # Inject zero in profile
-            if self.d and self.d[i] < dt:
-
-                # Add time
-                t.append(self.t[i] + self.d[i])
+            if self.d[i] < dt:
 
                 # Add zero
+                t.append(self.t[i] + self.d[i])
                 y.append(self.zero)
 
         # Update profile
@@ -473,6 +486,9 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             CUT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Cut remaining excess steps in profile and set the latter's start and end
+        based on their previously defined times.  
         """
 
         # Give user info
@@ -486,7 +502,7 @@ class Profile(object):
         n = len(self.t)
 
         # Initialize index of last step before profile
-        last = -1
+        index = None
 
         # Cut-off steps outside of start and end limits
         for i in range(n):
@@ -500,22 +516,33 @@ class Profile(object):
                 # Add value
                 y.append(self.y[i])
 
-                # If last index not yet found
-                if last == -1:
+            # Check for last step
+            elif self.t[i] < self.start:
 
-                    # Store index
-                    last = i - 1
+                # Store index
+                index = i
 
         # Start of profile
-        if not t or t[0] != self.start:
+        if len(t) == 0 or t[0] != self.start:
 
             # Add time
             t.insert(0, self.start)
 
-            # Add rate
-            y.insert(0, self.y[last])
+            # If last step was found
+            if index is not None:
 
-        # End of profile
+                # Add value
+                y.insert(0, self.y[index])
+
+            # Otherwise, store a None value
+            else:
+
+                # Add value
+                y.insert(0, None)
+
+        # End of profile (will always have a last value, since start of profile
+        # has just been taken care of, thus no need to check for length of time
+        # component)
         if t[-1] != self.end:
 
             # Add time
@@ -557,54 +584,52 @@ class Profile(object):
         n = len(filler.t)
 
         # Fill profile
-        for i in range(m - 1):
+        for i in range(m):
 
             # Filling criteria
             if self.y[i] is None:
 
-                # Look for missing value
-                for j in range(n - 1):
+                # For all steps, except end limit
+                if i < m - 1:
 
-                    # Missing value criteria
-                    if filler.t[j] <= self.t[i] and self.t[i] < filler.t[j + 1]:
+                    # Look for missing value
+                    for j in range(n - 1):
 
-                        # Add time
-                        t.append(self.t[i])
+                        # Missing value criteria
+                        if (filler.t[j] <= self.t[i] and
+                            self.t[i] < filler.t[j + 1]):
 
-                        # Add value
-                        y.append(filler.y[j])
+                            # Add step
+                            t.append(self.t[i])
+                            y.append(filler.y[j])
 
-                        # Missing value found: exit
-                        break
+                            # Missing value found: exit
+                            break
 
-                # Look for additional steps to fill
-                for j in range(n - 1):
+                    # Look for additional steps to fill
+                    for j in range(n - 1):
 
-                    # Filling criteria
-                    if self.t[i] < filler.t[j] and filler.t[j] < self.t[i + 1]:
+                        # Filling criteria
+                        if (self.t[i] < filler.t[j] and
+                            filler.t[j] < self.t[i + 1]):
 
-                        # Add time
-                        t.append(filler.t[j])
+                            # Add step
+                            t.append(filler.t[j])
+                            y.append(filler.y[j])
 
-                        # Add value
-                        y.append(filler.y[j])
+                # For last step
+                else:
 
+                    # Add step
+                    t.append(filler.t[-1])
+                    y.append(filler.y[-1])
+
+            # Step exists in profile
             else:
 
-                # Add time
+                # Add step
                 t.append(self.t[i])
-
-                # Add value
                 y.append(self.y[i])
-
-        # Deal with end of profile
-        if self.y[-1] is None:
-
-            # Add time
-            t.append(filler.t[-1])
-
-            # Add value
-            y.append(filler.y[-1])
 
         # Update profile
         self.t = t
@@ -693,14 +718,15 @@ class BasalProfile(Profile):
             # Add value
             y.append(self.y[i])
 
-        # Initialize current basal index
+        # Initialize current basal index (-1 to handle between 23:00 and 00:00
+        # of following day)
         index = -1
 
         # Find current basal
-        for i in range(n):
+        for i in range(n - 1):
 
             # Current basal criteria
-            if t[i % n] <= self.end and self.end < t[(i + 1) % n]:
+            if t[i] <= self.end and self.end < t[i + 1]:
 
                 # Store index
                 index = i
@@ -885,11 +911,8 @@ class Operation(object):
         # Initialize operation
         self.operation = None
 
-        # Initialize new profile times
-        self.t = []
-
-        # Initialize new profile values
-        self.y = []
+        # Initialize new profile object
+        self.new = Profile()
 
 
 
@@ -908,39 +931,33 @@ class Operation(object):
         t = []
         y = []
 
+        # Restore start of profile
+        t.append(self.new.t[0])
+        y.append(self.new.y[0])
+
         # Get number of steps in new profile
-        n = len(self.t)
+        n = len(self.new.t)
 
         # Look for redundancies
-        for i in range(1, n - 1):
+        for i in range(1, n):
 
             # Non-redundancy criteria
-            if self.y[i - 1] != self.y[i] or self.y[i] != self.y[i + 1]:
+            if self.new.y[i - 1] != self.new.y[i]:
 
-                # Add time
-                t.append(self.t[i])
+                # Add step
+                t.append(self.new.t[i])
+                y.append(self.new.y[i])
 
-                # Add value
-                y.append(self.y[i])
-
-        # Restore start/end of profile
-        t.insert(0, self.t[0])
-        y.insert(0, self.y[0])
-        t.append(self.t[-1])
-        y.append(self.y[-1])
+        # Restore end of profile
+        t.append(self.new.t[-1])
+        y.append(self.new.y[-1])
 
         # Update profile
-        self.t = t
-        self.y = y
+        self.new.t = t
+        self.new.y = y
 
-        # Get new number of steps after smoothing
-        n = len(self.t)
-
-        # Print smoothed profile
-        for i in range(n):
-
-            # Give user info
-            print str(self.y[i]) + " - (" + lib.formatTime(self.t[i]) + ")"
+        # Show smoothed profile
+        self.new.show()
 
 
 
@@ -950,6 +967,9 @@ class Operation(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DO
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: Profiles on which operations are made cannot have None values
+              within them!
         """
 
         # Regroup profiles to do operation with
@@ -977,10 +997,10 @@ class Operation(object):
             p.show()
 
         # Find all steps
-        self.t = lib.uniqify(base.t + lib.flatten([x.t for x in profiles]))
+        self.new.t = lib.uniqify(base.t + lib.flatten([x.t for x in profiles]))
 
         # Get global number of steps
-        m = len(self.t)
+        m = len(self.new.t)
 
         # Get number of steps within base profile
         n = len(base.t)
@@ -1001,8 +1021,8 @@ class Operation(object):
                 if j < n - 1:
 
                     # Matching criteria
-                    if (base.t[j] <= self.t[i] and
-                        self.t[i] < base.t[j + 1]):
+                    if (base.t[j] <= self.new.t[i] and
+                        self.new.t[i] < base.t[j + 1]):
 
                         # Add to result
                         result += base.y[j]
@@ -1033,7 +1053,7 @@ class Operation(object):
                     if k < p - 1:
 
                         # Matching criteria
-                        if t[k] <= self.t[i] and self.t[i] < t[k + 1]:
+                        if t[k] <= self.new.t[i] and self.new.t[i] < t[k + 1]:
 
                             # Do operation on result
                             result = self.operation(result, y[k])
@@ -1048,22 +1068,13 @@ class Operation(object):
                         result = self.operation(result, y[k])
 
             # Store result for current step
-            self.y.append(result)
-
-        # Give user info
-        print "New profile:"
-
-        # Print new profile
-        for i in range(m):
-
-            # Give user info
-            print str(self.y[i]) + " - (" + lib.formatTime(self.t[i]) + ")"
-
-        # Make some space to read
-        print
+            self.new.y.append(result)
 
         # Flatten new profile (remove redundant steps)
         self.smooth()
+
+        # Return new profile
+        return self.new
 
 
 
