@@ -101,6 +101,9 @@ class IOB(object):
         # Initialize DIA
         self.DIA = None
 
+        # Initialize net basal profile
+        self.netBasalProfile = None
+
         # Give IOB a basal profile
         self.basalProfile = BasalProfile("Standard")
 
@@ -143,9 +146,9 @@ class IOB(object):
         self.bolusProfile.compute(self.then, self.now)
 
         # Compute net basal profile
-        netProfile = self.add.do(self.subtract.do(self.TBRProfile,
-                                                  self.basalProfile),
-                                                  self.bolusProfile)
+        self.netBasalProfile = self.add.do(self.subtract.do(self.TBRProfile,
+                                                            self.basalProfile),
+                                                            self.bolusProfile)
 
 
 
@@ -703,7 +706,7 @@ class Profile(object):
             NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Normalize profile's time axis (in seconds).
+        Normalize profile's time axis (in hours).
         """
 
         # Give user info
@@ -715,8 +718,8 @@ class Profile(object):
         # Normalize time
         for i in range(n):
 
-            # Compute time difference in seconds
-            dt = (self.t[i] - self.t[0]).total_seconds()
+            # Compute time difference in hours
+            dt = (self.t[i] - self.t[0]).seconds / 3600.0
 
             # Add step
             self.T.append(dt)
@@ -1178,7 +1181,7 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Instanciate a basal calculator for me
+    # Instanciate a calculator
     calculator = Calculator()
 
     # Run calculator

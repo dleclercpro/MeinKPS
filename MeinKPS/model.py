@@ -43,6 +43,7 @@ import scipy.special
 
 # USER LIBRARIES
 import lib
+import calculator
 
 
 
@@ -208,6 +209,46 @@ def plotInsulinActivity(t, args, PIA, DIA, MID):
 
 
 
+def plotNetBasalProfile():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PLOTNETBASALPROFILE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Instanciate calculator
+    myCalculator = calculator.Calculator()
+
+    # Run calculator
+    myCalculator.run()
+
+    # Initialize plot
+    mpl.rc("font", size = 11, family = "Ubuntu")
+    fig = plt.figure(0, figsize = (10, 8))
+    sub = plt.subplot(111)
+
+    # Define plot title
+    plt.title("Test",
+              weight = "semibold")
+
+    # Define plot axis
+    plt.xlabel("Time (h)", weight = "semibold")
+    plt.ylabel("Net Basal Profile (U/h)", weight = "semibold")
+
+    # Add IAC and its integral to plot
+    plt.step(myCalculator.iob.netBasalProfile.T[:],
+             [0] + myCalculator.iob.netBasalProfile.y[:-1],
+             ls = "-", lw = 1.5, c = "purple")
+
+    # Tighten up
+    plt.tight_layout()
+
+    # Show plot
+    plt.show()
+
+
+
 def main():
 
     """
@@ -216,16 +257,18 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    PIA = 1.25
-    DIA = 3.0
-    MID = DIA / 2
-    N = 1000
+    #PIA = 1.25
+    #DIA = 3.0
+    #MID = DIA / 2
+    #N = 1000
 
-    t = np.linspace(0, DIA, N)
+    #t = np.linspace(0, DIA, N)
 
-    args = optimizeIAC(t = t, PIA = PIA, DIA = DIA, MID = MID)
+    #args = optimizeIAC(t = t, PIA = PIA, DIA = DIA, MID = MID)
 
-    plotInsulinActivity(t = t, args = args, PIA = PIA, DIA = DIA, MID = MID)
+    #plotInsulinActivity(t = t, args = args, PIA = PIA, DIA = DIA, MID = MID)
+
+    plotNetBasalProfile()
 
 
 
