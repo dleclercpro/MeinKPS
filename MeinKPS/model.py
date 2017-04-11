@@ -223,6 +223,9 @@ def plotNetBasalProfile():
     # Run calculator
     myCalculator.run()
 
+    # Compute profile value based on time
+    myCalculator.iob.netBasalProfile.f(2)
+
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
     fig = plt.figure(0, figsize = (10, 8))

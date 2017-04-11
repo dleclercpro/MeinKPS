@@ -735,6 +735,8 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Show both profiles axes.
         """
 
         # Get number of profile steps
@@ -763,6 +765,77 @@ class Profile(object):
 
             # Make some space to read
             print
+
+
+
+    def f(self, t, normalized = True):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Compute profile's value (y) for a given time (t).
+        """
+
+        # Give user info
+        print "Computing f(" + str(t) + ")..."
+
+        # Initialize result
+        f = None
+
+        # Initialize index
+        index = None
+
+        # Get desired axis
+        if normalized:
+
+            # Define axis
+            axis = self.T
+
+        else:
+
+            # Define axis
+            axis = self.t
+
+        # Get number of steps in profile
+        n = len(axis)
+
+        # Compute profile value
+        for i in range(n):
+
+            # For all steps
+            if i < n - 1:
+
+                # Index identification criteria
+                if axis[i] <= t < axis[i + 1]:
+
+                    # Store index
+                    index = i
+
+            # For last step
+            else:
+
+                # Index identification criteria
+                if t == axis[-1]:
+
+                    # Store index
+                    index = i
+
+        # If index was found
+        if index is not None:
+
+            # Compute corresponding value
+            f = self.y[index]
+
+        # Give user info
+        print "Result:"
+
+        # Print computed value
+        print "f(" + str(t) + ") = " + str(f)
+
+        # Return it
+        return f
 
 
 
