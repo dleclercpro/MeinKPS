@@ -208,6 +208,9 @@ class Profile(object):
         # Initialize time axis
         self.t = []
 
+        # Initialize normalized time axis
+        self.T = []
+
         # Initialize y-axis
         self.y = []
 
@@ -273,6 +276,12 @@ class Profile(object):
 
             # Fill profile
             self.fill(filler)
+
+        # Smooth profile
+        self.smooth()
+
+        # Normalize profile
+        self.normalize()
 
 
 
@@ -640,6 +649,81 @@ class Profile(object):
 
 
 
+    def smooth(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SMOOTH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Smooth profile (remove redundant steps).
+        """
+
+        # Give user info
+        print "Smoothing..."
+
+        # Initialize components for smoothed profile
+        t = []
+        y = []
+
+        # Restore start of profile
+        t.append(self.t[0])
+        y.append(self.y[0])
+
+        # Get number of steps in profile
+        n = len(self.t)
+
+        # Look for redundancies
+        for i in range(1, n):
+
+            # Non-redundancy criteria
+            if self.y[i - 1] != self.y[i]:
+
+                # Add step
+                t.append(self.t[i])
+                y.append(self.y[i])
+
+        # Restore end of profile
+        t.append(self.t[-1])
+        y.append(self.y[-1])
+
+        # Update profile
+        self.t = t
+        self.y = y
+
+        # Show current state of profile
+        self.show()
+
+
+
+    def normalize(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NORMALIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Normalizing..."
+
+        # Get number of steps in profile
+        n = len(self.t)
+
+        # Normalize time
+        for i in range(n):
+
+            # Compute time difference in seconds
+            dt = (self.t[i] - self.t[0]).total_seconds()
+
+            # Add step
+            self.T.append(dt)
+
+        # Show current state of profile
+        self.show()
+
+
+
     def show(self):
 
         """
@@ -659,6 +743,21 @@ class Profile(object):
 
         # Make some space to read
         print
+
+        # If profile was normalized
+        if self.T:
+
+            # Give user info
+            print "Normalization:"
+
+            # Show profile
+            for i in range(n):
+
+                # Give user info
+                print str(self.y[i]) + " - (" + str(self.T[i]) + ")"
+
+            # Make some space to read
+            print
 
 
 
@@ -916,51 +1015,6 @@ class Operation(object):
 
 
 
-    def smooth(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SMOOTH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Smoothing..."
-
-        # Initialize components for smoothed profile
-        t = []
-        y = []
-
-        # Restore start of profile
-        t.append(self.new.t[0])
-        y.append(self.new.y[0])
-
-        # Get number of steps in new profile
-        n = len(self.new.t)
-
-        # Look for redundancies
-        for i in range(1, n):
-
-            # Non-redundancy criteria
-            if self.new.y[i - 1] != self.new.y[i]:
-
-                # Add step
-                t.append(self.new.t[i])
-                y.append(self.new.y[i])
-
-        # Restore end of profile
-        t.append(self.new.t[-1])
-        y.append(self.new.y[-1])
-
-        # Update profile
-        self.new.t = t
-        self.new.y = y
-
-        # Show smoothed profile
-        self.new.show()
-
-
-
     def do(self, base, *kwds):
 
         """
@@ -1070,8 +1124,8 @@ class Operation(object):
             # Store result for current step
             self.new.y.append(result)
 
-        # Flatten new profile (remove redundant steps)
-        self.smooth()
+        # Normalize new profile
+        self.new.normalize()
 
         # Return new profile
         return self.new
