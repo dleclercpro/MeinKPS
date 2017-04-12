@@ -113,6 +113,9 @@ class IOB(object):
         # Give IOB a bolus profile
         self.bolusProfile = BolusProfile()
 
+        # Give IOB a suspend profile
+        self.suspendProfile = SuspendProfile()
+
         # Give IOB profile operations
         self.add = Add()
         self.subtract = Subtract()
@@ -140,15 +143,18 @@ class IOB(object):
         self.basalProfile.compute(self.then, self.now)
 
         # Build TBR profile
-        self.TBRProfile.compute(self.then, self.now, self.basalProfile)
+        #self.TBRProfile.compute(self.then, self.now, self.basalProfile)
 
         # Build bolus profile
-        self.bolusProfile.compute(self.then, self.now)
+        #self.bolusProfile.compute(self.then, self.now)
+
+        # Build suspend profile
+        self.suspendProfile.compute(self.then, self.now, self.basalProfile)
 
         # Compute net basal profile
-        self.netBasalProfile = self.add.do(self.subtract.do(self.TBRProfile,
-                                                            self.basalProfile),
-                                                            self.bolusProfile)
+        #self.netBasalProfile = self.add.do(self.subtract.do(self.TBRProfile,
+        #                                                    self.basalProfile),
+        #                                                    self.bolusProfile)
 
 
 
@@ -1037,7 +1043,7 @@ class BolusProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
-        # Define bolus profile zero
+        # Define profile zero
         self.zero = 0
 
         # Define bolus delivery rate
@@ -1072,6 +1078,54 @@ class BolusProfile(Profile):
 
             # Convert bolus to delivery rate
             self.y[i] = 1 / self.rate
+
+
+
+class SuspendProfile(Profile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Define profile zero
+        self.zero = 0
+
+        # Define report info
+        self.report = "history.json"
+        self.path = ["Pump"]
+        self.key = "Suspend/Resume"
+
+
+
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start decoupling
+        super(self.__class__, self).decouple(True)
+
+        # Get number of steps
+        n = len(self.t)
+
+        # Decouple components
+        for i in range(n):
+
+            # If resume
+            if self.y[i]:
+
+                # Convert to none and fill later
+                self.y[i] = None
 
 
 
