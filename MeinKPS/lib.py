@@ -253,7 +253,7 @@ def bangInt(z):
 
 
 
-def unpack(x, n):
+def unpack(x, order = "<"):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -264,12 +264,32 @@ def unpack(x, n):
     # Initialize bytes
     bytes = []
 
-    # Unpack x in n bytes
-    for i in range(n):
+    # Initialize looping index
+    i = 0
+
+    # Unpack x
+    while True:
+
+        # Is further looping necessary?
+        if x < 0 or x <= 256 ** i and i > 0:
+            break
 
         # Compute ith byte
-        bytes.append((x / 256 ** i) % 256)
+        byte = int((x / 256 ** i) % 256)
 
+        # Append byte
+        bytes.append(byte)
+
+        # Update looping index
+        i += 1
+
+    # Deal with order
+    if order == ">":
+
+        # Reverse bytes
+        bytes.reverse()
+
+    # Return
     return bytes
 
 
@@ -306,6 +326,7 @@ def pack(bytes, order = "<"):
             # Add ith byte
             x += bytes[i] * 256 ** (n - 1 - i)
 
+    # Return
     return x
 
 

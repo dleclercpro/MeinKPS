@@ -664,6 +664,9 @@ class PowerPump(PumpCommand):
         # Define time needed for the pump's radio to power up (s)
         self.executionSleep = 10
 
+        # Define report
+        self.report = "history.json"
+
 
 
     def store(self):
@@ -684,7 +687,7 @@ class PowerPump(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntries([], "Power", now, True)
+        Reporter.addEntries(["Pump"], "Power", now, True)
 
 
 
@@ -720,10 +723,10 @@ class ReadPumpTime(PumpCommand):
         # Decode pump time
         second = self.data[2]
         minute = self.data[1]
-        hour   = self.data[0]
-        day    = self.data[6]
-        month  = self.data[5]
-        year   = lib.bangInt(self.data[3:5])
+        hour = self.data[0]
+        day = self.data[6]
+        month = self.data[5]
+        year = lib.pack(self.data[3:5], ">")
 
         # Generate time object
         time = datetime.datetime(year, month, day, hour, minute, second)
@@ -905,6 +908,9 @@ class ReadPumpBattery(PumpCommand):
         # Define packet bytes
         self.packet.code = 114
 
+        # Define report
+        self.report = "history.json"
+
 
 
     def decode(self):
@@ -916,8 +922,7 @@ class ReadPumpBattery(PumpCommand):
         """
 
         # Decode battery voltage
-        self.response = round(lib.bangInt([self.data[1],
-                                           self.data[2]]) / 100.0, 1)
+        self.response = round(lib.pack(self.data[1:3], ">") / 100.0, 2)
 
 
 
@@ -939,7 +944,7 @@ class ReadPumpBattery(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntries(["Battery Levels"], now, self.response)
+        Reporter.addEntries(["Pump", "Battery Levels"], now, self.response)
 
 
 
@@ -962,6 +967,9 @@ class ReadPumpReservoir(PumpCommand):
         # Define packet bytes
         self.packet.code = 115
 
+        # Define report
+        self.report = "history.json"
+
 
 
     def decode(self):
@@ -973,7 +981,7 @@ class ReadPumpReservoir(PumpCommand):
         """
 
         # Decode reservoir level
-        self.response = round(lib.bangInt(self.data[0:2]) *
+        self.response = round(lib.pack(self.data[0:2], ">") *
                               self.pump.bolus.stroke, 1)
 
 
@@ -996,7 +1004,7 @@ class ReadPumpReservoir(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.addEntries(["Reservoir Levels"], now, self.response)
+        Reporter.addEntries(["Pump", "Reservoir Levels"], now, self.response)
 
 
 
@@ -1112,8 +1120,8 @@ class ReadPumpSettings(PumpCommand):
         # Decode pump status
         self.response = {"DIA": self.data[17],
                          "Max Bolus": self.data[5] * self.pump.bolus.stroke,
-                         "Max Basal": (lib.bangInt(self.data[6:8]) *
-                                       self.pump.TBR.stroke / 2.0)}
+                         "Max Basal": (lib.pack(self.data[6:8], ">") *
+                                       self.pump.TBR.stroke)}
 
 
 
@@ -1864,9 +1872,9 @@ class ReadPumpDailyTotals(PumpCommand):
         """
 
         # Decode daily totals
-        self.response = {"Today": round(lib.bangInt(self.data[0:2]) *
+        self.response = {"Today": round(lib.pack(self.data[0:2], ">") *
                                         self.pump.bolus.stroke, 2),
-                         "Yesterday": round(lib.bangInt(self.data[2:4]) *
+                         "Yesterday": round(lib.pack(self.data[2:4], ">") *
                                             self.pump.bolus.stroke, 2)}
 
 
@@ -2035,8 +2043,8 @@ class ReadPumpTBR(PumpCommand):
 
             # Decode TBR characteristics
             self.response["Units"] = "U/h"
-            self.response["Rate"] = round(lib.bangInt(self.data[2:4]) *
-                                          self.pump.TBR.stroke / 2.0, 2)
+            self.response["Rate"] = round(lib.pack(self.data[2:4], ">") *
+                                          self.pump.TBR.stroke, 2)
 
         # Decode TBR [%]
         elif self.data[0] == 1:
@@ -2046,37 +2054,7 @@ class ReadPumpTBR(PumpCommand):
             self.response["Rate"] = round(self.data[1], 2)
 
         # Decode TBR remaining time
-        self.response["Duration"] = round(lib.bangInt(self.data[4:6]), 0)
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define report
-        self.report = "treatments.json"
-
-        # Link with values
-        rate = self.response["Rate"]
-        units = self.response["Units"]
-        duration = self.response["Duration"]
-
-        # Give user info
-        print "Adding TBR to '" + self.report + "'..."
-
-        # Load report
-        Reporter.load(self.report)
-
-        # Get current formatted time
-        now = lib.formatTime(datetime.datetime.now())
-
-        # Add entry
-        Reporter.addEntries(["Temporary Basals"], now, [rate, units, duration])
+        self.response["Duration"] = round(lib.pack(self.data[4:6], ">"), 0)
 
 
 
@@ -2114,17 +2092,16 @@ class SetPumpTBR(PumpCommand):
         # If absolute TBR
         if TBR["Units"] == "U/h":
             self.packet.code = 76
-            self.packet.parameters = [0, int(round(TBR["Rate"] /
-                                                   self.pump.TBR.stroke * 2.0)),
-                                         int(TBR["Duration"] /
-                                             self.pump.TBR.timeBlock)]
+            self.packet.parameters = (lib.unpack(TBR["Rate"] /
+                                                 self.pump.TBR.stroke, ">") +
+                                      [TBR["Duration"] /
+                                       self.pump.TBR.timeBlock])
 
         # If percentage TBR
         elif TBR["Units"] == "%":
             self.packet.code = 105
             self.packet.parameters = [int(round(TBR["Rate"])),
-                                      int(TBR["Duration"] /
-                                      self.pump.TBR.timeBlock)]
+                                      TBR["Duration"] / self.pump.TBR.timeBlock]
 
         # Do rest of command
         super(self.__class__, self).do()

@@ -197,7 +197,7 @@ class Battery(object):
                          "ReadState": commands.ReadBatteryState(cgm)}
 
         # Define report
-        self.report = "CGM.json"
+        self.report = "history.json"
 
 
 
@@ -259,7 +259,7 @@ class Battery(object):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntries(["Battery Levels"], self.t, self.level)
+        Reporter.addEntries(["CGM", "Battery Levels"], self.t, self.level)
 
 
 

@@ -68,7 +68,8 @@ class Packet(object):
 
         # Build page bytes
         if page is not None:
-            page = lib.unpack(page, 4)
+            page = [0] * 4 + lib.unpack(page)
+            page = page[-4:]
             page.append(1)
 
         else:
@@ -88,7 +89,8 @@ class Packet(object):
 
         # Build CRC bytes
         CRC = lib.computeCRC16(self.bytes)
-        CRC = lib.unpack(CRC, 2)
+        CRC = [0] * 2 + lib.unpack(CRC)
+        CRC = CRC[-2:]
 
         # Finish packet
         self.bytes.extend(CRC)

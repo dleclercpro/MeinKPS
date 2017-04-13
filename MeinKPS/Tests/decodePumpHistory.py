@@ -1,9 +1,9 @@
 #! /usr/bin/python
 
 """
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    decode
+    Title:    decodePumpHistory
 
     Author:   David Leclerc
 
@@ -14,18 +14,13 @@
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
 
-    Overview: This is a script that is meant to decode history pages read from
-              Medtronic MiniMed pumps.
+    Overview: This is a script meant to find new records within history pages
+              read from Medtronic MiniMed pumps.
 
     Notes:    ...
 
-================================================================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
-
-# LIBRARIES
-import numpy as np
-
-
 
 # USER LIBRARIES
 import lib

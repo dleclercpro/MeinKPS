@@ -328,7 +328,7 @@ class SensorRecord(Record):
         super(self.__class__, self).__init__(cgm)
 
         # Define record's report
-        self.report = "CGM.json"
+        self.report = "history.json"
 
         # Define record size
         self.size = 15
@@ -383,7 +383,7 @@ class SensorRecord(Record):
         Reporter.load(self.report)
 
         # Add entries
-        Reporter.addEntries(["Sensor Statuses"], self.t, self.values)
+        Reporter.addEntries(["CGM", "Sensor Statuses"], self.t, self.values)
 
 
 
@@ -401,7 +401,7 @@ class CalibrationRecord(Record):
         super(self.__class__, self).__init__(cgm)
 
         # Define record's report
-        self.report = "CGM.json"
+        self.report = "history.json"
 
         # Define record size
         self.size = 16
@@ -445,7 +445,7 @@ class CalibrationRecord(Record):
         Reporter.load(self.report)
 
         # Add entries
-        Reporter.addEntries(["Calibrations"], self.t, self.values)
+        Reporter.addEntries(["CGM", "Calibrations"], self.t, self.values)
 
 
 

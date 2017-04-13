@@ -56,7 +56,7 @@ class Record(object):
         self.bytes = None
 
         # Initialize vectors for record times and values
-        self.times = []
+        self.t = []
         self.values = []
 
         # Compute size of record
@@ -97,11 +97,14 @@ class Record(object):
             except:
                 pass
 
-        # Print records that were found
-        self.show()
+        # Verify necessity of storing
+        if self.t:
 
-        # Store records
-        self.store()
+            # Print records that were found
+            self.show()
+
+            # Store records
+            self.store()
 
 
 
@@ -160,7 +163,7 @@ class Record(object):
         t = lib.formatTime(t)
 
         # Store time
-        self.times.append(t)
+        self.t.append(t)
 
 
 
@@ -185,7 +188,7 @@ class Record(object):
         """
 
         # Count number of entries found
-        n = len(self.times) or len(self.values)
+        n = len(self.t) or len(self.values)
 
         # Get name of record
         record = self.__class__.__name__
@@ -198,7 +201,7 @@ class Record(object):
 
             # Get current time
             try:
-                t = self.times[i]
+                t = self.t[i]
 
             except:
                 t = None
@@ -237,6 +240,44 @@ class SuspendRecord(Record):
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
 
+        # Define record's report
+        self.report = "history.json"
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode record time
+        super(self.__class__, self).decode()
+        
+        # Store suspend value
+        self.values.append(0)
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding suspend time to report: '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entries
+        Reporter.addEntries(["Pump", "Suspend/Resume"], self.t, self.values)
+
 
 
 class ResumeRecord(Record):
@@ -261,6 +302,139 @@ class ResumeRecord(Record):
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
 
+        # Define record's report
+        self.report = "history.json"
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode record time
+        super(self.__class__, self).decode()
+        
+        # Store suspend value
+        self.values.append(1)
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding resume time to report: '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entries
+        Reporter.addEntries(["Pump", "Suspend/Resume"], self.t, self.values)
+
+
+
+class TBRRecord(Record):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define record characteristics
+        self.code = 51
+        self.sizes = {"Head": 2,
+                      "Date": 5,
+                      "Body": 8}
+
+        # Define theoretical max basal
+        minTBR = {"U/h": 0, "%": 0}
+        maxTBR = {"U/h": 35, "%": 200}
+
+        # Define record's criteria
+        self.criteria = (lambda x: x[0] == self.code and
+                                  (x[1] >= (minTBR["U/h"] / pump.TBR.stroke) and
+                                   x[1] <= (maxTBR["U/h"] / pump.TBR.stroke) and
+                                   x[7] >= 0 and x[7] < 8 or
+                                   x[1] >= minTBR["%"] and
+                                   x[1] <= maxTBR["%"] and
+                                   x[7] == 8))
+
+        # Initialize rest of record
+        super(self.__class__, self).__init__(pump)
+
+        # Define record's report
+        self.report = "treatments.json"
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode record time
+        super(self.__class__, self).decode()
+
+        # Decode TBR rate and units
+        if self.body[0] >= 0 and self.body[0] < 8:
+
+            # Decode rate
+            rate = lib.pack([self.head[1], self.body[0]]) * self.pump.TBR.stroke
+
+            # Decode units
+            units = "U/h"
+
+        elif self.body[0] == 8:
+
+            # Decode rate
+            rate = self.head[1]
+
+            # Decode units
+            units = "%"
+
+        # Decode TBR duration
+        duration = self.body[2] * self.pump.TBR.timeBlock
+
+        # Build TBR vector
+        TBR = [rate, units, duration]
+        
+        # Store TBR
+        self.values.append(TBR)
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding TBRs to report: '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entries
+        Reporter.addEntries(["Temporary Basals"], self.t, self.values)
+
 
 
 class BolusRecord(Record):
@@ -283,7 +457,7 @@ class BolusRecord(Record):
                       "Body": 0}
 
         # Define theoretical max bolus
-        maxBolus = 25.0
+        maxBolus = 25
 
         # Define record's criteria
         # TODO: do something with incomplete boluses?
@@ -335,7 +509,7 @@ class BolusRecord(Record):
         Reporter.load(self.report)
 
         # Add entries
-        Reporter.addEntries(["Boluses"], self.times, self.values)
+        Reporter.addEntries(["Boluses"], self.t, self.values)
 
 
 
@@ -473,7 +647,7 @@ class CarbsRecord(Record):
         Reporter.load(self.report)
 
         # Add entries
-        Reporter.addEntries(["Carbs"], self.times, self.values)
+        Reporter.addEntries(["Carbs"], self.t, self.values)
 
 
 

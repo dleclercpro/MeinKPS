@@ -48,7 +48,7 @@ class BaseError(Exception):
             args = [args]
 
         # Store arguments
-        self.args = args
+        self.args = args[0]
 
         # Prepare error
         self.prepare()
@@ -134,7 +134,42 @@ class TBRFail(PumpError):
         """
 
         # Define error info
-        self.info = "New TBR (" + self.args[0] + ") could not be correctly set."
+        self.info = ("New TBR [" + self.args[0] + "] could not be " +
+                     "correctly set.")
+
+
+
+class TBRIncorrect(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("New TBR (" + str(self.args[0]) + " " + self.args[1] +
+                     ") is either too large or too small). It must be " +
+                     "comprised within the theoretical limits of [0, 35] U/h " +
+                     "or [0, 200] %.")
+
+
+
+class TBRIncorrectDuration(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("New TBR duration (" + str(self.args[0]) + " m) is" +
+                     "incorrect. The latter hast to be a multiple of 30.")
 
 
 
@@ -199,7 +234,7 @@ class MaxPoll(RequesterError):
 
         # Define error info
         self.info = ("Maximal number of polling attempts reached (" +
-                     str(self.args[0][0]) + "). Is battery too low?")
+                     str(self.args[0]) + "). Is battery too low?")
 
 
 
@@ -215,7 +250,7 @@ class FatalNBytes(RequesterError):
 
         # Define error info
         self.info = ("Incorrect number of bytes expected (" +
-                     str(self.args[0][0]) + "). It seems like a " +
+                     str(self.args[0]) + "). It seems like a " +
                      "communication problem occured between stick and pump.")
 
 
