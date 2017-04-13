@@ -271,7 +271,7 @@ def unpack(x, order = "<"):
     while True:
 
         # Is further looping necessary?
-        if x < 0 or x <= 256 ** i and i > 0:
+        if x < 0 or x < 256 ** i and i > 0:
             break
 
         # Compute ith byte
