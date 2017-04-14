@@ -587,8 +587,8 @@ class ReadStickState(StickCommand):
                          "SEQ": self.bytes[4],
                          "NAK": self.bytes[5],
                          "Timeout": self.bytes[6],
-                         "Received": lib.pack(self.bytes[7:11], ">"),
-                         "Sent": lib.pack(self.bytes[11:15], ">")}
+                         "Received": lib.unpack(self.bytes[7:11], ">"),
+                         "Sent": lib.unpack(self.bytes[11:15], ">")}
 
 
 
@@ -726,7 +726,7 @@ class ReadPumpTime(PumpCommand):
         hour = self.data[0]
         day = self.data[6]
         month = self.data[5]
-        year = lib.pack(self.data[3:5], ">")
+        year = lib.unpack(self.data[3:5], ">")
 
         # Generate time object
         time = datetime.datetime(year, month, day, hour, minute, second)
@@ -922,7 +922,7 @@ class ReadPumpBattery(PumpCommand):
         """
 
         # Decode battery voltage
-        self.response = round(lib.pack(self.data[1:3], ">") / 100.0, 2)
+        self.response = round(lib.unpack(self.data[1:3], ">") / 100.0, 2)
 
 
 
@@ -981,7 +981,7 @@ class ReadPumpReservoir(PumpCommand):
         """
 
         # Decode reservoir level
-        self.response = round(lib.pack(self.data[0:2], ">") *
+        self.response = round(lib.unpack(self.data[0:2], ">") *
                               self.pump.bolus.stroke, 1)
 
 
@@ -1120,7 +1120,7 @@ class ReadPumpSettings(PumpCommand):
         # Decode pump status
         self.response = {"DIA": self.data[17],
                          "Max Bolus": self.data[5] * self.pump.bolus.stroke,
-                         "Max Basal": (lib.pack(self.data[6:8], ">") *
+                         "Max Basal": (lib.unpack(self.data[6:8], ">") *
                                        self.pump.TBR.stroke)}
 
 
@@ -1872,9 +1872,9 @@ class ReadPumpDailyTotals(PumpCommand):
         """
 
         # Decode daily totals
-        self.response = {"Today": round(lib.pack(self.data[0:2], ">") *
+        self.response = {"Today": round(lib.unpack(self.data[0:2], ">") *
                                         self.pump.bolus.stroke, 2),
-                         "Yesterday": round(lib.pack(self.data[2:4], ">") *
+                         "Yesterday": round(lib.unpack(self.data[2:4], ">") *
                                             self.pump.bolus.stroke, 2)}
 
 
@@ -2043,7 +2043,7 @@ class ReadPumpTBR(PumpCommand):
 
             # Decode TBR characteristics
             self.response["Units"] = "U/h"
-            self.response["Rate"] = round(lib.pack(self.data[2:4], ">") *
+            self.response["Rate"] = round(lib.unpack(self.data[2:4], ">") *
                                           self.pump.TBR.stroke, 2)
 
         # Decode TBR [%]
@@ -2054,7 +2054,7 @@ class ReadPumpTBR(PumpCommand):
             self.response["Rate"] = round(self.data[1], 2)
 
         # Decode TBR remaining time
-        self.response["Duration"] = round(lib.pack(self.data[4:6], ">"), 0)
+        self.response["Duration"] = round(lib.unpack(self.data[4:6], ">"), 0)
 
 
 
@@ -2092,7 +2092,7 @@ class SetPumpTBR(PumpCommand):
         # If absolute TBR
         if TBR["Units"] == "U/h":
             self.packet.code = 76
-            self.packet.parameters = (lib.unpack(TBR["Rate"] /
+            self.packet.parameters = (lib.pack(TBR["Rate"] /
                                                  self.pump.TBR.stroke, ">") +
                                       [TBR["Duration"] /
                                        self.pump.TBR.timeBlock])

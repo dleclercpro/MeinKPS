@@ -238,11 +238,11 @@ def getByte(x, n):
 
 
 
-def unpack(x, order = "<"):
+def pack(x, order = "<"):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        UNPACK
+        PACK
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
@@ -252,7 +252,7 @@ def unpack(x, order = "<"):
     # Initialize looping index
     i = 0
 
-    # Unpack x
+    # Pack x
     while True:
 
         # Is further looping necessary?
@@ -279,11 +279,11 @@ def unpack(x, order = "<"):
 
 
 
-def pack(bytes, order = "<"):
+def unpack(bytes, order = "<"):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        PACK
+        UNPACK
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     This is a function that converts a number expressed in an array of bytes
@@ -296,7 +296,7 @@ def pack(bytes, order = "<"):
     # Initialize result
     x = 0
 
-    # Pack bytes in x
+    # Unpack bytes in x
     for i in range(n):
 
         # Smaller bytes first
