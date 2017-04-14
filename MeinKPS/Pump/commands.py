@@ -2093,7 +2093,7 @@ class SetPumpTBR(PumpCommand):
         if TBR["Units"] == "U/h":
             self.packet.code = 76
             self.packet.parameters = (lib.pack(TBR["Rate"] /
-                                                 self.pump.TBR.stroke, ">") +
+                                               self.pump.TBR.stroke, ">") +
                                       [TBR["Duration"] /
                                        self.pump.TBR.timeBlock])
 

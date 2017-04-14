@@ -63,7 +63,7 @@ class Database(object):
         self.headSize = 28
 
         # Define empty range response
-        self.emptyRange = [lib.pack([255] * 4)] * 2
+        self.emptyRange = [lib.unpack([255] * 4)] * 2
 
         # Define command(s)
         self.commands = {"ReadDatabaseRange": commands.ReadDatabaseRange(cgm),
@@ -95,8 +95,8 @@ class Database(object):
         command.execute()
 
         # Decode it
-        self.range.append(lib.pack(command.response["Body"][0:4]))
-        self.range.append(lib.pack(command.response["Body"][4:8]))
+        self.range.append(lib.unpack(command.response["Body"][0:4]))
+        self.range.append(lib.unpack(command.response["Body"][4:8]))
 
         # Deal with empty database
         if self.range == self.emptyRange:
@@ -206,7 +206,7 @@ class Database(object):
         """
 
         # Get and compute header CRCs
-        expectedCRC = lib.pack(self.page["Header"][-2:])
+        expectedCRC = lib.unpack(self.page["Header"][-2:])
         computedCRC = lib.computeCRC16(self.page["Header"][:-2])
 
         # Give user info

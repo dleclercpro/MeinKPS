@@ -222,7 +222,7 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.level = str(lib.pack(command.response["Body"])) + "%"
+        self.level = str(lib.unpack(command.response["Body"])) + "%"
 
         # Give user info
         print "Battery level: " + self.level
@@ -234,7 +234,7 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.state = self.states[lib.pack(command.response["Body"])]
+        self.state = self.states[lib.unpack(command.response["Body"])]
 
         # Give user info
         print "Battery state: " + self.state
@@ -317,7 +317,7 @@ class Language(object):
         command.execute()
 
         # Assign response
-        self.value = self.values[lib.pack(command.response["Body"])]
+        self.value = self.values[lib.unpack(command.response["Body"])]
 
         # Give user info
         print "Language: " + self.value
@@ -392,7 +392,7 @@ class Clock(object):
         command.execute()
 
         # Compute time delta since epoch
-        delta = datetime.timedelta(seconds = lib.pack(command.response["Body"]))
+        delta = datetime.timedelta(seconds = lib.unpack(command.response["Body"]))
 
         # Assign response
         self.systemTime = self.epoch + delta
@@ -407,7 +407,7 @@ class Clock(object):
         command.execute()
 
         # Assign response
-        self.mode = self.modes[lib.pack(command.response["Body"])]
+        self.mode = self.modes[lib.unpack(command.response["Body"])]
 
         # Give user info
         print "Clock mode: " + self.mode
@@ -475,7 +475,7 @@ class Units(object):
         command.execute()
 
         # Assign response
-        self.value = self.values[lib.pack(command.response["Body"])]
+        self.value = self.values[lib.unpack(command.response["Body"])]
 
         # Give user info
         print "Units: " + self.value

@@ -394,7 +394,8 @@ class TBRRecord(Record):
         if self.body[0] >= 0 and self.body[0] < 8:
 
             # Decode rate
-            rate = lib.pack([self.head[1], self.body[0]]) * self.pump.TBR.stroke
+            rate = (lib.unpack([self.head[1], self.body[0]]) *
+                    self.pump.TBR.stroke)
 
             # Decode units
             units = "U/h"
