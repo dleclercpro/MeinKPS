@@ -107,7 +107,7 @@
     },
     "Model": "522",
     "Settings": {
-        "DIA": 4,
+        "DIA": 3,
         "Max Basal": 35.0,
         "Max Bolus": 25.0
     }

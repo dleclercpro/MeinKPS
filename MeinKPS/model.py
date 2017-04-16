@@ -55,9 +55,7 @@ def IAC(t, args):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    a = args[0]
-    b = args[1]
-    c = args[2]
+    [a, b, c] = args
 
     IAC = a * t**b * np.exp(-c * t)
 
@@ -79,10 +77,6 @@ def IDC(t, args):
 
     """
 
-    a = args[0]
-    b = args[1]
-    c = args[2]
-
     # Initialize indefinite integral I with I(t = 0)
     I = np.array([0])
 
@@ -92,10 +86,28 @@ def IDC(t, args):
         # Add new I(t) to I
         I = np.append(I, lib.integrate(t = t[0:(m + 1)],
                                        f = IAC,
-                                       args = [a, b, c]))
+                                       args = args))
 
     # Tweak indefinite integral I to obtain IDC
     IDC = 1 - I
+
+    return IDC
+
+
+
+def walshIDC(t):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        WALSHIDC
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    IDC = (-3.203e-7 * (60.0 * t) ** 4 +
+            1.354e-4 * (60.0 * t) ** 3 +
+           -1.759e-2 * (60.0 * t) ** 2 +
+            9.255e-2 * (60.0 * t) ** 1 +
+            99.951) / 100.0
 
     return IDC
 
@@ -109,29 +121,29 @@ def optimizeIAC(t, PIA, DIA, MID):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Define importance of right peak time
-    weightmax = 1000
-
-    # Define importance of getting the right integral values
-    weightI = 1000
+    # Define initial parameters
+    x0 = [15.0, 4.0, 4.0]
 
     load = lambda x:(
 
-           # Deviation from peak of insulin action
-           abs(t[np.argmax(IAC(t = t, args = [x[0], x[1], x[2]]))] - PIA) +
-
            # Deviation from 0 of insulin action at DIA
-           abs(IAC(t = t, args = [x[0], x[1], x[2]])[DIA]) +
+           abs(IAC(t = t, args = x)[-1]) +
 
            # Deviation from 1 of integral of insulin action from 0 to DIA
-           abs(1.0 - lib.integrate(t = t, f = IAC, args = [x[0], x[1], x[2]])) +
+           abs(1.0 - lib.integrate(t = t, f = IAC, args = x)) +
 
            # Deviation from 0.5 of integral of insulin action from 0 to DIA / 2
            abs(0.5 - lib.integrate(t = t[0:(MID * len(t) / DIA)], f = IAC,
-                                   args = [x[0], x[1], x[2]])))
+                                   args = x)) +
 
-    optimizedArgs = scipy.optimize.fmin(func = load,
-                                        x0 = [15.0, 4.0, 4.0],
+           # Limit conditions
+           abs(lib.derivate(IAC(t = t, args = x), t[1] - t[0])[0]) +
+           abs(lib.derivate(IAC(t = t, args = x), t[1] - t[0])[-1]) +
+
+           # Deviation from peak of insulin action
+           abs(t[np.argmax(IAC(t = t, args = x))] - PIA))
+
+    optimizedArgs = scipy.optimize.fmin(func = load, x0 = x0,
                                         maxiter = 5000,
                                         maxfun = 5000)
 
@@ -141,11 +153,11 @@ def optimizeIAC(t, PIA, DIA, MID):
 
 
 
-def plotInsulinActivity(t, args, PIA, DIA, MID):
+def modelInsulinActivity(t, args, PIA, DIA, MID):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        PLOTINSULINACTIVITY
+        MODELINSULINACTIVITY
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
@@ -195,6 +207,16 @@ def plotInsulinActivity(t, args, PIA, DIA, MID):
              ls = "-", lw = 1.5, c = "purple",
              label = "Animas IDC")
 
+    walshIDC = calculator.WalshIDC(3)
+
+    plt.plot(t, walshIDC.f(t = t),
+             ls = "-", lw = 1.5, c = "red",
+             label = "Walsh IDC")
+
+    plt.plot(t, walshIDC.F(t = t),
+                 ls = "-", lw = 1.5, c = "orange",
+                 label = "Walsh IDC")
+
     # Define plot legend
     legend = plt.legend(title = "Insulin activity and decay curves", loc = 1,
                         borderaxespad = 1.5, numpoints = 1, markerscale = 2)
@@ -209,12 +231,12 @@ def plotInsulinActivity(t, args, PIA, DIA, MID):
 
 
 
-def plotNetBasalProfile():
+def plotInsulinActivity():
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        PLOTNETBASALPROFILE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PLOTINSULINACTIVITY
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
     # Instanciate calculator
@@ -223,8 +245,12 @@ def plotNetBasalProfile():
     # Run calculator
     myCalculator.run()
 
-    # Compute profile value based on time
-    myCalculator.iob.netBasalProfile.f(2)
+    # Link with net profile
+    T = np.array(myCalculator.iob.netProfile.T)
+    y = np.array(myCalculator.iob.netProfile.y)
+
+    # Generate general time axis
+    t = np.linspace(0, myCalculator.iob.DIA, 1000)
 
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
@@ -232,17 +258,32 @@ def plotNetBasalProfile():
     sub = plt.subplot(111)
 
     # Define plot title
-    plt.title("Test",
+    plt.title("Insulin Decay Over Time (DIA = " + str(myCalculator.iob.DIA) +
+              ")",
               weight = "semibold")
 
     # Define plot axis
     plt.xlabel("Time (h)", weight = "semibold")
-    plt.ylabel("Net Basal Profile (U/h)", weight = "semibold")
+    plt.ylabel("Insulin Decay Factor (-)", weight = "semibold")
 
-    # Add IAC and its integral to plot
-    plt.step(myCalculator.iob.netBasalProfile.T[:],
-             [0] + myCalculator.iob.netBasalProfile.y[:-1],
-             ls = "-", lw = 1.5, c = "purple")
+    # Add Walsh IDC to plot
+    plt.plot(t - myCalculator.iob.DIA, myCalculator.iob.idc.f(t)[::-1],
+             ls = "-", lw = 1.5, c = "red", label = "Walsh IDC")
+
+    # Add Walsh IDC's integral to plot
+    #plt.plot(t - myCalculator.iob.DIA, myCalculator.iob.idc.F(t)[::-1],
+    #         ls = "-", lw = 1.5, c = "orange", label = "Walsh IDC's Integral")
+
+    # Add insulin net profile to plot
+    plt.step(-T, np.append(0, y[:-1]),
+             ls = "-", lw = 1.5, c = "purple", label = "Net Profile")
+
+    # Define plot legend
+    legend = plt.legend(title = "Legend", loc = 0, borderaxespad = 1.5,
+                        numpoints = 1, markerscale = 2)
+
+    # Style legend
+    plt.setp(legend.get_title(), fontweight = "semibold")
 
     # Tighten up
     plt.tight_layout()
@@ -269,9 +310,9 @@ def main():
 
     #args = optimizeIAC(t = t, PIA = PIA, DIA = DIA, MID = MID)
 
-    #plotInsulinActivity(t = t, args = args, PIA = PIA, DIA = DIA, MID = MID)
+    #modelInsulinActivity(t = t, args = args, PIA = PIA, DIA = DIA, MID = MID)
 
-    plotNetBasalProfile()
+    plotInsulinActivity()
 
 
 

@@ -23,6 +23,8 @@
 """
 
 # LIBRARIES
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 import sys
@@ -101,8 +103,8 @@ class IOB(object):
         # Initialize DIA
         self.DIA = None
 
-        # Initialize net basal profile
-        self.netBasalProfile = None
+        # Initialize value
+        self.value = 0
 
         # Give IOB a basal profile
         self.basalProfile = BasalProfile("Standard")
@@ -113,48 +115,15 @@ class IOB(object):
         # Give IOB a bolus profile
         self.bolusProfile = BolusProfile()
 
-        # Give IOB a suspend profile
-        self.suspendProfile = SuspendProfile()
+        # Give IOB a net profile
+        self.netProfile = NetProfile()
+
+        # Give IOB an IDC
+        self.idc = WalshIDC()
 
         # Give IOB profile operations
         self.add = Add()
         self.subtract = Subtract()
-
-
-
-    def compute(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load necessary components
-        self.load()
-
-        # Get current time
-        self.now = datetime.datetime.now()
-
-        # Compute last time
-        self.then = self.now - datetime.timedelta(hours = self.DIA)
-
-        # Build basal profile
-        self.basalProfile.compute(self.then, self.now)
-
-        # Build TBR profile
-        #self.TBRProfile.compute(self.then, self.now, self.basalProfile)
-
-        # Build bolus profile
-        #self.bolusProfile.compute(self.then, self.now)
-
-        # Build suspend profile
-        self.suspendProfile.compute(self.then, self.now, self.basalProfile)
-
-        # Compute net basal profile
-        #self.netBasalProfile = self.add.do(self.subtract.do(self.TBRProfile,
-        #                                                    self.basalProfile),
-        #                                                    self.bolusProfile)
 
 
 
@@ -174,6 +143,78 @@ class IOB(object):
 
         # Give user info
         print "DIA: " + str(self.DIA) + " h"
+
+
+
+    def prepare(self, now = datetime.datetime.now()):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load necessary components
+        self.load()
+
+        # Get current time
+        self.now = now
+
+        # Compute last time
+        self.then = self.now - datetime.timedelta(hours = self.DIA)
+
+        # Build basal profile
+        self.basalProfile.compute(self.then, self.now)
+
+        # Build TBR profile
+        self.TBRProfile.compute(self.then, self.now, self.basalProfile)
+
+        # Build bolus profile
+        self.bolusProfile.compute(self.then, self.now)
+
+        # Build net profile
+        self.netProfile.compute(self.then, self.now,
+                                self.add.do(self.subtract.do(self.TBRProfile,
+                                                             self.basalProfile),
+                                                             self.bolusProfile))
+
+
+
+    def compute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Prepare insulin profiles
+        self.prepare()
+
+        # Link with net profile
+        t = self.netProfile.T
+        y = self.netProfile.y
+
+        # Get number of steps
+        n = len(t)
+
+        # Give user info
+        print "Computing IOB..."
+
+        # Compute IOB
+        for i in range(n - 1):
+
+            # Compute remaining factor based on integral of IDC
+            r = abs(self.idc.F(t[i + 1]) - self.idc.F(t[i]))
+
+            # Compute active insulin remaining for current step
+            self.value += r * y[i]
+
+        # Round value
+        self.value = round(self.value, 2)
+
+        # Give user info
+        print "Current IOB: " + str(self.value) + " U"
 
 
 
@@ -201,6 +242,94 @@ class COB(object):
         """
 
         pass
+
+
+
+class IDC(object):
+
+    def __init__(self, DIA = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Modelization of IDC as a 4th-order polynomial.
+        """
+
+        # Initialize 4th-order parameters
+        self.m0 = None
+        self.m1 = None
+        self.m2 = None
+        self.m3 = None
+        self.m4 = None
+
+        # Store DIA
+        self.DIA = DIA
+
+
+
+    def f(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Gives fraction of active insulin remaining "t" hours after enacting it.
+        """
+
+        # Compute f(t) of IDC
+        f = (self.m4 * t ** 4 +
+             self.m3 * t ** 3 +
+             self.m2 * t ** 2 +
+             self.m1 * t ** 1 +
+             self.m0)
+
+        # Return f(t)
+        return f
+
+
+
+    def F(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Compute F(t) of IDC
+        F = (self.m4 * t ** 5 / 5 +
+             self.m3 * t ** 4 / 4 +
+             self.m2 * t ** 3 / 3 +
+             self.m1 * t ** 2 / 2 +
+             self.m0 * t ** 1 / 1)
+
+        # Return F(t) of IDC
+        return F
+
+
+
+class WalshIDC(IDC):
+
+    def __init__(self, DIA = 3):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(DIA)
+
+        # Define parameters of IDC
+        self.m4 = -4.151e-2
+        self.m3 = 2.925e-1
+        self.m2 = -6.332e-1
+        self.m1 = 5.553e-2
+        self.m0 = 9.995e-1
 
 
 
@@ -712,7 +841,7 @@ class Profile(object):
             NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Normalize profile's time axis (in hours).
+        Normalize profile's time axis (in hours from now).
         """
 
         # Give user info
@@ -725,7 +854,7 @@ class Profile(object):
         for i in range(n):
 
             # Compute time difference in hours
-            dt = (self.t[i] - self.t[0]).seconds / 3600.0
+            dt = (self.t[-1] - self.t[i]).seconds / 3600.0
 
             # Add step
             self.T.append(dt)
@@ -784,9 +913,6 @@ class Profile(object):
         Compute profile's value (y) for a given time (t).
         """
 
-        # Give user info
-        print "Computing f(" + str(t) + ")..."
-
         # Initialize result
         f = None
 
@@ -835,10 +961,7 @@ class Profile(object):
             f = self.y[index]
 
         # Give user info
-        print "Result:"
-
-        # Print computed value
-        print "f(" + str(t) + ") = " + str(f)
+        #print "f(" + str(t) + ") = " + str(f)
 
         # Return it
         return f
@@ -1081,7 +1204,7 @@ class BolusProfile(Profile):
 
 
 
-class SuspendProfile(Profile):
+class NetProfile(Profile):
 
     def __init__(self):
 
@@ -1129,7 +1252,7 @@ class SuspendProfile(Profile):
 
 
 
-class Operation(object):
+class ProfileOperation(object):
 
     def __init__(self):
 
@@ -1264,7 +1387,7 @@ class Operation(object):
 
 
 
-class Add(Operation):
+class Add(ProfileOperation):
 
     def __init__(self):
 
@@ -1282,7 +1405,7 @@ class Add(Operation):
 
 
 
-class Subtract(Operation):
+class Subtract(ProfileOperation):
 
     def __init__(self):
 
