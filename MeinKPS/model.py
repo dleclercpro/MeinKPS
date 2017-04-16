@@ -33,6 +33,7 @@
 
 
 # LIBRARIES
+import datetime
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,6 +45,12 @@ import scipy.special
 # USER LIBRARIES
 import lib
 import calculator
+import reporter
+
+
+
+# Instanciate a reporter
+Reporter = reporter.Reporter()
 
 
 
@@ -239,18 +246,43 @@ def plotInsulinActivity():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Instanciate calculator
-    myCalculator = calculator.Calculator()
+    # Get current time
+    now = datetime.datetime.now()
 
-    # Run calculator
-    myCalculator.run()
+    # Instanciate calculator
+    calc = calculator.Calculator()
+
+    # Load pump report
+    Reporter.load("pump.json")
+
+    # Read DIA
+    DIA = Reporter.getEntry(["Settings"], "DIA")
+
+    # Initialize IOBs
+    IOBs = []
+
+    # Generate time axis for all IOBs
+    t = np.linspace(0, DIA * 3600, 500).tolist()
+    t.reverse()
+
+    # Get number of IOBs to compute
+    n = len(t)
+
+    # Convert time axis to datetime objects and compute IOBs
+    for i in range(n):
+
+        # Compute IOB
+        IOBs.append(calc.iob.compute(now - datetime.timedelta(seconds = t[i])))
+
+    # Convert to numpy array
+    t = np.array(t)
+
+    # Convert time axis to hours
+    t /= 3600.0
 
     # Link with net profile
-    T = np.array(myCalculator.iob.netProfile.T)
-    y = np.array(myCalculator.iob.netProfile.y)
-
-    # Generate general time axis
-    t = np.linspace(0, myCalculator.iob.DIA, 1000)
+    T = np.array(calc.iob.suspendProfile.T)
+    y = np.array(calc.iob.suspendProfile.y)
 
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
@@ -258,25 +290,24 @@ def plotInsulinActivity():
     sub = plt.subplot(111)
 
     # Define plot title
-    plt.title("Insulin Decay Over Time (DIA = " + str(myCalculator.iob.DIA) +
-              ")",
+    plt.title("Insulin Decay Over Time (DIA = " + str(DIA) + ")",
               weight = "semibold")
 
     # Define plot axis
     plt.xlabel("Time (h)", weight = "semibold")
-    plt.ylabel("Insulin Decay Factor (-)", weight = "semibold")
+    plt.ylabel("Insulin Activity (-)", weight = "semibold")
 
     # Add Walsh IDC to plot
-    plt.plot(t - myCalculator.iob.DIA, myCalculator.iob.idc.f(t)[::-1],
+    plt.plot(-t, calc.iob.idc.f(t),
              ls = "-", lw = 1.5, c = "red", label = "Walsh IDC")
-
-    # Add Walsh IDC's integral to plot
-    #plt.plot(t - myCalculator.iob.DIA, myCalculator.iob.idc.F(t)[::-1],
-    #         ls = "-", lw = 1.5, c = "orange", label = "Walsh IDC's Integral")
 
     # Add insulin net profile to plot
     plt.step(-T, np.append(0, y[:-1]),
              ls = "-", lw = 1.5, c = "purple", label = "Net Profile")
+
+    # Add IOBs to plot
+    plt.plot(-t, IOBs,
+             ls = "-", lw = 1.5, c = "orange", label = "IOB")
 
     # Define plot legend
     legend = plt.legend(title = "Legend", loc = 0, borderaxespad = 1.5,
@@ -290,6 +321,15 @@ def plotInsulinActivity():
 
     # Show plot
     plt.show()
+
+
+
+
+
+
+
+
+
 
 
 
