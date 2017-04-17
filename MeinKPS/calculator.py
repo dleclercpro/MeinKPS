@@ -60,6 +60,12 @@ class Calculator(object):
         self.dt = None
         self.dBGdtMax = None
 
+        # Give BG an ISF profile
+        self.isf = ISFProfile()
+
+        # Give calculator a BG
+        self.bg = BG(self)
+
         # Give calculator an IOB
         self.iob = IOB()
 
@@ -76,11 +82,142 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Compute BG
+        self.bg.predict()
+
         # Compute IOB
-        self.iob.compute()
+        #self.iob.compute()
+
+        # Store IOB
+        #self.iob.store()
 
         # Compute COB
-        self.cob.compute()
+        #self.cob.compute()
+
+
+
+class BG(object):
+
+    def __init__(self, calculator):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize start time
+        self.start = None
+
+        # Initialize end time
+        self.end = None
+
+        # Initialize DIA
+        self.DIA = None
+
+        # Initialize value
+        self.value = None
+
+        # Initialize units
+        self.units = None
+
+        # Link with calculator
+        self.calculator = calculator
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load("pump.json")
+
+        # Read DIA
+        self.DIA = Reporter.getEntry(["Settings"], "DIA")
+
+        # Give user info
+        print "DIA: " + str(self.DIA) + " h"
+
+
+
+    def predict(self, start = datetime.datetime.now()):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREDICT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+        Use IOB and ISF to predict where BG will land after insulin activity is
+        over, assuming it simply decays from now on.
+        """
+
+        # Load necessary components
+        self.load()
+
+        # Define end time
+        self.start = start
+
+        # Compute end time
+        self.end = self.start + datetime.timedelta(hours = self.DIA)
+
+        # Link with ISF and IOB
+        ISF = self.calculator.isf
+        IOB = self.calculator.iob
+
+        # Prepare ISF profile
+        ISF.compute(self.start, self.end)
+
+        # Get number of ISF steps in the next DIA hours 
+        n = len(ISF.t)
+
+        # Initialize IOBs
+        IOBs = []
+
+        # Predict IOB at each ISF change in the future
+        for i in range(n):
+
+            # Compute IOB
+            IOBs.append(IOB.compute(ISF.t[i]))
+
+        # Initialize BG impact
+        BGI = 0
+
+        # Compute change in IOB (insulin that has kicked in within ISF step)
+        for i in range(n - 1):
+
+            # Give user info
+            print ("Time step: " + lib.formatTime(ISF.t[i]) + " - " +
+                                   lib.formatTime(ISF.t[i + 1]))
+
+            # Print ISF
+            print "ISF: " + str(ISF.y[i]) + " " + ISF.units
+
+            # Compute IOB change
+            dIOB = IOBs[i + 1] - IOBs[i]
+
+            # Give user info
+            print "dIOB = " + str(dIOB) + " U"
+
+            # Compute BG change
+            dBG = ISF.y[i] * dIOB
+
+            # Give user info
+            print "dBG = " + str(dBG) + " " + ISF.units[:-2]
+
+            # Add BG impact
+            BGI += dBG
+
+            # Make some air
+            print
+
+        # Give user info
+        print ("BGI (" + str(self.start) + "): " + str(round(BGI, 1)) + " " +
+               ISF.units[:-2])
 
 
 
@@ -94,11 +231,11 @@ class IOB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize current time
-        self.now = None
+        # Initialize start time
+        self.start = None
 
-        # Initialize last time
-        self.then = None
+        # Initialize end time
+        self.end = None
 
         # Initialize DIA
         self.DIA = None
@@ -116,7 +253,7 @@ class IOB(object):
         self.bolusProfile = BolusProfile()
 
         # Give IOB a suspend profile
-        self.suspendProfile = SuspendProfile()
+        self.netProfile = NetProfile()
 
         # Give IOB an IDC
         self.idc = WalshIDC()
@@ -124,6 +261,9 @@ class IOB(object):
         # Give IOB profile operations
         self.add = Add()
         self.subtract = Subtract()
+
+        # Define report
+        self.report = "treatments.json"
 
 
 
@@ -173,25 +313,27 @@ class IOB(object):
         """
 
         # Build basal profile
-        self.basalProfile.compute(self.then, self.now)
+        self.basalProfile.compute(self.start, self.end)
 
         # Build TBR profile
-        self.TBRProfile.compute(self.then, self.now, self.basalProfile)
+        self.TBRProfile.compute(self.start, self.end, self.basalProfile)
 
         # Build bolus profile
-        self.bolusProfile.compute(self.then, self.now)
+        self.bolusProfile.compute(self.start, self.end)
 
-        # Build suspend profile
-        self.suspendProfile.compute(self.then, self.now,
-             self.add.do(self.subtract.do(self.TBRProfile, self.basalProfile),
-                         self.bolusProfile))
+        # Build net profile using suspend times and filling with sum of net
+        # basal and bolus profiles
+        self.netProfile.compute(self.start, self.end,
+                                self.add.do(self.subtract.do(self.TBRProfile,
+                                                             self.basalProfile),
+                                                             self.bolusProfile))
 
         # Return net profile
-        return [self.suspendProfile.T, self.suspendProfile.y]
+        return [self.netProfile.T, self.netProfile.y]
 
 
 
-    def compute(self, now = datetime.datetime.now()):
+    def compute(self, end = datetime.datetime.now()):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -208,16 +350,16 @@ class IOB(object):
         # Load necessary components
         self.load()
 
-        # Get current time
-        self.now = now
+        # Define end time
+        self.end = end
 
-        # Compute last time
-        self.then = now - datetime.timedelta(hours = self.DIA)
+        # Compute start time
+        self.start = self.end - datetime.timedelta(hours = self.DIA)
 
         # Define IDC
         self.idc.define(self.DIA)
 
-        # Prepare insulin profiles
+        # Get net insulin profile
         [t, y] = self.prepare()
 
         # Get number of steps
@@ -233,10 +375,35 @@ class IOB(object):
             self.value += R * y[i]
 
         # Give user info
-        print "IOB (" + str(now) + "): " + str(round(self.value, 2)) + " U"
+        print "IOB (" + str(self.end) + "): " + str(round(self.value, 1)) + " U"
 
         # Return IOB
         return self.value
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding IOB to report: '" + self.report + "'..."
+
+        # Format time
+        t = lib.formatTime(self.end)
+
+        # Round value
+        y = round(self.value, 1)
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entries
+        Reporter.addEntries(["IOB"], t, y)
 
 
 
@@ -421,6 +588,9 @@ class Profile(object):
         # Initialize data
         self.data = None
 
+        # Initialize units
+        self.units = None
+
         # Initialize report info
         self.report = None
         self.path = None
@@ -502,6 +672,9 @@ class Profile(object):
         # Reset y-axis
         self.y = []
 
+        # Reset data
+        self.data = None
+
 
 
     def load(self):
@@ -560,7 +733,80 @@ class Profile(object):
 
 
 
-    def filter(self):
+    def map(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MAP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize profile components
+        t = []
+        y = []
+
+        # Initialize time differences to now
+        delta = []
+
+        # Get number of steps
+        n = len(self.t)
+
+        # Rebuild profile
+        for i in range(n):
+
+            # Get time step
+            T = self.t[i]
+
+            # Generate time object
+            T = datetime.time(hour = int(T[:2]), minute = int(T[3:]))
+
+            # Generate datetime object
+            T = datetime.datetime.combine(self.end, T)
+
+            # Add time step
+            t.append(T)
+
+            # Add value
+            y.append(self.y[i])
+
+        # Initialize current index (-1 to handle between 23:00 and 00:00 of
+        # following day)
+        index = -1
+
+        # Find current step
+        for i in range(n - 1):
+
+            # Current step criteria
+            if t[i] <= self.end and self.end < t[i + 1]:
+
+                # Store index
+                index = i
+
+                # Exit
+                break
+
+        # Give user info
+        print "Current step: " + str(y[index]) + " (" + str(t[index]) + ")"
+
+        # Update steps
+        for i in range(n):
+
+            # Find steps in future and bring them in the past
+            if t[i] > t[index]:
+
+                # Update time
+                t[i] -= datetime.timedelta(days = 1)
+
+        # Zip and sort profile
+        z = sorted(zip(t, y))
+
+        # Update profile
+        self.t = [x for x, y in z]
+        self.y = [y for x, y in z]
+
+
+
+    def filter(self, mapped = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -574,6 +820,12 @@ class Profile(object):
 
         # Give user info
         print "Filtering..."
+
+        # If profile uses general times, map them on current time axis
+        if not mapped:
+
+            # Map
+            self.map()
 
         # Initialize profile components
         t = []
@@ -1030,9 +1282,9 @@ class Profile(object):
 
 
 
-class BasalProfile(Profile):
+class ISFProfile(Profile):
 
-    def __init__(self, choice):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1046,80 +1298,27 @@ class BasalProfile(Profile):
         # Define report info
         self.report = "pump.json"
         self.path = []
-        self.key = "Basal Profile (" + choice + ")"
 
 
-
-    def map(self):
+    def load(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MAP
+            LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize profile components
-        t = []
-        y = []
+        # Load pump report
+        Reporter.load(self.report)
 
-        # Initialize time differences to now
-        delta = []
+        # Read units
+        self.units = Reporter.getEntry([], "BG Units") + "/U"
 
-        # Get number of steps
-        n = len(self.t)
+        # Define report info
+        self.key = "ISF (" + self.units + ")"
 
-        # Rebuild profile
-        for i in range(n):
-
-            # Get time step
-            T = self.t[i]
-
-            # Generate time object
-            T = datetime.time(hour = int(T[:2]), minute = int(T[3:]))
-
-            # Generate datetime object
-            T = datetime.datetime.combine(self.end, T)
-
-            # Add time step
-            t.append(T)
-
-            # Add value
-            y.append(self.y[i])
-
-        # Initialize current basal index (-1 to handle between 23:00 and 00:00
-        # of following day)
-        index = -1
-
-        # Find current basal
-        for i in range(n - 1):
-
-            # Current basal criteria
-            if t[i] <= self.end and self.end < t[i + 1]:
-
-                # Store index
-                index = i
-
-                # Index found, exit
-                break
-
-        # Give user info
-        print "Current basal: " + str(y[index]) + " (" + str(t[index]) + ")"
-
-        # Update basal steps
-        for i in range(n):
-
-            # Find basal steps in future and bring them in the past
-            if t[i] > t[index]:
-
-                # Update basal
-                t[i] -= datetime.timedelta(days = 1)
-
-        # Zip and sort basal profile
-        z = sorted(zip(t, y))
-
-        # Update basal profile
-        self.t = [x for x, y in z]
-        self.y = [y for x, y in z]
+        # Load rest
+        super(self.__class__, self).load()
 
 
 
@@ -1131,11 +1330,44 @@ class BasalProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Map basal profile onto DIA
-        self.map()
+        # Filter after mapping
+        super(self.__class__, self).filter(False)
 
-        # Finish filtering
-        super(self.__class__, self).filter()
+
+
+class BasalProfile(Profile):
+
+    def __init__(self, choice):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Define units
+        self.units = "U/h"
+
+        # Define report info
+        self.report = "pump.json"
+        self.path = []
+        self.key = "Basal Profile (" + choice + ")"
+
+
+
+    def filter(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FILTER
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Filter after mapping
+        super(self.__class__, self).filter(False)
 
 
 
@@ -1152,13 +1384,13 @@ class TBRProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
+        # Renitialize units
+        self.units = []
+
         # Define report info
         self.report = "treatments.json"
         self.path = []
         self.key = "Temporary Basals"
-
-        # Initialize units
-        self.u = []
 
 
 
@@ -1183,7 +1415,7 @@ class TBRProfile(Profile):
             self.d.append(datetime.timedelta(minutes = self.y[i][2]))
 
             # Get units
-            self.u.append(self.y[i][1])
+            self.units.append(self.y[i][1])
 
             # Update to rate
             self.y[i] = self.y[i][0]
@@ -1208,7 +1440,7 @@ class TBRProfile(Profile):
         for i in range(n):
 
             # Units currently supported
-            if self.u[i] != "U/h":
+            if self.units[i] != "U/h":
 
                 # Give user info
                 sys.exit("TBR units mismatch. Exiting...")
@@ -1232,7 +1464,10 @@ class BolusProfile(Profile):
         self.zero = 0
 
         # Define bolus delivery rate
-        self.rate = 90.0 # (U/h)
+        self.rate = 90.0
+
+        # Define units
+        self.units = "U/h"
 
         # Define report info
         self.report = "treatments.json"
@@ -1266,7 +1501,7 @@ class BolusProfile(Profile):
 
 
 
-class SuspendProfile(Profile):
+class NetProfile(Profile):
 
     def __init__(self):
 
@@ -1278,6 +1513,9 @@ class SuspendProfile(Profile):
 
         # Start initialization
         super(self.__class__, self).__init__()
+
+        # Define units
+        self.units = "U/h"
 
         # Define report info
         self.report = "history.json"

@@ -260,10 +260,11 @@ def plotInsulinActivity():
 
     # Initialize IOBs
     IOBs = []
+    futureIOBs = []
 
     # Generate time axis for all IOBs
-    t = np.linspace(0, DIA * 3600, 500).tolist()
-    t.reverse()
+    t = np.linspace(DIA * 3600, 0, 500).tolist()
+    T = np.linspace(0, DIA * 3600, 500).tolist()[1:]
 
     # Get number of IOBs to compute
     n = len(t)
@@ -274,15 +275,26 @@ def plotInsulinActivity():
         # Compute IOB
         IOBs.append(calc.iob.compute(now - datetime.timedelta(seconds = t[i])))
 
+    # Link with net profile
+    profileT = np.array(calc.iob.netProfile.T)
+    profileY = np.array(calc.iob.netProfile.y)
+
+    # Get number of future IOBs to compute
+    N = len(T)
+
+    # Compute IOBs in the future
+    for i in range(N):
+
+        # Compute IOB
+        futureIOBs.append(calc.iob.compute(now + datetime.timedelta(seconds = T[i])))
+
     # Convert to numpy array
     t = np.array(t)
+    T = np.array(T)
 
     # Convert time axis to hours
     t /= 3600.0
-
-    # Link with net profile
-    T = np.array(calc.iob.suspendProfile.T)
-    y = np.array(calc.iob.suspendProfile.y)
+    T /= 3600.0
 
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
@@ -302,12 +314,16 @@ def plotInsulinActivity():
              ls = "-", lw = 1.5, c = "red", label = "Walsh IDC")
 
     # Add insulin net profile to plot
-    plt.step(-T, np.append(0, y[:-1]),
+    plt.step(-profileT, np.append(0, profileY[:-1]),
              ls = "-", lw = 1.5, c = "purple", label = "Net Profile")
 
     # Add IOBs to plot
     plt.plot(-t, IOBs,
              ls = "-", lw = 1.5, c = "orange", label = "IOB")
+
+    # Add future IOBs to plot
+    plt.plot(T, futureIOBs,
+             ls = "-", lw = 1.5, c = "blue", label = "Future IOB")
 
     # Define plot legend
     legend = plt.legend(title = "Legend", loc = 0, borderaxespad = 1.5,
