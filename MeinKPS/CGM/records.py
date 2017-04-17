@@ -287,6 +287,12 @@ class BGRecord(Record):
                 t.append(self.t[i])
                 BGs.append(self.values[i]["BG"])
 
+            # Print special values
+            else:
+
+                # Give user info
+                print self.values[i]["BG"] + " (" + str(self.t[i]) + ")"
+
         # Return them
         return [t, BGs]
 

@@ -82,8 +82,11 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get current time
+        now = datetime.datetime.now()
+
         # Compute BG
-        self.bg.predict(100)
+        self.bg.predict(100, now, now + datetime.timedelta(minutes = 75))
 
         # Compute IOB
         #self.iob.compute()
@@ -145,7 +148,7 @@ class BG(object):
 
 
 
-    def predict(self, BG, start = datetime.datetime.now()):
+    def predict(self, BG, start, end):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,11 +165,11 @@ class BG(object):
         # Load necessary components
         self.load()
 
-        # Define end time
+        # Define start time
         self.start = start
 
-        # Compute end time
-        self.end = self.start + datetime.timedelta(hours = self.DIA)
+        # Define end time
+        self.end = end
 
         # Link with ISF and IOB
         ISF = self.calculator.isf
@@ -175,7 +178,7 @@ class BG(object):
         # Prepare ISF profile
         ISF.compute(self.start, self.end)
 
-        # Get number of ISF steps in the next DIA hours 
+        # Get number of ISF steps
         n = len(ISF.t)
 
         # Initialize IOBs
@@ -226,7 +229,8 @@ class BG(object):
         eventualBG = round(BG + BGI, 1)
 
         # Print eventual BG
-        print "Eventual BG: " + str(eventualBG) + ISF.units[:-2]
+        print ("Eventual BG (" + str(self.end) + "): " +
+               str(eventualBG) + " " + ISF.units[:-2])
 
         # Return eventual BG
         return eventualBG

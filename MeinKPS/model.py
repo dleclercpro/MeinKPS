@@ -291,16 +291,19 @@ def plotInsulinActivity():
     # Compute IOBs in the future
     for i in range(N):
 
+        print now + datetime.timedelta(seconds = T[i])
+
         # Compute IOB
         futureIOBs.append(calc.iob.compute(now + datetime.timedelta(seconds = T[i])))
 
         # Compute BGs
         if i == 0:
-            BGs.append(calc.bg.predict(BG, now + datetime.timedelta(seconds = T[i])))
+            BGs.append(calc.bg.predict(BG, now, now))
         else:
-            BGs.append(calc.bg.predict(BGs[-1], now + datetime.timedelta(seconds = T[i])))
+            BGs.append(calc.bg.predict(BGs[-1], now + datetime.timedelta(seconds = T[i - 1]), now + datetime.timedelta(seconds = T[i])))
 
     print BGs
+    return
 
     # Convert BGs to numpy array
     BGs = np.array(BGs)
