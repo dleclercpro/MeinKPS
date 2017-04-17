@@ -83,7 +83,7 @@ class Calculator(object):
         """
 
         # Compute BG
-        self.bg.predict()
+        self.bg.predict(100)
 
         # Compute IOB
         #self.iob.compute()
@@ -145,7 +145,7 @@ class BG(object):
 
 
 
-    def predict(self, start = datetime.datetime.now()):
+    def predict(self, BG, start = datetime.datetime.now()):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,6 +155,9 @@ class BG(object):
         Use IOB and ISF to predict where BG will land after insulin activity is
         over, assuming it simply decays from now on.
         """
+
+        # Initialize eventual BG
+        eventualBG = None
 
         # Load necessary components
         self.load()
@@ -218,6 +221,15 @@ class BG(object):
         # Give user info
         print ("BGI (" + str(self.start) + "): " + str(round(BGI, 1)) + " " +
                ISF.units[:-2])
+
+        # Compute eventual BG
+        eventualBG = round(BG + BGI, 1)
+
+        # Print eventual BG
+        print "Eventual BG: " + str(eventualBG) + ISF.units[:-2]
+
+        # Return eventual BG
+        return eventualBG
 
 
 

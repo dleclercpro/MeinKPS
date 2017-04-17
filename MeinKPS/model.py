@@ -258,6 +258,12 @@ def plotInsulinActivity():
     # Read DIA
     DIA = Reporter.getEntry(["Settings"], "DIA")
 
+    # Initialize BG
+    BG = 150.0
+
+    # Initialize BGs
+    BGs = []
+
     # Initialize IOBs
     IOBs = []
     futureIOBs = []
@@ -287,6 +293,18 @@ def plotInsulinActivity():
 
         # Compute IOB
         futureIOBs.append(calc.iob.compute(now + datetime.timedelta(seconds = T[i])))
+
+        # Compute BGs
+        if i == 0:
+            BGs.append(calc.bg.predict(BG, now + datetime.timedelta(seconds = T[i])))
+        else:
+            BGs.append(calc.bg.predict(BGs[-1], now + datetime.timedelta(seconds = T[i])))
+
+    print BGs
+
+    # Convert BGs to numpy array
+    BGs = np.array(BGs)
+    BGs /= 100.0
 
     # Convert to numpy array
     t = np.array(t)
@@ -324,6 +342,10 @@ def plotInsulinActivity():
     # Add future IOBs to plot
     plt.plot(T, futureIOBs,
              ls = "-", lw = 1.5, c = "blue", label = "Future IOB")
+
+    # Add future BGs to plot
+    plt.plot(T, BGs,
+             ls = "-", lw = 1.5, c = "black", label = "Eventual BG")
 
     # Define plot legend
     legend = plt.legend(title = "Legend", loc = 0, borderaxespad = 1.5,
