@@ -127,6 +127,24 @@ class IOB(object):
 
 
 
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Reset IOB value.
+        """
+
+        # Give user info
+        print "Resetting IOB..."
+
+        # Reset IOB
+        self.value = 0
+
+
+
     def load(self):
 
         """
@@ -165,8 +183,11 @@ class IOB(object):
 
         # Build suspend profile
         self.suspendProfile.compute(self.then, self.now,
-            self.add.do(self.subtract.do(self.TBRProfile, self.basalProfile),
-                        self.bolusProfile))
+             self.add.do(self.subtract.do(self.TBRProfile, self.basalProfile),
+                         self.bolusProfile))
+
+        # Return net profile
+        return [self.suspendProfile.T, self.suspendProfile.y]
 
 
 
@@ -182,7 +203,7 @@ class IOB(object):
         print "Computing IOB..."
 
         # Reset value
-        self.value = 0
+        self.reset()
 
         # Load necessary components
         self.load()
@@ -193,12 +214,11 @@ class IOB(object):
         # Compute last time
         self.then = now - datetime.timedelta(hours = self.DIA)
 
-        # Prepare insulin profiles
-        self.prepare()
+        # Define IDC
+        self.idc.define(self.DIA)
 
-        # Link with final insulin profile
-        t = self.suspendProfile.T
-        y = self.suspendProfile.y
+        # Prepare insulin profiles
+        [t, y] = self.prepare()
 
         # Get number of steps
         n = len(t)
@@ -207,10 +227,10 @@ class IOB(object):
         for i in range(n - 1):
 
             # Compute remaining factor based on integral of IDC
-            r = abs(self.idc.F(t[i + 1]) - self.idc.F(t[i]))
+            R = abs(self.idc.F(t[i + 1]) - self.idc.F(t[i]))
 
             # Compute active insulin remaining for current step
-            self.value += r * y[i]
+            self.value += R * y[i]
 
         # Give user info
         print "IOB (" + str(now) + "): " + str(round(self.value, 2)) + " U"
@@ -249,7 +269,7 @@ class COB(object):
 
 class IDC(object):
 
-    def __init__(self, DIA = None):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -266,8 +286,8 @@ class IDC(object):
         self.m3 = None
         self.m4 = None
 
-        # Store DIA
-        self.DIA = DIA
+        # Initialize DIA
+        self.DIA = None
 
 
 
@@ -315,23 +335,55 @@ class IDC(object):
 
 class WalshIDC(IDC):
 
-    def __init__(self, DIA = 3):
+    def define(self, DIA):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
-        super(self.__class__, self).__init__(DIA)
+        # Store DIA
+        self.DIA = DIA
 
-        # Define parameters of IDC
-        self.m4 = -4.151e-2
-        self.m3 = 2.925e-1
-        self.m2 = -6.332e-1
-        self.m1 = 5.553e-2
-        self.m0 = 9.995e-1
+        # Define parameters of IDC for various DIA
+        if DIA == 3:
+
+            self.m4 = -4.151e-2
+            self.m3 = 2.925e-1
+            self.m2 = -6.332e-1
+            self.m1 = 5.553e-2
+            self.m0 = 9.995e-1
+
+        elif DIA == 4:
+
+            self.m4 = -4.290e-3
+            self.m3 = 5.465e-2
+            self.m2 = -1.984e-1
+            self.m1 = -5.452e-2
+            self.m0 = 9.995e-1
+
+        elif DIA == 5:
+
+            self.m4 = -3.823e-3
+            self.m3 = 5.011e-2
+            self.m2 = -1.998e-1
+            self.m1 = 2.694e-2
+            self.m0 = 9.930e-1
+
+        elif DIA == 6:
+
+            self.m4 = -1.935e-3
+            self.m3 = 3.052e-2
+            self.m2 = -1.474e-1
+            self.m1 = 3.819e-2
+            self.m0 = 9.970e-1
+
+        # Bad DIA
+        else:
+
+            # Exit
+            sys.exit("No IDC found for DIA = " + str(DIA) + " h. Exiting...")
 
 
 
@@ -756,19 +808,9 @@ class Profile(object):
                 # For all steps, except end limit
                 if i < m - 1:
 
-                    # Look for missing value
-                    for j in range(n - 1):
-
-                        # Missing value criteria
-                        if (filler.t[j] <= self.t[i] and
-                            self.t[i] < filler.t[j + 1]):
-
-                            # Add step
-                            t.append(self.t[i])
-                            y.append(filler.y[j])
-
-                            # Missing value found: exit
-                            break
+                    # Fill step
+                    t.append(self.t[i])
+                    y.append(filler.f(self.t[i], False))
 
                     # Look for additional steps to fill
                     for j in range(n - 1):
