@@ -52,6 +52,9 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize current time
+        self.now = None
+
         # Initialize DIA
         self.DIA = None
 
@@ -117,20 +120,23 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define current time
+        self.now = datetime.datetime.now()
+
         # Load components
         self.load()
 
         # Compute IOB
         self.IOB.compute()
 
+        # Predict IOB decay
+        self.IOB.decay()
+
         # Store IOB
         #self.IOB.store()
 
         # Compute COB
         #self.COB.compute()
-
-        # Get current time
-        #now = datetime.datetime.now()
 
         # Compute BG
         #self.BG.predict(100, now, now + datetime.timedelta(minutes = 75))
@@ -1491,34 +1497,18 @@ class IOB(object):
         # Compute IOB
         for i in range(n - 1):
 
-            # Compute remaining factor based on integral of IDC
-            R = abs(self.calculator.IDC.F(t[i + 1]) -
+            # Compute decay factor based on integral of IDC
+            d = abs(self.calculator.IDC.F(t[i + 1]) -
                     self.calculator.IDC.F(t[i]))
 
             # Compute active insulin remaining for current step
-            self.value += R * y[i]
+            self.value += d * y[i]
 
         # Give user info
         print "IOB (" + str(self.end) + "): " + str(round(self.value, 1)) + " U"
 
         # Return IOB
         return self.value
-
-
-
-    def decay(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECAY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Computing natural decay of IOB..."
-
-        # Load necessary components
-        #self.load()
 
 
 
@@ -1544,6 +1534,44 @@ class IOB(object):
 
         # Add entries
         Reporter.addEntries(["IOB"], t, y)
+
+
+
+    def decay(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECAY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Computing natural decay of IOB..."
+
+        # Link with net insulin profile
+        netProfile = self.calculator.netProfile
+
+        # Link with DIA
+        DIA = self.calculator.DIA
+
+        # Initialize IOB predictions
+        y = []
+
+        # Define timestep (h)
+        dt = 5 / 60.
+
+        # Compute number of timesteps
+        n = int(DIA / dt)
+
+        # Generate time axis
+        t = np.linspace(dt, DIA, n)
+
+        # Convert time axis to datetime objects
+        t = [self.calculator.now + datetime.timedelta(hours = x) for x in t]
+
+        # Convert time axis to start/end time axis
+        start = [x - datetime.timedelta(hours = DIA) for x in t]
+        end = t
 
 
 
