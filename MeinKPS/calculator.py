@@ -898,7 +898,7 @@ class Profile(object):
             p.show()
 
         # Give user info
-        print "from: "
+        print "with: "
         print "'" + self.__class__.__name__ + "'"
 
         # Show base profile
@@ -1512,6 +1512,59 @@ class IOB(object):
 
 
 
+    def decay(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECAY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Computing natural decay of IOB..."
+
+        # Link with DIA
+        DIA = self.calculator.DIA
+
+        # Link with net insulin profile
+        netProfile = self.calculator.netProfile
+
+        # Initialize partial net insulin profile
+        partialProfile = Profile()
+
+        # Define timestep (h)
+        dt = 5 / 60.
+
+        # Compute number of timesteps
+        n = int(DIA / dt)
+
+        # Generate time axis
+        t = np.linspace(dt, DIA, n)
+
+        # Convert time axis to datetime objects
+        t = [self.calculator.now - datetime.timedelta(hours = x) for x in t]
+
+        # Reverse time axis
+        t.reverse()
+
+        # Initialize IOB predictions
+        y = []
+
+        # Compute IOB decay
+        for i in range(n):
+
+            # Reset partial net insulin profile
+            partialProfile.reset()
+
+            # Define start/end times and their corresponding values
+            partialProfile.t.extend([t[i], self.calculator.now])
+            partialProfile.y.extend([None] * 2)
+
+            # Fill profile
+            partialProfile.fill(netProfile)
+
+
+
     def store(self):
 
         """
@@ -1534,44 +1587,6 @@ class IOB(object):
 
         # Add entries
         Reporter.addEntries(["IOB"], t, y)
-
-
-
-    def decay(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECAY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Computing natural decay of IOB..."
-
-        # Link with net insulin profile
-        netProfile = self.calculator.netProfile
-
-        # Link with DIA
-        DIA = self.calculator.DIA
-
-        # Initialize IOB predictions
-        y = []
-
-        # Define timestep (h)
-        dt = 5 / 60.
-
-        # Compute number of timesteps
-        n = int(DIA / dt)
-
-        # Generate time axis
-        t = np.linspace(dt, DIA, n)
-
-        # Convert time axis to datetime objects
-        t = [self.calculator.now + datetime.timedelta(hours = x) for x in t]
-
-        # Convert time axis to start/end time axis
-        start = [x - datetime.timedelta(hours = DIA) for x in t]
-        end = t
 
 
 
