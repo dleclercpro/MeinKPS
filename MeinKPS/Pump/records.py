@@ -574,14 +574,14 @@ class CarbsRecord(Record):
                       82: ["mg/dL", "g", True, False],
                       84: ["mg/dL", "g", False, True],
                       86: ["mg/dL", "g", True, True],
-                      96: ["mg/dL", "exchanges", False, False],
-                      98: ["mg/dL", "exchanges", True, False],
+                      96: ["mg/dL", "exchange", False, False],
+                      98: ["mg/dL", "exchange", True, False],
                       144: ["mmol/L", "g", False, False],
                       145: ["mmol/L", "g", True, False],
                       148: ["mmol/L", "g", False, True],
                       149: ["mmol/L", "g", True, True],
-                      160: ["mmol/L", "exchanges", False, False],
-                      161: ["mmol/L", "exchanges", True, False]}
+                      160: ["mmol/L", "exchange", False, False],
+                      161: ["mmol/L", "exchange", True, False]}
 
         # Decode units and sizes of BG and carb entries using 2nd
         # body byte as indicator linked with the previously
@@ -595,7 +595,7 @@ class CarbsRecord(Record):
         elif BGU == "mg/dL":
             mBGU = 0
 
-        if CU == "exchanges":
+        if CU == "exchange":
             mCU = 1.0
 
         elif CU == "g":

@@ -1238,7 +1238,7 @@ class ReadPumpCU(PumpCommand):
             self.response = "g"
 
         elif self.data[0] == 2:
-            self.response = "exchanges"
+            self.response = "exchange"
 
 
 

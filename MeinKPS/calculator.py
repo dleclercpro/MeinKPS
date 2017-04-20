@@ -52,25 +52,60 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize important values for calculator
-        self.BGScale = None
-        self.BGTargets = None
-        self.ISF = None
-        self.CSF = None
-        self.dt = None
-        self.dBGdtMax = None
+        # Initialize DIA
+        self.DIA = None
 
-        # Give BG an ISF profile
-        self.isf = ISFProfile()
+        # Initialize IDC
+        self.IDC = None
 
-        # Give calculator a BG
-        self.bg = BG(self)
+        # Give calculator a basal profile
+        self.basalProfile = BasalProfile("Standard")
+
+        # Give calculator a TBR profile
+        self.TBRProfile = TBRProfile()
+
+        # Give calculator a bolus profile
+        self.bolusProfile = BolusProfile()
+
+        # Give calculator a net profile
+        self.netProfile = NetProfile()
+
+        # Give calculator an ISF profile
+        self.ISF = ISFProfile()
+
+        # Give calculator a CSF profile
+        #self.CSF = CSFProfile()
 
         # Give calculator an IOB
-        self.iob = IOB()
+        self.IOB = IOB(self)
 
         # Give calculator a COB
-        self.cob = COB()
+        self.COB = COB(self)
+
+        # Give calculator a BG
+        self.BG = BG(self)
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load("pump.json")
+
+        # Read DIA
+        self.DIA = Reporter.getEntry(["Settings"], "DIA")
+
+        # Give user info
+        print "DIA: " + str(self.DIA) + " h"
+
+        # Initialize IDC
+        self.IDC = WalshIDC(self.DIA)
 
 
 
@@ -82,491 +117,23 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Get current time
-        now = datetime.datetime.now()
-
-        # Compute BG
-        self.bg.predict(100, now, now + datetime.timedelta(minutes = 75))
+        # Load components
+        self.load()
 
         # Compute IOB
-        #self.iob.compute()
+        self.IOB.compute()
 
         # Store IOB
-        #self.iob.store()
+        #self.IOB.store()
 
         # Compute COB
-        #self.cob.compute()
+        #self.COB.compute()
 
+        # Get current time
+        #now = datetime.datetime.now()
 
-
-class BG(object):
-
-    def __init__(self, calculator):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize start time
-        self.start = None
-
-        # Initialize end time
-        self.end = None
-
-        # Initialize DIA
-        self.DIA = None
-
-        # Initialize value
-        self.value = None
-
-        # Initialize units
-        self.units = None
-
-        # Link with calculator
-        self.calculator = calculator
-
-
-
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load pump report
-        Reporter.load("pump.json")
-
-        # Read DIA
-        self.DIA = Reporter.getEntry(["Settings"], "DIA")
-
-        # Give user info
-        print "DIA: " + str(self.DIA) + " h"
-
-
-
-    def predict(self, BG, start, end):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREDICT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
-        Use IOB and ISF to predict where BG will land after insulin activity is
-        over, assuming it simply decays from now on.
-        """
-
-        # Initialize eventual BG
-        eventualBG = None
-
-        # Load necessary components
-        self.load()
-
-        # Define start time
-        self.start = start
-
-        # Define end time
-        self.end = end
-
-        # Link with ISF and IOB
-        ISF = self.calculator.isf
-        IOB = self.calculator.iob
-
-        # Prepare ISF profile
-        ISF.compute(self.start, self.end)
-
-        # Get number of ISF steps
-        n = len(ISF.t)
-
-        # Initialize IOBs
-        IOBs = []
-
-        # Predict IOB at each ISF change in the future
-        for i in range(n):
-
-            # Compute IOB
-            IOBs.append(IOB.compute(ISF.t[i]))
-
-        # Initialize BG impact
-        BGI = 0
-
-        # Compute change in IOB (insulin that has kicked in within ISF step)
-        for i in range(n - 1):
-
-            # Give user info
-            print ("Time step: " + lib.formatTime(ISF.t[i]) + " - " +
-                                   lib.formatTime(ISF.t[i + 1]))
-
-            # Print ISF
-            print "ISF: " + str(ISF.y[i]) + " " + ISF.units
-
-            # Compute IOB change
-            dIOB = IOBs[i + 1] - IOBs[i]
-
-            # Give user info
-            print "dIOB = " + str(dIOB) + " U"
-
-            # Compute BG change
-            dBG = ISF.y[i] * dIOB
-
-            # Give user info
-            print "dBG = " + str(dBG) + " " + ISF.units[:-2]
-
-            # Add BG impact
-            BGI += dBG
-
-            # Make some air
-            print
-
-        # Give user info
-        print ("BGI (" + str(self.start) + "): " + str(round(BGI, 1)) + " " +
-               ISF.units[:-2])
-
-        # Compute eventual BG
-        eventualBG = round(BG + BGI, 1)
-
-        # Print eventual BG
-        print ("Eventual BG (" + str(self.end) + "): " +
-               str(eventualBG) + " " + ISF.units[:-2])
-
-        # Return eventual BG
-        return eventualBG
-
-
-
-class IOB(object):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize start time
-        self.start = None
-
-        # Initialize end time
-        self.end = None
-
-        # Initialize DIA
-        self.DIA = None
-
-        # Initialize value
-        self.value = None
-
-        # Give IOB a basal profile
-        self.basalProfile = BasalProfile("Standard")
-
-        # Give IOB a TBR profile
-        self.TBRProfile = TBRProfile()
-
-        # Give IOB a bolus profile
-        self.bolusProfile = BolusProfile()
-
-        # Give IOB a suspend profile
-        self.netProfile = NetProfile()
-
-        # Give IOB an IDC
-        self.idc = WalshIDC()
-
-        # Give IOB profile operations
-        self.add = Add()
-        self.subtract = Subtract()
-
-        # Define report
-        self.report = "treatments.json"
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Reset IOB value.
-        """
-
-        # Give user info
-        print "Resetting IOB..."
-
-        # Reset IOB
-        self.value = 0
-
-
-
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load pump report
-        Reporter.load("pump.json")
-
-        # Read DIA
-        self.DIA = Reporter.getEntry(["Settings"], "DIA")
-
-        # Give user info
-        print "DIA: " + str(self.DIA) + " h"
-
-
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Build basal profile
-        self.basalProfile.compute(self.start, self.end)
-
-        # Build TBR profile
-        self.TBRProfile.compute(self.start, self.end, self.basalProfile)
-
-        # Build bolus profile
-        self.bolusProfile.compute(self.start, self.end)
-
-        # Build net profile using suspend times and filling with sum of net
-        # basal and bolus profiles
-        self.netProfile.compute(self.start, self.end,
-                                self.add.do(self.subtract.do(self.TBRProfile,
-                                                             self.basalProfile),
-                                                             self.bolusProfile))
-
-        # Return net profile
-        return [self.netProfile.T, self.netProfile.y]
-
-
-
-    def compute(self, end = datetime.datetime.now()):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Computing IOB..."
-
-        # Reset value
-        self.reset()
-
-        # Load necessary components
-        self.load()
-
-        # Define end time
-        self.end = end
-
-        # Compute start time
-        self.start = self.end - datetime.timedelta(hours = self.DIA)
-
-        # Define IDC
-        self.idc.define(self.DIA)
-
-        # Get net insulin profile
-        [t, y] = self.prepare()
-
-        # Get number of steps
-        n = len(t)
-
-        # Compute IOB
-        for i in range(n - 1):
-
-            # Compute remaining factor based on integral of IDC
-            R = abs(self.idc.F(t[i + 1]) - self.idc.F(t[i]))
-
-            # Compute active insulin remaining for current step
-            self.value += R * y[i]
-
-        # Give user info
-        print "IOB (" + str(self.end) + "): " + str(round(self.value, 1)) + " U"
-
-        # Return IOB
-        return self.value
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Adding IOB to report: '" + self.report + "'..."
-
-        # Format time
-        t = lib.formatTime(self.end)
-
-        # Round value
-        y = round(self.value, 1)
-
-        # Load report
-        Reporter.load(self.report)
-
-        # Add entries
-        Reporter.addEntries(["IOB"], t, y)
-
-
-
-class COB(object):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize DCA
-        self.DCA = None
-
-
-
-    def compute(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        pass
-
-
-
-class IDC(object):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Modelization of IDC as a 4th-order polynomial.
-        """
-
-        # Initialize 4th-order parameters
-        self.m0 = None
-        self.m1 = None
-        self.m2 = None
-        self.m3 = None
-        self.m4 = None
-
-        # Initialize DIA
-        self.DIA = None
-
-
-
-    def f(self, t):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            F
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Gives fraction of active insulin remaining "t" hours after enacting it.
-        """
-
-        # Compute f(t) of IDC
-        f = (self.m4 * t ** 4 +
-             self.m3 * t ** 3 +
-             self.m2 * t ** 2 +
-             self.m1 * t ** 1 +
-             self.m0)
-
-        # Return f(t)
-        return f
-
-
-
-    def F(self, t):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            F
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Compute F(t) of IDC
-        F = (self.m4 * t ** 5 / 5 +
-             self.m3 * t ** 4 / 4 +
-             self.m2 * t ** 3 / 3 +
-             self.m1 * t ** 2 / 2 +
-             self.m0 * t ** 1 / 1)
-
-        # Return F(t) of IDC
-        return F
-
-
-
-class WalshIDC(IDC):
-
-    def define(self, DIA):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DEFINE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store DIA
-        self.DIA = DIA
-
-        # Define parameters of IDC for various DIA
-        if DIA == 3:
-
-            self.m4 = -4.151e-2
-            self.m3 = 2.925e-1
-            self.m2 = -6.332e-1
-            self.m1 = 5.553e-2
-            self.m0 = 9.995e-1
-
-        elif DIA == 4:
-
-            self.m4 = -4.290e-3
-            self.m3 = 5.465e-2
-            self.m2 = -1.984e-1
-            self.m1 = -5.452e-2
-            self.m0 = 9.995e-1
-
-        elif DIA == 5:
-
-            self.m4 = -3.823e-3
-            self.m3 = 5.011e-2
-            self.m2 = -1.998e-1
-            self.m1 = 2.694e-2
-            self.m0 = 9.930e-1
-
-        elif DIA == 6:
-
-            self.m4 = -1.935e-3
-            self.m3 = 3.052e-2
-            self.m2 = -1.474e-1
-            self.m1 = 3.819e-2
-            self.m0 = 9.970e-1
-
-        # Bad DIA
-        else:
-
-            # Exit
-            sys.exit("No IDC found for DIA = " + str(DIA) + " h. Exiting...")
+        # Compute BG
+        #self.BG.predict(100, now, now + datetime.timedelta(minutes = 75))
 
 
 
@@ -614,7 +181,7 @@ class Profile(object):
 
 
 
-    def compute(self, start, end, filler = None):
+    def compute(self, start, end, filler = None, mapped = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -636,6 +203,12 @@ class Profile(object):
 
         # Decouple profile components
         self.decouple()
+
+        # Map time if necessary
+        if not mapped:
+
+            # Map
+            self.map()
 
         # Filter profile steps
         self.filter()
@@ -757,6 +330,9 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Give user info
+        print "Mapping time..."
+
         # Initialize profile components
         t = []
         y = []
@@ -822,7 +398,7 @@ class Profile(object):
 
 
 
-    def filter(self, mapped = True):
+    def filter(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -836,12 +412,6 @@ class Profile(object):
 
         # Give user info
         print "Filtering..."
-
-        # If profile uses general times, map them on current time axis
-        if not mapped:
-
-            # Map
-            self.map()
 
         # Initialize profile components
         t = []
@@ -1298,56 +868,106 @@ class Profile(object):
 
 
 
-class ISFProfile(Profile):
-
-    def __init__(self):
+    def operate(self, operation, profiles):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            OPERATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: Profiles on which operations are made cannot have "None" values
+              within them!
+        """
+
+        # Generate new profile
+        new = Profile()
+
+        # Show profiles
+        for p in profiles:
+
+            # Give user info
+            print "'" + p.__class__.__name__ + "'"
+
+            # Show profile
+            p.show()
+
+        # Give user info
+        print "from: "
+        print "'" + self.__class__.__name__ + "'"
+
+        # Show base profile
+        self.show()
+
+        # Find all steps
+        new.t = lib.uniqify(self.t + lib.flatten([p.t for p in profiles]))
+
+        # Get global number of steps
+        n = len(new.t)
+
+        # Compute each step of new profile
+        for i in range(n):
+
+            # Compute partial result with base profile
+            result = self.f(new.t[i], False)
+
+            # Look within each profile
+            for p in profiles:
+
+                # Compute partial result on current profile
+                result = operation(result, p.f(new.t[i], False))
+
+            # Store result for current step
+            new.y.append(result)
+
+        # Normalize new profile
+        new.normalize()
+
+        # Return new profile
+        return new
+
+
+
+    def add(self, *kwds):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ADD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
-        super(self.__class__, self).__init__()
+        # Define operation
+        operation = lambda x, y: x + y
 
-        # Define report info
-        self.report = "pump.json"
-        self.path = []
+        # Regroup profiles to do operation with
+        profiles = list(kwds)
 
+        # Give user info
+        print "Adding:"
 
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load pump report
-        Reporter.load(self.report)
-
-        # Read units
-        self.units = Reporter.getEntry([], "BG Units") + "/U"
-
-        # Define report info
-        self.key = "ISF (" + self.units + ")"
-
-        # Load rest
-        super(self.__class__, self).load()
+        # Do operation
+        return self.operate(operation, profiles)
 
 
 
-    def filter(self):
+    def subtract(self, *kwds):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILTER
+            SUBTRACT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Filter after mapping
-        super(self.__class__, self).filter(False)
+        # Define operation
+        operation = lambda x, y: x - y
+
+        # Regroup profiles to do operation with
+        profiles = list(kwds)
+
+        # Give user info
+        print "Subtracting:"
+
+        # Do operation
+        return self.operate(operation, profiles)
 
 
 
@@ -1371,19 +991,6 @@ class BasalProfile(Profile):
         self.report = "pump.json"
         self.path = []
         self.key = "Basal Profile (" + choice + ")"
-
-
-
-    def filter(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILTER
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Filter after mapping
-        super(self.__class__, self).filter(False)
 
 
 
@@ -1565,7 +1172,7 @@ class NetProfile(Profile):
 
 
 
-class ProfileOperation(object):
+class ISFProfile(Profile):
 
     def __init__(self):
 
@@ -1575,117 +1182,514 @@ class ProfileOperation(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize operation
-        self.operation = None
+        # Start initialization
+        super(self.__class__, self).__init__()
 
-        # Initialize new profile
-        self.new = Profile()
+        # Define report info
+        self.report = "pump.json"
+        self.path = []
 
 
-
-    def do(self, base, *kwds):
+    def load(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DO
+            LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: Profiles on which operations are made cannot have "None" values
-              within them!
         """
 
-        # Reset new profile
-        self.new.reset()
+        # Load pump report
+        Reporter.load(self.report)
 
-        # Regroup profiles to do operation with
-        profiles = list(kwds)
+        # Read units
+        self.units = Reporter.getEntry([], "BG Units") + "/U"
+
+        # Define report info
+        self.key = "ISF (" + self.units + ")"
+
+        # Load rest
+        super(self.__class__, self).load()
+
+
+
+class CSFProfile(Profile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Define report info
+        self.report = "pump.json"
+        self.path = []
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load(self.report)
+
+        # Read units
+        self.units = Reporter.getEntry([], "Carb Units")
+
+        # In case of grams
+        if self.units == "g":
+
+            # Adapt units
+            self.units = self.units + "/U"
+
+        # In case of exchanges
+        elif self.units == "exchange"
+
+            # Adapt units
+            self.units = "U/" + self.units
+
+        # Define report info
+        self.key = "CSF (" + self.units + ")"
+
+        # Load rest
+        super(self.__class__, self).load()
+
+
+
+class IDC(object):
+
+    def __init__(self, DIA):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Modelization of IDC as a 4th-order polynomial.
+        """
+
+        # Initialize 4th-order parameters
+        self.m0 = None
+        self.m1 = None
+        self.m2 = None
+        self.m3 = None
+        self.m4 = None
+
+        # Define DIA
+        self.DIA = DIA
+
+
+
+    def f(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Gives fraction of active insulin remaining "t" hours after enacting it.
+        """
+
+        # Compute f(t) of IDC
+        f = (self.m4 * t ** 4 +
+             self.m3 * t ** 3 +
+             self.m2 * t ** 2 +
+             self.m1 * t ** 1 +
+             self.m0)
+
+        # Return f(t)
+        return f
+
+
+
+    def F(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Compute F(t) of IDC
+        F = (self.m4 * t ** 5 / 5 +
+             self.m3 * t ** 4 / 4 +
+             self.m2 * t ** 3 / 3 +
+             self.m1 * t ** 2 / 2 +
+             self.m0 * t ** 1 / 1)
+
+        # Return F(t) of IDC
+        return F
+
+
+
+class WalshIDC(IDC):
+
+    def __init__(self, DIA):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(DIA)
+
+        # Define parameters of IDC for various DIA
+        if DIA == 3:
+
+            self.m4 = -4.151e-2
+            self.m3 = 2.925e-1
+            self.m2 = -6.332e-1
+            self.m1 = 5.553e-2
+            self.m0 = 9.995e-1
+
+        elif DIA == 4:
+
+            self.m4 = -4.290e-3
+            self.m3 = 5.465e-2
+            self.m2 = -1.984e-1
+            self.m1 = -5.452e-2
+            self.m0 = 9.995e-1
+
+        elif DIA == 5:
+
+            self.m4 = -3.823e-3
+            self.m3 = 5.011e-2
+            self.m2 = -1.998e-1
+            self.m1 = 2.694e-2
+            self.m0 = 9.930e-1
+
+        elif DIA == 6:
+
+            self.m4 = -1.935e-3
+            self.m3 = 3.052e-2
+            self.m2 = -1.474e-1
+            self.m1 = 3.819e-2
+            self.m0 = 9.970e-1
+
+        # Bad DIA
+        else:
+
+            # Exit
+            sys.exit("No IDC found for DIA = " + str(DIA) + " h. Exiting...")
+
+
+
+class IOB(object):
+
+    def __init__(self, calculator):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize start time
+        self.start = None
+
+        # Initialize end time
+        self.end = None
+
+        # Initialize value
+        self.value = None
+
+        # Define report
+        self.report = "treatments.json"
+
+        # Link with calculator
+        self.calculator = calculator
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Reset IOB value.
+        """
 
         # Give user info
-        print "Doing '" + self.__class__.__name__ + "' on...:"
+        print "Resetting IOB..."
+
+        # Reset IOB
+        self.value = 0
+
+
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link with profiles
+        basalProfile = self.calculator.basalProfile
+        TBRProfile = self.calculator.TBRProfile
+        bolusProfile = self.calculator.bolusProfile
+        netProfile = self.calculator.netProfile
+
+        # Build basal profile
+        basalProfile.compute(self.start, self.end, None, False)
+
+        # Build TBR profile
+        TBRProfile.compute(self.start, self.end, basalProfile)
+
+        # Build bolus profile
+        bolusProfile.compute(self.start, self.end)
+
+        # Build net profile using suspend times and filling with sum of net
+        # basal and bolus profiles
+        netProfile.compute(self.start, self.end,
+            TBRProfile.subtract(basalProfile).add(bolusProfile))
+
+        # Return net profile
+        return [netProfile.T, netProfile.y]
+
+
+
+    def compute(self, end = datetime.datetime.now()):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
         # Give user info
-        print "'" + base.__class__.__name__ + "'"
+        print "Computing IOB..."
 
-        # Show base profile
-        base.show()
+        # Reset value
+        self.reset()
+
+        # Define end time
+        self.end = end
+
+        # Compute start time
+        self.start = self.end - datetime.timedelta(hours = self.calculator.DIA)
+
+        # Get net insulin profile
+        [t, y] = self.prepare()
+
+        # Get number of steps
+        n = len(t)
+
+        # Compute IOB
+        for i in range(n - 1):
+
+            # Compute remaining factor based on integral of IDC
+            R = abs(self.calculator.IDC.F(t[i + 1]) -
+                    self.calculator.IDC.F(t[i]))
+
+            # Compute active insulin remaining for current step
+            self.value += R * y[i]
 
         # Give user info
-        print "...using:"
+        print "IOB (" + str(self.end) + "): " + str(round(self.value, 1)) + " U"
 
-        # Show profiles
-        for p in profiles:
+        # Return IOB
+        return self.value
+
+
+
+    def decay(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECAY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Computing natural decay of IOB..."
+
+        # Load necessary components
+        #self.load()
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding IOB to report: '" + self.report + "'..."
+
+        # Format time
+        t = lib.formatTime(self.end)
+
+        # Round value
+        y = round(self.value, 1)
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entries
+        Reporter.addEntries(["IOB"], t, y)
+
+
+
+class COB(object):
+
+    def __init__(self, calculator):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize DCA
+        self.DCA = None
+
+        # Link with calculator
+        self.calculator = calculator
+
+
+
+    def compute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
+
+
+
+class BG(object):
+
+    def __init__(self, calculator):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize start time
+        self.start = None
+
+        # Initialize end time
+        self.end = None
+
+        # Initialize value
+        self.value = None
+
+        # Initialize units
+        self.units = None
+
+        # Link with calculator
+        self.calculator = calculator
+
+
+
+    def predict(self, BG, start, end):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREDICT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+        Use IOB and ISF to predict where BG will land after insulin activity is
+        over, assuming it simply decays from now on.
+        """
+
+        # Initialize eventual BG
+        eventualBG = None
+
+        # Load necessary components
+        self.load()
+
+        # Define start time
+        self.start = start
+
+        # Define end time
+        self.end = end
+
+        # Link with ISF and IOB
+        ISF = self.calculator.isf
+        IOB = self.calculator.iob
+
+        # Prepare ISF profile
+        ISF.compute(self.start, self.end)
+
+        # Get number of ISF steps
+        n = len(ISF.t)
+
+        # Initialize IOBs
+        IOBs = []
+
+        # Predict IOB at each ISF change in the future
+        for i in range(n):
+
+            # Compute IOB
+            IOBs.append(IOB.compute(ISF.t[i]))
+
+        # Initialize BG impact
+        BGI = 0
+
+        # Compute change in IOB (insulin that has kicked in within ISF step)
+        for i in range(n - 1):
 
             # Give user info
-            print "'" + p.__class__.__name__ + "'"
+            print ("Time step: " + lib.formatTime(ISF.t[i]) + " - " +
+                                   lib.formatTime(ISF.t[i + 1]))
 
-            # Show profile
-            p.show()
+            # Print ISF
+            print "ISF: " + str(ISF.y[i]) + " " + ISF.units
 
-        # Find all steps
-        self.new.t = lib.uniqify(base.t + lib.flatten([p.t for p in profiles]))
+            # Compute IOB change
+            dIOB = IOBs[i + 1] - IOBs[i]
 
-        # Get global number of steps
-        m = len(self.new.t)
+            # Give user info
+            print "dIOB = " + str(dIOB) + " U"
 
-        # Get number of profiles to subtract
-        n = len(profiles)
+            # Compute BG change
+            dBG = ISF.y[i] * dIOB
 
-        # Compute each step of new profile
-        for i in range(m):
+            # Give user info
+            print "dBG = " + str(dBG) + " " + ISF.units[:-2]
 
-            # Compute partial result with base profile
-            result = base.f(self.new.t[i], False)
+            # Add BG impact
+            BGI += dBG
 
-            # Look within each profile
-            for p in profiles:
+            # Make some air
+            print
 
-                # Compute partial result on current profile
-                result = self.operation(result, p.f(self.new.t[i], False))
+        # Give user info
+        print ("BGI (" + str(self.start) + "): " + str(round(BGI, 1)) + " " +
+               ISF.units[:-2])
 
-            # Store result for current step
-            self.new.y.append(result)
+        # Compute eventual BG
+        eventualBG = round(BG + BGI, 1)
 
-        # Normalize new profile
-        self.new.normalize()
+        # Print eventual BG
+        print ("Eventual BG (" + str(self.end) + "): " +
+               str(eventualBG) + " " + ISF.units[:-2])
 
-        # Return new profile
-        return self.new
-
-
-
-class Add(ProfileOperation):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initializing
-        super(self.__class__, self).__init__()
-
-        # Define operation
-        self.operation = lambda x, y: x + y
-
-
-
-class Subtract(ProfileOperation):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initializing
-        super(self.__class__, self).__init__()
-
-        # Define operation
-        self.operation = lambda x, y: x - y
+        # Return eventual BG
+        return eventualBG
 
 
 
