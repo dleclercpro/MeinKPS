@@ -1251,7 +1251,7 @@ class CSFProfile(Profile):
             self.units = self.units + "/U"
 
         # In case of exchanges
-        elif self.units == "exchange"
+        elif self.units == "exchange":
 
             # Adapt units
             self.units = "U/" + self.units
