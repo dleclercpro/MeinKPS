@@ -126,11 +126,8 @@ class Calculator(object):
         # Load components
         self.load()
 
-        # Compute IOB
-        self.IOB.compute()
-
         # Predict IOB decay
-        self.IOB.decay()
+        self.IOB.predict()
 
         # Store IOB
         #self.IOB.store()
@@ -626,8 +623,6 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             FILL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: Profile and filler are assumed to have same start/end limits!
         """
 
         # Give user info
@@ -649,30 +644,20 @@ class Profile(object):
             # Filling criteria
             if self.y[i] is None:
 
-                # For all steps, except end limit
-                if i < m - 1:
+                # Fill step
+                t.append(self.t[i])
+                y.append(filler.f(self.t[i], False))
 
-                    # Fill step
-                    t.append(self.t[i])
-                    y.append(filler.f(self.t[i], False))
+                # Look for additional steps to fill
+                for j in range(n - 1):
 
-                    # Look for additional steps to fill
-                    for j in range(n - 1):
+                    # Filling criteria
+                    if (self.t[i] < filler.t[j] and
+                        filler.t[j] < self.t[i + 1]):
 
-                        # Filling criteria
-                        if (self.t[i] < filler.t[j] and
-                            filler.t[j] < self.t[i + 1]):
-
-                            # Add step
-                            t.append(filler.t[j])
-                            y.append(filler.y[j])
-
-                # For last step
-                else:
-
-                    # Add step
-                    t.append(filler.t[-1])
-                    y.append(filler.y[-1])
+                        # Add step
+                        t.append(filler.t[j])
+                        y.append(filler.y[j])
 
             # Step exists in profile
             else:
@@ -715,7 +700,7 @@ class Profile(object):
         n = len(self.t)
 
         # Look for redundancies
-        for i in range(1, n):
+        for i in range(1, n - 1):
 
             # Non-redundancy criteria
             if self.y[i] != self.y[i - 1]:
@@ -1406,8 +1391,11 @@ class IOB(object):
         # Initialize end time
         self.end = None
 
-        # Initialize value
-        self.value = None
+        # Initialize time axis
+        self.t = None
+
+        # Initialize values
+        self.y = None
 
         # Define report
         self.report = "treatments.json"
@@ -1423,25 +1411,32 @@ class IOB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RESET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Reset IOB value.
         """
 
         # Give user info
-        print "Resetting IOB..."
+        print "Resetting IOB values..."
 
-        # Reset IOB
-        self.value = 0
+        # Reset time axis
+        self.t = []
+
+        # Reset values
+        self.y = []
 
 
 
-    def prepare(self):
+    def prepare(self, end):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Store end time
+        self.end = end
+
+        # Compute start time
+        self.start = end - datetime.timedelta(hours = self.calculator.DIA)
 
         # Link with profiles
         basalProfile = self.calculator.basalProfile
@@ -1463,12 +1458,103 @@ class IOB(object):
         netProfile.compute(self.start, self.end,
             TBRProfile.subtract(basalProfile).add(bolusProfile))
 
-        # Return net profile
-        return [netProfile.T, netProfile.y]
+
+
+    def predict(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREDICT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Predicting IOB..."
+
+        # Reset values
+        self.reset()
+
+        # Compute net insulin profile
+        self.prepare(self.calculator.now)
+
+        # Link with net insulin profile
+        netProfile = self.calculator.netProfile
+
+        # Link with DIA
+        DIA = self.calculator.DIA
+
+        # Define timestep (h)
+        dt = 5.0 / 60.0
+
+        # Compute number of steps
+        n = int(DIA / dt)
+
+        # Generate time axis
+        t = np.linspace(DIA, dt, n)
+
+        # Convert time axis to datetime objects
+        t = [self.calculator.now - datetime.timedelta(hours = x) for x in t]
+
+        # Initialize partial net insulin profile
+        partProfile = Profile()
+
+        # Compute IOB decay
+        for i in range(n):
+
+            # Reset partial net insulin profile
+            partProfile.reset()
+
+            # Define start/end times and their corresponding values
+            partProfile.t.extend([t[i], t[i] + datetime.timedelta(hours = DIA)])
+            partProfile.y.extend([None] * 2)
+
+            # FIXME
+            if partProfile.t[-1] == self.calculator.now:
+
+                partProfile.y[-1] = 0
+
+            else:
+
+                partProfile.t.insert(1, self.calculator.now)
+                partProfile.y.insert(1, 0)
+
+            # Fill profile
+            partProfile.fill(netProfile)
+
+            # Smooth profile
+            partProfile.smooth()
+
+            # Normalize profile
+            partProfile.normalize()
+
+            # Compute IOB for current time
+            IOB = self.compute(partProfile)
+
+            # Compute IOB prediction time
+            T = t[i] + datetime.timedelta(hours = DIA)
+
+            # Store prediction time
+            self.t.append(T)
+
+            # Store IOB
+            self.y.append(IOB)
+
+        # Give user info
+        print "Predicted IOB(s):"
+
+        # Give user info
+        for i in range(n):
+
+            # Get current time and IOB
+            t = lib.formatTime(self.t[i])
+            y = self.y[i]
+
+            # Print IOB
+            print str(y) + " U (" + str(t) + ")"
 
 
 
-    def compute(self, end = datetime.datetime.now()):
+    def compute(self, profile):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1476,20 +1562,12 @@ class IOB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
-        print "Computing IOB..."
+        # Decouple profile components
+        t = profile.T
+        y = profile.y
 
-        # Reset value
-        self.reset()
-
-        # Define end time
-        self.end = end
-
-        # Compute start time
-        self.start = self.end - datetime.timedelta(hours = self.calculator.DIA)
-
-        # Get net insulin profile
-        [t, y] = self.prepare()
+        # Initialize current IOB
+        IOB = 0
 
         # Get number of steps
         n = len(t)
@@ -1497,75 +1575,19 @@ class IOB(object):
         # Compute IOB
         for i in range(n - 1):
 
-            # Compute decay factor based on integral of IDC
-            d = abs(self.calculator.IDC.F(t[i + 1]) -
+            # Compute remaining IOB factor based on integral of IDC
+            R = abs(self.calculator.IDC.F(t[i + 1]) -
                     self.calculator.IDC.F(t[i]))
 
             # Compute active insulin remaining for current step
-            self.value += d * y[i]
-
-        # Give user info
-        print "IOB (" + str(self.end) + "): " + str(round(self.value, 1)) + " U"
+            IOB += R * y[i]
 
         # Return IOB
-        return self.value
+        return IOB
 
 
 
-    def decay(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECAY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Computing natural decay of IOB..."
-
-        # Link with DIA
-        DIA = self.calculator.DIA
-
-        # Link with net insulin profile
-        netProfile = self.calculator.netProfile
-
-        # Initialize partial net insulin profile
-        partialProfile = Profile()
-
-        # Define timestep (h)
-        dt = 5 / 60.
-
-        # Compute number of timesteps
-        n = int(DIA / dt)
-
-        # Generate time axis
-        t = np.linspace(dt, DIA, n)
-
-        # Convert time axis to datetime objects
-        t = [self.calculator.now - datetime.timedelta(hours = x) for x in t]
-
-        # Reverse time axis
-        t.reverse()
-
-        # Initialize IOB predictions
-        y = []
-
-        # Compute IOB decay
-        for i in range(n):
-
-            # Reset partial net insulin profile
-            partialProfile.reset()
-
-            # Define start/end times and their corresponding values
-            partialProfile.t.extend([t[i], self.calculator.now])
-            partialProfile.y.extend([None] * 2)
-
-            # Fill profile
-            partialProfile.fill(netProfile)
-
-
-
-    def store(self):
+    def store(self, t, y):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1577,10 +1599,10 @@ class IOB(object):
         print "Adding IOB to report: '" + self.report + "'..."
 
         # Format time
-        t = lib.formatTime(self.end)
+        t = lib.formatTime(t)
 
         # Round value
-        y = round(self.value, 1)
+        y = round(y, 1)
 
         # Load report
         Reporter.load(self.report)
@@ -1671,8 +1693,8 @@ class BG(object):
         self.end = end
 
         # Link with ISF and IOB
-        ISF = self.calculator.isf
-        IOB = self.calculator.iob
+        ISF = self.calculator.ISF
+        IOB = self.calculator.IOB
 
         # Prepare ISF profile
         ISF.compute(self.start, self.end)

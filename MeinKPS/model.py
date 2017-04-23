@@ -252,70 +252,31 @@ def plotInsulinActivity():
     # Instanciate calculator
     calc = calculator.Calculator()
 
+    # Run calculator
+    calc.run()
+
+    # Link with net profile
+    profileT = np.array(calc.netProfile.T)
+    profileY = np.array(calc.netProfile.y)
+
     # Load pump report
     Reporter.load("pump.json")
 
     # Read DIA
     DIA = Reporter.getEntry(["Settings"], "DIA")
 
-    # Initialize BG
-    BG = 150.0
+    # Define timestep (h)
+    dt = 5 / 60.
 
-    # Initialize BGs
-    BGs = []
-
-    # Initialize IOBs
-    IOBs = []
-    futureIOBs = []
+    # Compute number of steps
+    n = int(DIA / dt)
 
     # Generate time axis for all IOBs
-    t = np.linspace(DIA * 3600, 0, 500).tolist()
-    T = np.linspace(0, DIA * 3600, 500).tolist()[1:]
-
-    # Get number of IOBs to compute
-    n = len(t)
-
-    # Convert time axis to datetime objects and compute IOBs
-    for i in range(n):
-
-        # Compute IOB
-        IOBs.append(calc.iob.compute(now - datetime.timedelta(seconds = t[i])))
-
-    # Link with net profile
-    profileT = np.array(calc.iob.netProfile.T)
-    profileY = np.array(calc.iob.netProfile.y)
-
-    # Get number of future IOBs to compute
-    N = len(T)
-
-    # Compute IOBs in the future
-    for i in range(N):
-
-        print now + datetime.timedelta(seconds = T[i])
-
-        # Compute IOB
-        futureIOBs.append(calc.iob.compute(now + datetime.timedelta(seconds = T[i])))
-
-        # Compute BGs
-        if i == 0:
-            BGs.append(calc.bg.predict(BG, now, now))
-        else:
-            BGs.append(calc.bg.predict(BGs[-1], now + datetime.timedelta(seconds = T[i - 1]), now + datetime.timedelta(seconds = T[i])))
-
-    print BGs
-    return
-
-    # Convert BGs to numpy array
-    BGs = np.array(BGs)
-    BGs /= 100.0
-
-    # Convert to numpy array
-    t = np.array(t)
-    T = np.array(T)
+    t = np.linspace(DIA * 3600, 0, 500)
+    T = np.linspace(dt, DIA, n)
 
     # Convert time axis to hours
     t /= 3600.0
-    T /= 3600.0
 
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
@@ -331,7 +292,7 @@ def plotInsulinActivity():
     plt.ylabel("Insulin Activity (-)", weight = "semibold")
 
     # Add Walsh IDC to plot
-    plt.plot(-t, calc.iob.idc.f(t),
+    plt.plot(-t, calc.IDC.f(t),
              ls = "-", lw = 1.5, c = "red", label = "Walsh IDC")
 
     # Add insulin net profile to plot
@@ -339,16 +300,12 @@ def plotInsulinActivity():
              ls = "-", lw = 1.5, c = "purple", label = "Net Profile")
 
     # Add IOBs to plot
-    plt.plot(-t, IOBs,
-             ls = "-", lw = 1.5, c = "orange", label = "IOB")
+    #plt.plot(-t, IOBs,
+    #         ls = "-", lw = 1.5, c = "blue", label = "IOB")
 
     # Add future IOBs to plot
-    plt.plot(T, futureIOBs,
-             ls = "-", lw = 1.5, c = "blue", label = "Future IOB")
-
-    # Add future BGs to plot
-    plt.plot(T, BGs,
-             ls = "-", lw = 1.5, c = "black", label = "Eventual BG")
+    plt.plot(T, calc.IOB.y,
+             ls = "-", lw = 1.5, c = "orange", label = "Future IOB")
 
     # Define plot legend
     legend = plt.legend(title = "Legend", loc = 0, borderaxespad = 1.5,
