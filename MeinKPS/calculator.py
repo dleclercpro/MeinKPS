@@ -1771,23 +1771,23 @@ class BG(object):
             # Give user info
             print ("Time: " + lib.formatTime(IOB.t[i + 1]))
 
-            # Compute IOB change
-            dIOB = IOB.y[i + 1] - IOB.y[i]
-
-            # Give user info
-            print "dIOB = " + str(dIOB) + " U"
-
             # Compute ISF
             isf = ISF.f(IOB.t[i], False)
 
             # Print ISF
             print "ISF: " + str(isf) + " " + ISF.units
 
+            # Compute IOB change
+            dIOB = IOB.y[i + 1] - IOB.y[i]
+
+            # Give user info
+            print "dIOB: " + str(dIOB) + " U"
+
             # Compute BG change
             dBG = isf * dIOB
 
             # Give user info
-            print "dBG = " + str(dBG) + " " + self.units
+            print "dBG: " + str(dBG) + " " + self.units
 
             # Add BG impact
             BG += dBG
