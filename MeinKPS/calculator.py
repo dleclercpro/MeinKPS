@@ -55,6 +55,12 @@ class Calculator(object):
         # Initialize current time
         self.now = None
 
+        # Initialize start of insulin action
+        self.start = None
+
+        # Initialize end of insulin action
+        self.end = None
+
         # Initialize DIA
         self.DIA = None
 
@@ -107,7 +113,36 @@ class Calculator(object):
         # Give user info
         print "DIA: " + str(self.DIA) + " h"
 
-        # Initialize IDC
+
+
+    def prepare(self, end):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Store end of insuline action
+        self.end = end
+
+        # Compute start of insulin action
+        self.start = self.end - datetime.timedelta(hours = self.DIA)
+
+        # Build basal profile
+        self.basalProfile.compute(self.start, self.end, None, False)
+
+        # Build TBR profile
+        self.TBRProfile.compute(self.start, self.end, self.basalProfile)
+
+        # Build bolus profile
+        self.bolusProfile.compute(self.start, self.end)
+
+        # Build net profile using suspend times
+        self.netProfile.compute(self.start, self.end,
+            self.TBRProfile.subtract(self.basalProfile).add(self.bolusProfile))
+
+        # Define IDC
         self.IDC = WalshIDC(self.DIA)
 
 
@@ -125,6 +160,9 @@ class Calculator(object):
 
         # Load components
         self.load()
+
+        # Prepare components
+        self.prepare(self.now)
 
         # Predict IOB decay
         self.IOB.predict()
@@ -307,21 +345,21 @@ class Profile(object):
         print "Decoupling profile..."
 
         # Decouple components
-        for i in sorted(self.data):
+        for t in sorted(self.data):
 
             # Convert time to datetime object
             if convert:
 
                 # Get time
-                self.t.append(lib.formatTime(i))
+                self.t.append(lib.formatTime(t))
 
             else:
 
                 # Get time
-                self.t.append(i)
+                self.t.append(t)
 
             # Get rest
-            self.y.append(self.data[i])
+            self.y.append(self.data[t])
 
 
 
@@ -339,9 +377,6 @@ class Profile(object):
         # Initialize profile components
         t = []
         y = []
-
-        # Initialize time differences to now
-        delta = []
 
         # Get number of steps
         n = len(self.t)
@@ -372,7 +407,7 @@ class Profile(object):
         for i in range(n - 1):
 
             # Current step criteria
-            if t[i] <= self.end and self.end < t[i + 1]:
+            if t[i] <= self.end < t[i + 1]:
 
                 # Store index
                 index = i
@@ -431,7 +466,7 @@ class Profile(object):
         for i in range(n):
 
             # Compare to time limits
-            if self.start <= self.t[i] and self.t[i] <= self.end:
+            if self.start <= self.t[i] <= self.end:
 
                 # Add step
                 t.append(self.t[i])
@@ -492,7 +527,11 @@ class Profile(object):
 
         # Get number of steps
         n = len(self.t)
-        
+
+        # Add end to time axis in order to correctly compute last dt (number of
+        # steps has to be computed before that!)
+        self.t.append(self.end)
+
         # Rebuild profile and inject zeros where needed
         for i in range(n):
 
@@ -503,20 +542,11 @@ class Profile(object):
             # Get current step duration
             d = self.d[i]
 
-            # For all steps, except last one
-            if i < n - 1:
-
-                # Compute time between current and next steps
-                dt = self.t[i + 1] - self.t[i]
-
-            # Last step
-            else:
-
-                # Compute time between last step and profile end
-                dt = self.end - self.t[i]
+            # Compute time between current and next steps
+            dt = self.t[i + 1] - self.t[i]
 
             # If step is a canceling one
-            if not d:
+            if d == 0:
 
                 # Replace value with zero
                 y[-1] = self.zero
@@ -565,7 +595,7 @@ class Profile(object):
         for i in range(n):
 
             # Inclusion criteria
-            if self.start <= self.t[i] and self.t[i] <= self.end:
+            if self.start <= self.t[i] <= self.end:
 
                 # Add time
                 t.append(self.t[i])
@@ -588,7 +618,7 @@ class Profile(object):
             # If last step was found
             if index is not None:
 
-                # Add value
+                # Extend last step's value
                 y.insert(0, self.y[index])
 
             # Otherwise, store a None value
@@ -638,6 +668,10 @@ class Profile(object):
         # Get number of steps within filler
         n = len(filler.t)
 
+        # Add end to time axis in order to correctly compute last dt (number of
+        # steps has to be computed before that!)
+        self.t.append(self.end)
+
         # Fill profile
         for i in range(m):
 
@@ -649,11 +683,10 @@ class Profile(object):
                 y.append(filler.f(self.t[i], False))
 
                 # Look for additional steps to fill
-                for j in range(n - 1):
+                for j in range(n):
 
                     # Filling criteria
-                    if (self.t[i] < filler.t[j] and
-                        filler.t[j] < self.t[i + 1]):
+                    if (self.t[i] < filler.t[j] < self.t[i + 1]):
 
                         # Add step
                         t.append(filler.t[j])
@@ -870,8 +903,14 @@ class Profile(object):
               within them!
         """
 
-        # Generate new profile
-        new = Profile()
+        # Give user info
+        print "'" + self.__class__.__name__ + "'"
+
+        # Show base profile
+        self.show()
+
+        # Give user info
+        print "with: "
 
         # Show profiles
         for p in profiles:
@@ -882,12 +921,8 @@ class Profile(object):
             # Show profile
             p.show()
 
-        # Give user info
-        print "with: "
-        print "'" + self.__class__.__name__ + "'"
-
-        # Show base profile
-        self.show()
+        # Generate new profile
+        new = Profile()
 
         # Find all steps
         new.t = lib.uniqify(self.t + lib.flatten([p.t for p in profiles]))
@@ -1385,12 +1420,6 @@ class IOB(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize start time
-        self.start = None
-
-        # Initialize end time
-        self.end = None
-
         # Initialize time axis
         self.t = None
 
@@ -1424,42 +1453,6 @@ class IOB(object):
 
 
 
-    def prepare(self, end):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store end time
-        self.end = end
-
-        # Compute start time
-        self.start = end - datetime.timedelta(hours = self.calculator.DIA)
-
-        # Link with profiles
-        basalProfile = self.calculator.basalProfile
-        TBRProfile = self.calculator.TBRProfile
-        bolusProfile = self.calculator.bolusProfile
-        netProfile = self.calculator.netProfile
-
-        # Build basal profile
-        basalProfile.compute(self.start, self.end, None, False)
-
-        # Build TBR profile
-        TBRProfile.compute(self.start, self.end, basalProfile)
-
-        # Build bolus profile
-        bolusProfile.compute(self.start, self.end)
-
-        # Build net profile using suspend times and filling with sum of net
-        # basal and bolus profiles
-        netProfile.compute(self.start, self.end,
-            TBRProfile.subtract(basalProfile).add(bolusProfile))
-
-
-
     def predict(self):
 
         """
@@ -1474,8 +1467,8 @@ class IOB(object):
         # Reset values
         self.reset()
 
-        # Compute net insulin profile
-        self.prepare(self.calculator.now)
+        # Initialize partial net insulin profile
+        partProfile = Profile()
 
         # Link with net insulin profile
         netProfile = self.calculator.netProfile
@@ -1493,10 +1486,7 @@ class IOB(object):
         t = np.linspace(DIA, dt, n)
 
         # Convert time axis to datetime objects
-        t = [self.calculator.now - datetime.timedelta(hours = x) for x in t]
-
-        # Initialize partial net insulin profile
-        partProfile = Profile()
+        t = [self.calculator.end - datetime.timedelta(hours = x) for x in t]
 
         # Compute IOB decay
         for i in range(n):
@@ -1505,17 +1495,18 @@ class IOB(object):
             partProfile.reset()
 
             # Define start/end times and their corresponding values
-            partProfile.t.extend([t[i], t[i] + datetime.timedelta(hours = DIA)])
+            partProfile.t.extend([t[i]] * 2)
+            partProfile.t[-1] += datetime.timedelta(hours = DIA)
             partProfile.y.extend([None] * 2)
 
-            # FIXME
-            if partProfile.t[-1] == self.calculator.now:
+            # To fake natural decay, set net insulin rate to 0 at current time
+            # for IOB computations in the future
+            if partProfile.t[-1] > self.calculator.end:
 
-                partProfile.y[-1] = 0
+                # Add time
+                partProfile.t.insert(1, self.calculator.end)
 
-            else:
-
-                partProfile.t.insert(1, self.calculator.now)
+                # Add value
                 partProfile.y.insert(1, 0)
 
             # Fill profile
@@ -1581,6 +1572,8 @@ class IOB(object):
 
             # Compute active insulin remaining for current step
             IOB += R * y[i]
+
+        print "IOB: " + str(IOB)
 
         # Return IOB
         return IOB
