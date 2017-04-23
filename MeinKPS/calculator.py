@@ -68,16 +68,16 @@ class Calculator(object):
         self.IDC = None
 
         # Give calculator a basal profile
-        self.basalProfile = BasalProfile("Standard")
+        self.basal = BasalProfile("Standard")
 
         # Give calculator a TBR profile
-        self.TBRProfile = TBRProfile()
+        self.TBR = TBRProfile()
 
         # Give calculator a bolus profile
-        self.bolusProfile = BolusProfile()
+        self.bolus = BolusProfile()
 
         # Give calculator a net profile
-        self.netProfile = NetProfile()
+        self.net = NetProfile()
 
         # Give calculator an ISF profile
         self.ISF = ISFProfile()
@@ -129,21 +129,25 @@ class Calculator(object):
         # Compute start of insulin action
         self.start = self.end - datetime.timedelta(hours = self.DIA)
 
-        # Build basal profile
-        self.basalProfile.compute(self.start, self.end, None, False)
-
-        # Build TBR profile
-        self.TBRProfile.compute(self.start, self.end, self.basalProfile)
-
-        # Build bolus profile
-        self.bolusProfile.compute(self.start, self.end)
-
-        # Build net profile using suspend times
-        self.netProfile.compute(self.start, self.end,
-            self.TBRProfile.subtract(self.basalProfile).add(self.bolusProfile))
-
         # Define IDC
         self.IDC = WalshIDC(self.DIA)
+
+        # Build basal profile
+        self.basal.compute(self.start, self.end)
+
+        # Build TBR profile
+        self.TBR.compute(self.start, self.end, self.basal)
+
+        # Build bolus profile
+        self.bolus.compute(self.start, self.end)
+
+        # Build net profile using suspend times
+        self.net.compute(self.start, self.end,
+            self.TBR.subtract(self.basal).add(self.bolus))
+
+        # Build ISF profile (in the future)
+        self.ISF.compute(self.end,
+                         self.end + datetime.timedelta(hours = self.DIA))
 
 
 
@@ -168,13 +172,14 @@ class Calculator(object):
         self.IOB.predict()
 
         # Store IOB
-        #self.IOB.store()
+        self.IOB.store()
 
         # Compute COB
         #self.COB.compute()
 
         # Compute BG
-        #self.BG.predict(100, now, now + datetime.timedelta(minutes = 75))
+        #self.BG.predict(5.0)
+        self.BG.predict(10.0)
 
 
 
@@ -222,7 +227,7 @@ class Profile(object):
 
 
 
-    def compute(self, start, end, filler = None, mapped = True):
+    def compute(self, start, end, filler = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -244,12 +249,6 @@ class Profile(object):
 
         # Decouple profile components
         self.decouple()
-
-        # Map time if necessary
-        if not mapped:
-
-            # Map
-            self.map()
 
         # Filter profile steps
         self.filter()
@@ -331,7 +330,7 @@ class Profile(object):
 
 
 
-    def decouple(self, convert = False):
+    def decouple(self, mapped = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -347,8 +346,8 @@ class Profile(object):
         # Decouple components
         for t in sorted(self.data):
 
-            # Convert time to datetime object
-            if convert:
+            # If time is mapped, convert it to datetime object
+            if mapped:
 
                 # Get time
                 self.t.append(lib.formatTime(t))
@@ -358,8 +357,14 @@ class Profile(object):
                 # Get time
                 self.t.append(t)
 
-            # Get rest
+            # Get value
             self.y.append(self.data[t])
+
+        # If time is not mapped
+        if not mapped:
+
+            # Map it
+            self.map()
 
 
 
@@ -1020,6 +1025,19 @@ class BasalProfile(Profile):
 
 
 
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start decoupling
+        super(self.__class__, self).decouple(False)
+
+
+
 class TBRProfile(Profile):
 
     def __init__(self):
@@ -1052,7 +1070,7 @@ class TBRProfile(Profile):
         """
 
         # Start decoupling
-        super(self.__class__, self).decouple(True)
+        super(self.__class__, self).decouple()
 
         # Get number of steps
         n = len(self.t)
@@ -1134,7 +1152,7 @@ class BolusProfile(Profile):
         """
 
         # Start decoupling
-        super(self.__class__, self).decouple(True)
+        super(self.__class__, self).decouple()
 
         # Get number of steps
         n = len(self.t)
@@ -1182,7 +1200,7 @@ class NetProfile(Profile):
         """
 
         # Start decoupling
-        super(self.__class__, self).decouple(True)
+        super(self.__class__, self).decouple()
 
         # Get number of steps
         n = len(self.t)
@@ -1238,6 +1256,19 @@ class ISFProfile(Profile):
 
 
 
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start decoupling
+        super(self.__class__, self).decouple(False)
+
+
+
 class CSFProfile(Profile):
 
     def __init__(self):
@@ -1287,6 +1318,19 @@ class CSFProfile(Profile):
 
         # Load rest
         super(self.__class__, self).load()
+
+
+
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start decoupling
+        super(self.__class__, self).decouple(False)
 
 
 
@@ -1471,7 +1515,7 @@ class IOB(object):
         partProfile = Profile()
 
         # Link with net insulin profile
-        netProfile = self.calculator.netProfile
+        netProfile = self.calculator.net
 
         # Link with DIA
         DIA = self.calculator.DIA
@@ -1580,7 +1624,7 @@ class IOB(object):
 
 
 
-    def store(self, t, y):
+    def store(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1592,10 +1636,10 @@ class IOB(object):
         print "Adding IOB to report: '" + self.report + "'..."
 
         # Format time
-        t = lib.formatTime(t)
+        t = lib.formatTime(self.t[0])
 
         # Round value
-        y = round(y, 1)
+        y = round(self.y[0], 3)
 
         # Load report
         Reporter.load(self.report)
@@ -1645,24 +1689,50 @@ class BG(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize start time
-        self.start = None
-
-        # Initialize end time
-        self.end = None
-
-        # Initialize value
-        self.value = None
+        # Initialize values
+        self.y = None
 
         # Initialize units
         self.units = None
+
+        # Define report
+        self.report = "pump.json"
 
         # Link with calculator
         self.calculator = calculator
 
 
 
-    def predict(self, BG, start, end):
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset values
+        self.y = []
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load(self.report)
+
+        # Read units
+        self.units = Reporter.getEntry([], "BG Units")
+
+
+
+    def predict(self, BG):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1670,84 +1740,69 @@ class BG(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
         Use IOB and ISF to predict where BG will land after insulin activity is
-        over, assuming it simply decays from now on.
+        over, assuming a natural decay.
         """
 
-        # Initialize eventual BG
-        eventualBG = None
+        # Give user info
+        print "Predicting BG..."
 
-        # Load necessary components
+        # Reset BG values
+        self.reset()
+
+        # Load components
         self.load()
 
-        # Define start time
-        self.start = start
+        # Give user info
+        print "Initial BG: " + str(BG)
 
-        # Define end time
-        self.end = end
+        # Store initial BG
+        self.y.append(BG)
 
-        # Link with ISF and IOB
-        ISF = self.calculator.ISF
+        # Link with profiles
         IOB = self.calculator.IOB
-
-        # Prepare ISF profile
-        ISF.compute(self.start, self.end)
+        ISF = self.calculator.ISF
 
         # Get number of ISF steps
-        n = len(ISF.t)
-
-        # Initialize IOBs
-        IOBs = []
-
-        # Predict IOB at each ISF change in the future
-        for i in range(n):
-
-            # Compute IOB
-            IOBs.append(IOB.compute(ISF.t[i]))
-
-        # Initialize BG impact
-        BGI = 0
+        n = len(IOB.t)
 
         # Compute change in IOB (insulin that has kicked in within ISF step)
         for i in range(n - 1):
 
             # Give user info
-            print ("Time step: " + lib.formatTime(ISF.t[i]) + " - " +
-                                   lib.formatTime(ISF.t[i + 1]))
-
-            # Print ISF
-            print "ISF: " + str(ISF.y[i]) + " " + ISF.units
+            print ("Time: " + lib.formatTime(IOB.t[i + 1]))
 
             # Compute IOB change
-            dIOB = IOBs[i + 1] - IOBs[i]
+            dIOB = IOB.y[i + 1] - IOB.y[i]
 
             # Give user info
             print "dIOB = " + str(dIOB) + " U"
 
+            # Compute ISF
+            isf = ISF.f(IOB.t[i], False)
+
+            # Print ISF
+            print "ISF: " + str(isf) + " " + ISF.units
+
             # Compute BG change
-            dBG = ISF.y[i] * dIOB
+            dBG = isf * dIOB
 
             # Give user info
-            print "dBG = " + str(dBG) + " " + ISF.units[:-2]
+            print "dBG = " + str(dBG) + " " + self.units
 
             # Add BG impact
-            BGI += dBG
+            BG += dBG
+
+            # Print eventual BG
+            print "BG: " + str(round(BG, 1)) + " " + self.units
+
+            # Store current BG
+            self.y.append(BG)
 
             # Make some air
             print
 
         # Give user info
-        print ("BGI (" + str(self.start) + "): " + str(round(BGI, 1)) + " " +
-               ISF.units[:-2])
-
-        # Compute eventual BG
-        eventualBG = round(BG + BGI, 1)
-
-        # Print eventual BG
-        print ("Eventual BG (" + str(self.end) + "): " +
-               str(eventualBG) + " " + ISF.units[:-2])
-
-        # Return eventual BG
-        return eventualBG
+        print "Final BG: " + str(round(BG, 1)) + " " + self.units
 
 
 

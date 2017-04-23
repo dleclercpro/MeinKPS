@@ -256,8 +256,8 @@ def plotInsulinActivity():
     calc.run()
 
     # Link with net profile
-    profileT = np.array(calc.netProfile.T)
-    profileY = np.array(calc.netProfile.y)
+    profileT = np.array(calc.net.T)
+    profileY = np.array(calc.net.y)
 
     # Load pump report
     Reporter.load("pump.json")
@@ -297,15 +297,15 @@ def plotInsulinActivity():
 
     # Add insulin net profile to plot
     plt.step(-profileT, np.append(0, profileY[:-1]),
-             ls = "-", lw = 1.5, c = "purple", label = "Net Profile")
-
-    # Add IOBs to plot
-    #plt.plot(-t, IOBs,
-    #         ls = "-", lw = 1.5, c = "blue", label = "IOB")
+             ls = "-", lw = 1.5, c = "black", label = "Net Profile")
 
     # Add future IOBs to plot
     plt.plot(T, calc.IOB.y,
-             ls = "-", lw = 1.5, c = "orange", label = "Future IOB")
+             ls = "-", lw = 1.5, c = "purple", label = "Future IOB")
+
+    # Add eventual BGs to plot
+    plt.plot(T, calc.BG.y,
+             ls = "-", lw = 1.5, c = "blue", label = "Eventual BG")
 
     # Define plot legend
     legend = plt.legend(title = "Legend", loc = 0, borderaxespad = 1.5,
