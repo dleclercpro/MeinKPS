@@ -179,7 +179,8 @@ class Calculator(object):
 
         # Compute BG
         #self.BG.predict(5.0)
-        self.BG.predict(10.0)
+        self.BG.predict(150.0)
+        self.BG.shortPredict(150.0)
 
 
 
@@ -1692,6 +1693,12 @@ class BG(object):
         # Initialize values
         self.y = None
 
+        # Initialize prediction
+        self.prediction = None
+
+        # Initialize recommendation
+        self.recommendation = None
+
         # Initialize units
         self.units = None
 
@@ -1713,6 +1720,12 @@ class BG(object):
 
         # Reset values
         self.y = []
+
+        # Reset prediction
+        self.prediction = None
+
+        # Reset recommendation
+        self.recommendation = None
 
 
 
@@ -1745,15 +1758,13 @@ class BG(object):
 
         # Give user info
         print "Predicting BG..."
+        print "Initial BG: " + str(BG)
 
         # Reset BG values
         self.reset()
 
         # Load components
         self.load()
-
-        # Give user info
-        print "Initial BG: " + str(BG)
 
         # Store initial BG
         self.y.append(BG)
@@ -1797,6 +1808,68 @@ class BG(object):
 
             # Store current BG
             self.y.append(BG)
+
+            # Make some air
+            print
+
+        # Give user info
+        print "Final BG: " + str(round(BG, 1)) + " " + self.units
+
+
+
+    def shortPredict(self, BG):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHORTPREDICT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Predicting BG..."
+        print "Initial BG: " + str(BG)
+
+        # Reset BG values
+        #self.reset()
+
+        # Load components
+        self.load()
+
+        # Link with profiles
+        IDC = self.calculator.IDC
+        IOB = self.calculator.IOB
+        ISF = self.calculator.ISF
+
+        # Get number of ISF steps
+        n = len(ISF.t)
+
+        # Compute change in IOB (insulin that has kicked in within ISF step)
+        for i in range(n - 1):
+
+            # Print timestep
+            print ("Timestep: " + lib.formatTime(ISF.t[i]) + " @ " +
+                                  lib.formatTime(ISF.t[i + 1]))
+
+            # Print ISF
+            print "ISF: " + str(ISF.y[i]) + " " + ISF.units
+
+            # Compute IOB change
+            dIOB = IOB.y[0] * (IDC.f(ISF.T[i]) - IDC.f(ISF.T[i + 1]))
+
+            # Give user info
+            print "dIOB: " + str(dIOB) + " U"
+
+            # Compute BG change
+            dBG = ISF.y[i] * dIOB
+
+            # Give user info
+            print "dBG: " + str(dBG) + " " + self.units
+
+            # Add BG impact
+            BG += dBG
+
+            # Print eventual BG
+            print "BG: " + str(round(BG, 1)) + " " + self.units
 
             # Make some air
             print
