@@ -85,6 +85,9 @@ class Calculator(object):
         # Give calculator a CSF profile
         #self.CSF = CSFProfile()
 
+        # Give calculator a BG targets profile
+        self.BGTargets = BGTargets()
+
         # Give calculator an IOB
         self.IOB = IOB(self)
 
@@ -149,6 +152,10 @@ class Calculator(object):
         self.ISF.compute(self.end,
                          self.end + datetime.timedelta(hours = self.DIA))
 
+        # Build BG targets profile (in the future)
+        self.BGTargets.compute(self.end,
+                               self.end + datetime.timedelta(hours = self.DIA))
+
 
 
     def run(self):
@@ -179,8 +186,9 @@ class Calculator(object):
 
         # Compute BG
         #self.BG.predict(5.0)
-        self.BG.predict(150.0)
-        self.BG.shortPredict(150.0)
+        self.BG.predict(350.0)
+        self.BG.shortPredict(350.0) # FIXME: why small difference with predict?
+        self.BG.recommend()
 
 
 
@@ -1335,6 +1343,60 @@ class CSFProfile(Profile):
 
 
 
+class BGTargets(Profile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Define report info
+        self.report = "pump.json"
+        self.path = []
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load(self.report)
+
+        # Read units
+        self.units = Reporter.getEntry([], "BG Units")
+
+        # Define report info
+        self.key = "BG Targets (" + self.units + ")"
+
+        # Load rest
+        super(self.__class__, self).load()
+
+
+
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start decoupling
+        super(self.__class__, self).decouple(False)
+
+
+
 class IDC(object):
 
     def __init__(self, DIA):
@@ -1876,6 +1938,33 @@ class BG(object):
 
         # Give user info
         print "Final BG: " + str(round(BG, 1)) + " " + self.units
+
+
+
+    def recommend(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RECOMMEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Recommending treatment..."
+
+        # Load components
+        self.load()
+
+        # Link with profiles
+        BGTargets = self.calculator.BGTargets
+
+        # Find average of target to reach after natural insulin decay
+        target = sum(BGTargets.y[-1]) / 2.0
+
+        # Give user info
+        print "Time: " + lib.formatTime(BGTargets.t[-1])
+        print "BG Target: " + str(BGTargets.y[-1]) + " " + str(self.units)
+        print "BG Target Average: " + str(target) + " " + str(self.units)
 
 
 
