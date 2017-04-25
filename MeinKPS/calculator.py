@@ -188,7 +188,7 @@ class Calculator(object):
         #self.BG.predict(5.0)
         self.BG.predict(350.0)
         self.BG.shortPredict(350.0) # FIXME: why small difference with predict?
-        self.BG.recommend()
+        self.BG.recommend(15.0)
 
 
 
@@ -769,7 +769,7 @@ class Profile(object):
 
 
 
-    def normalize(self):
+    def normalize(self, end = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -788,11 +788,19 @@ class Profile(object):
         # Normalize time
         for i in range(n):
 
-            # Compute time difference in hours
-            dt = (self.t[-1] - self.t[i]).seconds / 3600.0
+            # Decide which end to use to normalize
+            if end:
 
-            # Add step
-            self.T.append(dt)
+                # Compute time difference (from end)
+                dt = (self.t[-1] - self.t[i])
+
+            else:
+
+                # Compute time difference (from start)
+                dt = (self.t[i] - self.t[0])
+
+            # Add step (in hours)
+            self.T.append(dt.seconds / 3600.0)
 
         # Show current state of profile
         self.show(True)
@@ -1278,6 +1286,19 @@ class ISFProfile(Profile):
 
 
 
+    def normalize(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NORMALIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start normalizing
+        super(self.__class__, self).normalize(False)
+
+
+
 class CSFProfile(Profile):
 
     def __init__(self):
@@ -1343,6 +1364,19 @@ class CSFProfile(Profile):
 
 
 
+    def normalize(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NORMALIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start normalizing
+        super(self.__class__, self).normalize(False)
+
+
+
 class BGTargets(Profile):
 
     def __init__(self):
@@ -1394,6 +1428,19 @@ class BGTargets(Profile):
 
         # Start decoupling
         super(self.__class__, self).decouple(False)
+
+
+
+    def normalize(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NORMALIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start normalizing
+        super(self.__class__, self).normalize(False)
 
 
 
@@ -1916,7 +1963,7 @@ class BG(object):
             print "ISF: " + str(ISF.y[i]) + " " + ISF.units
 
             # Compute IOB change
-            dIOB = IOB.y[0] * (IDC.f(ISF.T[i]) - IDC.f(ISF.T[i + 1]))
+            dIOB = IOB.y[0] * (IDC.f(ISF.T[i + 1]) - IDC.f(ISF.T[i]))
 
             # Give user info
             print "dIOB: " + str(dIOB) + " U"
@@ -1941,12 +1988,15 @@ class BG(object):
 
 
 
-    def recommend(self):
+    def recommend(self, BG):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RECOMMEND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Recommend a bolus based on current and target average BG, taking into
+        account ISF step curve over DIA.
         """
 
         # Give user info
@@ -1957,14 +2007,38 @@ class BG(object):
 
         # Link with profiles
         BGTargets = self.calculator.BGTargets
+        IDC = self.calculator.IDC
+        ISF = self.calculator.ISF
+
+        # Get number of ISF steps
+        n = len(ISF.t)
+
+        # Initialize factor between recommended bolus and BG difference with
+        # average target
+        factor = 0
+
+        # Compute factor
+        for i in range(n - 1):
+
+            # Update factor with current step
+            factor += ISF.y[i] * (IDC.f(ISF.T[i + 1]) - IDC.f(ISF.T[i]))
 
         # Find average of target to reach after natural insulin decay
         target = sum(BGTargets.y[-1]) / 2.0
+
+        # Compute BG difference with average target
+        dBG = target - BG
+
+        # Compute necessary bolus
+        bolus = dBG / factor
 
         # Give user info
         print "Time: " + lib.formatTime(BGTargets.t[-1])
         print "BG Target: " + str(BGTargets.y[-1]) + " " + str(self.units)
         print "BG Target Average: " + str(target) + " " + str(self.units)
+        print "BG: " + str(BG)
+        print "dBG: " + str(dBG) + " " + str(self.units)
+        print "Recommended bolus: " + str(round(bolus, 1)) + " U"
 
 
 
