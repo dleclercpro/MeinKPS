@@ -1996,7 +1996,8 @@ class BG(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         Recommend a bolus based on current and target average BG, taking into
-        account ISF step curve over DIA.
+        account ISF step curve over next DIA hours (assuming natural decay of
+        insulin activity).
         """
 
         # Give user info
