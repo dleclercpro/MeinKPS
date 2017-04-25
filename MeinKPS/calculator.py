@@ -1922,7 +1922,10 @@ class BG(object):
             print
 
         # Give user info
-        print "Final BG: " + str(round(BG, 1)) + " " + self.units
+        print "Eventual BG: " + str(round(BG, 1)) + " " + self.units
+
+        # Return eventual BG
+        return BG
 
 
 
@@ -1937,9 +1940,6 @@ class BG(object):
         # Give user info
         print "Predicting BG..."
         print "Initial BG: " + str(BG)
-
-        # Reset BG values
-        #self.reset()
 
         # Load components
         self.load()
@@ -1984,20 +1984,23 @@ class BG(object):
             print
 
         # Give user info
-        print "Final BG: " + str(round(BG, 1)) + " " + self.units
+        print "Eventual BG: " + str(round(BG, 1)) + " " + self.units
+
+        # Return eventual BG
+        return BG
 
 
 
-    def recommend(self, BG):
+    def recommend(self, BG0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RECOMMEND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Recommend a bolus based on current and target average BG, taking into
-        account ISF step curve over next DIA hours (assuming natural decay of
-        insulin activity).
+        Recommend a bolus based on current BG and future target average, taking
+        into account ISF step curve over the next DIA hours (assuming natural
+        decay of insulin).
         """
 
         # Give user info
@@ -2024,6 +2027,9 @@ class BG(object):
             # Update factor with current step
             factor += ISF.y[i] * (IDC.f(ISF.T[i + 1]) - IDC.f(ISF.T[i]))
 
+        # Compute eventual BG based on IOB
+        BG = self.shortPredict(BG0)
+
         # Find average of target to reach after natural insulin decay
         target = sum(BGTargets.y[-1]) / 2.0
 
@@ -2037,8 +2043,9 @@ class BG(object):
         print "Time: " + lib.formatTime(BGTargets.t[-1])
         print "BG Target: " + str(BGTargets.y[-1]) + " " + str(self.units)
         print "BG Target Average: " + str(target) + " " + str(self.units)
-        print "BG: " + str(BG)
-        print "dBG: " + str(dBG) + " " + str(self.units)
+        print "BG: " + str(round(BG0, 1)) + " " + str(self.units)
+        print "Eventual BG: " + str(round(BG, 1)) + " " + str(self.units)
+        print "dBG: " + str(round(dBG, 1)) + " " + str(self.units)
         print "Recommended bolus: " + str(round(bolus, 1)) + " U"
 
 
