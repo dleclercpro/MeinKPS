@@ -97,6 +97,52 @@ class Calculator(object):
         # Give calculator a BG
         self.BG = BG(self)
 
+        # Initialize units
+        self.units = {"BG": None,
+                      "Carbs": None,
+                      "ISF": None,
+                      "CSF": None}
+
+        # Initialize maxes
+        self.max = {"Basal": None,
+                    "Bolus": None}
+
+
+
+    def run(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RUN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define current time
+        self.now = datetime.datetime.now()
+
+        # Load components
+        self.load()
+
+        # Prepare components
+        self.prepare(self.now)
+
+        # Predict IOB decay
+        self.IOB.predict()
+
+        # Store IOB
+        self.IOB.store()
+
+        # Compute COB
+        #self.COB.compute()
+
+        # Compute BG
+        #self.BG.decay(35.0)
+        self.BG.decay(5.0)
+        self.BG.predict(5.0) # FIXME: why small difference with predict?
+
+        # Recommend action
+        self.recommend(5.0)
+
 
 
     def load(self):
@@ -115,6 +161,24 @@ class Calculator(object):
 
         # Give user info
         print "DIA: " + str(self.DIA) + " h"
+
+        # Read units
+        self.units["BG"] = Reporter.getEntry([], "BG Units")
+
+        # Give user info
+        print "BG units: " + str(self.units["BG"])
+
+        # Read max basal
+        self.max["Basal"] = Reporter.getEntry(["Settings"], "Max Basal")
+
+        # Give user info
+        print "Max basal: " + str(self.max["Basal"]) + " U/h"
+
+        # Read max bolus
+        self.max["Bolus"] = Reporter.getEntry(["Settings"], "Max Bolus")
+
+        # Give user info
+        print "Max bolus: " + str(self.max["Bolus"]) + " U"
 
 
 
@@ -158,37 +222,81 @@ class Calculator(object):
 
 
 
-    def run(self):
+    def recommend(self, BG0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RUN
+            RECOMMEND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Recommend a bolus based on current BG and future target average, taking
+        into account ISF step curve over the next DIA hours (assuming natural
+        decay of insulin).
         """
 
-        # Define current time
-        self.now = datetime.datetime.now()
+        # Give user info
+        print "Recommending treatment..."
 
-        # Load components
-        self.load()
+        # Get number of ISF steps
+        n = len(self.ISF.t)
 
-        # Prepare components
-        self.prepare(self.now)
+        # Initialize factor between recommended bolus and BG difference with
+        # average target
+        factor = 0
 
-        # Predict IOB decay
-        self.IOB.predict()
+        # Compute factor
+        for i in range(n - 1):
 
-        # Store IOB
-        self.IOB.store()
+            # Update factor with current step
+            factor += self.ISF.y[i] * (self.IDC.f(self.ISF.T[i + 1]) -
+                                       self.IDC.f(self.ISF.T[i]))
 
-        # Compute COB
-        #self.COB.compute()
+        # Compute eventual BG based on IOB
+        BG = self.BG.predict(BG0)
 
-        # Compute BG
-        #self.BG.predict(5.0)
-        self.BG.predict(350.0)
-        self.BG.shortPredict(350.0) # FIXME: why small difference with predict?
-        self.BG.recommend(15.0)
+        # Find average of target to reach after natural insulin decay
+        target = sum(self.BGTargets.y[-1]) / 2.0
+
+        # Compute BG difference with average target
+        dBG = target - BG
+
+        # Compute necessary bolus
+        bolus = dBG / factor
+
+        # Find maximal basal allowed
+        maxTB = min(self.max["Basal"], max([3 * x for x in self.ISF.y]))
+
+        # Find time required to enact equivalent of recommended bolus with max
+        # TB (m)
+        T = abs(int(round(bolus / maxTB * 60)))
+
+        # Define maximum time allowed to enact equivalent of bolus with max TB
+        maxT = 30
+
+        # Give user info
+        print "Time: " + lib.formatTime(self.BGTargets.t[-1])
+        print "BG Target: " + str(self.BGTargets.y[-1]) + " " + self.units["BG"]
+        print "BG Target Average: " + str(target) + " " + self.units["BG"]
+        print "BG: " + str(round(BG0, 1)) + " " + self.units["BG"]
+        print "Eventual BG: " + str(round(BG, 1)) + " " + self.units["BG"]
+        print "dBG: " + str(round(dBG, 1)) + " " + self.units["BG"]
+        print "Recommended bolus: " + str(round(bolus, 1)) + " U"
+        print "Max TB: " + str(maxTB) + " U/h"
+        print "Time required with max TB: " + str(T) + " m"
+        print "Max time to enact recommendation: " + str(maxT) + " m"
+
+        # Compare with 
+        if T > maxT:
+
+            # Give user info
+            print ("External action required: maximal time allowed for TB to " +
+                   "enact insulin recommendation exceeded.")
+
+        else:
+
+            # Give user info
+            print ("No external action required: maximal time allowed for TB " +
+                   "to enact insulin recommendation not exceeded.")
 
 
 
@@ -1251,6 +1359,7 @@ class ISFProfile(Profile):
         self.path = []
 
 
+
     def load(self):
 
         """
@@ -1315,6 +1424,7 @@ class CSFProfile(Profile):
         # Define report info
         self.report = "pump.json"
         self.path = []
+
 
 
     def load(self):
@@ -1838,27 +1948,11 @@ class BG(object):
 
 
 
-    def load(self):
+    def decay(self, BG):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load pump report
-        Reporter.load(self.report)
-
-        # Read units
-        self.units = Reporter.getEntry([], "BG Units")
-
-
-
-    def predict(self, BG):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREDICT
+            DECAY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
         Use IOB and ISF to predict where BG will land after insulin activity is
@@ -1872,15 +1966,15 @@ class BG(object):
         # Reset BG values
         self.reset()
 
-        # Load components
-        self.load()
-
         # Store initial BG
         self.y.append(BG)
 
         # Link with profiles
         IOB = self.calculator.IOB
         ISF = self.calculator.ISF
+
+        # Link with units
+        self.units = self.calculator.units["BG"]
 
         # Get number of ISF steps
         n = len(IOB.t)
@@ -1929,11 +2023,11 @@ class BG(object):
 
 
 
-    def shortPredict(self, BG):
+    def predict(self, BG):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHORTPREDICT
+            PREDICT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -1941,13 +2035,13 @@ class BG(object):
         print "Predicting BG..."
         print "Initial BG: " + str(BG)
 
-        # Load components
-        self.load()
-
         # Link with profiles
         IDC = self.calculator.IDC
         IOB = self.calculator.IOB
         ISF = self.calculator.ISF
+
+        # Link with units
+        self.units = self.calculator.units["BG"]
 
         # Get number of ISF steps
         n = len(ISF.t)
@@ -1988,65 +2082,6 @@ class BG(object):
 
         # Return eventual BG
         return BG
-
-
-
-    def recommend(self, BG0):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECOMMEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Recommend a bolus based on current BG and future target average, taking
-        into account ISF step curve over the next DIA hours (assuming natural
-        decay of insulin).
-        """
-
-        # Give user info
-        print "Recommending treatment..."
-
-        # Load components
-        self.load()
-
-        # Link with profiles
-        BGTargets = self.calculator.BGTargets
-        IDC = self.calculator.IDC
-        ISF = self.calculator.ISF
-
-        # Get number of ISF steps
-        n = len(ISF.t)
-
-        # Initialize factor between recommended bolus and BG difference with
-        # average target
-        factor = 0
-
-        # Compute factor
-        for i in range(n - 1):
-
-            # Update factor with current step
-            factor += ISF.y[i] * (IDC.f(ISF.T[i + 1]) - IDC.f(ISF.T[i]))
-
-        # Compute eventual BG based on IOB
-        BG = self.shortPredict(BG0)
-
-        # Find average of target to reach after natural insulin decay
-        target = sum(BGTargets.y[-1]) / 2.0
-
-        # Compute BG difference with average target
-        dBG = target - BG
-
-        # Compute necessary bolus
-        bolus = dBG / factor
-
-        # Give user info
-        print "Time: " + lib.formatTime(BGTargets.t[-1])
-        print "BG Target: " + str(BGTargets.y[-1]) + " " + str(self.units)
-        print "BG Target Average: " + str(target) + " " + str(self.units)
-        print "BG: " + str(round(BG0, 1)) + " " + str(self.units)
-        print "Eventual BG: " + str(round(BG, 1)) + " " + str(self.units)
-        print "dBG: " + str(round(dBG, 1)) + " " + str(self.units)
-        print "Recommended bolus: " + str(round(bolus, 1)) + " U"
 
 
 
