@@ -232,6 +232,12 @@ class Reporter:
         # Load report section
         self.getSection(path)
 
+        # If no key
+        if key is None:
+
+            # Return section
+            return self.section
+
         # Give user info
         print ("Attempting to find entry: " + self.formatPath(path) + " > " +
                str(key))

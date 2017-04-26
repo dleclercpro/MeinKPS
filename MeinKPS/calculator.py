@@ -88,6 +88,9 @@ class Calculator(object):
         # Give calculator a BG targets profile
         self.BGTargets = BGTargets()
 
+        # Give calculator a BG profile
+        self.BGProfile = BGProfile()
+
         # Give calculator an IOB
         self.IOB = IOB(self)
 
@@ -220,6 +223,10 @@ class Calculator(object):
         self.BGTargets.compute(self.end,
                                self.end + datetime.timedelta(hours = self.DIA))
 
+        # Build BG profile
+        self.BGProfile.compute(self.start, self.end)
+        sys.exit()
+
 
 
     def recommend(self, BG0):
@@ -331,6 +338,9 @@ class Profile(object):
         # Initialize zero
         self.zero = None
 
+        # Initialize profile type
+        self.type = "Step"
+
         # Initialize data
         self.data = None
 
@@ -339,7 +349,7 @@ class Profile(object):
 
         # Initialize report info
         self.report = None
-        self.path = None
+        self.path = []
         self.key = None
 
 
@@ -385,8 +395,11 @@ class Profile(object):
             # Fill profile
             self.fill(filler)
 
-        # Smooth profile
-        self.smooth()
+        # If step profile
+        if self.type == "Step":
+
+            # Smooth profile
+            self.smooth()
 
         # Normalize profile
         self.normalize()
@@ -725,29 +738,20 @@ class Profile(object):
                 # Add value
                 y.append(self.y[i])
 
-            # Check for last step
+            # Update last step
             elif self.t[i] < self.start:
 
                 # Store index
                 index = i
 
         # Start of profile
-        if len(t) == 0 or t[0] != self.start:
+        if self.type == "Step" and (len(t) == 0 or t[0] != self.start):
 
             # Add time
             t.insert(0, self.start)
 
-            # If last step was found
-            if index is not None:
-
-                # Extend last step's value
-                y.insert(0, self.y[index])
-
-            # Otherwise, store a None value
-            else:
-
-                # Add value
-                y.insert(0, None)
+            # Extend last step's value
+            y.insert(0, self.y[index])
 
         # End of profile (will always have a last value, since start of profile
         # has just been taken care of, thus no need to check for length of time
@@ -1145,7 +1149,6 @@ class BasalProfile(Profile):
 
         # Define report info
         self.report = "pump.json"
-        self.path = []
         self.key = "Basal Profile (" + choice + ")"
 
 
@@ -1181,7 +1184,6 @@ class TBRProfile(Profile):
 
         # Define report info
         self.report = "treatments.json"
-        self.path = []
         self.key = "Temporary Basals"
 
 
@@ -1263,7 +1265,6 @@ class BolusProfile(Profile):
 
         # Define report info
         self.report = "treatments.json"
-        self.path = []
         self.key = "Boluses"
 
 
@@ -1356,7 +1357,6 @@ class ISFProfile(Profile):
 
         # Define report info
         self.report = "pump.json"
-        self.path = []
 
 
 
@@ -1423,7 +1423,6 @@ class CSFProfile(Profile):
 
         # Define report info
         self.report = "pump.json"
-        self.path = []
 
 
 
@@ -1502,7 +1501,6 @@ class BGTargets(Profile):
 
         # Define report info
         self.report = "pump.json"
-        self.path = []
 
 
 
@@ -1551,6 +1549,46 @@ class BGTargets(Profile):
 
         # Start normalizing
         super(self.__class__, self).normalize(False)
+
+
+
+class BGProfile(Profile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Define profile type
+        self.type = "Dot"
+
+        # Define report info
+        self.report = "BG.json"
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load("pump.json")
+
+        # Read units
+        self.units = Reporter.getEntry([], "BG Units")
+
+        # Load rest
+        super(self.__class__, self).load()
 
 
 
@@ -1920,9 +1958,6 @@ class BG(object):
 
         # Initialize units
         self.units = None
-
-        # Define report
-        self.report = "pump.json"
 
         # Link with calculator
         self.calculator = calculator
