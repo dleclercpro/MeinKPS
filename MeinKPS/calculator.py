@@ -23,8 +23,6 @@
 """
 
 # LIBRARIES
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 import sys
@@ -83,7 +81,7 @@ class Calculator(object):
         self.ISF = ISFProfile()
 
         # Give calculator a CSF profile
-        #self.CSF = CSFProfile()
+        self.CSF = CSFProfile()
 
         # Give calculator a BG targets profile
         self.BGTargets = BGTargets()
@@ -225,7 +223,6 @@ class Calculator(object):
 
         # Build BG profile
         self.BGProfile.compute(self.start, self.end)
-        sys.exit()
 
 
 
@@ -270,40 +267,60 @@ class Calculator(object):
         # Compute necessary bolus
         bolus = dBG / factor
 
-        # Find maximal basal allowed
-        maxTB = min(self.max["Basal"], max([3 * x for x in self.ISF.y]))
-
-        # Find time required to enact equivalent of recommended bolus with max
-        # TB (m)
-        T = abs(int(round(bolus / maxTB * 60)))
-
-        # Define maximum time allowed to enact equivalent of bolus with max TB
-        maxT = 30
-
         # Give user info
         print "Time: " + lib.formatTime(self.BGTargets.t[-1])
-        print "BG Target: " + str(self.BGTargets.y[-1]) + " " + self.units["BG"]
-        print "BG Target Average: " + str(target) + " " + self.units["BG"]
+        print "BG target: " + str(self.BGTargets.y[-1]) + " " + self.units["BG"]
+        print "BG target average: " + str(target) + " " + self.units["BG"]
         print "BG: " + str(round(BG0, 1)) + " " + self.units["BG"]
         print "Eventual BG: " + str(round(BG, 1)) + " " + self.units["BG"]
         print "dBG: " + str(round(dBG, 1)) + " " + self.units["BG"]
         print "Recommended bolus: " + str(round(bolus, 1)) + " U"
-        print "Max TB: " + str(maxTB) + " U/h"
-        print "Time required with max TB: " + str(T) + " m"
-        print "Max time to enact recommendation: " + str(maxT) + " m"
 
-        # Compare with 
-        if T > maxT:
+        # If more insulin needed
+        if bolus > 0:
+
+            # Find maximal basal allowed
+            maxTB = min(self.max["Basal"],
+                        3 * max(self.ISF.y),
+                        4 * self.ISF.y[0])
+
+            # Find time required to enact equivalent of recommended bolus with
+            # max TB (m)
+            T = abs(int(round(bolus / maxTB * 60)))
+
+            # Define maximum time allowed to enact equivalent of bolus with max
+            # TB
+            maxT = 30
 
             # Give user info
-            print ("External action required: maximal time allowed for TB to " +
-                   "enact insulin recommendation exceeded.")
+            print "Max basal: " + str(self.max["Basal"]) + " U/h"
+            print "3x max daily basal: " + str(3 * max(self.ISF.y)) + " U/h"
+            print "4x current basal: " + str(4 * self.ISF.y[0]) + " U/h"
+            print "Resulting max basal: " + str(maxTB) + " U/h"
+            print "Time required with resulting max basal: " + str(T) + " m"
+            print "Max time to enact recommendation: " + str(maxT) + " m"
 
+            # Compare with 
+            if T > maxT:
+
+                # Give user info
+                print ("External action required: maximal time allowed for " +
+                       "TB to enact insulin recommendation exceeded.")
+
+            else:
+
+                # Give user info
+                print ("No external action required: maximal time allowed " +
+                       "for TB to enact insulin recommendation not exceeded.")
+
+        # If less insulin needed
+        elif bolus < 0:
+
+            self.basal.show()
+
+        # If insulin is fine
         else:
-
-            # Give user info
-            print ("No external action required: maximal time allowed for TB " +
-                   "to enact insulin recommendation not exceeded.")
+            pass
 
 
 
@@ -323,11 +340,14 @@ class Profile(object):
         # Initialize normalized time axis
         self.T = []
 
+        # Initialize y-axis
+        self.y = []
+
         # Initialize step durations
         self.d = []
 
-        # Initialize y-axis
-        self.y = []
+        # Initialize profile type
+        self.type = None
 
         # Initialize start of profile
         self.start = None
@@ -338,11 +358,11 @@ class Profile(object):
         # Initialize zero
         self.zero = None
 
-        # Initialize profile type
-        self.type = "Step"
-
         # Initialize data
         self.data = None
+
+        # Initialize time mapping
+        self.mapped = None
 
         # Initialize units
         self.units = None
@@ -377,7 +397,7 @@ class Profile(object):
         # Decouple profile components
         self.decouple()
 
-        # Filter profile steps
+        # Filter profile components
         self.filter()
 
         # If step durations are set
@@ -386,7 +406,7 @@ class Profile(object):
             # Inject zeros between profile steps
             self.inject()
 
-        # Cut steps outside of profile and make sure limits are respected
+        # Cut entries outside of time limits
         self.cut()
 
         # If filling needed
@@ -425,14 +445,39 @@ class Profile(object):
         # Reset normalized time axis
         self.T = []
 
-        # Reset step durations
-        self.d = []
-
         # Reset y-axis
         self.y = []
 
+        # Reset step durations
+        self.d = []
+
         # Reset data
         self.data = None
+
+
+
+    def update(self, t, y, d = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UPDATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Update profile components.
+        """
+
+        # Update components
+        self.t = t
+        self.y = y
+
+        # If durations set
+        if d:
+
+            # Update them as well
+            self.d = d
+
+        # Show current state of profile
+        self.show()
 
 
 
@@ -460,7 +505,7 @@ class Profile(object):
 
 
 
-    def decouple(self, mapped = True):
+    def decouple(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -477,7 +522,7 @@ class Profile(object):
         for t in sorted(self.data):
 
             # If time is mapped, convert it to datetime object
-            if mapped:
+            if self.mapped:
 
                 # Get time
                 self.t.append(lib.formatTime(t))
@@ -491,14 +536,14 @@ class Profile(object):
             self.y.append(self.data[t])
 
         # If time is not mapped
-        if not mapped:
+        if not self.mapped:
 
             # Map it
-            self.map()
+            self.map(self.end)
 
 
 
-    def map(self):
+    def map(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -513,13 +558,13 @@ class Profile(object):
         t = []
         y = []
 
-        # Get number of steps
+        # Get number of entries
         n = len(self.t)
 
         # Rebuild profile
         for i in range(n):
 
-            # Get time step
+            # Get time
             T = self.t[i]
 
             # Generate time object
@@ -528,7 +573,7 @@ class Profile(object):
             # Generate datetime object
             T = datetime.datetime.combine(self.end, T)
 
-            # Add time step
+            # Add time
             t.append(T)
 
             # Add value
@@ -538,11 +583,11 @@ class Profile(object):
         # following day)
         index = -1
 
-        # Find current step
+        # Find current time
         for i in range(n - 1):
 
-            # Current step criteria
-            if t[i] <= self.end < t[i + 1]:
+            # Current time criteria
+            if t[i] <= now < t[i + 1]:
 
                 # Store index
                 index = i
@@ -550,13 +595,10 @@ class Profile(object):
                 # Exit
                 break
 
-        # Give user info
-        print "Current step: " + str(y[index]) + " (" + str(t[index]) + ")"
-
-        # Update steps
+        # Update time
         for i in range(n):
 
-            # Find steps in future and bring them in the past
+            # Find times in future and bring them in the past
             if t[i] > t[index]:
 
                 # Update time
@@ -566,8 +608,8 @@ class Profile(object):
         z = sorted(zip(t, y))
 
         # Update profile
-        self.t = [x for x, y in z]
-        self.y = [y for x, y in z]
+        self.update([x for x, y in z],
+                    [y for x, y in z])
 
 
 
@@ -594,16 +636,16 @@ class Profile(object):
         # Initialize index for last step
         index = None
 
-        # Get number of steps
+        # Get number of entries
         n = len(self.t)
 
-        # Keep steps within start and end (+1 in case of overlapping)
+        # Keep entries within start and end (+1 in case of overlapping)
         for i in range(n):
 
             # Compare to time limits
             if self.start <= self.t[i] <= self.end:
 
-                # Add step
+                # Add entry
                 t.append(self.t[i])
                 y.append(self.y[i])
 
@@ -613,32 +655,27 @@ class Profile(object):
                     # Add duration
                     d.append(self.d[i])
 
-            # Check for last step
+            # Check for last entry
             elif self.t[i] < self.start:
 
                 # Store index
                 index = i
 
-        # If last step was found
+        # If no last entry was found
         if index is not None:
 
-            # Add last step
+            # Add last entry
             t.insert(0, self.t[index])
             y.insert(0, self.y[index])
 
             # If durations set
             if self.d:
 
-                # Add last step's duration
+                # Add last entry's duration
                 d.insert(0, self.d[index])
 
         # Update profile
-        self.t = t
-        self.y = y
-        self.d = d
-
-        # Show current state of profile
-        self.show()
+        self.update(t, y, d)
 
 
 
@@ -694,11 +731,7 @@ class Profile(object):
                 y.append(self.zero)
 
         # Update profile
-        self.t = t
-        self.y = y
-
-        # Show current state of profile
-        self.show()
+        self.update(t, y)
 
 
 
@@ -709,8 +742,8 @@ class Profile(object):
             CUT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Cut remaining excess steps in profile and set the latter's start and end
-        based on their previously defined times.  
+        Cut remaining excess entries in profile and ensure the latter starts and
+        ends according to the previously defined limit times.  
         """
 
         # Give user info
@@ -744,32 +777,29 @@ class Profile(object):
                 # Store index
                 index = i
 
-        # Start of profile
-        if self.type == "Step" and (len(t) == 0 or t[0] != self.start):
+        # Ensure ends of step profiles fit
+        if self.type == "Step":
 
-            # Add time
-            t.insert(0, self.start)
+            # Start of profile
+            if len(t) == 0 or t[0] != self.start:
 
-            # Extend last step's value
-            y.insert(0, self.y[index])
+                # Add time
+                t.insert(0, self.start)
 
-        # End of profile (will always have a last value, since start of profile
-        # has just been taken care of, thus no need to check for length of time
-        # component)
-        if t[-1] != self.end:
+                # Extend last step's value
+                y.insert(0, self.y[index])
 
-            # Add time
-            t.append(self.end)
+            # End of profile
+            if t[-1] != self.end:
 
-            # Add rate
-            y.append(y[-1])
+                # Add time
+                t.append(self.end)
+
+                # Add rate
+                y.append(y[-1])
 
         # Update profile
-        self.t = t
-        self.y = y
-
-        # Show current state of profile
-        self.show()
+        self.update(t, y)
 
 
 
@@ -826,11 +856,7 @@ class Profile(object):
                 y.append(self.y[i])
 
         # Update profile
-        self.t = t
-        self.y = y
-
-        # Show current state of profile
-        self.show()
+        self.update(t, y)
 
 
 
@@ -873,11 +899,7 @@ class Profile(object):
         y.append(self.y[-1])
 
         # Update profile
-        self.t = t
-        self.y = y
-
-        # Show current state of profile
-        self.show()
+        self.update(t, y)
 
 
 
@@ -900,7 +922,7 @@ class Profile(object):
         # Normalize time
         for i in range(n):
 
-            # Decide which end to use to normalize
+            # Decide which reference time to use for normalization
             if end:
 
                 # Compute time difference (from end)
@@ -1144,25 +1166,18 @@ class BasalProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
+        # Define type
+        self.type = "Step"
+
+        # Define time mapping
+        self.mapped = False
+
         # Define units
         self.units = "U/h"
 
         # Define report info
         self.report = "pump.json"
         self.key = "Basal Profile (" + choice + ")"
-
-
-
-    def decouple(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start decoupling
-        super(self.__class__, self).decouple(False)
 
 
 
@@ -1178,6 +1193,12 @@ class TBRProfile(Profile):
 
         # Start initialization
         super(self.__class__, self).__init__()
+
+        # Define type
+        self.type = "Step"
+
+        # Define time mapping
+        self.mapped = True
 
         # Renitialize units
         self.units = []
@@ -1260,6 +1281,12 @@ class BolusProfile(Profile):
         # Define bolus delivery rate
         self.rate = 90.0
 
+        # Define type
+        self.type = "Step"
+
+        # Define time mapping
+        self.mapped = True
+
         # Define units
         self.units = "U/h"
 
@@ -1306,6 +1333,12 @@ class NetProfile(Profile):
 
         # Start initialization
         super(self.__class__, self).__init__()
+
+        # Define type
+        self.type = "Step"
+
+        # Define time mapping
+        self.mapped = True
 
         # Define units
         self.units = "U/h"
@@ -1355,6 +1388,12 @@ class ISFProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
+        # Define type
+        self.type = "Step"
+
+        # Define time mapping
+        self.mapped = False
+
         # Define report info
         self.report = "pump.json"
 
@@ -1379,19 +1418,6 @@ class ISFProfile(Profile):
 
         # Load rest
         super(self.__class__, self).load()
-
-
-
-    def decouple(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start decoupling
-        super(self.__class__, self).decouple(False)
 
 
 
@@ -1420,6 +1446,12 @@ class CSFProfile(Profile):
 
         # Start initialization
         super(self.__class__, self).__init__()
+
+        # Define type
+        self.type = "Step"
+
+        # Define time mapping
+        self.mapped = False
 
         # Define report info
         self.report = "pump.json"
@@ -1460,19 +1492,6 @@ class CSFProfile(Profile):
 
 
 
-    def decouple(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start decoupling
-        super(self.__class__, self).decouple(False)
-
-
-
     def normalize(self):
 
         """
@@ -1499,6 +1518,12 @@ class BGTargets(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
+        # Define type
+        self.type = "Step"
+
+        # Define time mapping
+        self.mapped = False
+
         # Define report info
         self.report = "pump.json"
 
@@ -1523,19 +1548,6 @@ class BGTargets(Profile):
 
         # Load rest
         super(self.__class__, self).load()
-
-
-
-    def decouple(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start decoupling
-        super(self.__class__, self).decouple(False)
 
 
 
@@ -1565,8 +1577,11 @@ class BGProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
-        # Define profile type
+        # Define type
         self.type = "Dot"
+
+        # Define time mapping
+        self.mapped = True
 
         # Define report info
         self.report = "BG.json"
