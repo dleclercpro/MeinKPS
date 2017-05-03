@@ -224,6 +224,12 @@ class Calculator(object):
         # Build BG profile
         self.BGProfile.compute(self.start, self.end)
 
+        # FIXME
+        dBGdt = lib.derivate(self.BGProfile.y, [-x for x in self.BGProfile.T])
+        dBGdt /= 60.0
+        print dBGdt
+        sys.exit()
+
 
 
     def recommend(self, BG0):

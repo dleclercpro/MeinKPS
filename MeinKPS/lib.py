@@ -30,7 +30,7 @@ import numpy as np
 
 
 
-def derivate(x, dt):
+def derivate(x, t):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,46 +40,52 @@ def derivate(x, dt):
 
     # Vectorize input
     x = np.array(x)
-
-    # Make sure the derivative is a float at the end
-    dt = float(dt)
+    t = np.array(t)
 
     # Evaluate derivative
-    dxdt = (x[1:] - x[:-1]) / dt
+    D = (x[1:] - x[:-1]) / (t[1:] - t[:-1])
 
-    return dxdt
+    # Return derivative
+    return D
 
 
 
-def integrate(t, f, args):
+def integrate(x, t, args):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         INTEGRATE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    This is a module that approximates the integral i of a given function f from
+    This is a module that approximates the integral I of a given function x from
     a to b, given an equally spaced time vector t. In order to do that, it uses
-    the Simpson method, and uses said time vector to evaluate the number N of
+    the Simpson method, and uses said time vector to evaluate the number n of
     intervals and the integration step h.
     """
 
+    # Read limits of integral
     a = t[0]
     b = t[-1]
-    N = len(t) - 1
-    h = (b - a) / float(N)
 
     # Delete last t to not add contribution of [b, b + h] to the integral!
     t = t[0:-1]
 
-    # Evaluate definite integral of f from a to b
-    i = np.sum(h/6 * (f(t, args) +
-                      f(t + h/2, args) * 4 +
-                      f(t + h, args)))
+    # Read number of steps to integrate on
+    n = len(t)
 
-    print "i(a = " + str(a) + ", b = " + str(b) + ") = " + str(i)
+    # Compute integration step
+    h = (b - a) / float(n)
 
-    return i
+    # Evaluate definite integral I of x from a to b
+    I = np.sum(h/6 * (x(t, args) +
+                      x(t + h/2, args) * 4 +
+                      x(t + h, args)))
+
+    # Give user info
+    print "I[" + str(a) + ", " + str(b) + "] = " + str(I)
+
+    # Return result of definite integral
+    return I
 
 
 
