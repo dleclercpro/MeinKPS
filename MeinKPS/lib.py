@@ -42,11 +42,15 @@ def derivate(x, t):
     x = np.array(x)
     t = np.array(t)
 
+    # Compute deltas
+    dx = x[1:] - x[:-1]
+    dt = t[1:] - t[:-1]
+
     # Evaluate derivative
-    D = (x[1:] - x[:-1]) / (t[1:] - t[:-1])
+    D = dx / dt
 
     # Return derivative
-    return D
+    return [D, dt]
 
 
 
