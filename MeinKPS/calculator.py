@@ -124,21 +124,22 @@ class Calculator(object):
 
         # Predict IOB decay
         self.IOB.predict()
-        sys.exit()
 
         # Store IOB
-        self.IOB.store()
+        #self.IOB.store()
 
         # Compute COB
         #self.COB.compute()
 
         # Compute BG
-        #self.BG.decay(35.0)
-        self.BG.decay(5.0)
-        self.BG.predict(5.0) # FIXME: why small difference with predict?
+        #self.BG.decay(5.0)
+        self.BG.predict(5.0)
+
+        # Analyze BG
+        self.BG.analyze()
 
         # Recommend action
-        self.recommend(5.0)
+        #self.recommend(5.0)
 
 
 
@@ -217,13 +218,6 @@ class Calculator(object):
 
         # Build BG profile
         self.BGProfile.compute(start, end)
-
-        # FIXME
-        [dBGdt, dt] = lib.derivate(self.BGProfile.y, self.BGProfile.T)
-        dBGdt /= 60.0
-        dt *= 60.0
-        print dBGdt
-        print dt
 
 
 
@@ -2021,6 +2015,24 @@ class BG(object):
 
 
 
+    def analyze(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ANALYZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        [dBGdt, dt] = lib.derivate(self.calculator.BGProfile.y,
+                                   self.calculator.BGProfile.T)
+        dBGdt /= 60.0
+        dt *= 60.0
+
+        print dBGdt
+        print dt
+
+
+
     def decay(self, BG):
 
         """
@@ -2104,6 +2116,8 @@ class BG(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # FIXME: why small difference with decay?
+
         # Give user info
         print "Predicting BG..."
         print "Initial BG: " + str(BG)
@@ -2129,8 +2143,12 @@ class BG(object):
             # Print ISF
             print "ISF: " + str(ISF.y[i]) + " " + ISF.units
 
+            # Adapt normalized time to fit IDC time domain
+            a = ISF.T[i + 1] - self.calculator.DIA
+            b = ISF.T[i] - self.calculator.DIA
+
             # Compute IOB change
-            dIOB = IOB.y[0] * (IDC.f(ISF.T[i + 1]) - IDC.f(ISF.T[i]))
+            dIOB = IOB.y[0] * (IDC.f(b) - IDC.f(a))
 
             # Give user info
             print "dIOB: " + str(dIOB) + " U"
