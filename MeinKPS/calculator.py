@@ -117,7 +117,7 @@ class Calculator(object):
         self.IOB.predict(self.net, self.IDC)
 
         # Store IOB
-        self.IOB.store()
+        #self.IOB.store()
 
         # Compute COB
         #self.COB.compute()
@@ -131,7 +131,7 @@ class Calculator(object):
         self.BG.analyze()
 
         # Recommend action
-        #self.recommend(5.0)
+        self.recommend(10.0)
 
 
 
@@ -232,12 +232,15 @@ class Calculator(object):
         # Compute factor
         for i in range(n - 1):
 
+            # Compute ISF time ranges
+            a = self.ISF.T[i] - self.IDC.DIA
+            b = self.ISF.T[i + 1] - self.IDC.DIA
+
             # Update factor with current step
-            factor += self.ISF.y[i] * (self.IDC.f(self.ISF.T[i + 1]) -
-                                       self.IDC.f(self.ISF.T[i]))
+            factor += self.ISF.y[i] * (self.IDC.f(a) - self.IDC.f(b))
 
         # Compute eventual BG based on IOB
-        BG = self.BG.predict(BG0)
+        BG = self.BG.predict(BG0, self.IDC, self.IOB, self.ISF)
 
         # Find average of target to reach after natural insulin decay
         target = sum(self.BGTargets.y[-1]) / 2.0
