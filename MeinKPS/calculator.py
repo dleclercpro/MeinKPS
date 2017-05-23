@@ -24,6 +24,8 @@
 
 # LIBRARIES
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import datetime
 import sys
 import time
@@ -119,19 +121,18 @@ class Calculator(object):
         # Store IOB
         #self.IOB.store()
 
-        # Compute COB
-        #self.COB.compute()
-
         # Compute BG
-        # FIXME: why small difference between decay and predict?
-        self.BG.decay(5.0, self.IOB, self.ISF)
-        self.BG.predict(5.0, self.IDC, self.IOB, self.ISF)
+        self.BG.decay(self.BG.y[-1], self.IOB, self.ISF)
+        #self.BG.predict(5.0, self.IDC, self.IOB, self.ISF)
 
         # Analyze BG
         self.BG.analyze()
 
         # Recommend action
-        self.recommend(10.0)
+        #self.recommend(10.0)
+
+        # Show infos
+        self.show()
 
 
 
@@ -184,26 +185,35 @@ class Calculator(object):
         self.IDC = WalshIDC(self.DIA)
 
         # Build basal profile
-        self.basal.compute(start, end)
+        self.basal.build(start, end)
 
         # Build TBR profile
-        self.TBR.compute(start, end, self.basal)
+        self.TBR.build(start, end, self.basal)
 
         # Build bolus profile
-        self.bolus.compute(start, end)
+        self.bolus.build(start, end)
 
         # Build net profile using suspend times
-        self.net.compute(start, end, self.TBR.subtract(self.basal)
-                                             .add(self.bolus))
+        self.net.build(start, end, self.TBR.subtract(self.basal)
+                                           .add(self.bolus))
 
-        # Build ISF profile (in the future)
-        self.ISF.compute(end, future)
+        # Build IOB profile
+        self.IOB.build(start, end)
 
-        # Build BG targets profile (in the future)
-        self.BGTargets.compute(end, future)
+        # Build COB profile
+        #self.COB.build(start, end)
+
+        # Build ISF profile (over the next DIA)
+        self.ISF.build(end, future)
+
+        # Build CSF profile (over the next DIA)
+        #self.CSF.build(end, future)
+
+        # Build BG targets profile (over the next DIA)
+        self.BGTargets.build(end, future)
 
         # Build BG profile
-        self.BG.compute(start, end)
+        self.BG.build(start, end)
 
 
 
@@ -300,11 +310,72 @@ class Calculator(object):
         # If less insulin needed
         elif bolus < 0:
 
+            # Give user info
             self.basal.show()
 
         # If insulin is fine
         else:
             pass
+
+
+
+    def show(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize plot
+        mpl.rc("font", size = 10, family = "Ubuntu")
+        fig = plt.figure(0, figsize = (10, 8))
+        axes = [plt.subplot(221), plt.subplot(222),
+                plt.subplot(223), plt.subplot(224)]
+
+        # Define titles
+        titles = ["BG", "IOB", "Net Insulin Profile", "-"]
+
+        # Define axis labels
+        x = ["(h)"] * 4
+        y = ["(" + self.BG.units + ")",
+             "(U)",
+             "(U/h)",
+             "(-)"]
+
+        # Define subplots
+        for i in range(4):
+
+            # Set titles
+            axes[i].set_title(titles[i], fontweight = "semibold")
+
+            # Set x-axis labels
+            axes[i].set_xlabel(x[i])
+
+            # Set y-axis labels
+            axes[i].set_ylabel(y[i])
+
+        # Add BGs to plot
+        axes[0].plot(self.BG.T, self.BG.y,
+                     marker = "o", ms = 3.5, lw = 0, c = "red")
+
+        # Add BG predictions to plot
+        axes[0].plot(self.BG.T_, self.BG.y_,
+                     marker = "o", ms = 3.5, lw = 0, c = "black")
+
+        # Add IOB to plot
+        axes[1].plot(self.IOB.T, self.IOB.y,
+                     lw = 2, ls = "-", c = "black")
+
+        # Add net insulin profile to plot
+        axes[2].step(self.net.T, np.append(0, self.net.y[:-1]),
+                     lw = 2, ls = "-", c = "purple")
+
+        # Tighten up
+        plt.tight_layout()
+
+        # Show plot
+        plt.show()
 
 
 
@@ -358,11 +429,11 @@ class Profile(object):
 
 
 
-    def compute(self, start, end, filler = None):
+    def build(self, start, end, filler = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
+            BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -440,7 +511,7 @@ class Profile(object):
 
 
 
-    def update(self, t, y, d = None):
+    def update(self, t, y, d = []):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -453,12 +524,7 @@ class Profile(object):
         # Update components
         self.t = t
         self.y = y
-
-        # If durations set
-        if d:
-
-            # Update them as well
-            self.d = d
+        self.d = d
 
         # Show current state of profile
         self.show()
@@ -962,7 +1028,7 @@ class Profile(object):
             else:
 
                 # Give user info
-                print str(self.y[i]) + " - (" + str(self.t[i]) + ")"
+                print str(self.y[i]) + " - (" + lib.formatTime(self.t[i]) + ")"
 
         # Make some space to read
         print
@@ -1463,6 +1529,10 @@ class IOBProfile(Profile):
         # Reset values
         self.reset()
 
+        # Define start/end of IOB prediction profile
+        self.start = net.end
+        self.end = net.end + datetime.timedelta(hours = IDC.DIA)
+
         # Initialize partial net insulin profile
         part = Profile()
 
@@ -1517,6 +1587,9 @@ class IOBProfile(Profile):
             # Store IOB
             self.y.append(IOB)
 
+        # Normalize time axis
+        self.normalize(False)
+
         # Give user info
         print "Predicted IOB(s):"
 
@@ -1569,18 +1642,6 @@ class COBProfile(Profile):
 
         # Initialize DCA
         self.DCA = None
-
-
-
-    def compute(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        pass
 
 
 
@@ -1786,6 +1847,11 @@ class BGProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
+        # Initialize future components
+        self.t_ = []
+        self.T_ = []
+        self.y_ = []
+
         # Define type
         self.type = "Dot"
 
@@ -1816,6 +1882,46 @@ class BGProfile(Profile):
 
 
 
+    def verify(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define minimum number of BGs required
+        N = 2
+
+        # Define maximum age of BGs (m)
+        T = 20
+
+        # Initialize number of valid BGs
+        n = 0
+
+        # Check age of most recent BGs
+        while True:
+
+            # They should not be older than a certain duration
+            if self.t[-(n + 1)] < self.end - datetime.timedelta(minutes = T):
+
+                # Exit
+                break
+
+            # Update number of BGs
+            n += 1
+
+        # Check for insufficient data
+        if n < N:
+
+            # Exit
+            sys.exit("Not enough valid BGs to take action. Exiting...")
+
+        # Return number of valid BGs
+        return n
+
+
+
     def analyze(self):
 
         """
@@ -1824,12 +1930,39 @@ class BGProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Verify and get number of valid BGs for analysis
+        n = self.verify()
+
+        # Compute BG derivate
         [dBGdt, dt] = lib.derivate(self.y, self.T)
+
+        # Convert time (from h to m)
         dBGdt /= 60.0
         dt *= 60.0
 
-        print dBGdt
-        print dt
+        # Give user info
+        print "dBG/dt (" + self.units + "/m): " + str(dBGdt)
+
+        # Give user info
+        print "Current BG: " + str(self.y[-1])
+
+        # Define prediction time
+        T = 15
+
+        # Predict using more data
+        if n > 2:
+
+            # Predict BG using an average dBG/dt
+            p = self.y[-1] + np.mean(dBGdt[-(n - 1):]) * T
+
+        else:
+
+            # Predict BG
+            p = self.y[-1] + dBGdt[-1] * T
+
+        # Give user info
+        print ("Eventual BG (using last " + str(n) + ") in " + str(T) +
+               " m: " + str(p) + " " + self.units)
 
 
 
@@ -1848,12 +1981,6 @@ class BGProfile(Profile):
         print "Predicting BG..."
         print "Initial BG: " + str(BG)
 
-        # Reset BG prediction
-        future = []
-
-        # Store initial BG
-        future.append(BG)
-
         # Get number of ISF steps
         n = len(IOB.t)
 
@@ -1861,7 +1988,12 @@ class BGProfile(Profile):
         for i in range(n - 1):
 
             # Give user info
-            print ("Time: " + lib.formatTime(IOB.t[i + 1]))
+            print ("Time: " + lib.formatTime(IOB.t[i]) + " @ " +
+                              lib.formatTime(IOB.t[i + 1]))
+
+            # Assign times
+            self.t_.append(IOB.t[i + 1])
+            self.T_.append(IOB.T[i + 1])
 
             # Compute ISF
             isf = ISF.f(IOB.t[i], False)
@@ -1888,16 +2020,13 @@ class BGProfile(Profile):
             print "BG: " + str(round(BG, 1)) + " " + self.units
 
             # Store current BG
-            future.append(BG)
+            self.y_.append(BG)
 
             # Make some air
             print
 
         # Give user info
         print "Eventual BG: " + str(round(BG, 1)) + " " + self.units
-
-        # Return eventual BG
-        return BG
 
 
 
@@ -1908,6 +2037,8 @@ class BGProfile(Profile):
             PREDICT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # FIXME: why small difference between decay and predict?
 
         # Give user info
         print "Predicting BG..."
