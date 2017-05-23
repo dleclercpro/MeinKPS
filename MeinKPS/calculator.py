@@ -119,7 +119,7 @@ class Calculator(object):
         self.IOB.predict(self.net, self.IDC)
 
         # Store IOB
-        #self.IOB.store()
+        self.IOB.store()
 
         # Compute BG
         #self.BG.decay(self.IOB, self.ISF)
@@ -280,7 +280,7 @@ class Calculator(object):
             T = abs(int(round(bolus / maxTB * 60)))
 
             # Define maximum time allowed to enact equivalent of bolus with max
-            # TB
+            # TB (m)
             maxT = 30
 
             # Give user info
@@ -291,7 +291,7 @@ class Calculator(object):
             print "Time required with resulting max basal: " + str(T) + " m"
             print "Max time to enact recommendation: " + str(maxT) + " m"
 
-            # Compare with 
+            # Decide if external action is required
             if T > maxT:
 
                 # Give user info
@@ -309,10 +309,6 @@ class Calculator(object):
 
             # Give user info
             self.basal.show()
-
-        # If insulin is fine
-        else:
-            pass
 
 
 

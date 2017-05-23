@@ -167,6 +167,53 @@ class CGM(object):
 
 
 
+    def dump(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DUMP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Establish connection with CGM
+        self.connect()
+
+        # Read battery
+        self.battery.read()
+
+        # Read language
+        self.language.read()
+
+        # Read clock
+        self.clock.read()
+
+        # Read units
+        self.units.read()
+
+        # Read firmware
+        self.firmware.read()
+
+        # Read transmitter
+        self.transmitter.read()
+
+        # Read databases
+        self.databases["Manufacture"].read()
+        self.databases["Firmware"].read()
+        self.databases["PC"].read()
+        self.databases["Sensor"].read()
+        self.databases["Receiver"].read()
+        self.databases["Calibration"].read()
+        self.databases["Events"].read()
+        self.databases["Settings"].read()
+
+        # Read BGs
+        self.databases["BG"].read()
+
+        # End connection with CGM
+        self.disconnect()
+
+
+
 class Battery(object):
 
     def __init__(self, cgm):
@@ -618,42 +665,8 @@ def main():
     # Instanciate CGM
     cgm = CGM()
 
-    # Establish connection with CGM
-    cgm.connect()
-
-    # Read battery
-    cgm.battery.read()
-
-    # Read language
-    cgm.language.read()
-
-    # Read clock
-    cgm.clock.read()
-
-    # Read units
-    cgm.units.read()
-
-    # Read firmware
-    cgm.firmware.read()
-
-    # Read transmitter
-    cgm.transmitter.read()
-
-    # Read databases
-    cgm.databases["Manufacture"].read()
-    cgm.databases["Firmware"].read()
-    cgm.databases["PC"].read()
-    cgm.databases["Sensor"].read()
-    cgm.databases["Receiver"].read()
-    cgm.databases["Calibration"].read()
-    cgm.databases["Events"].read()
-    cgm.databases["Settings"].read()
-
-    # Read BGs
-    cgm.databases["BG"].read()
-
-    # End connection with CGM
-    cgm.disconnect()
+    # Dump data from CGM
+    cgm.dump()
 
 
 

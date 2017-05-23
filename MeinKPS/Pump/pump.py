@@ -1474,7 +1474,7 @@ def main():
     #pump.TBR.read()
 
     # Send TBR to pump
-    pump.TBR.set(35, "U/h", 30)
+    #pump.TBR.set(35, "U/h", 30)
     #pump.TBR.set(45, "%", 90)
     #pump.TBR.cancel()
 

@@ -23,41 +23,67 @@
 """
 
 # LIBRARIES
-import os
-import sys
-import time
 
 
 
 # USER LIBRARIES
-import lib
-import pump
-import reporter
+from CGM import cgm
+from Pump import pump
 import calculator
+import reporter
 
 
 
-class Loop:
+class Loop(object):
 
-    # LOOP CHARACTERISTICS
-
-    def start(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            START
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-
-
-    def stop(self):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STOP
+            INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Give the loop a CGM
+        self.cgm = cgm.CGM()
+
+        # Give the loop a pump
+        self.pump = pump.Pump()
+
+        # Give the loop a calculator
+        self.calc = calculator.Calculator()
+
+
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Dump whole CGM data
+        self.cgm.dump()
+
+        # Read pump's history
+        #self.pump.history.read()
+
+
+
+    def do(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Prepare to loop
+        self.prepare()
+
+        # Compute recommendation based on latest BG
+        self.calc.run()
 
 
 
@@ -71,6 +97,9 @@ def main():
 
     # Instanciate a loop for me
     loop = Loop()
+
+    # Loop
+    loop.do()
 
     # End of script
     print "Done!"
