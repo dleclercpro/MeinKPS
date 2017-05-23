@@ -122,14 +122,11 @@ class Calculator(object):
         #self.IOB.store()
 
         # Compute BG
-        self.BG.decay(self.BG.y[-1], self.IOB, self.ISF)
-        #self.BG.predict(5.0, self.IDC, self.IOB, self.ISF)
-
-        # Analyze BG
-        self.BG.analyze()
+        #self.BG.decay(self.IOB, self.ISF)
+        #self.BG.predict(self.IDC, self.IOB, self.ISF)
 
         # Recommend action
-        #self.recommend(10.0)
+        self.recommend()
 
         # Show infos
         self.show()
@@ -217,14 +214,14 @@ class Calculator(object):
 
 
 
-    def recommend(self, BG0):
+    def recommend(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RECOMMEND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Recommend a bolus based on current BG and future target average, taking
+        Recommend a bolus based on latest BG and future target average, taking
         into account ISF step curve over the next DIA hours (assuming natural
         decay of insulin).
         """
@@ -250,7 +247,7 @@ class Calculator(object):
             factor += self.ISF.y[i] * (self.IDC.f(a) - self.IDC.f(b))
 
         # Compute eventual BG based on IOB
-        BG = self.BG.predict(BG0, self.IDC, self.IOB, self.ISF)
+        BG = self.BG.predict(self.IDC, self.IOB, self.ISF)
 
         # Find average of target to reach after natural insulin decay
         target = sum(self.BGTargets.y[-1]) / 2.0
@@ -265,7 +262,7 @@ class Calculator(object):
         print "Time: " + lib.formatTime(self.BGTargets.t[-1])
         print "BG target: " + str(self.BGTargets.y[-1]) + " " + self.BG.units
         print "BG target average: " + str(target) + " " + self.BG.units
-        print "BG: " + str(round(BG0, 1)) + " " + self.BG.units
+        print "BG: " + str(round(self.BG.y[-1], 1)) + " " + self.BG.units
         print "Eventual BG: " + str(round(BG, 1)) + " " + self.BG.units
         print "dBG: " + str(round(dBG, 1)) + " " + self.BG.units
         print "Recommended bolus: " + str(round(bolus, 1)) + " U"
@@ -334,14 +331,18 @@ class Calculator(object):
                 plt.subplot(223), plt.subplot(224)]
 
         # Define titles
-        titles = ["BG", "IOB", "Net Insulin Profile", "-"]
+        titles = ["BG", "Net Insulin Profile", "IOB", "COB"]
 
         # Define axis labels
         x = ["(h)"] * 4
         y = ["(" + self.BG.units + ")",
-             "(U)",
              "(U/h)",
-             "(-)"]
+             "(U)",
+             "(g)"]
+
+        # Define axis limits
+        xlim = [[-self.IDC.DIA, self.IDC.DIA]] * 4
+        ylim = [[2, 20], None, None, None]
 
         # Define subplots
         for i in range(4):
@@ -355,6 +356,12 @@ class Calculator(object):
             # Set y-axis labels
             axes[i].set_ylabel(y[i])
 
+            # Set x-axis limits
+            axes[i].set_xlim(xlim[i])
+
+            # Set y-axis limits
+            axes[i].set_ylim(ylim[i])
+
         # Add BGs to plot
         axes[0].plot(self.BG.T, self.BG.y,
                      marker = "o", ms = 3.5, lw = 0, c = "red")
@@ -363,13 +370,25 @@ class Calculator(object):
         axes[0].plot(self.BG.T_, self.BG.y_,
                      marker = "o", ms = 3.5, lw = 0, c = "black")
 
+        # Add net insulin profile to plot
+        axes[1].step(self.net.T, np.append(0, self.net.y[:-1]),
+                     lw = 2, ls = "-", c = "#ff7500")
+
         # Add IOB to plot
-        axes[1].plot(self.IOB.T, self.IOB.y,
+        axes[2].plot([-self.IDC.DIA, 0], [0, 0],
+                     lw = 2, ls = "-", c = "purple")
+
+        # Add IOB predictions to plot
+        axes[2].plot(self.IOB.T, self.IOB.y,
                      lw = 2, ls = "-", c = "black")
 
-        # Add net insulin profile to plot
-        axes[2].step(self.net.T, np.append(0, self.net.y[:-1]),
-                     lw = 2, ls = "-", c = "purple")
+        # Add COB to plot
+        axes[3].plot([-self.IDC.DIA, 0], [0, 0],
+                     lw = 2, ls = "-", c = "#99e500")
+
+        # Add COB predictions to plot
+        axes[3].plot([0, self.IDC.DIA], [0, 0],
+                     lw = 2, ls = "-", c = "black")
 
         # Tighten up
         plt.tight_layout()
@@ -1933,40 +1952,37 @@ class BGProfile(Profile):
         # Verify and get number of valid BGs for analysis
         n = self.verify()
 
-        # Compute BG derivate
+        # Derivate BG
         [dBGdt, dt] = lib.derivate(self.y, self.T)
 
-        # Convert time (from h to m)
+        # Convert time units (from h to m)
         dBGdt /= 60.0
         dt *= 60.0
 
-        # Give user info
-        print "dBG/dt (" + self.units + "/m): " + str(dBGdt)
-
-        # Give user info
-        print "Current BG: " + str(self.y[-1])
-
-        # Define prediction time
-        T = 15
+        # Define prediction time (m) over which BG trend is likely to go on
+        T = 30
 
         # Predict using more data
         if n > 2:
 
             # Predict BG using an average dBG/dt
-            p = self.y[-1] + np.mean(dBGdt[-(n - 1):]) * T
+            dBG = np.mean(dBGdt[-(n - 1):]) * T
 
         else:
 
             # Predict BG
-            p = self.y[-1] + dBGdt[-1] * T
+            dBG = dBGdt[-1] * T
 
         # Give user info
-        print ("Eventual BG (using last " + str(n) + ") in " + str(T) +
-               " m: " + str(p) + " " + self.units)
+        print ("Predicted dBG (for " + str(T) + " m using the last " +
+               str(n) + " BGs): " + str(round(dBG, 1)) + " " + self.units)
+
+        # Return BG deviation based on dBG/dt
+        return dBG
 
 
 
-    def decay(self, BG, IOB, ISF):
+    def decay(self, IOB, ISF):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1977,8 +1993,15 @@ class BGProfile(Profile):
         over, assuming a natural decay.
         """
 
+        # FIXME: why small difference between decay and predict?
+
         # Give user info
         print "Predicting BG..."
+
+        # Read latest BG
+        BG = self.y[-1]
+
+        # Give user info
         print "Initial BG: " + str(BG)
 
         # Get number of ISF steps
@@ -2030,7 +2053,7 @@ class BGProfile(Profile):
 
 
 
-    def predict(self, BG, IDC, IOB, ISF):
+    def predict(self, IDC, IOB, ISF):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2038,10 +2061,13 @@ class BGProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # FIXME: why small difference between decay and predict?
-
         # Give user info
         print "Predicting BG..."
+
+        # Read latest BG
+        BG = self.y[-1]
+
+        # Give user info
         print "Initial BG: " + str(BG)
 
         # Get number of ISF steps
@@ -2081,6 +2107,12 @@ class BGProfile(Profile):
 
             # Make some air
             print
+
+        # Give user info
+        print "Naive eventual BG: " + str(round(BG, 1)) + " " + self.units
+
+        # Add contribution of current BG trend
+        BG += self.analyze()
 
         # Give user info
         print "Eventual BG: " + str(round(BG, 1)) + " " + self.units
