@@ -10,7 +10,7 @@
 
     Version:  0.1
 
-    Date:     27.05.2016
+    Date:     24.05.2017
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -95,14 +95,14 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
     """
 
-    # Instanciate a loop for me
+    # Instanciate a loop
     loop = Loop()
 
     # Loop
     loop.do()
 
     # End of script
-    print "Done!"
+    print "Looped successfully!"
 
 
 
