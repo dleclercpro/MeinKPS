@@ -50,7 +50,7 @@ def derivate(x, t):
     D = dx / dt
 
     # Return derivative
-    return [D, dt]
+    return D
 
 
 

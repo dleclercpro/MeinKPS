@@ -119,7 +119,7 @@ class Calculator(object):
         self.IOB.predict(self.net, self.IDC)
 
         # Store IOB
-        self.IOB.store()
+        #self.IOB.store()
 
         # Compute BG
         #self.BG.decay(self.IOB, self.ISF)
@@ -353,10 +353,10 @@ class Calculator(object):
             axes[i].set_ylabel(y[i])
 
             # Set x-axis limits
-            axes[i].set_xlim(xlim[i])
+            #axes[i].set_xlim(xlim[i])
 
-            # Set y-axis limits
-            axes[i].set_ylim(ylim[i])
+        # Set y-axis limits
+        axes[0].set_ylim(ylim[0])
 
         # Add BGs to plot
         axes[0].plot(self.BG.T, self.BG.y,
@@ -1516,6 +1516,9 @@ class IOBProfile(Profile):
 
         # Compute IOB
         for i in range(n - 1):
+            if t[i] > 0:
+                print t[i]
+                sys.exit()
 
             # Compute remaining IOB factor based on integral of IDC
             R = IDC.F(t[i + 1]) - IDC.F(t[i])
@@ -1544,15 +1547,18 @@ class IOBProfile(Profile):
         # Reset values
         self.reset()
 
+        # Get current time
+        now = net.end
+
         # Define start/end of IOB prediction profile
-        self.start = net.end
-        self.end = net.end + datetime.timedelta(hours = IDC.DIA)
+        self.start = now
+        self.end = now + datetime.timedelta(hours = IDC.DIA)
 
         # Initialize partial net insulin profile
         part = Profile()
 
         # Define timestep (h)
-        dt = 5.0 / 60.0
+        dt = 1.0 / 60.0
 
         # Compute number of steps
         n = int(IDC.DIA / dt) + 1
@@ -1561,7 +1567,7 @@ class IOBProfile(Profile):
         t = np.linspace(IDC.DIA, 0, n)
 
         # Convert time axis to datetime objects
-        t = [net.end - datetime.timedelta(hours = x) for x in t]
+        t = [now - datetime.timedelta(hours = x) for x in t]
 
         # Compute IOB decay
         for i in range(n):
@@ -1574,8 +1580,8 @@ class IOBProfile(Profile):
             part.end = t[i] + datetime.timedelta(hours = IDC.DIA)
 
             # Initialize start/end times
-            part.t.append(t[i])
-            part.t.append(net.end)
+            part.t.append(part.start)
+            part.t.append(part.end)
 
             # Initialize start/end values
             part.y.append(None)
@@ -1937,44 +1943,50 @@ class BGProfile(Profile):
 
 
 
-    def analyze(self):
+    def project(self, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ANALYZE
+            PROJECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        BG projection based on expected duration (h) of current BG trend
         """
 
         # Verify and get number of valid BGs for analysis
         n = self.verify()
 
         # Derivate BG
-        [dBGdt, dt] = lib.derivate(self.y, self.T)
+        dBGdt = lib.derivate(self.y, self.T)
 
         # Convert time units (from h to m)
         dBGdt /= 60.0
-        dt *= 60.0
-
-        # Define prediction time (m) over which BG trend is likely to go on
-        T = 30
 
         # Predict using more data
         if n > 2:
 
             # Predict BG using an average dBG/dt
-            dBG = np.mean(dBGdt[-(n - 1):]) * T
+            dBG = np.mean(dBGdt[-(n - 1):]) * dt
 
         else:
 
             # Predict BG
-            dBG = dBGdt[-1] * T
-
-        # Give user info
-        print ("Predicted dBG (for " + str(T) + " m using the last " +
-               str(n) + " BGs): " + str(round(dBG, 1)) + " " + self.units)
+            dBG = dBGdt[-1] * dt
 
         # Return BG deviation based on dBG/dt
         return dBG
+
+
+
+    def expect(self, dt):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        BG expectation based on IOB decay
+        """
 
 
 
@@ -1992,7 +2004,7 @@ class BGProfile(Profile):
         # FIXME: why small difference between decay and predict?
 
         # Give user info
-        print "Predicting BG..."
+        print "Decaying BG..."
 
         # Read latest BG
         BG = self.y[-1]
@@ -2107,10 +2119,33 @@ class BGProfile(Profile):
         # Give user info
         print "Naive eventual BG: " + str(round(BG, 1)) + " " + self.units
 
-        # Add contribution of current BG trend
-        BG += self.analyze()
+        # Define projection time (h) over which BG trend is likely to go on
+        T = 30.0 / 60.0
 
         # Give user info
+        print "Projection time: " + str(T) + " h"
+
+        # Compute IOB derivative
+        dIOBdt = lib.derivate(IOB.y, IOB.T)
+
+        # Compute expected variation in BG due to IOB decay
+        BGI = dIOBdt[0] * ISF.y[0]
+
+        # Compute expected BG
+        expectedBG = BG + BGI * T
+
+        # Compute projected BG
+        projectedBG = BG + self.analyze(T)
+
+        # Compute BG deviation from expected vs projected BG
+        deviationBG = projectedBG - expectedBG
+
+        # Add deviation to BG prediction
+        BG += deviationBG
+
+        # Give user info
+        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.units
+        print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.units
         print "Eventual BG: " + str(round(BG, 1)) + " " + self.units
 
         # Return eventual BG
