@@ -27,6 +27,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import datetime
+import copy
 import sys
 import time
 
@@ -123,7 +124,9 @@ class Calculator(object):
 
         # Compute BG
         #self.BG.decay(self.IOB, self.ISF)
-        #self.BG.predict(self.IDC, self.IOB, self.ISF)
+        #self.BG.expect(self.IDC, self.IOB, self.ISF)
+        self.BG.predict(self.IDC, self.IOB, self.ISF)
+        sys.exit()
 
         # Recommend action
         self.recommend()
@@ -247,7 +250,7 @@ class Calculator(object):
             factor += self.ISF.y[i] * (self.IDC.f(a) - self.IDC.f(b))
 
         # Compute eventual BG based on IOB
-        BG = self.BG.predict(self.IDC, self.IOB, self.ISF)
+        BG = self.BG.expect(self.IDC, self.IOB, self.ISF)
 
         # Find average of target to reach after natural insulin decay
         target = sum(self.BGTargets.y[-1]) / 2.0
@@ -536,13 +539,19 @@ class Profile(object):
         Update profile components.
         """
 
+        # Give user info
+        print "Updating profile..."
+
         # Update components
         self.t = t
         self.y = y
         self.d = d
 
-        # Show current state of profile
-        self.show()
+        # If normalization exists
+        if self.T:
+
+            # Renormalize
+            self.normalize()
 
 
 
@@ -800,7 +809,7 @@ class Profile(object):
 
 
 
-    def cut(self):
+    def cut(self, a = None, b = None, normalized = False, extract = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -818,8 +827,26 @@ class Profile(object):
         t = []
         y = []
 
+        # Set limits
+        if not a and not b:
+
+            # Default
+            a = self.start
+            b = self.end
+
+        # Get desired axis
+        if normalized:
+
+            # Define axis
+            axis = self.T
+
+        else:
+
+            # Define axis
+            axis = self.t
+
         # Get number of steps
-        n = len(self.t)
+        n = len(axis)
 
         # Initialize index of last step before profile
         index = None
@@ -828,43 +855,59 @@ class Profile(object):
         for i in range(n):
 
             # Inclusion criteria
-            if self.start <= self.t[i] <= self.end:
+            if a <= axis[i] <= b:
 
                 # Add time
-                t.append(self.t[i])
+                t.append(axis[i])
 
                 # Add value
                 y.append(self.y[i])
 
             # Update last step
-            elif self.t[i] < self.start:
+            elif axis[i] < a:
 
                 # Store index
                 index = i
 
-        # Ensure ends of step profiles fit
+        # Ensure ends of step profile fit
         if self.type == "Step":
 
             # Start of profile
-            if len(t) == 0 or t[0] != self.start:
+            if len(t) == 0 or t[0] != a:
 
                 # Add time
-                t.insert(0, self.start)
+                t.insert(0, a)
 
                 # Extend last step's value
                 y.insert(0, self.y[index])
 
             # End of profile
-            if t[-1] != self.end:
+            if t[-1] != b:
 
                 # Add time
-                t.append(self.end)
+                t.append(b)
 
                 # Add rate
                 y.append(y[-1])
 
         # Update profile
-        self.update(t, y)
+        if not extract:
+
+            # Do it
+            self.update(t, y)
+
+        # Return new profile
+        else:
+
+            # Define new profile
+            # FIXME shallow copy?
+            new = copy.copy(self)
+
+            # Assign cutted axes
+            new.update(t, y)
+
+            # Return cutted profile
+            return new
 
 
 
@@ -968,7 +1011,7 @@ class Profile(object):
 
 
 
-    def normalize(self, end = True):
+    def normalize(self, T = "End"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -981,22 +1024,25 @@ class Profile(object):
         # Give user info
         print "Normalizing..."
 
+        # Reset normalization
+        self.T = []
+
+        # Decide which reference time to use for normalization
+        if T == "End":
+
+            # From end
+            T = self.end
+
+        elif T == "Start":
+
+            # From start
+            T = self.start
+
         # Get number of steps in profile
         n = len(self.t)
 
         # Normalize time
         for i in range(n):
-
-            # Decide which reference time to use for normalization
-            if end:
-
-                # From end
-                T = self.end
-
-            else:
-
-                # From start
-                T = self.start
 
             # Compare time to reference
             if self.t[i] >= T:
@@ -1013,11 +1059,11 @@ class Profile(object):
             self.T.append(dt / 3600.0)
 
         # Show current state of profile
-        self.show(True)
+        self.show()
 
 
 
-    def show(self, normalized = False):
+    def show(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1027,26 +1073,23 @@ class Profile(object):
         Show both profiles axes.
         """
 
-        # Get number of profile steps
-        n = len(self.t)
-
         # Show profile
-        for i in range(n):
+        for i in range(len(self.t)):
 
-            # Show normalization
-            if normalized:
-
-                # Give user info
-                print str(self.y[i]) + " - (" + str(self.T[i]) + ")"
-
-            # Otherwise
-            else:
-
-                # Give user info
-                print str(self.y[i]) + " - (" + lib.formatTime(self.t[i]) + ")"
+            # Give user info
+            print str(self.y[i]) + " - (" + lib.formatTime(self.t[i]) + ")"
 
         # Make some space to read
         print
+
+        # If normalization exists
+        if self.T:
+
+            # Show profile
+            for i in range(len(self.T)):
+
+                # Give user info
+                print str(self.y[i]) + " - (" + str(self.T[i]) + ")"
 
 
 
@@ -1609,7 +1652,7 @@ class IOBProfile(Profile):
             self.y.append(IOB)
 
         # Normalize time axis
-        self.normalize(False)
+        self.normalize()
 
         # Give user info
         print "Predicted IOB(s):"
@@ -1721,7 +1764,7 @@ class ISFProfile(Profile):
         """
 
         # Start normalizing
-        super(self.__class__, self).normalize(False)
+        super(self.__class__, self).normalize("Start")
 
 
 
@@ -1792,7 +1835,7 @@ class CSFProfile(Profile):
         """
 
         # Start normalizing
-        super(self.__class__, self).normalize(False)
+        super(self.__class__, self).normalize("Start")
 
 
 
@@ -1851,7 +1894,7 @@ class BGTargets(Profile):
         """
 
         # Start normalizing
-        super(self.__class__, self).normalize(False)
+        super(self.__class__, self).normalize("Start")
 
 
 
@@ -1956,29 +1999,29 @@ class BGProfile(Profile):
         # Verify and get number of valid BGs for analysis
         n = self.verify()
 
+        # Read latest BG
+        BG = self.y[-1]
+
         # Derivate BG
         dBGdt = lib.derivate(self.y, self.T)
-
-        # Convert time units (from h to m)
-        dBGdt /= 60.0
 
         # Predict using more data
         if n > 2:
 
             # Predict BG using an average dBG/dt
-            dBG = np.mean(dBGdt[-(n - 1):]) * dt
+            BG += np.mean(dBGdt[-(n - 1):]) * dt
 
         else:
 
             # Predict BG
-            dBG = dBGdt[-1] * dt
+            BG += dBGdt[-1] * dt
 
-        # Return BG deviation based on dBG/dt
-        return dBG
+        # Return BG projection based on dBG/dt
+        return BG
 
 
 
-    def expect(self, dt):
+    def expect(self, IDC, IOB, ISF, dt = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1987,6 +2030,67 @@ class BGProfile(Profile):
 
         BG expectation based on IOB decay
         """
+
+        # Give user info
+        print "Expecting BG..."
+
+        # Read latest BG
+        BG = self.y[-1]
+
+        # Give user info
+        print "Initial BG: " + str(BG) + " " + self.units
+        print "Initial IOB: " + str(round(IOB.y[0], 1)) + " U"
+
+        # If no prediction time given
+        if not dt:
+
+            # Default dt
+            dt = IDC.DIA
+
+        # Define prediction limit to cut ISF profile
+        a = ISF.t[0]
+        b = a + datetime.timedelta(hours = dt)
+
+        # Cut ISF profile
+        isf = ISF.cut(a, b, False, True)
+
+        # Get number of ISF steps
+        n = len(isf.t)
+
+        # Compute change in IOB (insulin that has kicked in within ISF step)
+        for i in range(n - 1):
+
+            # Print timestep
+            print ("Timestep: " + lib.formatTime(isf.t[i]) + " @ " +
+                                  lib.formatTime(isf.t[i + 1]))
+
+            # Print ISF
+            print "ISF: " + str(isf.y[i]) + " " + isf.units
+
+            # Adapt normalized time to fit IDC time domain
+            a = isf.T[i + 1] - IDC.DIA
+            b = isf.T[i] - IDC.DIA
+
+            # Compute IOB change
+            dIOB = IOB.y[0] * (IDC.f(b) - IDC.f(a))
+
+            # Give user info
+            print "dIOB: " + str(round(dIOB, 1)) + " U"
+
+            # Compute BG change
+            dBG = isf.y[i] * dIOB
+
+            # Give user info
+            print "dBG: " + str(round(dBG, 1)) + " " + self.units
+
+            # Add BG impact
+            BG += dBG
+
+            # Print eventual BG
+            print "BG: " + str(round(BG, 1)) + " " + self.units
+
+        # Return expected BG
+        return BG
 
 
 
@@ -2072,84 +2176,25 @@ class BGProfile(Profile):
         # Give user info
         print "Predicting BG..."
 
-        # Read latest BG
-        BG = self.y[-1]
-
-        # Give user info
-        print "Initial BG: " + str(BG)
-
-        # Get number of ISF steps
-        n = len(ISF.t)
-
-        # Compute change in IOB (insulin that has kicked in within ISF step)
-        for i in range(n - 1):
-
-            # Print timestep
-            print ("Timestep: " + lib.formatTime(ISF.t[i]) + " @ " +
-                                  lib.formatTime(ISF.t[i + 1]))
-
-            # Print ISF
-            print "ISF: " + str(ISF.y[i]) + " " + ISF.units
-
-            # Adapt normalized time to fit IDC time domain
-            a = ISF.T[i + 1] - IDC.DIA
-            b = ISF.T[i] - IDC.DIA
-
-            # Compute IOB change
-            dIOB = IOB.y[0] * (IDC.f(b) - IDC.f(a))
-
-            # Give user info
-            print "dIOB: " + str(dIOB) + " U"
-
-            # Compute BG change
-            dBG = ISF.y[i] * dIOB
-
-            # Give user info
-            print "dBG: " + str(dBG) + " " + self.units
-
-            # Add BG impact
-            BG += dBG
-
-            # Print eventual BG
-            print "BG: " + str(round(BG, 1)) + " " + self.units
-
-            # Make some air
-            print
-
-        # Give user info
-        print "Naive eventual BG: " + str(round(BG, 1)) + " " + self.units
-
         # Define projection time (h) over which BG trend is likely to go on
-        T = 30.0 / 60.0
+        T = 0.5
 
         # Give user info
         print "Projection time: " + str(T) + " h"
 
-        # Compute IOB derivative
-        dIOBdt = lib.derivate(IOB.y, IOB.T)
-
-        # Compute expected variation in BG due to IOB decay
-        BGI = dIOBdt[0] * ISF.y[0]
-
-        # Compute expected BG
-        expectedBG = BG + BGI * T
+        # Compute BG variation due to IOB decay
+        expectedBG = self.expect(IDC, IOB, ISF, T)
 
         # Compute projected BG
-        projectedBG = BG + self.analyze(T)
+        projectedBG = self.project(T)
 
         # Compute BG deviation from expected vs projected BG
         deviationBG = projectedBG - expectedBG
 
-        # Add deviation to BG prediction
-        BG += deviationBG
-
         # Give user info
-        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.units
         print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.units
-        print "Eventual BG: " + str(round(BG, 1)) + " " + self.units
-
-        # Return eventual BG
-        return BG
+        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.units
+        print "BG deviation: " + str(round(deviationBG, 1)) + " " + self.units
 
 
 
