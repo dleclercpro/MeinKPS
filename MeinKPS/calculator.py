@@ -253,7 +253,7 @@ class Calculator(object):
 
         # Compute BG deviation based on CGM readings and expected BG due to IOB
         # decay
-        deviationBG = (self.BG.project()[0] -
+        deviationBG = (self.BG.project() -
                        self.BG.expect(self.IDC, self.IOB, self.ISF, 0.5))
 
         # Update eventual BG
@@ -2045,35 +2045,18 @@ class BGProfile(Profile):
 
 
 
-    def project(self, dt = None):
+    def impact(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PROJECT
+            IMPACT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        BG projection based on expected duration dt (h) of current BG trend
         """
 
         # Verify and get number of valid BGs for analysis
         n = self.verify()
 
-        # If no projection time is given
-        if not dt:
-
-            # Default is 30 m
-            dt = 0.5
-
-        # Give user info
-        print "Projection time: " + str(dt) + " h"
-
-        # Derivate
-        self.dydt = lib.derivate(self.y, self.T)
-
-        # Read latest BG
-        BG = self.y[-1]
-
-        # Compute derivative to use when predicting future BG
+        # Compute most relevant BG derivative
         if n > 2:
 
             # Average dBG/dt
@@ -2084,11 +2067,44 @@ class BGProfile(Profile):
             # Last dBG/dt
             dBGdt = self.dydt[-1]
 
+        # Return dBG/dt
+        return dBGdt
+
+
+
+    def project(self, dt = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PROJECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        BG projection based on expected duration dt (h) of current BG trend
+        """
+
+        # If no projection time is given
+        if not dt:
+
+            # Default is 30 m
+            dt = 0.5
+
+        # Give user info
+        print "Projection time: " + str(dt) + " h"
+
+        # Read latest BG
+        BG = self.y[-1]
+
+        # Derivate
+        self.dydt = lib.derivate(self.y, self.T)
+
+        # Compute derivative to use when predicting future BG
+        dBGdt = self.impact()
+
         # Predict future BG
         BG += dBGdt * dt
 
         # Return BG projection based on dBG/dt
-        return [BG, dBGdt]
+        return BG
 
 
 
@@ -2119,7 +2135,7 @@ class BGProfile(Profile):
             dt = IDC.DIA
 
         # Give user info
-        print " time: " + str(dt) + " h"
+        print "Expectation time: " + str(dt) + " h"
 
         # Define prediction limit to cut ISF profile
         a = ISF.t[0]
@@ -2253,14 +2269,17 @@ class BGProfile(Profile):
         # Give user info
         print "Predicting BG..."
 
+        # Compute projected BG based on latest CGM readings
+        projectedBG = self.project(dt)
+
         # Compute BG variation due to IOB decay
         expectedBG = self.expect(IDC, IOB, ISF, dt)
 
+        # Read BGI
+        BGI = self.impact()
+
         # Compute BGI (dBG/dt) based on IOB decay
         expectedBGI = IOB.dydt[0] * ISF.y[0]
-
-        # Compute projected BG based on recent data
-        [projectedBG, BGI] = self.project(dt)
 
         # Compute deviation between BGs
         deviationBG = projectedBG - expectedBG
