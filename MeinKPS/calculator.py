@@ -126,7 +126,6 @@ class Calculator(object):
         #self.BG.decay(self.IOB, self.ISF)
         #self.BG.expect(self.IDC, self.IOB, self.ISF)
         self.BG.predict(self.IDC, self.IOB, self.ISF)
-        sys.exit()
 
         # Recommend action
         self.recommend()
@@ -249,14 +248,22 @@ class Calculator(object):
             # Update factor with current step
             factor += self.ISF.y[i] * (self.IDC.f(a) - self.IDC.f(b))
 
-        # Compute eventual BG based on IOB
-        BG = self.BG.expect(self.IDC, self.IOB, self.ISF)
+        # Compute eventual BG based on complete IOB decay
+        naiveBG = self.BG.expect(self.IDC, self.IOB, self.ISF)
+
+        # Compute BG deviation based on CGM readings and expected BG due to IOB
+        # decay
+        deviationBG = (self.BG.project()[0] -
+                       self.BG.expect(self.IDC, self.IOB, self.ISF, 0.5))
+
+        # Update eventual BG
+        eventualBG = naiveBG + deviationBG
 
         # Find average of target to reach after natural insulin decay
         target = sum(self.BGTargets.y[-1]) / 2.0
 
         # Compute BG difference with average target
-        dBG = target - BG
+        dBG = target - eventualBG
 
         # Compute necessary bolus
         bolus = dBG / factor
@@ -266,7 +273,8 @@ class Calculator(object):
         print "BG target: " + str(self.BGTargets.y[-1]) + " " + self.BG.units
         print "BG target average: " + str(target) + " " + self.BG.units
         print "BG: " + str(round(self.BG.y[-1], 1)) + " " + self.BG.units
-        print "Eventual BG: " + str(round(BG, 1)) + " " + self.BG.units
+        print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.units
+        print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.units
         print "dBG: " + str(round(dBG, 1)) + " " + self.BG.units
         print "Recommended bolus: " + str(round(bolus, 1)) + " U"
 
@@ -311,7 +319,8 @@ class Calculator(object):
         elif bolus < 0:
 
             # Give user info
-            self.basal.show()
+            # TODO: compute how much time to cut basal
+            print "Low TBR to enact..."
 
 
 
@@ -416,6 +425,9 @@ class Profile(object):
         # Initialize y-axis
         self.y = []
 
+        # Initialize derivate
+        self.dydt = []
+
         # Initialize step durations
         self.d = []
 
@@ -455,6 +467,9 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Give user info
+        print "Building..."
+
         # Define start of profile
         self.start = start
 
@@ -473,11 +488,8 @@ class Profile(object):
         # Filter profile components
         self.filter()
 
-        # If step durations are set
-        if self.d:
-
-            # Inject zeros between profile steps
-            self.inject()
+        # Inject zeros between profile steps
+        self.inject()
 
         # Cut entries outside of time limits
         self.cut()
@@ -488,11 +500,8 @@ class Profile(object):
             # Fill profile
             self.fill(filler)
 
-        # If step profile
-        if self.type == "Step":
-
-            # Smooth profile
-            self.smooth()
+        # Smooth profile
+        self.smooth()
 
         # Normalize profile
         self.normalize()
@@ -510,7 +519,7 @@ class Profile(object):
         """
 
         # Give user info
-        print "Resetting profile..."
+        print "Resetting..."
 
         # Reset time axis
         self.t = []
@@ -520,6 +529,9 @@ class Profile(object):
 
         # Reset y-axis
         self.y = []
+
+        # Reset derivate
+        self.dydt = []
 
         # Reset step durations
         self.d = []
@@ -540,7 +552,7 @@ class Profile(object):
         """
 
         # Give user info
-        print "Updating profile..."
+        print "Updating..."
 
         # Update components
         self.t = t
@@ -566,7 +578,7 @@ class Profile(object):
         """
 
         # Give user info
-        print "Loading profile..."
+        print "Loading..."
 
         # Load report
         Reporter.load(self.report)
@@ -590,7 +602,7 @@ class Profile(object):
         """
 
         # Give user info
-        print "Decoupling profile..."
+        print "Decoupling components..."
 
         # Decouple components
         for t in sorted(self.data):
@@ -764,48 +776,57 @@ class Profile(object):
         set their value to "None". Will only work if step durations are defined!
         """
 
-        # Give user info
-        print "Injecting..."
+        # If step durations are set
+        if self.d:
 
-        # Initialize temporary components
-        t = []
-        y = []
+            # Give user info
+            print "Injecting..."
 
-        # Get number of steps
-        n = len(self.t)
+            # Initialize temporary components
+            t = []
+            y = []
 
-        # Add end to time axis in order to correctly compute last dt (number of
-        # steps has to be computed before that!)
-        self.t.append(self.end)
+            # Get number of steps
+            n = len(self.t)
 
-        # Rebuild profile and inject zeros where needed
-        for i in range(n):
+            # Add end to time axis in order to correctly compute last dt (number
+            # of steps has to be computed before that!)
+            self.t.append(self.end)
 
-            # Add step
-            t.append(self.t[i])
-            y.append(self.y[i])
+            # Rebuild profile and inject zeros where needed
+            for i in range(n):
 
-            # Get current step duration
-            d = self.d[i]
+                # Add step
+                t.append(self.t[i])
+                y.append(self.y[i])
 
-            # Compute time between current and next steps
-            dt = self.t[i + 1] - self.t[i]
+                # Get current step duration
+                d = self.d[i]
 
-            # If step is a canceling one
-            if d == 0:
+                # Compute time between current and next steps
+                dt = self.t[i + 1] - self.t[i]
 
-                # Replace value with zero
-                y[-1] = self.zero
+                # If step is a canceling one
+                if d == 0:
 
-            # Inject zero in profile
-            elif d < dt:
+                    # Replace value with zero
+                    y[-1] = self.zero
 
-                # Add zero
-                t.append(self.t[i] + d)
-                y.append(self.zero)
+                # Inject zero in profile
+                elif d < dt:
 
-        # Update profile
-        self.update(t, y)
+                    # Add zero
+                    t.append(self.t[i] + d)
+                    y.append(self.zero)
+
+            # Update profile
+            self.update(t, y)
+
+        # No step durations
+        else:
+
+            # Give user info
+            print "No step durations available."
 
 
 
@@ -978,36 +999,45 @@ class Profile(object):
         Smooth profile (remove redundant steps).
         """
 
-        # Give user info
-        print "Smoothing..."
+        # If step profile
+        if self.type == "Step":
 
-        # Initialize components for smoothed profile
-        t = []
-        y = []
+            # Give user info
+            print "Smoothing..."
 
-        # Restore start of profile
-        t.append(self.t[0])
-        y.append(self.y[0])
+            # Initialize components for smoothed profile
+            t = []
+            y = []
 
-        # Get number of steps in profile
-        n = len(self.t)
+            # Restore start of profile
+            t.append(self.t[0])
+            y.append(self.y[0])
 
-        # Look for redundancies
-        for i in range(1, n - 1):
+            # Get number of steps in profile
+            n = len(self.t)
 
-            # Non-redundancy criteria
-            if self.y[i] != self.y[i - 1]:
+            # Look for redundancies
+            for i in range(1, n - 1):
 
-                # Add step
-                t.append(self.t[i])
-                y.append(self.y[i])
+                # Non-redundancy criteria
+                if self.y[i] != self.y[i - 1]:
 
-        # Restore end of profile
-        t.append(self.t[-1])
-        y.append(self.y[-1])
+                    # Add step
+                    t.append(self.t[i])
+                    y.append(self.y[i])
 
-        # Update profile
-        self.update(t, y)
+            # Restore end of profile
+            t.append(self.t[-1])
+            y.append(self.y[-1])
+
+            # Update profile
+            self.update(t, y)
+
+        # Dot profiles
+        else:
+
+            # Give user info
+            print "Only step profiles can be smoothed."
 
 
 
@@ -1060,6 +1090,35 @@ class Profile(object):
 
         # Show current state of profile
         self.show()
+
+
+
+    def derivate(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DERIVATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Derivate dot typed profiles using their normalized time axis.
+        """
+
+        # FIXME use me?
+
+        # Check if profile is differentiable
+        if self.type == "Dot" and self.T:
+
+            # Give user info
+            print "Derivating..."
+
+            # Derivate
+            self.dydt = lib.derivate(self.y, self.T)
+
+        # Otherwise
+        else:
+
+            # Exit
+            sys.exit("Only normalized dot typed profile can be derivated.")
 
 
 
@@ -1559,15 +1618,12 @@ class IOBProfile(Profile):
 
         # Compute IOB
         for i in range(n - 1):
-            if t[i] > 0:
-                print t[i]
-                sys.exit()
 
             # Compute remaining IOB factor based on integral of IDC
-            R = IDC.F(t[i + 1]) - IDC.F(t[i])
+            r = IDC.F(t[i + 1]) - IDC.F(t[i])
 
             # Compute active insulin remaining for current step
-            IOB += R * y[i]
+            IOB += r * y[i]
 
         print "IOB: " + str(IOB)
 
@@ -1653,6 +1709,9 @@ class IOBProfile(Profile):
 
         # Normalize time axis
         self.normalize()
+
+        # Derivate
+        self.dydt = lib.derivate(self.y, self.T)
 
         # Give user info
         print "Predicted IOB(s):"
@@ -1986,38 +2045,50 @@ class BGProfile(Profile):
 
 
 
-    def project(self, dt):
+    def project(self, dt = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PROJECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        BG projection based on expected duration (h) of current BG trend
+        BG projection based on expected duration dt (h) of current BG trend
         """
 
         # Verify and get number of valid BGs for analysis
         n = self.verify()
 
+        # If no projection time is given
+        if not dt:
+
+            # Default is 30 m
+            dt = 0.5
+
+        # Give user info
+        print "Projection time: " + str(dt) + " h"
+
+        # Derivate
+        self.dydt = lib.derivate(self.y, self.T)
+
         # Read latest BG
         BG = self.y[-1]
 
-        # Derivate BG
-        dBGdt = lib.derivate(self.y, self.T)
-
-        # Predict using more data
+        # Compute derivative to use when predicting future BG
         if n > 2:
 
-            # Predict BG using an average dBG/dt
-            BG += np.mean(dBGdt[-(n - 1):]) * dt
+            # Average dBG/dt
+            dBGdt = np.mean(self.dydt[-(n - 1):])
 
         else:
 
-            # Predict BG
-            BG += dBGdt[-1] * dt
+            # Last dBG/dt
+            dBGdt = self.dydt[-1]
+
+        # Predict future BG
+        BG += dBGdt * dt
 
         # Return BG projection based on dBG/dt
-        return BG
+        return [BG, dBGdt]
 
 
 
@@ -2041,11 +2112,14 @@ class BGProfile(Profile):
         print "Initial BG: " + str(BG) + " " + self.units
         print "Initial IOB: " + str(round(IOB.y[0], 1)) + " U"
 
-        # If no prediction time given
+        # If no prediction time is given
         if not dt:
 
-            # Default dt
+            # Default is DIA
             dt = IDC.DIA
+
+        # Give user info
+        print " time: " + str(dt) + " h"
 
         # Define prediction limit to cut ISF profile
         a = ISF.t[0]
@@ -2088,6 +2162,9 @@ class BGProfile(Profile):
 
             # Print eventual BG
             print "BG: " + str(round(BG, 1)) + " " + self.units
+
+        # Make some air
+        print
 
         # Return expected BG
         return BG
@@ -2165,7 +2242,7 @@ class BGProfile(Profile):
 
 
 
-    def predict(self, IDC, IOB, ISF):
+    def predict(self, IDC, IOB, ISF, dt = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2176,25 +2253,36 @@ class BGProfile(Profile):
         # Give user info
         print "Predicting BG..."
 
-        # Define projection time (h) over which BG trend is likely to go on
-        T = 0.5
-
-        # Give user info
-        print "Projection time: " + str(T) + " h"
-
         # Compute BG variation due to IOB decay
-        expectedBG = self.expect(IDC, IOB, ISF, T)
+        expectedBG = self.expect(IDC, IOB, ISF, dt)
 
-        # Compute projected BG
-        projectedBG = self.project(T)
+        # Compute BGI (dBG/dt) based on IOB decay
+        expectedBGI = IOB.dydt[0] * ISF.y[0]
 
-        # Compute BG deviation from expected vs projected BG
+        # Compute projected BG based on recent data
+        [projectedBG, BGI] = self.project(dt)
+
+        # Compute deviation between BGs
         deviationBG = projectedBG - expectedBG
 
-        # Give user info
+        # Compute deviation between BGIs
+        deviationBGI = BGI - expectedBGI
+
+        # Give user info (about BG)
         print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.units
         print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.units
         print "BG deviation: " + str(round(deviationBG, 1)) + " " + self.units
+
+        # Make some air
+        print
+
+        # Give user info (about BGI)
+        print ("Expected BGI: " + str(round(expectedBGI, 1)) + " " +
+               self.units + "/h")
+        print ("BGI: " + str(round(BGI, 1)) + " " +
+               self.units + "/h")
+        print ("BGI deviation: " + str(round(deviationBGI, 1)) + " " +
+               self.units + "/h")
 
 
 
