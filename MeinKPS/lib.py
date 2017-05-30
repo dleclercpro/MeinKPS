@@ -112,7 +112,7 @@ def decodeTime(x):
 
 
 
-def formatTime(x):
+def formatTime(t):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,15 +121,21 @@ def formatTime(x):
     """
 
     # Define string format
-    stringFormat = "%Y.%m.%d - %H:%M:%S"
+    f = "%Y.%m.%d - %H:%M:%S"
 
-    if type(x) == datetime.datetime:
+    if type(t) == datetime.datetime:
 
-        t = datetime.datetime.strftime(x, stringFormat)
+        t = datetime.datetime.strftime(t, f)
 
     else:
 
-        t = datetime.datetime.strptime(x, stringFormat)
+        try:
+
+            t = datetime.datetime.strptime(t, f)
+
+        except:
+
+            pass
 
     return t
 
