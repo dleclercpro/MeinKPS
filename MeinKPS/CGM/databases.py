@@ -149,7 +149,7 @@ class Database(object):
 
 
 
-    def read(self):
+    def read(self, n = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -166,6 +166,12 @@ class Database(object):
             # Get ends of database range
             start = self.range[0]
             end = self.range[1]
+
+            # Compute eventual new lower limit of database range
+            if n is not None and start < end - n:
+
+                # Assign new limit
+                start = end - n
 
             # Link to read database command
             command = self.commands["ReadDatabase"]

@@ -214,6 +214,25 @@ class CGM(object):
 
 
 
+    def dumpBG(self, n = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DUMPBG
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Establish connection with CGM
+        self.connect()
+
+        # Read BGs
+        self.databases["BG"].read(n)
+
+        # End connection with CGM
+        self.disconnect()
+
+
+
 class Battery(object):
 
     def __init__(self, cgm):

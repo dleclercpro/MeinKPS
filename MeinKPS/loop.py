@@ -63,8 +63,8 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Dump whole CGM data
-        self.cgm.dump()
+        # Dump about 24 h of CGM readings (38 records per page)
+        self.cgm.dumpBG(8)
 
         # Read pump's history
         #self.pump.history.read()
