@@ -120,10 +120,11 @@ def formatTime(t):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Define string format
+    # Define time formats
     f = "%Y.%m.%d - %H:%M:%S"
+    F = "%H:%M"
 
-    if type(t) == datetime.datetime:
+    if type(t) is datetime.datetime:
 
         t = datetime.datetime.strftime(t, f)
 
@@ -135,7 +136,7 @@ def formatTime(t):
 
         except:
 
-            pass
+            t = datetime.datetime.strptime(t, F).time()
 
     return t
 

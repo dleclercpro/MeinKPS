@@ -446,9 +446,6 @@ class Profile(object):
         # Initialize data
         self.data = None
 
-        # Initialize time mapping
-        self.mapped = True
-
         # Initialize units
         self.units = None
 
@@ -561,17 +558,17 @@ class Profile(object):
         self.T = T
         self.y = y
 
-        # Renormalize
-        self.normalize()
-
-        # Rederivate
-        self.derivate()
-
         # If duration steps given
         if d is not None:
 
             # Update them
             self.d = d
+
+        # Renormalize
+        self.normalize()
+
+        # Rederivate
+        self.derivate()
 
 
 
@@ -622,7 +619,7 @@ class Profile(object):
             self.y.append(self.data[t])
 
         # If time is not mapped
-        if not self.mapped:
+        if type(self.T[0]) is datetime.time:
 
             # Map it
             self.map()
@@ -658,9 +655,6 @@ class Profile(object):
 
             # Get time
             T = self.T[i]
-
-            # Generate time object
-            T = datetime.time(hour = int(T[:2]), minute = int(T[3:]))
 
             # Generate datetime object
             T = datetime.datetime.combine(now, T)
@@ -1412,9 +1406,6 @@ class BasalProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
-        # Define time mapping
-        self.mapped = False
-
         # Define units
         self.units = "U/h"
 
@@ -1613,6 +1604,12 @@ class IOBProfile(Profile):
         # Start initialization
         super(self.__class__, self).__init__()
 
+        # Initialize future components
+        self.T_ = []
+        self.t_ = []
+        self.y_ = []
+        self.dydt_ = []
+
         # Define type
         self.type = "Dot"
 
@@ -1671,30 +1668,24 @@ class IOBProfile(Profile):
         # Give user info
         print "Predicting IOB..."
 
-        # Reset values
-        self.reset()
+        # Initialize new partial net insulin profile
+        new = Profile()
 
-        # Get current time
-        now = net.end
-
-        # Define start/end of IOB prediction profile
-        self.start = now
-        self.end = now + datetime.timedelta(hours = IDC.DIA)
+        # Initialize components
+        T = []
+        y = []
 
         # Define timestep (h)
-        dt = 1.0 / 60.0
+        dt = 5.0 / 60.0
 
         # Compute number of steps
         n = int(IDC.DIA / dt) + 1
 
         # Generate time axis
-        T = np.linspace(IDC.DIA, 0, n)
+        axis = np.linspace(IDC.DIA, 0, n)
 
         # Convert time axis to datetime objects
-        T = [now - datetime.timedelta(hours = x) for x in T]
-
-        # Initialize new partial net insulin profile
-        new = Profile()
+        axis = [net.end - datetime.timedelta(hours = x) for x in axis]
 
         # Compute IOB decay
         for i in range(n):
@@ -1703,8 +1694,8 @@ class IOBProfile(Profile):
             new.reset()
 
             # Set limits of partial profile (moving window)
-            new.start = T[i]
-            new.end = T[i] + datetime.timedelta(hours = IDC.DIA)
+            new.start = axis[i]
+            new.end = axis[i] + datetime.timedelta(hours = IDC.DIA)
 
             # Initialize start/end times
             new.T.append(new.start)
@@ -1727,16 +1718,13 @@ class IOBProfile(Profile):
             IOB = self.compute(new, IDC)
 
             # Store prediction time
-            self.T.append(new.end)
+            T.append(new.end)
 
             # Store IOB
-            self.y.append(IOB)
+            y.append(IOB)
 
-        # Normalize time axis
-        self.normalize()
-
-        # Derivate
-        self.derivate()
+        # Update profile
+        self.update(T, y)
 
         # Give user info
         print "Predicted IOB(s):"
@@ -1801,9 +1789,6 @@ class ISFProfile(Profile):
         # Define norm
         self.norm = "Start"
 
-        # Define time mapping
-        self.mapped = False
-
         # Define report info
         self.report = "pump.json"
 
@@ -1846,9 +1831,6 @@ class CSFProfile(Profile):
 
         # Define norm
         self.norm = "Start"
-
-        # Define time mapping
-        self.mapped = False
 
         # Define report info
         self.report = "pump.json"
@@ -1905,9 +1887,6 @@ class BGTargets(Profile):
         # Define norm
         self.norm = "Start"
 
-        # Define time mapping
-        self.mapped = False
-
         # Define report info
         self.report = "pump.json"
 
@@ -1952,6 +1931,7 @@ class BGProfile(Profile):
         self.T_ = []
         self.t_ = []
         self.y_ = []
+        self.dydt_ = []
 
         # Define type
         self.type = "Dot"
@@ -2035,15 +2015,15 @@ class BGProfile(Profile):
         if n > 2:
 
             # Average dBG/dt
-            dydt = np.mean(self.dydt[-(n - 1):])
+            BGI = np.mean(self.dydt_[-(n - 1):])
 
         else:
 
             # Last dBG/dt
-            dydt = self.dydt[-1]
+            BGI = self.dydt_[-1]
 
         # Return dBG/dt
-        return dydt
+        return BGI
 
 
 
@@ -2064,7 +2044,7 @@ class BGProfile(Profile):
         BG = self.y[-1]
 
         # Derivate
-        self.dydt = lib.derivate(self.y, self.t)
+        self.dydt_ = lib.derivate(self.y, self.t)
 
         # Compute derivative to use when predicting future BG
         dBGdt = self.impact()
