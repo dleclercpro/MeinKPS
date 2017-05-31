@@ -251,7 +251,7 @@ class Calculator(object):
 
         # Compute BG deviation based on CGM readings and expected BG due to IOB
         # decay
-        deviationBG = self.BG.predict(self.IDC, self.IOB, self.ISF, 0.5)[0]
+        deviationBG = self.BG.predict(self.IDC, self.IOB, self.ISF)[0]
 
         # Update eventual BG
         eventualBG = naiveBG + deviationBG
@@ -2047,7 +2047,7 @@ class BGProfile(Profile):
 
 
 
-    def project(self, dt = None):
+    def project(self, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2056,12 +2056,6 @@ class BGProfile(Profile):
 
         BG projection based on expected duration dt (h) of current BG trend
         """
-
-        # If no projection time is given
-        if not dt:
-
-            # Default is 30 m
-            dt = 0.5
 
         # Give user info
         print "Projection time: " + str(dt) + " h"
@@ -2090,11 +2084,20 @@ class BGProfile(Profile):
             EXPECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        BG expectation based on IOB decay
+        BG expectation after a certain time dt (h) based on IOB decay
         """
 
         # Give user info
         print "Expecting BG..."
+
+        # If no prediction time is given
+        if dt is None:
+
+            # Default is DIA
+            dt = IDC.DIA
+
+        # Give user info
+        print "Expectation time: " + str(dt) + " h"
 
         # Read latest BG
         BG = self.y[-1]
@@ -2102,15 +2105,6 @@ class BGProfile(Profile):
         # Give user info
         print "Initial BG: " + str(BG) + " " + self.units
         print "Initial IOB: " + str(round(IOB.y[0], 1)) + " U"
-
-        # If no prediction time is given
-        if not dt:
-
-            # Default is DIA
-            dt = IDC.DIA
-
-        # Give user info
-        print "Expectation time: " + str(dt) + " h"
 
         # Define prediction limit to cut ISF profile
         a = ISF.T[0]
@@ -2235,12 +2229,14 @@ class BGProfile(Profile):
 
 
 
-    def predict(self, IDC, IOB, ISF, dt = None):
+    def predict(self, IDC, IOB, ISF, dt = 0.5):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PREDICT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: prediction time should be set to 0.5 h
         """
 
         # Give user info
