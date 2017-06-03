@@ -233,6 +233,22 @@ class CGM(object):
 
 
 
+    def dumpLastBG(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DUMPLASTBG
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Dump about 24 h of CGM readings (38 records per page separated by 5 m
+        intervals)
+        """
+
+        # Read BGs
+        self.dumpBG(8)
+
+
+
 class Battery(object):
 
     def __init__(self, cgm):

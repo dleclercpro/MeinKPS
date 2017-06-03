@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import datetime
 import copy
 import sys
+import time
 
 
 
@@ -52,9 +53,6 @@ class Calculator(object):
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Initialize current time
-        self.now = None
 
         # Initialize DIA
         self.DIA = None
@@ -98,7 +96,7 @@ class Calculator(object):
 
 
 
-    def run(self):
+    def run(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,31 +104,14 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define current time
-        self.now = datetime.datetime.now()
-
         # Load components
         self.load()
 
         # Prepare components
-        self.prepare(self.now)
-
-        # Predict IOB decay
-        self.IOB.predict(self.net, self.IDC)
-
-        # Store IOB
-        #self.IOB.store()
-
-        # Compute BG
-        #self.BG.decay(self.IOB, self.ISF)
-        #self.BG.expect(self.IDC, self.IOB, self.ISF)
-        #self.BG.predict(self.IDC, self.IOB, self.ISF)
+        self.prepare(now)
 
         # Recommend action
         self.recommend()
-
-        # Show infos
-        self.show()
 
 
 
@@ -197,6 +178,9 @@ class Calculator(object):
         # Build IOB profile
         self.IOB.build(past, now)
 
+        # Predict future of IOB profile
+        self.IOB.predict(self.net, self.IDC)
+
         # Build COB profile
         #self.COB.build(past, now)
 
@@ -211,6 +195,9 @@ class Calculator(object):
 
         # Build BG profile
         self.BG.build(past, now)
+
+        # Predict future of BG profile
+        #self.BG.predict(self.IOB, self.ISF)
 
 
 
@@ -251,7 +238,7 @@ class Calculator(object):
 
         # Compute BG deviation based on CGM readings and expected BG due to IOB
         # decay
-        deviationBG = self.BG.predict(self.IDC, self.IOB, self.ISF)[0]
+        deviationBG = self.BG.deviate(self.IDC, self.IOB, self.ISF)[0]
 
         # Update eventual BG
         eventualBG = naiveBG + deviationBG
@@ -318,88 +305,6 @@ class Calculator(object):
             # Give user info
             # TODO: compute how much time to cut basal
             print "Low TBR to enact..."
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize plot
-        mpl.rc("font", size = 10, family = "Ubuntu")
-        fig = plt.figure(0, figsize = (10, 8))
-        axes = [plt.subplot(221), plt.subplot(222),
-                plt.subplot(223), plt.subplot(224)]
-
-        # Define titles
-        titles = ["BG", "Net Insulin Profile", "IOB", "COB"]
-
-        # Define axis labels
-        x = ["(h)"] * 4
-        y = ["(" + self.BG.units + ")",
-             "(U/h)",
-             "(U)",
-             "(g)"]
-
-        # Define axis limits
-        xlim = [[-self.IDC.DIA, self.IDC.DIA]] * 4
-        ylim = [[2, 20], None, None, None]
-
-        # Define subplots
-        for i in range(4):
-
-            # Set titles
-            axes[i].set_title(titles[i], fontweight = "semibold")
-
-            # Set x-axis labels
-            axes[i].set_xlabel(x[i])
-
-            # Set y-axis labels
-            axes[i].set_ylabel(y[i])
-
-            # Set x-axis limits
-            #axes[i].set_xlim(xlim[i])
-
-        # Set y-axis limits
-        axes[0].set_ylim(ylim[0])
-
-        # Add BGs to plot
-        axes[0].plot(self.BG.t, self.BG.y,
-                     marker = "o", ms = 3.5, lw = 0, c = "red")
-
-        # Add BG predictions to plot
-        axes[0].plot(self.BG.t_, self.BG.y_,
-                     marker = "o", ms = 3.5, lw = 0, c = "black")
-
-        # Add net insulin profile to plot
-        axes[1].step(self.net.t, np.append(0, self.net.y[:-1]),
-                     lw = 2, ls = "-", c = "#ff7500")
-
-        # Add IOB to plot
-        axes[2].plot([-self.IDC.DIA, 0], [0, 0],
-                     lw = 2, ls = "-", c = "purple")
-
-        # Add IOB predictions to plot
-        axes[2].plot(self.IOB.t, self.IOB.y,
-                     lw = 2, ls = "-", c = "black")
-
-        # Add COB to plot
-        axes[3].plot([-self.IDC.DIA, 0], [0, 0],
-                     lw = 2, ls = "-", c = "#99e500")
-
-        # Add COB predictions to plot
-        axes[3].plot([0, self.IDC.DIA], [0, 0],
-                     lw = 2, ls = "-", c = "black")
-
-        # Tighten up
-        plt.tight_layout()
-
-        # Show plot
-        plt.show()
 
 
 
@@ -867,32 +772,18 @@ class Profile(object):
             sys.exit("Type of ends do not match. Exiting...")
 
         # Get desired axis
-        if type(a) is datetime.datetime:
+        if type(a) is not datetime.datetime:
 
-            # Verify if normalization exists
-            if self.T:
-
-                # Define axis
-                axis = self.T
-
-            # Otherwise
-            else:
-
-                # Exit
-                sys.exit("Cannot cut profile using normalized time limits " +
-                         "when said profile was not normalized yet. Exiting...")
-
-        else:
-
-            # Define axis
-            axis = self.t
+            # Exit
+            sys.exit("Cannot cut profile using normalized time limits yet. " +
+                     "Exiting...")
 
         # Initialize cut-off profile components
         T = []
         y = []
 
         # Get number of steps
-        n = len(axis)
+        n = len(self.T)
 
         # Initialize index of last step before profile
         index = None
@@ -901,16 +792,16 @@ class Profile(object):
         for i in range(n):
 
             # Inclusion criteria
-            if a <= axis[i] <= b:
+            if a <= self.T[i] <= b:
 
                 # Add time
-                T.append(axis[i])
+                T.append(self.T[i])
 
                 # Add value
                 y.append(self.y[i])
 
             # Update last step
-            elif axis[i] < a:
+            elif self.T[i] < a:
 
                 # Store index
                 index = i
@@ -939,7 +830,7 @@ class Profile(object):
         # Return new profile
         if extract:
 
-            # Define new profile
+            # Copy profile
             new = copy.copy(self)
 
             # Assign cutted axes
@@ -1114,19 +1005,8 @@ class Profile(object):
         # Normalize time
         for i in range(n):
 
-            # Compare time to reference
-            if self.T[i] >= T:
-
-                # Compute positive time difference (s)
-                dt = (self.T[i] - T).seconds
-
-            else:
-
-                # Compute negative time difference (s)
-                dt = -(T - self.T[i]).seconds
-
             # Add step (h)
-            self.t.append(dt / 3600.0)
+            self.t.append(lib.normalizeTime(self.T[i], T))
 
         # Show current state of profile
         self.show()
@@ -1167,29 +1047,45 @@ class Profile(object):
             SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Show both profiles axes.
+        Show profile components.
         """
 
-        # Give user info
-        print "Standard t-axis:"
-
-        # Show profile
-        for i in range(len(self.T)):
+        # If time axis exists
+        if self.T:
 
             # Give user info
-            print str(self.y[i]) + " - (" + lib.formatTime(self.T[i]) + ")"
+            print "Standard t-axis:"
 
-        # Give user info
-        print "Normalized t-axis:"
+            # Show profile
+            for i in range(len(self.T)):
 
-        # If normalization exists
+                # Give user info
+                print str(self.y[i]) + " - (" + lib.formatTime(self.T[i]) + ")"
+
+        # If normalized time axis exists
         if self.t:
+
+            # Give user info
+            print "Normalized t-axis:"
 
             # Show profile
             for i in range(len(self.t)):
 
                 # Give user info
                 print str(self.y[i]) + " - (" + str(self.t[i]) + ")"
+
+        # If derivative exists
+        if self.dydt:
+
+            # Give user info
+            print "Derivative:"
+
+            # Show profile
+            for i in range(len(self.t) - 1):
+
+                # Give user info
+                print (str(round(self.dydt[i], 1)) + " - (" +
+                       lib.formatTime(self.T[i]) + ")")
 
 
 
@@ -1393,6 +1289,72 @@ class Profile(object):
 
 
 
+class FutureProfile(Profile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(FutureProfile, self).__init__()
+
+        # Initialize future time axis
+        self.T_ = []
+
+        # Initialize future normalized time axis
+        self.t_ = []
+
+        # Initialize future y-axis
+        self.y_ = []
+
+        # Initialize future derivative
+        self.dydt_ = []
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Reset profile components.
+        """
+
+        # Start resetting
+        super(FutureProfile, self).reset()
+
+        # Reset future time axis
+        self.T_ = []
+
+        # Reset future normalized time axis
+        self.t_ = []
+
+        # Reset future y-axis
+        self.y_ = []
+
+        # Reset future derivative
+        self.dydt_ = []
+
+
+
+    def predict(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREDICT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
+
+
+
 class BasalProfile(Profile):
 
     def __init__(self, choice):
@@ -1591,188 +1553,6 @@ class NetProfile(Profile):
 
 
 
-class IOBProfile(Profile):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(self.__class__, self).__init__()
-
-        # Initialize future components
-        self.T_ = []
-        self.t_ = []
-        self.y_ = []
-        self.dydt_ = []
-
-        # Define type
-        self.type = "Dot"
-
-        # Define units
-        self.units = "U"
-
-        # Define report info
-        self.report = "treatments.json"
-        self.path = []
-        self.key = "IOB"
-
-
-
-    def compute(self, net, IDC):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decouple net insulin profile components
-        t = net.t
-        y = net.y
-
-        # Initialize current IOB
-        IOB = 0
-
-        # Get number of steps
-        n = len(t)
-
-        # Compute IOB
-        for i in range(n - 1):
-
-            # Compute remaining IOB factor based on integral of IDC
-            r = IDC.F(t[i + 1]) - IDC.F(t[i])
-
-            # Compute active insulin remaining for current step
-            IOB += r * y[i]
-
-        print "IOB: " + str(IOB)
-
-        # Return IOB
-        return IOB
-
-
-
-    def predict(self, net, IDC):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREDICT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Predicting IOB..."
-
-        # Initialize new partial net insulin profile
-        new = Profile()
-
-        # Initialize components
-        T = []
-        y = []
-
-        # Define timestep (h)
-        dt = 5.0 / 60.0
-
-        # Compute number of steps
-        n = int(IDC.DIA / dt) + 1
-
-        # Generate time axis
-        axis = np.linspace(IDC.DIA, 0, n)
-
-        # Convert time axis to datetime objects
-        axis = [net.end - datetime.timedelta(hours = x) for x in axis]
-
-        # Compute IOB decay
-        for i in range(n):
-
-            # Reset partial profile
-            new.reset()
-
-            # Set limits of partial profile (moving window)
-            new.start = axis[i]
-            new.end = axis[i] + datetime.timedelta(hours = IDC.DIA)
-
-            # Initialize start/end times
-            new.T.append(new.start)
-            new.T.append(new.end)
-
-            # Initialize start/end values
-            new.y.append(None)
-            new.y.append(0)
-
-            # Fill profile
-            new.fill(net)
-
-            # Smooth profile
-            new.smooth()
-
-            # Normalize profile
-            new.normalize()
-
-            # Compute IOB for current time
-            IOB = self.compute(new, IDC)
-
-            # Store prediction time
-            T.append(new.end)
-
-            # Store IOB
-            y.append(IOB)
-
-        # Update profile
-        self.update(T, y)
-
-        # Give user info
-        print "Predicted IOB(s):"
-
-        # Give user info
-        for i in range(n):
-
-            # Get current time and IOB
-            t = lib.formatTime(self.T[i])
-            y = self.y[i]
-
-            # Print IOB
-            print str(y) + " U (" + str(t) + ")"
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: only stores current IOB for later displaying purposes.
-        """
-
-        # Give user info
-        print "Adding current IOB to report: '" + self.report + "'..."
-
-        # Format time
-        t = lib.formatTime(self.T[0])
-
-        # Round value
-        y = round(self.y[0], 3)
-
-        # Load report
-        Reporter.load(self.report)
-
-        # Add entries
-        Reporter.addEntries(["IOB"], t, y)
-
-
-
-class COBProfile(Profile):
-    pass
-
-
-
 class ISFProfile(Profile):
 
     def __init__(self):
@@ -1914,7 +1694,7 @@ class BGTargets(Profile):
 
 
 
-class BGProfile(Profile):
+class BGProfile(FutureProfile):
 
     def __init__(self):
 
@@ -1926,12 +1706,6 @@ class BGProfile(Profile):
 
         # Start initialization
         super(self.__class__, self).__init__()
-
-        # Initialize future components
-        self.T_ = []
-        self.t_ = []
-        self.y_ = []
-        self.dydt_ = []
 
         # Define type
         self.type = "Dot"
@@ -2084,7 +1858,7 @@ class BGProfile(Profile):
 
         # Give user info
         print "Initial BG: " + str(BG) + " " + self.units
-        print "Initial IOB: " + str(round(IOB.y[0], 1)) + " U"
+        print "Initial IOB: " + str(round(IOB.y_[0], 1)) + " U"
 
         # Define prediction limit to cut ISF profile
         a = ISF.T[0]
@@ -2111,7 +1885,7 @@ class BGProfile(Profile):
             b = isf.t[i] - IDC.DIA
 
             # Compute IOB change
-            dIOB = IOB.y[0] * (IDC.f(b) - IDC.f(a))
+            dIOB = IOB.y_[0] * (IDC.f(b) - IDC.f(a))
 
             # Give user info
             print "dIOB: " + str(round(dIOB, 1)) + " U"
@@ -2136,11 +1910,11 @@ class BGProfile(Profile):
 
 
 
-    def decay(self, IOB, ISF):
+    def predict(self, IOB, ISF):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECAY
+            PREDICT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
         Use IOB and ISF to predict where BG will land after insulin activity is
@@ -2209,18 +1983,19 @@ class BGProfile(Profile):
 
 
 
-    def predict(self, IDC, IOB, ISF, dt = 0.5):
+    def deviate(self, IDC, IOB, ISF, dt = 0.5):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREDICT
+            DEVIATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Note: prediction time should be set to 0.5 h
+        Compute deviation from expected BG value. Prediction time should be set
+        to 0.5 h.
         """
 
         # Give user info
-        print "Predicting BG..."
+        print "Deviating BG..."
 
         # Compute projected BG based on latest CGM readings
         projectedBG = self.project(dt)
@@ -2232,7 +2007,7 @@ class BGProfile(Profile):
         BGI = self.impact()
 
         # Compute BGI (dBG/dt) based on IOB decay
-        expectedBGI = IOB.dydt[0] * ISF.y[0]
+        expectedBGI = IOB.dydt_[0] * ISF.y[0]
 
         # Compute deviation between BGs
         deviationBG = projectedBG - expectedBG
@@ -2261,6 +2036,183 @@ class BGProfile(Profile):
 
 
 
+class IOBProfile(FutureProfile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__()
+
+        # Define type
+        self.type = "Dot"
+
+        # Define units
+        self.units = "U"
+
+        # Define report info
+        self.report = "treatments.json"
+        self.path = []
+        self.key = "IOB"
+
+
+
+    def compute(self, net, IDC):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decouple net insulin profile components
+        t = net.t
+        y = net.y
+
+        # Initialize current IOB
+        IOB = 0
+
+        # Get number of steps
+        n = len(t)
+
+        # Compute IOB
+        for i in range(n - 1):
+
+            # Compute remaining IOB factor based on integral of IDC
+            r = IDC.F(t[i + 1]) - IDC.F(t[i])
+
+            # Compute active insulin remaining for current step
+            IOB += r * y[i]
+
+        print "IOB: " + str(IOB) + " U"
+
+        # Return IOB
+        return IOB
+
+
+
+    def predict(self, net, IDC):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREDICT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # TODO: testing required...
+
+        # Give user info
+        print "Predicting IOB..."
+
+        # Define timestep (h)
+        dt = 5.0 / 60.0
+
+        # Compute number of steps
+        n = int(IDC.DIA / dt) + 1
+
+        # Generate time axis
+        t = np.linspace(0, IDC.DIA, n)
+
+        # Convert to datetime objects
+        t = [datetime.timedelta(hours = x) for x in t]
+
+        # Compute IOB decay
+        for i in range(n):
+
+            # Copy net insulin profile
+            new = copy.copy(net)
+
+            # Reset it
+            new.reset()
+
+            # Initialize start/end times
+            new.T.append(new.start)
+            new.T.append(new.end)
+
+            # Initialize start/end values
+            new.y.append(None)
+            new.y.append(0)
+
+            # Fill profile
+            new.fill(net)
+
+            # Smooth profile
+            new.smooth()
+
+            # Normalize profile
+            new.normalize(net.end + t[i])
+
+            # Compute IOB for current time
+            IOB = self.compute(new, IDC)
+
+            # Store prediction time
+            self.T_.append(new.end)
+
+            # Store IOB
+            self.y_.append(IOB)
+
+        # FIXME Bugs here!
+        print self.y_
+        sys.exit()
+
+        # Normalize
+        self.normalize()
+
+        # Derivate
+        self.derivate()
+
+        # Give user info
+        print "Predicted IOB(s):"
+
+        # Give user info
+        for i in range(n):
+
+            # Get current time and IOB
+            T = lib.formatTime(self.T_[i])
+            y = self.y_[i]
+
+            # Print IOB
+            print str(y) + " U (" + str(T) + ")"
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: only stores current IOB for later displaying purposes.
+        """
+
+        # Give user info
+        print "Adding current IOB to report: '" + self.report + "'..."
+
+        # Format time
+        T = lib.formatTime(self.T_[0])
+
+        # Round value
+        y = round(self.y_[0], 3)
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Add entries
+        Reporter.addEntries(["IOB"], T, y)
+
+
+
+class COBProfile(Profile):
+    pass
+
+
+
 class IDC(object):
 
     def __init__(self, DIA):
@@ -2285,6 +2237,33 @@ class IDC(object):
 
 
 
+    def verify(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Verify that given time is within insulin's range of action.
+        """
+
+        # If too old
+        if t < -self.DIA:
+
+            # Bring it back up
+            t = -self.DIA
+
+        # If too new
+        elif t > 0:
+
+            # Bring it back down
+            t = 0
+
+        # Return verified time
+        return t
+
+
+
     def f(self, t):
 
         """
@@ -2295,6 +2274,9 @@ class IDC(object):
         Gives fraction of active insulin remaining in body t hours after
         enacting it. Takes negative input!
         """
+
+        # Verify time
+        t = self.verify(t)
 
         # Compute f(t) of IDC
         f = (self.m4 * t ** 4 +
@@ -2315,6 +2297,9 @@ class IDC(object):
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Verify time
+        t = self.verify(t)
 
         # Compute F(t) of IDC
         F = (self.m4 * t ** 5 / 5 +
@@ -2395,6 +2380,14 @@ def main():
 
     # Run calculator
     calculator.run()
+
+    # Predict IOB decay
+    #calculator.IOB.predict(self.net, self.IDC)
+
+    # Compute BG
+    #calculator.BG.decay(self.IOB, self.ISF)
+    #calculator.BG.expect(self.IDC, self.IOB, self.ISF)
+    #calculator.BG.deviate(self.IDC, self.IOB, self.ISF)
 
 
 

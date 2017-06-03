@@ -23,6 +23,7 @@
 """
 
 # LIBRARIES
+import datetime
 
 
 
@@ -44,6 +45,9 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize current time
+        self.now = None
+
         # Give the loop a CGM
         self.cgm = cgm.CGM()
 
@@ -63,8 +67,8 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Dump about 24 h of CGM readings (38 records per page)
-        self.cgm.dumpBG(8)
+        # Dump CGM readings
+        self.cgm.dumpLastBG()
 
         # Read pump's history
         #self.pump.history.read()
@@ -79,11 +83,98 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define current time
+        self.now = datetime.datetime.now()
+
         # Prepare to loop
         self.prepare()
 
-        # Compute recommendation based on latest BG
-        self.calc.run()
+        # Run calculator
+        self.calc.run(self.now)
+
+        # Show loop
+        self.show(self.calc.net,
+                  self.calc.BG,
+                  self.calc.IOB,
+                  self.calc.IDC.DIA)
+
+
+
+    def show(self, net, BG, IOB, DIA):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize plot
+        mpl.rc("font", size = 10, family = "Ubuntu")
+        fig = plt.figure(0, figsize = (10, 8))
+        axes = [plt.subplot(221),
+                plt.subplot(222),
+                plt.subplot(223),
+                plt.subplot(224)]
+
+        # Define titles
+        titles = ["BG", "Net Insulin Profile", "IOB", "COB"]
+
+        # Define axis labels
+        x = ["(h)"] * 4
+        y = ["(" + BG.units + ")",
+             "(U/h)",
+             "(U)",
+             "(g)"]
+
+        # Define axis limits
+        xlim = [[-DIA, DIA]] * 4
+        ylim = [[2, 20], None, None, None]
+
+        # Define subplots
+        for i in range(4):
+
+            # Set titles
+            axes[i].set_title(titles[i], fontweight = "semibold")
+
+            # Set x-axis labels
+            axes[i].set_xlabel(x[i])
+
+            # Set y-axis labels
+            axes[i].set_ylabel(y[i])
+
+            # Set x-axis limits
+            #axes[i].set_xlim(xlim[i])
+
+        # Set y-axis limits
+        axes[0].set_ylim(ylim[0])
+
+        # Add BGs to plot
+        axes[0].plot(BG.t, BG.y, marker = "o", ms = 3.5, lw = 0, c = "red")
+
+        # Add BG predictions to plot
+        axes[0].plot(BG.t_, BG.y_, marker = "o", ms = 3.5, lw = 0, c = "black")
+
+        # Add net insulin profile to plot
+        axes[1].step(net.t, np.append(0, net.y[:-1]), lw = 2, ls = "-",
+                                                      c = "#ff7500")
+
+        # Add IOB to plot
+        axes[2].plot([-DIA, 0], [0, 0], lw = 2, ls = "-", c = "purple")
+
+        # Add IOB predictions to plot
+        axes[2].plot(IOB.t, IOB.y, lw = 2, ls = "-", c = "black")
+
+        # Add COB to plot
+        axes[3].plot([-DIA, 0], [0, 0], lw = 2, ls = "-", c = "#99e500")
+
+        # Add COB predictions to plot
+        axes[3].plot([0, DIA], [0, 0], lw = 2, ls = "-", c = "black")
+
+        # Tighten up
+        plt.tight_layout()
+
+        # Show plot
+        plt.show()
 
 
 

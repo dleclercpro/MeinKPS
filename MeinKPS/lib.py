@@ -50,7 +50,7 @@ def derivate(x, t):
     D = dx / dt
 
     # Return derivative
-    return D
+    return list(D)
 
 
 
@@ -139,6 +139,33 @@ def formatTime(t):
             t = datetime.datetime.strptime(t, F).time()
 
     return t
+
+
+
+def normalizeTime(t, T):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        NORMALIZETIME
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Compare time to reference
+    if t >= T:
+
+        # Compute positive time difference (s)
+        dt = (t - T).seconds
+
+    else:
+
+        # Compute negative time difference (s)
+        dt = -(T - t).seconds
+
+    # Convert time difference to hours
+    dt /= 3600.0
+
+    # Return time difference
+    return dt
 
 
 
