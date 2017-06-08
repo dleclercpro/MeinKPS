@@ -138,6 +138,10 @@ def formatTime(t):
 
             t = datetime.datetime.strptime(t, F).time()
 
+        else:
+
+            pass
+
     return t
 
 

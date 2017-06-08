@@ -24,8 +24,6 @@
 
 # LIBRARIES
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import datetime
 import copy
 import sys
@@ -70,10 +68,10 @@ class Calculator(object):
         self.bolus = BolusProfile()
 
         # Give calculator a net profile
-        self.net = NetProfile()
+        self.net = SuspendProfile()
 
         # Give calculator an IOB profile
-        self.IOB = IOBProfile()
+        self.IOB = FutureIOBProfile(PastIOBProfile())
 
         # Give calculator a COB profile
         self.COB = COBProfile()
@@ -88,7 +86,7 @@ class Calculator(object):
         self.BGTargets = BGTargets()
 
         # Give calculator a BG profile
-        self.BG = BGProfile()
+        self.BG = FutureBGProfile(PastBGProfile())
 
         # Initialize maxes
         self.max = {"Basal": None,
@@ -111,7 +109,7 @@ class Calculator(object):
         self.prepare(now)
 
         # Recommend action
-        self.recommend()
+        #self.recommend()
 
 
 
@@ -175,11 +173,11 @@ class Calculator(object):
         # Define IDC
         self.IDC = WalshIDC(self.DIA)
 
-        # Build IOB profile
-        self.IOB.build(past, now)
+        # Build past IOB profile
+        self.IOB.past.build(past, now)
 
         # Predict future of IOB profile
-        self.IOB.predict(self.net, self.IDC)
+        #self.IOB.predict(self.net, self.IDC)
 
         # Build COB profile
         #self.COB.build(past, now)
@@ -193,8 +191,8 @@ class Calculator(object):
         # Build BG targets profile (over the next DIA)
         self.BGTargets.build(now, future)
 
-        # Build BG profile
-        self.BG.build(past, now)
+        # Build past BG profile
+        self.BG.past.build(past, now)
 
         # Predict future of BG profile
         #self.BG.predict(self.IOB, self.ISF)
@@ -310,7 +308,7 @@ class Calculator(object):
 
 class Profile(object):
 
-    def __init__(self, start = None, end = None):
+    def __init__(self, start = None, end = None, norm = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -333,11 +331,8 @@ class Profile(object):
         # Initialize step durations
         self.d = []
 
-        # Initialize profile type
-        self.type = "Step"
-
-        # Initialize time reference
-        self.norm = "End"
+        # Initialize units
+        self.u = None
 
         # Initialize profile start
         self.start = start
@@ -345,19 +340,43 @@ class Profile(object):
         # Initialize profile end
         self.end = end
 
+        # Initialize time reference
+        self.norm = norm
+
+        # Initialize profile type
+        self.type = "Step"
+
         # Initialize zero
         self.zero = None
 
         # Initialize data
         self.data = None
 
-        # Initialize units
-        self.units = None
-
         # Initialize report info
         self.report = None
         self.path = []
         self.key = None
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Reset profile components.
+        """
+
+        # Give user info
+        print "Resetting..."
+
+        # Reset components
+        self.T = []
+        self.t = []
+        self.y = []
+        self.dydt = []
 
 
 
@@ -377,9 +396,6 @@ class Profile(object):
 
         # Define end of profile
         self.end = end
-
-        # Reset profile
-        self.reset()
 
         # Load profile components
         self.load()
@@ -409,70 +425,6 @@ class Profile(object):
         self.normalize()
 
         # Compute profile derivative
-        self.derivate()
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Reset profile components.
-        """
-
-        # Give user info
-        print "Resetting..."
-
-        # Reset time axis
-        self.T = []
-
-        # Reset normalized time axis
-        self.t = []
-
-        # Reset y-axis
-        self.y = []
-
-        # Reset derivative
-        self.dydt = []
-
-        # Reset step durations
-        self.d = []
-
-        # Reset data
-        self.data = None
-
-
-
-    def update(self, T, y, d = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UPDATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Update profile components.
-        """
-
-        # Give user info
-        print "Updating..."
-
-        # Update components
-        self.T = T
-        self.y = y
-
-        # If duration steps given
-        if d is not None:
-
-            # Update them
-            self.d = d
-
-        # Renormalize
-        self.normalize()
-
-        # Rederivate
         self.derivate()
 
 
@@ -514,6 +466,9 @@ class Profile(object):
         # Give user info
         print "Decoupling components..."
 
+        # Reset components
+        self.reset()
+
         # Decouple components
         for t in sorted(self.data):
 
@@ -531,7 +486,7 @@ class Profile(object):
 
 
 
-    def map(self, now = None):
+    def map(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -542,14 +497,20 @@ class Profile(object):
         # Give user info
         print "Mapping time..."
 
-        # If no current time given
-        if now is None:
+        # If past profile
+        if self.norm == "Start":
 
-            # Set end of profile as default
+            # Define now
+            now = self.start
+
+        # If past profile
+        elif self.norm == "End":
+
+            # Define now
             now = self.end
 
         # Initialize profile components
-        t = []
+        T = []
         y = []
 
         # Get number of entries
@@ -558,14 +519,8 @@ class Profile(object):
         # Rebuild profile
         for i in range(n):
 
-            # Get time
-            T = self.T[i]
-
-            # Generate datetime object
-            T = datetime.datetime.combine(now, T)
-
             # Add time
-            t.append(T)
+            T.append(datetime.datetime.combine(now, self.T[i]))
 
             # Add value
             y.append(self.y[i])
@@ -578,7 +533,7 @@ class Profile(object):
         for i in range(n - 1):
 
             # Current time criteria
-            if t[i] <= now < t[i + 1]:
+            if T[i] <= now < T[i + 1]:
 
                 # Store index
                 index = i
@@ -590,17 +545,17 @@ class Profile(object):
         for i in range(n):
 
             # Find times in future and bring them in the past
-            if t[i] > t[index]:
+            if T[i] > T[index]:
 
                 # Update time
-                t[i] -= datetime.timedelta(days = 1)
+                T[i] -= datetime.timedelta(days = 1)
 
         # Zip and sort profile
-        z = sorted(zip(t, y))
+        z = sorted(zip(T, y))
 
         # Update profile
-        self.update([x for x, y in z],
-                    [y for x, y in z])
+        self.T = [x for x, y in z]
+        self.y = [y for x, y in z]
 
 
 
@@ -666,7 +621,9 @@ class Profile(object):
                 d.insert(0, self.d[index])
 
         # Update profile
-        self.update(T, y, d)
+        self.T = T
+        self.y = y
+        self.d = d
 
 
 
@@ -725,7 +682,8 @@ class Profile(object):
                     y.append(self.zero)
 
             # Update profile
-            self.update(T, y)
+            self.T = T
+            self.y = y
 
         # No step durations
         else:
@@ -755,15 +713,6 @@ class Profile(object):
             # Set default limits
             a = self.start
             b = self.end
-
-            # Set extract boolean
-            extract = False
-
-        # Otherwise
-        else:
-
-            # Set extract boolean
-            extract = True
 
         # Verify limit types
         if type(a) is not type(b):
@@ -827,23 +776,9 @@ class Profile(object):
                 # Add rate
                 y.append(y[-1])
 
-        # Return new profile
-        if extract:
-
-            # Copy profile
-            new = copy.copy(self)
-
-            # Assign cutted axes
-            new.update(T, y)
-
-            # Return cutted profile
-            return new
-
         # Update profile
-        else:
-
-            # Do it
-            self.update(T, y)
+        self.T = T
+        self.y = y
 
 
 
@@ -900,7 +835,8 @@ class Profile(object):
                 y.append(self.y[i])
 
         # Update profile
-        self.update(T, y)
+        self.T = T
+        self.y = y
 
 
 
@@ -946,7 +882,8 @@ class Profile(object):
             y.append(self.y[-1])
 
             # Update profile
-            self.update(T, y)
+            self.T = T
+            self.y = y
 
         # Dot profiles
         else:
@@ -969,47 +906,59 @@ class Profile(object):
         # Give user info
         print "Normalizing..."
 
-        # Verify if norm was left empty
-        if T is None:
+        # Check if profile is normalizable
+        if self.T:
 
-            # Decide which reference time to use for normalization
-            if self.norm == "Start":
+            # Verify if norm was left empty
+            if T is None:
 
-                # From start
-                T = self.start
+                # Decide which reference time to use for normalization
+                if self.norm == "Start":
 
-            elif self.norm == "End":
+                    # From start
+                    T = self.start
 
-                # From end
-                T = self.end
+                elif self.norm == "End":
 
-            else:
+                    # From end
+                    T = self.end
+
+                else:
+
+                    # Exit
+                    sys.exit("Time axis cannot be normalized: profile does " +
+                             "not have a norm. Exiting...")
+
+            # Before using given reference time, verify its type
+            elif type(T) is not datetime.datetime:
 
                 # Exit
-                sys.exit("Time axis cannot be normalized since profile does " +
-                         "not have a norm. Exiting...")
+                sys.exit("Time axis can only be normalized using a datetime " +
+                         "object. Exiting...")
 
-        # Before using given reference time, verify its type
-        elif type(T) is not datetime.datetime:
+            # Initialize normalized axis
+            t = []
 
-            # Exit
-            sys.exit("Time axis can only be normalized using a datetime " +
-                     "object. Exiting...")
+            # Get number of steps in profile
+            n = len(self.T)
 
-        # Reset normalization
-        self.t = []
+            # Normalize time
+            for i in range(n):
 
-        # Get number of steps in profile
-        n = len(self.T)
+                # Add step (h)
+                t.append(lib.normalizeTime(self.T[i], T))
 
-        # Normalize time
-        for i in range(n):
+            # Update normalized axis
+            self.t = t
 
-            # Add step (h)
-            self.t.append(lib.normalizeTime(self.T[i], T))
+            # Show current state of profile
+            self.show()
 
-        # Show current state of profile
-        self.show()
+        # Otherwise
+        else:
+
+            # Give user info
+            print "Profiles without time axes cannot be normalized. Exiting..."
 
 
 
@@ -1032,6 +981,9 @@ class Profile(object):
             # Derivate
             self.dydt = lib.derivate(self.y, self.t)
 
+            # Show current state of profile
+            self.show()
+
         # Otherwise
         else:
 
@@ -1050,42 +1002,49 @@ class Profile(object):
         Show profile components.
         """
 
-        # If time axis exists
-        if self.T:
+        # Define profile dictionary
+        profile = {"Standard t-axis": [self.T, self.y],
+                   "Normalized t-axis": [self.t, self.y],
+                   "Derivative": [self.t, self.dydt]}
 
-            # Give user info
-            print "Standard t-axis:"
+        # Loop on each profile component
+        for p in profile:
 
-            # Show profile
-            for i in range(len(self.T)):
+            # Get axes
+            axes = profile[p]
 
-                # Give user info
-                print str(self.y[i]) + " - (" + lib.formatTime(self.T[i]) + ")"
-
-        # If normalized time axis exists
-        if self.t:
-
-            # Give user info
-            print "Normalized t-axis:"
-
-            # Show profile
-            for i in range(len(self.t)):
+            # If component exists
+            if axes[0] and axes[1]:
 
                 # Give user info
-                print str(self.y[i]) + " - (" + str(self.t[i]) + ")"
+                print p
 
-        # If derivative exists
-        if self.dydt:
+                # Read number of entries
+                n = len(axes[1])
 
-            # Give user info
-            print "Derivative:"
+                # Show profile
+                for i in range(n):
 
-            # Show profile
-            for i in range(len(self.t) - 1):
+                    # Get time
+                    t = axes[0][i]
 
-                # Give user info
-                print (str(round(self.dydt[i], 1)) + " - (" +
-                       lib.formatTime(self.T[i]) + ")")
+                    # Format time if necessary
+                    if type(t) is not float:
+
+                        # Format it
+                        t = lib.formatTime(t)
+
+                    # Get value
+                    y = axes[1][i]
+
+                    # Format value if necessary
+                    if type(y) is float:
+
+                        # Format it
+                        y = round(y, 1)
+
+                    # Give user info
+                    print str(y) + " - (" + str(t) + ")"
 
 
 
@@ -1220,7 +1179,7 @@ class Profile(object):
         self.validate(operands)
 
         # Generate new profile with same limits
-        new = Profile(self.start, self.end)
+        new = Profile(self.start, self.end, self.norm)
 
         # Merge all steps
         new.T = lib.uniqify(self.T + lib.flatten([p.T for p in operands]))
@@ -1289,9 +1248,27 @@ class Profile(object):
 
 
 
-class FutureProfile(Profile):
+class PastProfile(Profile):
 
     def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(PastProfile, self).__init__()
+
+        # Define time reference
+        self.norm = "End"
+
+
+
+class FutureProfile(Profile):
+
+    def __init__(self, past = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1302,62 +1279,17 @@ class FutureProfile(Profile):
         # Start initialization
         super(FutureProfile, self).__init__()
 
-        # Initialize future time axis
-        self.T_ = []
+        # Define time reference
+        self.norm = "Start"
 
-        # Initialize future normalized time axis
-        self.t_ = []
-
-        # Initialize future y-axis
-        self.y_ = []
-
-        # Initialize future derivative
-        self.dydt_ = []
+        # Link with past profile
+        self.past = past
 
 
 
-    def reset(self):
+class BasalProfile(PastProfile):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Reset profile components.
-        """
-
-        # Start resetting
-        super(FutureProfile, self).reset()
-
-        # Reset future time axis
-        self.T_ = []
-
-        # Reset future normalized time axis
-        self.t_ = []
-
-        # Reset future y-axis
-        self.y_ = []
-
-        # Reset future derivative
-        self.dydt_ = []
-
-
-
-    def predict(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREDICT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        pass
-
-
-
-class BasalProfile(Profile):
-
-    def __init__(self, choice):
+    def __init__(self, profile):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1366,18 +1298,18 @@ class BasalProfile(Profile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
+        super(BasalProfile, self).__init__()
 
         # Define units
-        self.units = "U/h"
+        self.u = "U/h"
 
         # Define report info
         self.report = "pump.json"
-        self.key = "Basal Profile (" + choice + ")"
+        self.key = "Basal Profile (" + profile + ")"
 
 
 
-class TBRProfile(Profile):
+class TBRProfile(PastProfile):
 
     def __init__(self):
 
@@ -1388,10 +1320,10 @@ class TBRProfile(Profile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
+        super(TBRProfile, self).__init__()
 
         # Renitialize units
-        self.units = []
+        self.u = []
 
         # Define report info
         self.report = "treatments.json"
@@ -1408,7 +1340,7 @@ class TBRProfile(Profile):
         """
 
         # Start decoupling
-        super(self.__class__, self).decouple()
+        super(TBRProfile, self).decouple()
 
         # Get number of steps
         n = len(self.T)
@@ -1420,9 +1352,9 @@ class TBRProfile(Profile):
             self.d.append(datetime.timedelta(minutes = self.y[i][2]))
 
             # Get units
-            self.units.append(self.y[i][1])
+            self.u.append(self.y[i][1])
 
-            # Update to rate
+            # Get rate
             self.y[i] = self.y[i][0]
 
 
@@ -1436,7 +1368,7 @@ class TBRProfile(Profile):
         """
 
         # Start filtering
-        super(self.__class__, self).filter()
+        super(TBRProfile, self).filter()
 
         # Get number of steps
         n = len(self.T)
@@ -1445,14 +1377,14 @@ class TBRProfile(Profile):
         for i in range(n):
 
             # Units currently supported
-            if self.units[i] != "U/h":
+            if self.u[i] != "U/h":
 
                 # Give user info
                 sys.exit("TBR units mismatch. Exiting...")
 
 
 
-class BolusProfile(Profile):
+class BolusProfile(PastProfile):
 
     def __init__(self):
 
@@ -1463,16 +1395,16 @@ class BolusProfile(Profile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
+        super(BolusProfile, self).__init__()
+
+        # Define units
+        self.u = "U/h"
 
         # Define profile zero
         self.zero = 0
 
         # Define bolus delivery rate
         self.rate = 90.0
-
-        # Define units
-        self.units = "U/h"
 
         # Define report info
         self.report = "treatments.json"
@@ -1489,7 +1421,7 @@ class BolusProfile(Profile):
         """
 
         # Start decoupling
-        super(self.__class__, self).decouple()
+        super(BolusProfile, self).decouple()
 
         # Get number of steps
         n = len(self.T)
@@ -1497,15 +1429,15 @@ class BolusProfile(Profile):
         # Decouple components
         for i in range(n):
 
-            # Compute delivery time
-            self.d.append(datetime.timedelta(hours = 1 / self.rate * self.y[i]))
-
             # Convert bolus to delivery rate
             self.y[i] = self.rate
 
+            # Compute delivery time
+            self.d.append(datetime.timedelta(hours = 1 / self.rate * self.y[i]))
 
 
-class NetProfile(Profile):
+
+class SuspendProfile(PastProfile):
 
     def __init__(self):
 
@@ -1516,10 +1448,10 @@ class NetProfile(Profile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
+        super(SuspendProfile, self).__init__()
 
         # Define units
-        self.units = "U/h"
+        self.u = "U/h"
 
         # Define report info
         self.report = "history.json"
@@ -1537,7 +1469,7 @@ class NetProfile(Profile):
         """
 
         # Start decoupling
-        super(self.__class__, self).decouple()
+        super(SuspendProfile, self).decouple()
 
         # Get number of steps
         n = len(self.T)
@@ -1553,7 +1485,7 @@ class NetProfile(Profile):
 
 
 
-class ISFProfile(Profile):
+class ISFProfile(FutureProfile):
 
     def __init__(self):
 
@@ -1564,10 +1496,7 @@ class ISFProfile(Profile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
-
-        # Define norm
-        self.norm = "Start"
+        super(ISFProfile, self).__init__()
 
         # Define report info
         self.report = "pump.json"
@@ -1586,17 +1515,17 @@ class ISFProfile(Profile):
         Reporter.load(self.report)
 
         # Read units
-        self.units = Reporter.getEntry([], "BG Units") + "/U"
+        self.u = Reporter.getEntry([], "BG Units") + "/U"
 
         # Define report info
-        self.key = "ISF (" + self.units + ")"
+        self.key = "ISF (" + self.u + ")"
 
         # Load rest
-        super(self.__class__, self).load()
+        super(ISFProfile, self).load()
 
 
 
-class CSFProfile(Profile):
+class CSFProfile(FutureProfile):
 
     def __init__(self):
 
@@ -1607,10 +1536,7 @@ class CSFProfile(Profile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
-
-        # Define norm
-        self.norm = "Start"
+        super(CSFProfile, self).__init__()
 
         # Define report info
         self.report = "pump.json"
@@ -1629,29 +1555,29 @@ class CSFProfile(Profile):
         Reporter.load(self.report)
 
         # Read units
-        self.units = Reporter.getEntry([], "Carb Units")
+        self.u = Reporter.getEntry([], "Carb Units")
 
         # In case of grams
-        if self.units == "g":
+        if self.u == "g":
 
             # Adapt units
-            self.units = self.units + "/U"
+            self.u = self.u + "/U"
 
         # In case of exchanges
-        elif self.units == "exchange":
+        elif self.u == "exchange":
 
             # Adapt units
-            self.units = "U/" + self.units
+            self.u = "U/" + self.u
 
         # Define report info
-        self.key = "CSF (" + self.units + ")"
+        self.key = "CSF (" + self.u + ")"
 
         # Load rest
-        super(self.__class__, self).load()
+        super(CSFProfile, self).load()
 
 
 
-class BGTargets(Profile):
+class BGTargets(FutureProfile):
 
     def __init__(self):
 
@@ -1662,10 +1588,7 @@ class BGTargets(Profile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
-
-        # Define norm
-        self.norm = "Start"
+        super(BGTargets, self).__init__()
 
         # Define report info
         self.report = "pump.json"
@@ -1684,17 +1607,17 @@ class BGTargets(Profile):
         Reporter.load(self.report)
 
         # Read units
-        self.units = Reporter.getEntry([], "BG Units")
+        self.u = Reporter.getEntry([], "BG Units")
 
         # Define report info
-        self.key = "BG Targets (" + self.units + ")"
+        self.key = "BG Targets (" + self.u + ")"
 
         # Load rest
-        super(self.__class__, self).load()
+        super(BGTargets, self).load()
 
 
 
-class BGProfile(FutureProfile):
+class PastBGProfile(PastProfile):
 
     def __init__(self):
 
@@ -1705,32 +1628,13 @@ class BGProfile(FutureProfile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
+        super(PastBGProfile, self).__init__()
 
         # Define type
         self.type = "Dot"
 
         # Define report info
         self.report = "BG.json"
-
-
-
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load pump report
-        Reporter.load("pump.json")
-
-        # Read units
-        self.units = Reporter.getEntry([], "BG Units")
-
-        # Load rest
-        super(self.__class__, self).load()
 
 
 
@@ -1789,15 +1693,57 @@ class BGProfile(FutureProfile):
         if n > 2:
 
             # Average dBG/dt
-            BGI = np.mean(self.dydt_[-(n - 1):])
+            BGI = np.mean(self.dydt[-(n - 1):])
 
         else:
 
             # Last dBG/dt
-            BGI = self.dydt_[-1]
+            BGI = self.dydt[-1]
 
         # Return dBG/dt
         return BGI
+
+
+
+
+
+
+
+
+
+
+
+class FutureBGProfile(FutureProfile):
+
+    def __init__(self, past):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(FutureBGProfile, self).__init__(past)
+
+        # Define type
+        self.type = "Dot"
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load("pump.json")
+
+        # Read units
+        self.u = Reporter.getEntry([], "BG Units")
 
 
 
@@ -1815,13 +1761,10 @@ class BGProfile(FutureProfile):
         print "Projection time: " + str(dt) + " h"
 
         # Read latest BG
-        BG = self.y[-1]
-
-        # Derivate
-        self.dydt_ = lib.derivate(self.y, self.t)
+        BG = self.past.y[-1]
 
         # Compute derivative to use when predicting future BG
-        dBGdt = self.impact()
+        dBGdt = self.past.impact()
 
         # Predict future BG
         BG += dBGdt * dt
@@ -1854,18 +1797,21 @@ class BGProfile(FutureProfile):
         print "Expectation time: " + str(dt) + " h"
 
         # Read latest BG
-        BG = self.y[-1]
+        BG = self.past.y[-1]
 
         # Give user info
-        print "Initial BG: " + str(BG) + " " + self.units
-        print "Initial IOB: " + str(round(IOB.y_[0], 1)) + " U"
+        print "Initial BG: " + str(BG) + " " + self.u
+        print "Initial IOB: " + str(round(IOB.y[0], 1)) + " U"
 
         # Define prediction limit to cut ISF profile
         a = ISF.T[0]
         b = a + datetime.timedelta(hours = dt)
 
-        # Cut ISF profile
-        isf = ISF.cut(a, b)
+        # Copy ISF profile
+        isf = copy.copy(ISF)
+
+        # Cut it
+        isf.cut(a, b)
 
         # Get number of ISF steps
         n = len(isf.T)
@@ -1894,13 +1840,13 @@ class BGProfile(FutureProfile):
             dBG = isf.y[i] * dIOB
 
             # Give user info
-            print "dBG: " + str(round(dBG, 1)) + " " + self.units
+            print "dBG: " + str(round(dBG, 1)) + " " + self.u
 
             # Add BG impact
             BG += dBG
 
             # Print eventual BG
-            print "BG: " + str(round(BG, 1)) + " " + self.units
+            print "BG: " + str(round(BG, 1)) + " " + self.u
 
         # Make some air
         print
@@ -1964,13 +1910,13 @@ class BGProfile(FutureProfile):
             dBG = isf * dIOB
 
             # Give user info
-            print "dBG: " + str(dBG) + " " + self.units
+            print "dBG: " + str(dBG) + " " + self.u
 
             # Add BG impact
             BG += dBG
 
             # Print eventual BG
-            print "BG: " + str(round(BG, 1)) + " " + self.units
+            print "BG: " + str(round(BG, 1)) + " " + self.u
 
             # Store current BG
             self.y_.append(BG)
@@ -1979,7 +1925,7 @@ class BGProfile(FutureProfile):
             print
 
         # Give user info
-        print "Eventual BG: " + str(round(BG, 1)) + " " + self.units
+        print "Eventual BG: " + str(round(BG, 1)) + " " + self.u
 
 
 
@@ -2016,27 +1962,33 @@ class BGProfile(FutureProfile):
         deviationBGI = BGI - expectedBGI
 
         # Give user info (about BG)
-        print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.units
-        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.units
-        print "BG deviation: " + str(round(deviationBG, 1)) + " " + self.units
+        print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.u
+        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.u
+        print "BG deviation: " + str(round(deviationBG, 1)) + " " + self.u
 
         # Make some air
         print
 
         # Give user info (about BGI)
-        print ("Expected BGI: " + str(round(expectedBGI, 1)) + " " +
-               self.units + "/h")
-        print ("BGI: " + str(round(BGI, 1)) + " " +
-               self.units + "/h")
-        print ("BGI deviation: " + str(round(deviationBGI, 1)) + " " +
-               self.units + "/h")
+        print ("Expected BGI: " + str(round(expectedBGI, 1)) + " " + self.u +
+               "/h")
+        print ("BGI: " + str(round(BGI, 1)) + " " + self.u +
+               "/h")
+        print ("BGI deviation: " + str(round(deviationBGI, 1)) + " " + self.u +
+               "/h")
 
         # Return deviations
         return [deviationBG, deviationBGI]
 
 
 
-class IOBProfile(FutureProfile):
+
+
+
+
+
+
+class PastIOBProfile(PastProfile):
 
     def __init__(self):
 
@@ -2047,18 +1999,38 @@ class IOBProfile(FutureProfile):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__()
+        super(PastIOBProfile, self).__init__()
+
+        # Define units
+        self.u = "U"
 
         # Define type
         self.type = "Dot"
 
-        # Define units
-        self.units = "U"
-
         # Define report info
         self.report = "treatments.json"
-        self.path = []
         self.key = "IOB"
+
+
+
+class FutureIOBProfile(FutureProfile):
+
+    def __init__(self, past):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(FutureIOBProfile, self).__init__(past)
+
+        # Define units
+        self.u = "U"
+
+        # Define type
+        self.type = "Dot"
 
 
 
@@ -2104,10 +2076,13 @@ class IOBProfile(FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # TODO: testing required...
+        # TODO: Testing required...
 
         # Give user info
         print "Predicting IOB..."
+
+        # Reset previous IOB predictions
+        self.reset()
 
         # Define timestep (h)
         dt = 5.0 / 60.0
@@ -2151,14 +2126,10 @@ class IOBProfile(FutureProfile):
             IOB = self.compute(new, IDC)
 
             # Store prediction time
-            self.T_.append(new.end)
+            self.T.append(new.end)
 
             # Store IOB
-            self.y_.append(IOB)
-
-        # FIXME Bugs here!
-        print self.y_
-        sys.exit()
+            self.y.append(IOB)
 
         # Normalize
         self.normalize()
@@ -2173,8 +2144,8 @@ class IOBProfile(FutureProfile):
         for i in range(n):
 
             # Get current time and IOB
-            T = lib.formatTime(self.T_[i])
-            y = self.y_[i]
+            T = lib.formatTime(self.T[i])
+            y = self.y[i]
 
             # Print IOB
             print str(y) + " U (" + str(T) + ")"
@@ -2195,10 +2166,10 @@ class IOBProfile(FutureProfile):
         print "Adding current IOB to report: '" + self.report + "'..."
 
         # Format time
-        T = lib.formatTime(self.T_[0])
+        T = lib.formatTime(self.T[0])
 
         # Round value
-        y = round(self.y_[0], 3)
+        y = round(self.y[0], 3)
 
         # Load report
         Reporter.load(self.report)
@@ -2378,8 +2349,11 @@ def main():
     # Instanciate a calculator
     calculator = Calculator()
 
+    # Get current time
+    now = datetime.datetime.now()
+
     # Run calculator
-    calculator.run()
+    calculator.run(now)
 
     # Predict IOB decay
     #calculator.IOB.predict(self.net, self.IDC)
