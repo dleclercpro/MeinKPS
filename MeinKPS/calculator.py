@@ -214,23 +214,6 @@ class Calculator(object):
         # Give user info
         print "Recommending treatment..."
 
-        # Get number of ISF steps
-        n = len(self.ISF.T)
-
-        # Initialize factor between recommended bolus and BG difference with
-        # average target
-        factor = 0
-
-        # Compute factor
-        for i in range(n - 1):
-
-            # Compute ISF time ranges
-            a = self.ISF.t[i] - self.IDC.DIA
-            b = self.ISF.t[i + 1] - self.IDC.DIA
-
-            # Update factor with current step
-            factor += self.ISF.y[i] * (self.IDC.f(a) - self.IDC.f(b))
-
         # Compute eventual BG based on complete IOB decay
         naiveBG = self.BG.expect(self.IDC.DIA, self.IOB)
 
@@ -241,68 +224,65 @@ class Calculator(object):
         # Update eventual BG
         eventualBG = naiveBG + deviationBG
 
-        # Find average of target to reach after natural insulin decay
-        target = sum(self.BGTargets.y[-1]) / 2.0
-
         # Compute BG difference with average target
-        dBG = target - eventualBG
+        dBG = np.mean(self.BGTargets.y[-1]) - eventualBG
 
         # Compute necessary bolus
-        bolus = dBG / factor
+        bolus = self.BG.dose(dBG, self.ISF, self.IDC)
 
         # Give user info
-        print "Time: " + lib.formatTime(self.BGTargets.T[-1])
-        print "BG target: " + str(self.BGTargets.y[-1]) + " " + self.BG.u
-        print "BG target average: " + str(target) + " " + self.BG.u
-        print "Current BG: " + str(round(self.BG.past.y[-1], 1)) + " " + self.BG.u
+        print "Target: " + str(self.BGTargets.y[-1]) + " " + self.BG.u
+        print "Current BG: " + str(self.BG.past.y[-1]) + " " + self.BG.u
         print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
         print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.u
         print "dBG: " + str(round(dBG, 1)) + " " + self.BG.u
         print "Recommended bolus: " + str(round(bolus, 1)) + " U"
 
-        # If more insulin needed
-        if bolus > 0:
+        # Define time to enact equivalent of bolus (m)
+        T = 30
 
-            # Find maximal basal allowed
-            maxTB = min(self.max["Basal"],
-                        3 * max(self.ISF.y),
-                        4 * self.ISF.y[0])
+        # Give user info
+        print "Enactment time: " + str(T) + " m"
 
-            # Find time required to enact equivalent of recommended bolus with
-            # max TB (m)
-            T = abs(int(round(bolus / maxTB * 60)))
+        # Find required basal difference to enact over given time
+        dTB = bolus / T
 
-            # Define maximum time allowed to enact equivalent of bolus with max
-            # TB (m)
-            maxT = 30
+        # Compute TB to enact
+        TB = self.basal.y[-1] + dTB
 
-            # Give user info
-            print "Max basal: " + str(self.max["Basal"]) + " U/h"
-            print "3x max daily basal: " + str(3 * max(self.ISF.y)) + " U/h"
-            print "4x current basal: " + str(4 * self.ISF.y[0]) + " U/h"
-            print "Resulting max basal: " + str(maxTB) + " U/h"
-            print "Time required with resulting max basal: " + str(T) + " m"
-            print "Max time to enact recommendation: " + str(maxT) + " m"
+        # Give user info
+        print "Current basal: " + str(round(self.basal.y[-1], 2)) + " U/h"
+        print "Required basal difference: " + str(round(dTB, 2)) + " U/h"
+        print "Temporary basal to enact: " + str(round(TB, 2)) + " U/h"
 
-            # Decide if external action is required
-            if T > maxT:
+        # Find maximal basal allowed
+        maxTB = min(self.max["Basal"],
+                    3 * max(self.ISF.y),
+                    4 * self.ISF.y[0])
 
-                # Give user info
-                print ("External action required: maximal time allowed for " +
-                       "TB to enact insulin recommendation exceeded.")
+        # Give user info
+        print "Max basal: " + str(self.max["Basal"]) + " U/h"
+        print "3x max daily basal: " + str(3 * max(self.ISF.y)) + " U/h"
+        print "4x current basal: " + str(4 * self.ISF.y[0]) + " U/h"
+        print "Selected max basal: " + str(maxTB) + " U/h"
 
-            else:
-
-                # Give user info
-                print ("No external action required: maximal time allowed " +
-                       "for TB to enact insulin recommendation not exceeded.")
-
-        # If less insulin needed
-        elif bolus < 0:
+        # Decide if external action is required
+        if TB > maxTB:
 
             # Give user info
-            # TODO: compute how much time to cut basal
-            print "Low TBR to enact..."
+            print ("External action required: maximal basal exceeded. Enact " +
+                   "bolus manually!")
+
+        elif TB < 0:
+
+            # Give user info
+            print ("External action required: negative basal required. Eat " +
+                   "something!")
+
+        else:
+
+            # Give user info
+            print ("No external action required.")
 
 
 
@@ -2196,6 +2176,40 @@ class FutureBGProfile(FutureProfile):
 
         # Return deviations
         return [deviationBG, deviationBGI]
+
+
+
+    def dose(self, dBG, ISF, IDC):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DOSE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Compute bolus to bring back BG to target using ISF and IDC.
+        """
+
+        # Initialize conversion factor between dose and BG difference to target
+        f = 0
+
+        # Get number of ISF steps
+        n = len(ISF.T) - 1
+
+        # Compute factor
+        for i in range(n):
+
+            # Compute step limits
+            a = ISF.t[i] - IDC.DIA
+            b = ISF.t[i + 1] - IDC.DIA
+
+            # Update factor with current step
+            f += ISF.y[i] * (IDC.f(a) - IDC.f(b))
+
+        # Compute bolus
+        bolus = dBG / f
+
+        # Return bolus
+        return bolus
 
 
 
