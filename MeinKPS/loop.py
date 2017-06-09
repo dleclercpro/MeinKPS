@@ -156,7 +156,7 @@ class Loop(object):
                                            c = "red")
 
         # Add BG predictions to plot
-        #axes[0].plot(BG.t, BG.y, marker = "o", ms = 3.5, lw = 0, c = "black")
+        axes[0].plot(BG.t, BG.y, marker = "o", ms = 3.5, lw = 0, c = "black")
 
         # Add net insulin profile to plot
         axes[1].step(net.t, np.append(0, net.y[:-1]), lw = 2, ls = "-",
