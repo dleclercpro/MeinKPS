@@ -177,7 +177,7 @@ class Calculator(object):
         self.IOB.past.build(past, now)
 
         # Predict future of IOB profile
-        #self.IOB.predict(self.net, self.IDC)
+        self.IOB.build(self.net, self.IDC)
 
         # Build COB profile
         #self.COB.build(past, now)
@@ -252,12 +252,12 @@ class Calculator(object):
 
         # Give user info
         print "Time: " + lib.formatTime(self.BGTargets.T[-1])
-        print "BG target: " + str(self.BGTargets.y[-1]) + " " + self.BG.units
-        print "BG target average: " + str(target) + " " + self.BG.units
-        print "BG: " + str(round(self.BG.y[-1], 1)) + " " + self.BG.units
-        print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.units
-        print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.units
-        print "dBG: " + str(round(dBG, 1)) + " " + self.BG.units
+        print "BG target: " + str(self.BGTargets.y[-1]) + " " + self.BG.u
+        print "BG target average: " + str(target) + " " + self.BG.u
+        print "BG: " + str(round(self.BG.y[-1], 1)) + " " + self.BG.u
+        print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
+        print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.u
+        print "dBG: " + str(round(dBG, 1)) + " " + self.BG.u
         print "Recommended bolus: " + str(round(bolus, 1)) + " U"
 
         # If more insulin needed
@@ -1429,11 +1429,11 @@ class BolusProfile(PastProfile):
         # Decouple components
         for i in range(n):
 
-            # Convert bolus to delivery rate
-            self.y[i] = self.rate
-
             # Compute delivery time
             self.d.append(datetime.timedelta(hours = 1 / self.rate * self.y[i]))
+
+            # Convert bolus to delivery rate
+            self.y[i] = self.rate
 
 
 
@@ -1638,6 +1638,25 @@ class PastBGProfile(PastProfile):
 
 
 
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load pump report
+        Reporter.load("pump.json")
+
+        # Read units
+        self.u = Reporter.getEntry([], "BG Units")
+
+        # Load rest
+        super(PastBGProfile, self).load()
+
+
+
     def verify(self):
 
         """
@@ -1731,22 +1750,6 @@ class FutureBGProfile(FutureProfile):
 
 
 
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load pump report
-        Reporter.load("pump.json")
-
-        # Read units
-        self.u = Reporter.getEntry([], "BG Units")
-
-
-
     def project(self, dt):
 
         """
@@ -1824,7 +1827,7 @@ class FutureBGProfile(FutureProfile):
                                   lib.formatTime(isf.T[i + 1]))
 
             # Print ISF
-            print "ISF: " + str(isf.y[i]) + " " + isf.units
+            print "ISF: " + str(isf.y[i]) + " " + isf.u
 
             # Adapt normalized time to fit IDC time domain
             a = isf.t[i + 1] - IDC.DIA
@@ -1898,13 +1901,13 @@ class FutureBGProfile(FutureProfile):
             isf = ISF.f(IOB.T[i])
 
             # Print ISF
-            print "ISF: " + str(isf) + " " + ISF.units
+            print "ISF: " + str(isf) + " " + ISF.u
 
             # Compute IOB change
             dIOB = IOB.y[i + 1] - IOB.y[i]
 
             # Give user info
-            print "dIOB: " + str(dIOB) + " " + IOB.units
+            print "dIOB: " + str(dIOB) + " " + IOB.u
 
             # Compute BG change
             dBG = isf * dIOB
@@ -2032,6 +2035,10 @@ class FutureIOBProfile(FutureProfile):
         # Define type
         self.type = "Dot"
 
+        # Define report info
+        self.report = "treatments.json"
+        self.path = ["IOB"]
+
 
 
     def compute(self, net, IDC):
@@ -2046,14 +2053,14 @@ class FutureIOBProfile(FutureProfile):
         t = net.t
         y = net.y
 
-        # Initialize current IOB
+        # Initialize IOB
         IOB = 0
 
         # Get number of steps
-        n = len(t)
+        n = len(t) - 1
 
         # Compute IOB
-        for i in range(n - 1):
+        for i in range(n):
 
             # Compute remaining IOB factor based on integral of IDC
             r = IDC.F(t[i + 1]) - IDC.F(t[i])
@@ -2068,21 +2075,23 @@ class FutureIOBProfile(FutureProfile):
 
 
 
-    def predict(self, net, IDC):
+    def build(self, net, IDC):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREDICT
+            BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # TODO: Testing required...
 
         # Give user info
         print "Predicting IOB..."
 
         # Reset previous IOB predictions
         self.reset()
+
+        # Assign start/end limits using net insulin profile
+        self.start = net.end
+        self.end = net.end + datetime.timedelta(hours = IDC.DIA)
 
         # Define timestep (h)
         dt = 5.0 / 60.0
@@ -2098,6 +2107,9 @@ class FutureIOBProfile(FutureProfile):
 
         # Compute IOB decay
         for i in range(n):
+
+            # Compute prediction time
+            T = net.end + t[i]
 
             # Copy net insulin profile
             new = copy.copy(net)
@@ -2120,13 +2132,13 @@ class FutureIOBProfile(FutureProfile):
             new.smooth()
 
             # Normalize profile
-            new.normalize(net.end + t[i])
+            new.normalize(T)
 
             # Compute IOB for current time
             IOB = self.compute(new, IDC)
 
             # Store prediction time
-            self.T.append(new.end)
+            self.T.append(T)
 
             # Store IOB
             self.y.append(IOB)
@@ -2149,6 +2161,9 @@ class FutureIOBProfile(FutureProfile):
 
             # Print IOB
             print str(y) + " U (" + str(T) + ")"
+
+        # Store current IOB
+        self.store()
 
 
 
@@ -2175,7 +2190,7 @@ class FutureIOBProfile(FutureProfile):
         Reporter.load(self.report)
 
         # Add entries
-        Reporter.addEntries(["IOB"], T, y)
+        Reporter.addEntries(self.path, T, y)
 
 
 

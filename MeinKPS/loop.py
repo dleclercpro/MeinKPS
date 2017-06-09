@@ -26,6 +26,7 @@
 import datetime
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 
@@ -123,7 +124,7 @@ class Loop(object):
 
         # Define axis labels
         x = ["(h)"] * 4
-        y = ["(" + BG.units + ")",
+        y = ["(" + BG.past.u + ")",
              "(U/h)",
              "(U)",
              "(g)"]
@@ -151,17 +152,19 @@ class Loop(object):
         axes[0].set_ylim(ylim[0])
 
         # Add BGs to plot
-        axes[0].plot(BG.t, BG.y, marker = "o", ms = 3.5, lw = 0, c = "red")
+        axes[0].plot(BG.past.t, BG.past.y, marker = "o", ms = 3.5, lw = 0,
+                                           c = "red")
 
         # Add BG predictions to plot
-        axes[0].plot(BG.t_, BG.y_, marker = "o", ms = 3.5, lw = 0, c = "black")
+        #axes[0].plot(BG.t, BG.y, marker = "o", ms = 3.5, lw = 0, c = "black")
 
         # Add net insulin profile to plot
         axes[1].step(net.t, np.append(0, net.y[:-1]), lw = 2, ls = "-",
                                                       c = "#ff7500")
 
-        # Add IOB to plot
-        axes[2].plot([-DIA, 0], [0, 0], lw = 2, ls = "-", c = "purple")
+        # Add past IOB to plot
+        axes[2].plot(IOB.past.t, IOB.past.y, marker = "o", ms = 3.5, lw = 0,
+                                             c = "purple")
 
         # Add IOB predictions to plot
         axes[2].plot(IOB.t, IOB.y, lw = 2, ls = "-", c = "black")
