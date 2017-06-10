@@ -2084,6 +2084,9 @@ class SetPumpTBR(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Round TBR rate
+        TBR["Rate"] = round(TBR["Rate"], 2)
+
         # Define info
         self.info = ("Setting TBR: " + str(TBR["Rate"]) + " " +
                                        TBR["Units"] + " (" +
@@ -2091,17 +2094,22 @@ class SetPumpTBR(PumpCommand):
 
         # If absolute TBR
         if TBR["Units"] == "U/h":
+
+            # Pack rate
+            TBR["Rate"] = lib.pack(TBR["Rate"] / self.pump.TBR.stroke, ">")
+
+            # Define packet code
             self.packet.code = 76
-            self.packet.parameters = (lib.pack(TBR["Rate"] /
-                                               self.pump.TBR.stroke, ">") +
-                                      [TBR["Duration"] /
-                                       self.pump.TBR.timeBlock])
 
         # If percentage TBR
         elif TBR["Units"] == "%":
+
+            # Define packet code
             self.packet.code = 105
-            self.packet.parameters = [int(round(TBR["Rate"])),
-                                      TBR["Duration"] / self.pump.TBR.timeBlock]
+
+        # Define packet parameters
+        self.packet.parameters = [TBR["Rate"],
+                                  TBR["Duration"] / self.pump.TBR.timeBlock]
 
         # Do rest of command
         super(self.__class__, self).do()

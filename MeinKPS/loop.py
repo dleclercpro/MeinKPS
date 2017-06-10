@@ -102,15 +102,15 @@ class Loop(object):
                   self.calc.IDC.DIA)
 
         # React to TB recommendation
-        #if TB is None:
+        if TB is None:
 
             # Cancel TB
-            #self.pump.TBR.cancel()
+            self.pump.TBR.cancel()
 
-        #else:
+        else:
 
             # Enact TB
-            #self.pump.TBR.set(TB[0], TB[1], TB[2])
+            self.pump.TBR.set(*TB)
 
 
 

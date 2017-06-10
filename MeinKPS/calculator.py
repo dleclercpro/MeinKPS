@@ -88,7 +88,7 @@ class Calculator(object):
         # Give calculator a BG profile
         self.BG = FutureBGProfile(PastBGProfile())
 
-        # Initialize maxes
+        # Initialize pump's max values
         self.max = {"Basal": None,
                     "Bolus": None}
 
@@ -262,7 +262,7 @@ class Calculator(object):
         # If less insulin is needed
         if bolus < 0:
 
-            # Define minimal basal allowed
+            # Define minimal basal allowed (U/h)
             minTB = 0
 
             # Is required TB allowed?
@@ -273,20 +273,20 @@ class Calculator(object):
                        "Eat something!")
 
                 # Stop insulin delivery
-                return [0, T, "U/h"]
+                return [minTB, "U/h", T]
 
         # If more insulin is needed
         elif bolus > 0:
 
-            # Find maximal basal allowed
+            # Find maximal basal allowed (U/h)
             maxTB = min(self.max["Basal"],
-                        3 * max(self.ISF.y),
-                        4 * self.ISF.y[0])
+                        3 * self.basal.max,
+                        4 * self.basal.y[0])
 
             # Give user info
             print "Max basal: " + str(self.max["Basal"]) + " U/h"
-            print "3x max daily basal: " + str(3 * max(self.ISF.y)) + " U/h"
-            print "4x current basal: " + str(4 * self.ISF.y[0]) + " U/h"
+            print "3x max daily basal: " + str(3 * self.basal.max) + " U/h"
+            print "4x current basal: " + str(4 * self.basal.y[0]) + " U/h"
             print "Max basal selected: " + str(maxTB) + " U/h"
 
             # Is required TB allowed?
@@ -296,8 +296,8 @@ class Calculator(object):
                 print ("External action required: maximal basal exceeded. " +
                        "Enact bolus manually!")
 
-                # No TB recommendation
-                return None
+                # Max out TB
+                return [maxTB, "U/h", T]
 
         # No modification to insulin dosage necessary
         else:
@@ -308,29 +308,25 @@ class Calculator(object):
             # No TB recommendation
             return None
 
-        # Compute BGI deviation
-        deltaBGI = BGI - expectedBGI
-
-        # Define max BGI deviation (mmol/L/h)
-        maxDeltaBGI = 4.0
-
-        # Look for conflictual BG derivatives
-        if (0 != np.sign(BGI) != np.sign(expectedBGI) != 0 and
-              abs(deltaBGI) > maxDeltaBGI):
+        # Look for conflictual info
+        if (np.sign(BGI) == -1 and eventualBG > max(self.BGTargets.y[-1]) or
+            np.sign(BGI) == 1 and eventualBG < min(self.BGTargets.y[-1])):
 
             # Give user info
-            print ("Conflictual information: actual and expected BGI have " +
-                   "different signs and significantly away from each other (" +
-                   "more than " + str(maxDeltaBGI) + " mmol/L/h).")
+            print ("Conflictual information: BG decreasing/rising although " +
+                   "expected to land higher/lower than target range.")
 
             # No TB recommendation
             return None
 
-        # Give user info
-        print ("Loop may enact TB recommendation.")
+        # Otherwise everything is fine
+        else:
 
-        # Return TB recommendation
-        return [TB, T, "U/h"]
+            # Give user info
+            print ("Loop may enact TB recommendation.")
+
+            # Return TB recommendation
+            return [TB, "U/h", T]
 
 
 
@@ -525,8 +521,9 @@ class Profile(object):
         # Initialize time reference
         self.norm = norm
 
-        # Initialize profile type
-        self.type = "Step"
+        # Initialize min/max values
+        self.min = None
+        self.max = None
 
         # Initialize zero
         self.zero = None
@@ -538,6 +535,9 @@ class Profile(object):
         self.report = None
         self.path = []
         self.key = None
+
+        # Initialize profile type
+        self.type = "Step"
 
 
 
@@ -1485,6 +1485,23 @@ class BasalProfile(PastProfile):
         # Define report info
         self.report = "pump.json"
         self.key = "Basal Profile (" + profile + ")"
+
+
+
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start decoupling
+        super(BasalProfile, self).decouple()
+
+        # Get min/max factors
+        self.min = min(self.y)
+        self.max = max(self.y)
 
 
 
