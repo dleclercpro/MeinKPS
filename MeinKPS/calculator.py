@@ -108,7 +108,7 @@ class Calculator(object):
         # Prepare components
         self.prepare(now)
 
-        # Recommend action
+        # Recommend TB
         self.recommend()
 
 
@@ -219,10 +219,10 @@ class Calculator(object):
 
         # Compute BG deviation based on CGM readings and expected BG due to IOB
         # decay
-        deviationBG = self.BG.deviate(self.IOB, self.ISF)[0]
+        [deltaBG, BGI, expectedBGI] = self.BG.analyze(self.IOB, self.ISF)
 
         # Update eventual BG
-        eventualBG = naiveBG + deviationBG
+        eventualBG = naiveBG + deltaBG
 
         # Compute BG difference with average target
         dBG = np.mean(self.BGTargets.y[-1]) - eventualBG
@@ -231,6 +231,7 @@ class Calculator(object):
         bolus = self.BG.dose(dBG, self.ISF, self.IDC)
 
         # Give user info
+        print "Current ISF: " + str(self.ISF.y[0])
         print "Target: " + str(self.BGTargets.y[-1]) + " " + self.BG.u
         print "Current BG: " + str(self.BG.past.y[-1]) + " " + self.BG.u
         print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
@@ -239,10 +240,10 @@ class Calculator(object):
         print "Recommended bolus: " + str(round(bolus, 1)) + " U"
 
         # Define time to enact equivalent of bolus (m)
-        T = 30
+        T = 0.5
 
         # Give user info
-        print "Enactment time: " + str(T) + " m"
+        print "Enactment time: " + str(T) + " h"
 
         # Find required basal difference to enact over given time
         dTB = bolus / T
@@ -255,34 +256,81 @@ class Calculator(object):
         print "Required basal difference: " + str(round(dTB, 2)) + " U/h"
         print "Temporary basal to enact: " + str(round(TB, 2)) + " U/h"
 
-        # Find maximal basal allowed
-        maxTB = min(self.max["Basal"],
-                    3 * max(self.ISF.y),
-                    4 * self.ISF.y[0])
+        # Convert enactment time to minutes
+        T *= 60
 
-        # Give user info
-        print "Max basal: " + str(self.max["Basal"]) + " U/h"
-        print "3x max daily basal: " + str(3 * max(self.ISF.y)) + " U/h"
-        print "4x current basal: " + str(4 * self.ISF.y[0]) + " U/h"
-        print "Selected max basal: " + str(maxTB) + " U/h"
+        # If less insulin is needed
+        if bolus < 0:
 
-        # Decide if external action is required
-        if TB > maxTB:
+            # Define minimal basal allowed
+            minTB = 0
+
+            # Is required TB allowed?
+            if TB < minTB:
+
+                # Give user info
+                print ("External action required: negative basal required. " +
+                       "Eat something!")
+
+                # Stop insulin delivery
+                return [0, T, "U/h"]
+
+        # If more insulin is needed
+        elif bolus > 0:
+
+            # Find maximal basal allowed
+            maxTB = min(self.max["Basal"],
+                        3 * max(self.ISF.y),
+                        4 * self.ISF.y[0])
 
             # Give user info
-            print ("External action required: maximal basal exceeded. Enact " +
-                   "bolus manually!")
+            print "Max basal: " + str(self.max["Basal"]) + " U/h"
+            print "3x max daily basal: " + str(3 * max(self.ISF.y)) + " U/h"
+            print "4x current basal: " + str(4 * self.ISF.y[0]) + " U/h"
+            print "Max basal selected: " + str(maxTB) + " U/h"
 
-        elif TB < 0:
+            # Is required TB allowed?
+            if TB > maxTB:
 
-            # Give user info
-            print ("External action required: negative basal required. Eat " +
-                   "something!")
+                # Give user info
+                print ("External action required: maximal basal exceeded. " +
+                       "Enact bolus manually!")
 
+                # No TB recommendation
+                return None
+
+        # No modification to insulin dosage necessary
         else:
 
             # Give user info
-            print ("No external action required.")
+            print ("No modification to insulin dosage necessary.")
+
+            # No TB recommendation
+            return None
+
+        # Compute BGI deviation
+        deltaBGI = BGI - expectedBGI
+
+        # Define max BGI deviation (mmol/L/h)
+        maxDeltaBGI = 4.0
+
+        # Look for conflictual BG derivatives
+        if (0 != np.sign(BGI) != np.sign(expectedBGI) != 0 and
+              abs(deltaBGI) > maxDeltaBGI):
+
+            # Give user info
+            print ("Conflictual information: actual and expected BGI have " +
+                   "different signs and significantly away from each other (" +
+                   "more than " + str(maxDeltaBGI) + " mmol/L/h).")
+
+            # No TB recommendation
+            return None
+
+        # Give user info
+        print ("Loop may enact TB recommendation.")
+
+        # Return TB recommendation
+        return [TB, T, "U/h"]
 
 
 
@@ -1801,40 +1849,6 @@ class FutureIOBProfile(FutureProfile):
 
 
 
-    def compute(self, net, IDC):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decouple net insulin profile components
-        t = net.t
-        y = net.y
-
-        # Initialize IOB
-        IOB = 0
-
-        # Get number of steps
-        n = len(t) - 1
-
-        # Compute IOB
-        for i in range(n):
-
-            # Compute remaining IOB factor based on integral of IDC
-            r = IDC.F(t[i + 1]) - IDC.F(t[i])
-
-            # Compute active insulin remaining for current step
-            IOB += r * y[i]
-
-        print "IOB: " + str(IOB) + " U"
-
-        # Return IOB
-        return IOB
-
-
-
     def build(self, net, IDC):
 
         """
@@ -1911,6 +1925,40 @@ class FutureIOBProfile(FutureProfile):
 
         # Show
         self.show()
+
+
+
+    def compute(self, net, IDC):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decouple net insulin profile components
+        t = net.t
+        y = net.y
+
+        # Initialize IOB
+        IOB = 0
+
+        # Get number of steps
+        n = len(t) - 1
+
+        # Compute IOB
+        for i in range(n):
+
+            # Compute remaining IOB factor based on integral of IDC
+            r = IDC.F(t[i + 1]) - IDC.F(t[i])
+
+            # Compute active insulin remaining for current step
+            IOB += r * y[i]
+
+        print "IOB: " + str(IOB) + " U"
+
+        # Return IOB
+        return IOB
 
 
 
@@ -2071,148 +2119,6 @@ class FutureBGProfile(FutureProfile):
 
 
 
-    def project(self, dt):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PROJECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        BG projection based on expected duration dt (h) of current BG trend
-        """
-
-        # Give user info
-        print "Projection time: " + str(dt) + " h"
-
-        # Read latest BG
-        BG = self.past.y[-1]
-
-        # Compute derivative to use when predicting future BG
-        dBGdt = self.past.impact()
-
-        # Predict future BG
-        BG += dBGdt * dt
-
-        # Return BG projection based on dBG/dt
-        return BG
-
-
-
-    def expect(self, dt, IOB):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        BG expectation after a certain time dt (h) based on IOB decay
-        """
-
-        # Give user info
-        print "Expecting BG..."
-
-        # Get number of steps corresponding to expected BG
-        n = dt / IOB.dt - 1
-
-        # Check if expectation fits with previously computed BGs
-        if int(n) != n or n < 0:
-
-            # Exit
-            sys.exit("Required BG expectation does not fit on time axis of " +
-                     "predicted BG profile. Exiting...")
-
-        # Return expected BG
-        return self.y[int(n)]
-
-
-
-    def deviate(self, IOB, ISF, dt = 0.5):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DEVIATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Compute deviation from expected BG value. Prediction time should be set
-        to 0.5 h.
-        """
-
-        # Give user info
-        print "Deviating BG..."
-
-        # Compute projected BG based on latest CGM readings
-        projectedBG = self.project(dt)
-
-        # Compute BG variation due to IOB decay
-        expectedBG = self.expect(dt, IOB)
-
-        # Read BGI
-        BGI = self.past.impact()
-
-        # Compute BGI (dBG/dt) based on IOB decay
-        expectedBGI = IOB.dydt[0] * ISF.y[0]
-
-        # Compute deviation between BGs
-        deviationBG = projectedBG - expectedBG
-
-        # Compute deviation between BGIs
-        deviationBGI = BGI - expectedBGI
-
-        # Give user info (about BG)
-        print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.u
-        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.u
-        print "BG deviation: " + str(round(deviationBG, 1)) + " " + self.u
-
-        # Make some air
-        print
-
-        # Give user info (about BGI)
-        print ("Expected BGI: " + str(round(expectedBGI, 1)) + " " + self.u +
-               "/h")
-        print ("BGI: " + str(round(BGI, 1)) + " " + self.u +
-               "/h")
-        print ("BGI deviation: " + str(round(deviationBGI, 1)) + " " + self.u +
-               "/h")
-
-        # Return deviations
-        return [deviationBG, deviationBGI]
-
-
-
-    def dose(self, dBG, ISF, IDC):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOSE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Compute bolus to bring back BG to target using ISF and IDC.
-        """
-
-        # Initialize conversion factor between dose and BG difference to target
-        f = 0
-
-        # Get number of ISF steps
-        n = len(ISF.T) - 1
-
-        # Compute factor
-        for i in range(n):
-
-            # Compute step limits
-            a = ISF.t[i] - IDC.DIA
-            b = ISF.t[i + 1] - IDC.DIA
-
-            # Update factor with current step
-            f += ISF.y[i] * (IDC.f(a) - IDC.f(b))
-
-        # Compute bolus
-        bolus = dBG / f
-
-        # Return bolus
-        return bolus
-
-
-
     def build(self, IOB, ISF):
 
         """
@@ -2297,6 +2203,149 @@ class FutureBGProfile(FutureProfile):
 
         # Show
         self.show()
+
+
+
+    def project(self, dt):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PROJECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        BG projection based on expected duration dt (h) of current BG trend
+        """
+
+        # Give user info
+        print "Projection time: " + str(dt) + " h"
+
+        # Read latest BG
+        BG = self.past.y[-1]
+
+        # Compute derivative to use when predicting future BG
+        dBGdt = self.past.impact()
+
+        # Predict future BG
+        BG += dBGdt * dt
+
+        # Return BG projection based on dBG/dt
+        return BG
+
+
+
+    def expect(self, dt, IOB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        BG expectation after a certain time dt (h) based on IOB decay
+        """
+
+        # Give user info
+        print "Expectation time: " + str(dt) + " h"
+
+        # Get number of steps corresponding to expected BG
+        n = dt / IOB.dt - 1
+
+        # Check if expectation fits with previously computed BGs
+        if int(n) != n or n < 0:
+
+            # Exit
+            sys.exit("Required BG expectation does not fit on time axis of " +
+                     "predicted BG profile. Exiting...")
+
+        # Return expected BG
+        return self.y[int(n)]
+
+
+
+    def analyze(self, IOB, ISF):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ANALYZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Analyze and compute BG-related values.
+        """
+
+        # Give user info
+        print
+        print "Analyzing BG..."
+
+        # Define prediction time (h)
+        dt = 0.5
+
+        # Compute projected BG based on latest CGM readings
+        projectedBG = self.project(dt)
+
+        # Compute BG variation due to IOB decay
+        expectedBG = self.expect(dt, IOB)
+
+        # Read BGI
+        BGI = self.past.impact()
+
+        # Compute BGI (dBG/dt) based on IOB decay
+        expectedBGI = IOB.dydt[0] * ISF.y[0]
+
+        # Compute deviation between BGs
+        deltaBG = projectedBG - expectedBG
+
+        # Compute deviation between BGIs
+        deltaBGI = BGI - expectedBGI
+
+        # Give user info (about BG)
+        print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.u
+        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.u
+        print "BG deviation: " + str(round(deltaBG, 1)) + " " + self.u
+
+        # Give user info (about BGI)
+        print ("Expected BGI: " + str(round(expectedBGI, 1)) + " " + self.u +
+               "/h")
+        print ("BGI: " + str(round(BGI, 1)) + " " + self.u +
+               "/h")
+        print ("BGI deviation: " + str(round(deltaBGI, 1)) + " " + self.u +
+               "/h")
+        print
+
+        # Return computations
+        return [deltaBG, BGI, expectedBGI]
+
+
+
+    def dose(self, dBG, ISF, IDC):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DOSE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Compute bolus to bring back BG to target using ISF and IDC.
+        """
+
+        # Initialize conversion factor between dose and BG difference to target
+        f = 0
+
+        # Get number of ISF steps
+        n = len(ISF.t) - 1
+
+        # Compute factor
+        for i in range(n):
+
+            # Compute step limits
+            a = ISF.t[i] - IDC.DIA
+            b = ISF.t[i + 1] - IDC.DIA
+
+            # Update factor with current step
+            f += ISF.y[i] * (IDC.f(a) - IDC.f(b))
+
+        # Compute bolus
+        bolus = dBG / f
+
+        # Return bolus
+        return bolus
 
 
 
