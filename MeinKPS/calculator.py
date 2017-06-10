@@ -108,8 +108,8 @@ class Calculator(object):
         # Prepare components
         self.prepare(now)
 
-        # Recommend TB
-        self.recommend()
+        # Recommend TB and return it
+        return self.recommend()
 
 
 

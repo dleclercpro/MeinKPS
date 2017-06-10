@@ -92,14 +92,25 @@ class Loop(object):
         # Prepare to loop
         self.prepare()
 
-        # Run calculator
-        self.calc.run(self.now)
+        # Run calculator and get TB recommendation
+        TB = self.calc.run(self.now)
 
         # Show loop
         self.show(self.calc.net,
                   self.calc.BG,
                   self.calc.IOB,
                   self.calc.IDC.DIA)
+
+        # React to TB recommendation
+        #if TB is None:
+
+            # Cancel TB
+            #self.pump.TBR.cancel()
+
+        #else:
+
+            # Enact TB
+            #self.pump.TBR.set(TB[0], TB[1], TB[2])
 
 
 
@@ -124,7 +135,7 @@ class Loop(object):
 
         # Define axis labels
         x = ["(h)"] * 4
-        y = ["(" + BG.past.u + ")",
+        y = ["(" + BG.u + ")",
              "(U/h)",
              "(U)",
              "(g)"]
@@ -146,7 +157,7 @@ class Loop(object):
             axes[i].set_ylabel(y[i])
 
             # Set x-axis limits
-            #axes[i].set_xlim(xlim[i])
+            axes[i].set_xlim(xlim[i])
 
         # Set y-axis limits
         axes[0].set_ylim(ylim[0])
