@@ -24,8 +24,9 @@
 """
 
 # LIBRARIES
-import time
 import datetime
+import time
+import sys
 
 
 
@@ -68,6 +69,9 @@ class Command(object):
         self.nBytesDefault = 64
         self.nBytesExpected = 0
         self.nBytesReceived = 0
+
+        # Define max read attempts
+        self.nReadAttempts = 100
 
         # Define sleep times
         self.writeSleep = 0
@@ -124,7 +128,7 @@ class Command(object):
             # Update reading attempt variable
             n += 1
 
-            print "Reading attempt: " + str(n) + "/-"
+            print "Reading attempt: " + str(n) + "/" + str(self.nReadAttempts)
 
             # Read raw bytes from device
             self.bytes = self.stick.read(nBytes)
@@ -134,6 +138,13 @@ class Command(object):
 
                 break
 
+            # Exit after a maximal number of poll attempts
+            elif n == self.nReadAttempts:
+
+                # Raise error
+                sys.exit("Max number of read attempts reached. Exiting...")
+
+            # Otherwise retry
             else:
 
                 # Give device a break before reading again
@@ -300,7 +311,7 @@ class PumpCommand(Command):
         # Define end of download byte
         self.EOD = 128
 
-        # Define max number of poll attempts
+        # Define max poll attempts
         self.nPollAttempts = 100
 
         # Define sleep times
@@ -2084,32 +2095,38 @@ class SetPumpTBR(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Round TBR rate
-        TBR["Rate"] = round(TBR["Rate"], 2)
-
         # Define info
-        self.info = ("Setting TBR: " + str(TBR["Rate"]) + " " +
-                                       TBR["Units"] + " (" +
-                                       str(TBR["Duration"]) + "m)")
+        self.info = ("Setting TBR...")
 
         # If absolute TBR
         if TBR["Units"] == "U/h":
 
-            # Pack rate
-            TBR["Rate"] = lib.pack(TBR["Rate"] / self.pump.TBR.stroke, ">")
+            # Round TBR to pump's precision
+            TBR["Rate"] = round(TBR["Rate"], 2)
 
             # Define packet code
             self.packet.code = 76
 
+            # Define packet parameters
+            self.packet.parameters = ([0] * 2 +
+                                      lib.pack(TBR["Rate"] /
+                                               self.pump.TBR.stroke, ">"))[-2:]
+
         # If percentage TBR
         elif TBR["Units"] == "%":
+
+            # Round TBR to pump's precision
+            TBR["Rate"] = round(TBR["Rate"], 0)
 
             # Define packet code
             self.packet.code = 105
 
-        # Define packet parameters
-        self.packet.parameters = [TBR["Rate"],
-                                  TBR["Duration"] / self.pump.TBR.timeBlock]
+            # Define packet parameters
+            self.packet.parameters = [int(TBR["Rate"])]
+
+        # Define rest of packet parameters
+        self.packet.parameters += [int(TBR["Duration"] /
+                                       self.pump.TBR.timeBlock)]
 
         # Do rest of command
         super(self.__class__, self).do()

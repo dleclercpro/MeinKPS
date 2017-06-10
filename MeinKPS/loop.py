@@ -68,13 +68,40 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Q: is reading time/model necessary at beginning of loop?
         """
+
+        # Define current time
+        self.now = datetime.datetime.now()
 
         # Dump CGM readings
         self.cgm.dumpLastBG()
 
+        # Start dialogue with pump
+        self.pump.start()
+
+        # Read pump time
+        self.pump.time.read()
+
+        # Read pump model
+        self.pump.model.read()
+
         # Read pump's history
         #self.pump.history.read()
+
+
+
+    def finish(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FINISH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Stop dialogue with pump
+        self.pump.stop()
 
 
 
@@ -86,10 +113,7 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define current time
-        self.now = datetime.datetime.now()
-
-        # Prepare to loop
+        # Prepare loop
         self.prepare()
 
         # Run calculator and get TB recommendation
@@ -111,6 +135,9 @@ class Loop(object):
 
             # Enact TB
             self.pump.TBR.set(*TB)
+
+        # Finish loop
+        self.finish()
 
 
 

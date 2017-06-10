@@ -134,8 +134,7 @@ class TBRFail(PumpError):
         """
 
         # Define error info
-        self.info = ("New TBR [" + self.args[0] + "] could not be " +
-                     "correctly set.")
+        self.info = ("New TBR could not be correctly set.")
 
 
 

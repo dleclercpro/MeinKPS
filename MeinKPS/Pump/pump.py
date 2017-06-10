@@ -1112,6 +1112,27 @@ class History(object):
 
 
 
+    def update(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UDPATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read number of pages
+        self.measure()
+
+        # If only one page, read it
+        if self.n == 1:
+            self.read(1)
+
+        # Otherwise, read last two
+        else:
+            self.read(2)
+
+
+
 class Bolus(object):
 
     def __init__(self, pump):
@@ -1132,30 +1153,6 @@ class Bolus(object):
 
         # Link with pump
         self.pump = pump
-
-
-
-    def update(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UPDATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Link with pump history
-        history = self.pump.history
-
-        # Read number of pump history pages
-        history.measure()
-
-        # If only one history page, read and search it for boluses
-        if history.n == 1:
-            history.read(1)
-
-        # Otherwise, read last two pages
-        else:
-            history.read(2)
 
 
 
@@ -1180,7 +1177,7 @@ class Bolus(object):
         self.command.do(bolus)
 
         # Update reports by reading last page(s) of pump history
-        self.update()
+        self.pump.history.update()
 
 
 
@@ -1235,80 +1232,56 @@ class TBR(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             VERIFY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
 
-        # Extract TBR components
-        rate = TBR["Rate"]
-        units = TBR["Units"]
-        duration = TBR["Duration"]
+        Note: on-going TBR with % units apparently need to be canceled before
+              another TBR with same units can be set.
+        """
 
         # Define theoretical max basal
         minTBR = {"U/h": 0, "%": 0}
         maxTBR = {"U/h": 35, "%": 200}
 
         # Verify size of TBR
-        if rate < minTBR[units] or rate > maxTBR[units]:
+        if (TBR["Rate"] < minTBR[TBR["Units"]] or
+            TBR["Rate"] > maxTBR[TBR["Units"]]):
 
             # Raise error
-            raise errors.TBRIncorrect(rate, units)
+            raise errors.TBRIncorrect(TBR["Rate"], TBR["Units"])
 
         # Verify if TBR duration is a multiple of 30
-        if duration % 30:
+        if TBR["Duration"] % 30:
 
             # Raise error
-            raise errors.TBRIncorrectDuration(duration)
+            raise errors.TBRIncorrectDuration(TBR["Duration"])
 
         # Verify pump status and settings before doing anything
         if not self.pump.status.verify():
             return
 
-        if not self.pump.settings.verify(None, rate, units):
+        if not self.pump.settings.verify(None, TBR["Rate"], TBR["Units"]):
             return
 
         # Before issuing any TBR, read the current one
         self.read()
 
+        # Look if a TBR is already set
+        if (self.value["Duration"] != 0 and self.value["Units"] == "%" or
+            self.value["Units"] != TBR["Units"]):
+
+            # Give user info
+            print ("TBR must be canceled before doing anything...")
+
+            # Cancel TBR
+            self.cancel(self.value["Units"])
+
         # Look if units match up
-        if units != self.value["Units"]:
+        if self.value["Units"] != TBR["Units"]:
 
             # Give user info
             print "TBR units do not match. Adjusting them..."
 
-            # Look if a TBR is already set
-            if self.value["Duration"] != 0:
-
-                # Give user info
-                print ("TBR must be canceled before adjusting units...")
-
-                # Cancel TBR
-                self.cancel(self.value["Units"])
-
             # Modify units as wished by the user
-            self.pump.units["TBR"].set(units)
-
-
-
-    def update(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UDPATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Link with pump history
-        history = self.pump.history
-
-        # Read number of pump history pages
-        history.measure()
-
-        # If only one history page, read and search it for boluses
-        if history.n == 1:
-            history.read(1)
-
-        # Otherwise, read last two pages
-        else:
-            history.read(2)
+            self.pump.units["TBR"].set(TBR["Units"])
 
 
 
@@ -1325,11 +1298,11 @@ class TBR(object):
                   "Units": units,
                   "Duration": duration}
 
-        # Stringify TBR
-        newTBR_ = str(rate) + " " + units + " (" + str(duration) + "m)"
+        # Give user info
+        print "Trying to set new TBR:"
 
-        # Give user info regarding the next TBR that will be set
-        print ("Trying to set new TBR: " + newTBR_)
+        # Show new TBR
+        self.show(newTBR)
 
         # Verify if TBR can be set on pump
         if not cancel:
@@ -1339,7 +1312,7 @@ class TBR(object):
         self.commands["Set"].do(newTBR)
 
         # Update reports by reading last page(s) of pump history
-        self.update()
+        self.pump.history.update()
 
         # Give user info
         print "Verifying if new TBR was correctly set..."
@@ -1352,17 +1325,27 @@ class TBR(object):
         if newTBR == self.value:
 
             # Give user info
-            print "New TBR correctly set: " + newTBR_
+            print "New TBR correctly set:"
+
+            # Show TBR
+            self.show(newTBR)
 
         # Otherwise, quit
         else:
 
+            # Give user info
+            print "Desired and actual TBRs:"
+
+            # Show TBRs
+            self.show(newTBR)
+            self.show(self.value)
+
             # Raise error
-            raise errors.TBRFail(newTBR_)
+            raise errors.TBRFail()
 
 
 
-    def cancel(self, units = False):
+    def cancel(self, units = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1371,7 +1354,7 @@ class TBR(object):
         """
 
         # Read units if not already provided
-        if not units:
+        if units is None:
 
             # Read current units
             self.pump.units["TBR"].read()
@@ -1385,6 +1368,21 @@ class TBR(object):
 
         elif units == "%":
             self.set(100, units, 0, True)
+
+
+
+    def show(self, TBR):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Show TBR components
+        print ("[" + str(TBR["Rate"]) + " " +
+                         TBR["Units"] + " (" +
+                     str(TBR["Duration"]) + " m)]")
 
 
 
@@ -1406,7 +1404,7 @@ def main():
     pump.time.read()
 
     # Read pump model
-    #pump.model.read()
+    pump.model.read()
 
     # Read pump firmware version
     #pump.firmware.read()
@@ -1474,8 +1472,10 @@ def main():
     #pump.TBR.read()
 
     # Send TBR to pump
-    #pump.TBR.set(35, "U/h", 30)
-    #pump.TBR.set(45, "%", 90)
+    #pump.TBR.set(0.05, "U/h", 30)
+    #pump.TBR.set(34.95, "U/h", 30)
+    #pump.TBR.set(1, "%", 90)
+    #pump.TBR.set(99, "%", 90)
     #pump.TBR.cancel()
 
     # Stop dialogue with pump

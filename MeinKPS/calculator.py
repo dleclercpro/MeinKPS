@@ -646,6 +646,8 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         Decouple profile components.
+
+        FIXME: does not work when no entry stored.
         """
 
         # Give user info
@@ -886,7 +888,9 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         Cut remaining excess entries in profile and ensure the latter starts and
-        ends according to the previously defined limit times.  
+        ends according to the previously defined limit times.
+
+        FIXME: does not work when first entry happens later than profile start.
         """
 
         # Give user info
