@@ -312,7 +312,7 @@ class PumpCommand(Command):
         self.EOD = 128
 
         # Define max poll attempts
-        self.nPollAttempts = 100
+        self.nPollAttempts = 200
 
         # Define sleep times
         self.pollSleep = 0.1
@@ -363,6 +363,13 @@ class PumpCommand(Command):
 
             # Get size of response waiting in radio buffer
             self.nBytesExpected = self.bytes[7]
+
+            # If pump does not respond anymore, maybe it's asleep?
+            if n == int(0.5 * self.nPollAttempts):
+
+                # Try waking it up
+                # FIXME: testing required!
+                self.pump.power.do()
 
             # Exit after a maximal number of poll attempts
             if n == self.nPollAttempts:
@@ -663,7 +670,7 @@ class PowerPump(PumpCommand):
         self.info = "Powering pump's radio transmitter..."
 
         # Define time for which pump will listen to RF communications (m)
-        self.sessionTime = 10
+        self.sessionTime = 15
 
         # Define packet bytes
         self.packet.power = 85
@@ -673,7 +680,7 @@ class PowerPump(PumpCommand):
         self.packet.parameters = [1, self.sessionTime]
 
         # Define time needed for the pump's radio to power up (s)
-        self.executionSleep = 10
+        self.executionSleep = 15
 
         # Define report
         self.report = "history.json"
@@ -2101,9 +2108,6 @@ class SetPumpTBR(PumpCommand):
         # If absolute TBR
         if TBR["Units"] == "U/h":
 
-            # Round TBR to pump's precision
-            TBR["Rate"] = round(TBR["Rate"], 2)
-
             # Define packet code
             self.packet.code = 76
 
@@ -2114,9 +2118,6 @@ class SetPumpTBR(PumpCommand):
 
         # If percentage TBR
         elif TBR["Units"] == "%":
-
-            # Round TBR to pump's precision
-            TBR["Rate"] = round(TBR["Rate"], 0)
 
             # Define packet code
             self.packet.code = 105

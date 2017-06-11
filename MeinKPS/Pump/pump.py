@@ -225,7 +225,7 @@ class Power(object):
 
         # Time buffer added to delta in order to eliminate dead calls at the end
         # of an RF session with the pump
-        delta += datetime.timedelta(minutes = 2)
+        delta += datetime.timedelta(minutes = 5)
 
         # Power up pump if necessary
         if delta > session:
@@ -1237,18 +1237,21 @@ class TBR(object):
               another TBR with same units can be set.
         """
 
-        # Define theoretical max basal
-        minTBR = {"U/h": 0, "%": 0}
-        maxTBR = {"U/h": 35, "%": 200}
-
         # Verify size of TBR
-        if (TBR["Rate"] < minTBR[TBR["Units"]] or
-            TBR["Rate"] > maxTBR[TBR["Units"]]):
+        if (TBR["Rate"] < {"U/h": 0, "%": 0}[TBR["Units"]] or
+            TBR["Rate"] > {"U/h": 35, "%": 200}[TBR["Units"]]):
 
             # Raise error
-            raise errors.TBRIncorrect(TBR["Rate"], TBR["Units"])
+            raise errors.TBROutsideLimits(TBR["Rate"], TBR["Units"])
 
-        # Verify if TBR duration is a multiple of 30
+        # Verify if rate is valid
+        if (TBR["Units"] == "U/h" and TBR["Rate"] != round(TBR["Rate"], 2) or
+            TBR["Units"] == "%" and TBR["Rate"] != round(TBR["Rate"], 0)):
+
+            # Raise error
+            raise errors.TBRIncorrectRate(TBR["Rate"])
+
+        # Verify if duration is a multiple of 30
         if TBR["Duration"] % 30:
 
             # Raise error
@@ -1472,11 +1475,11 @@ def main():
     #pump.TBR.read()
 
     # Send TBR to pump
-    #pump.TBR.set(0.05, "U/h", 30)
-    #pump.TBR.set(34.95, "U/h", 30)
-    #pump.TBR.set(1, "%", 90)
-    #pump.TBR.set(99, "%", 90)
-    #pump.TBR.cancel()
+    pump.TBR.set(0.05, "U/h", 30)
+    pump.TBR.set(34.95, "U/h", 30)
+    pump.TBR.set(1, "%", 90)
+    pump.TBR.set(99, "%", 90)
+    pump.TBR.cancel()
 
     # Stop dialogue with pump
     pump.stop()

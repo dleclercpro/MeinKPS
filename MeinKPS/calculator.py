@@ -245,16 +245,17 @@ class Calculator(object):
         # Give user info
         print "Enactment time: " + str(T) + " h"
 
-        # Find required basal difference to enact over given time
-        dTB = bolus / T
+        # Find required basal difference to enact over given time (round to
+        # pump's precision)
+        dTB = round(bolus / T, 2)
 
-        # Compute TB to enact
+        # Compute TB to enact 
         TB = self.basal.y[-1] + dTB
 
         # Give user info
-        print "Current basal: " + str(round(self.basal.y[-1], 2)) + " U/h"
-        print "Required basal difference: " + str(round(dTB, 2)) + " U/h"
-        print "Temporary basal to enact: " + str(round(TB, 2)) + " U/h"
+        print "Current basal: " + str(self.basal.y[-1]) + " U/h"
+        print "Required basal difference: " + str(dTB) + " U/h"
+        print "Temporary basal to enact: " + str(TB) + " U/h"
 
         # Convert enactment time to minutes
         T *= 60

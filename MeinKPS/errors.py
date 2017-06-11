@@ -138,7 +138,7 @@ class TBRFail(PumpError):
 
 
 
-class TBRIncorrect(PumpError):
+class TBROutsideLimits(PumpError):
 
     def prepare(self):
 
@@ -156,6 +156,22 @@ class TBRIncorrect(PumpError):
 
 
 
+class TBRIncorrectRate(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("New TBR rate (" + str(self.args[0]) + "U/h) precision" +
+                     "is incorrect. No more than 2 digits are allowed.")
+
+
+
 class TBRIncorrectDuration(PumpError):
 
     def prepare(self):
@@ -168,7 +184,7 @@ class TBRIncorrectDuration(PumpError):
 
         # Define error info
         self.info = ("New TBR duration (" + str(self.args[0]) + " m) is" +
-                     "incorrect. The latter hast to be a multiple of 30.")
+                     "incorrect. The latter has to be a multiple of 30.")
 
 
 
