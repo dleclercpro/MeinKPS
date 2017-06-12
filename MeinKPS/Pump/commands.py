@@ -334,6 +334,9 @@ class PumpCommand(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             POLL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Q: does expecting no less than 15 bytes solve the critical number of
+           bytes problem?
         """
 
         # Reset number of bytes expected
@@ -346,7 +349,7 @@ class PumpCommand(Command):
         n = 0
 
         # Poll until data is ready to be read
-        while self.nBytesExpected == 0:
+        while self.nBytesExpected < 15:
 
             # Update attempt variable
             n += 1
@@ -445,12 +448,6 @@ class PumpCommand(Command):
 
         # Check for problematic number of bytes
         if self.nBytesExpected < 14:
-
-            # Give user info
-            print "Wait..."
-
-            # Wait
-            time.sleep(5)
 
             # Raise error
             raise errors.Fatal()
