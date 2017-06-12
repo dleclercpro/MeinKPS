@@ -444,12 +444,12 @@ class PumpCommand(Command):
         [head, body, CRC] = self.parse()
 
         # Check for problematic number of bytes
-        if self.nBytesExpected == 14 and len(body) == 0:
+        if self.nBytesExpected < 14:
 
             # Give user info
             print "Wait..."
 
-            # Wait...
+            # Wait
             time.sleep(5)
 
             # Raise error
