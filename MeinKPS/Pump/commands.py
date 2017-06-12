@@ -112,9 +112,12 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Reset bytes
+        self.bytes = []
+
         # Decide on number of bytes to read. If less bytes expected than usual,
         # set to default value. Otherwise, read expected number of bytes.
-        nBytes = self.nBytesExpected or self.nBytesDefault
+        nBytes = max(self.nBytesExpected, self.nBytesDefault)
 
         # Give user info
         print "Trying to read " + str(nBytes) + " bytes from device..."
@@ -123,28 +126,24 @@ class Command(object):
         n = 0
 
         # Read until there is a response
-        while True:
+        while len(self.bytes) == 0:
 
             # Update reading attempt variable
             n += 1
 
+            # Give user info
             print "Reading attempt: " + str(n) + "/" + str(self.nReadAttempts)
 
             # Read raw bytes from device
             self.bytes = self.stick.read(nBytes)
 
-            # Exit condition
-            if len(self.bytes) > 0:
-
-                break
-
             # Exit after a maximal number of poll attempts
-            elif n == self.nReadAttempts:
+            if n == self.nReadAttempts:
 
                 # Raise error
-                sys.exit("Max number of read attempts reached. Exiting...")
+                raise errors.MaxRead(n)
 
-            # Otherwise retry
+            # Otherwise give stick some time to breathe
             else:
 
                 # Give device a break before reading again
@@ -312,11 +311,11 @@ class PumpCommand(Command):
         self.EOD = 128
 
         # Define max poll attempts
-        self.nPollAttempts = 200
+        self.nPollAttempts = 100
 
         # Define sleep times
         self.pollSleep = 0.1
-        self.executionSleep = 0.5 # FIXME
+        self.executionSleep = 0.5
 
         # Define report
         self.report = "pump.json"
@@ -352,9 +351,6 @@ class PumpCommand(Command):
             # Update attempt variable
             n += 1
 
-            # Poll sleep
-            time.sleep(self.pollSleep)
-
             # Keep track of attempts
             print "Polling data: " + str(n) + "/" + str(self.nPollAttempts)
 
@@ -364,18 +360,17 @@ class PumpCommand(Command):
             # Get size of response waiting in radio buffer
             self.nBytesExpected = self.bytes[7]
 
-            # If pump does not respond anymore, maybe it's asleep?
-            if n == int(0.5 * self.nPollAttempts):
-
-                # Try waking it up
-                # FIXME: testing required!
-                self.pump.power.do()
-
             # Exit after a maximal number of poll attempts
             if n == self.nPollAttempts:
 
                 # Raise error
                 raise errors.MaxPoll(n)
+
+            # Otherwise give stick some time to breathe
+            else:
+
+                # Poll sleep
+                time.sleep(self.pollSleep)
 
         # Give user info
         print "Polled data in " + str(n) + " attempt(s)."
@@ -445,22 +440,27 @@ class PumpCommand(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Check for incorrect number of bytes
-        if self.nBytesExpected == 14:
+        # Parse response
+        [head, body, CRC] = self.parse()
+
+        # Check for problematic number of bytes
+        if self.nBytesExpected == 14 and len(body) == 0:
+
+            # Give user info
+            print "Wait..."
+
+            # Wait...
+            time.sleep(5)
 
             # Raise error
-            raise errors.FatalNBytes(self.nBytesExpected)
+            raise errors.Fatal()
 
-        elif self.nBytesReceived != self.nBytesExpected:
+        # Check for mismatching numbers of bytes
+        if self.nBytesReceived != self.nBytesExpected:
 
             # Raise error
             raise errors.MismatchNBytes([self.nBytesExpected,
                                          self.nBytesReceived])
-
-        # Parse response
-        head = self.bytes[0:13]
-        body = self.bytes[13:-1]
-        CRC = self.bytes[-1]
 
         # Compute CRC based on received data
         computedCRC = lib.computeCRC8(body)
@@ -480,6 +480,24 @@ class PumpCommand(Command):
 
         # Store response body
         self.data.extend(body)
+
+
+
+    def parse(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PARSE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Parse response
+        head = self.bytes[0:13]
+        body = self.bytes[13:-1]
+        CRC = self.bytes[-1]
+
+        # Return parsed response
+        return [head, body, CRC]
 
 
 

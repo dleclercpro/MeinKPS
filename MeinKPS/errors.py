@@ -237,6 +237,22 @@ class NoHandle(RequesterError):
 
 
 
+class MaxRead(RequesterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Maximal number of reading attempts reached (" +
+                     str(self.args[0]) + ").")
+
+
+
 class MaxPoll(RequesterError):
 
     def prepare(self):
@@ -249,11 +265,12 @@ class MaxPoll(RequesterError):
 
         # Define error info
         self.info = ("Maximal number of polling attempts reached (" +
-                     str(self.args[0]) + "). Is battery too low?")
+                     str(self.args[0]) + "). Is battery too low? Is pump " +
+                     "within range?")
 
 
 
-class FatalNBytes(RequesterError):
+class Fatal(RequesterError):
 
     def prepare(self):
 
@@ -264,9 +281,8 @@ class FatalNBytes(RequesterError):
         """
 
         # Define error info
-        self.info = ("Incorrect number of bytes expected (" +
-                     str(self.args[0]) + "). It seems like a " +
-                     "communication problem occured between stick and pump.")
+        self.info = ("It seems like a communication problem occured between " +
+                     "stick and pump.")
 
 
 
@@ -282,7 +298,8 @@ class MismatchNBytes(RequesterError):
 
         # Define error info
         self.info = ("Expected " + str(self.args[0]) + " bytes." +
-                     "Received " + str(self.args[1]) + " bytes.")
+                     "Tried to read " + str(self.args[1]) + " bytes." +
+                     "Received " + str(self.args[2]) + " bytes.")
 
 
 
