@@ -70,10 +70,10 @@ class Command(object):
         self.nBytesExpected = 0
         self.nBytesReceived = 0
 
-        # Define max read attempts
-        self.nReadAttempts = 100
+        # Define read time (s)
+        self.readTime = 10
 
-        # Define sleep times
+        # Define sleep times (s)
         self.writeSleep = 0
         self.readSleep = 0
 
@@ -125,29 +125,29 @@ class Command(object):
         # Initialize reading attempt variable
         n = 0
 
+        # Define start time
+        start = time.time()
+
         # Read until there is a response
-        while len(self.bytes) == 0:
+        while len(self.bytes) == 0 and time.time() < start + self.readTime:
 
             # Update reading attempt variable
             n += 1
 
             # Give user info
-            print "Reading attempt: " + str(n) + "/" + str(self.nReadAttempts)
+            print "Reading attempt: " + str(n) + "/-"
 
             # Read raw bytes from device
             self.bytes = self.stick.read(nBytes)
 
-            # Exit after a maximal number of poll attempts
-            if n == self.nReadAttempts:
+            # Give stick a break before reading again
+            time.sleep(self.readSleep)
 
-                # Raise error
-                raise errors.MaxRead(n)
+        # Exit after a maximal number of poll attempts
+        if len(self.bytes) == 0:
 
-            # Otherwise give stick some time to breathe
-            else:
-
-                # Give device a break before reading again
-                time.sleep(self.readSleep)
+            # Raise error
+            raise errors.MaxRead(self.readTime)
 
         # Give user info
         print "Read data in " + str(n) + " attempt(s)."
@@ -310,10 +310,10 @@ class PumpCommand(Command):
         # Define end of download byte
         self.EOD = 128
 
-        # Define max poll attempts
-        self.nPollAttempts = 100
+        # Define poll time (s)
+        self.pollTime = 10
 
-        # Define sleep times
+        # Define sleep times (s)
         self.pollSleep = 0.1
         self.executionSleep = 0.5
 
@@ -348,14 +348,17 @@ class PumpCommand(Command):
         # Define polling attempt variable
         n = 0
 
+        # Define start time
+        start = time.time()
+
         # Poll until data is ready to be read
-        while self.nBytesExpected < 15:
+        while self.nBytesExpected == 0 and time.time() < start + self.pollTime:
 
             # Update attempt variable
             n += 1
 
             # Keep track of attempts
-            print "Polling data: " + str(n) + "/" + str(self.nPollAttempts)
+            print "Polling data: " + str(n) + "/-"
 
             # Send packet
             self.send()
@@ -363,17 +366,14 @@ class PumpCommand(Command):
             # Get size of response waiting in radio buffer
             self.nBytesExpected = self.bytes[7]
 
-            # Exit after a maximal number of poll attempts
-            if n == self.nPollAttempts:
+            # Poll sleep
+            time.sleep(self.pollSleep)
 
-                # Raise error
-                raise errors.MaxPoll(n)
+        # Exit after a maximal number of poll attempts
+        if self.nBytesExpected == 0:
 
-            # Otherwise give stick some time to breathe
-            else:
-
-                # Poll sleep
-                time.sleep(self.pollSleep)
+            # Raise error
+            raise errors.MaxPoll(self.pollTime)
 
         # Give user info
         print "Polled data in " + str(n) + " attempt(s)."
@@ -427,9 +427,6 @@ class PumpCommand(Command):
 
                 break
 
-        # Reset number of bytes expected after download
-        self.nBytesExpected = 0
-
         # Give user info
         print "Downloaded data in " + str(n) + " attempt(s)."
 
@@ -446,11 +443,17 @@ class PumpCommand(Command):
         # Parse response
         [head, body, CRC] = self.parse()
 
+        # Check for communication problems
+        if self.nBytesExpected == 14 and len(self.data) == 0:
+
+            # Raise error
+            raise errors.OutsideRange()
+
         # Check for problematic number of bytes
         if self.nBytesExpected < 14:
 
             # Raise error
-            raise errors.Fatal()
+            raise errors.IncorrectNExpectedBytes()
 
         # Check for mismatching numbers of bytes
         if self.nBytesReceived != self.nBytesExpected:

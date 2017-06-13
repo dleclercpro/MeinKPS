@@ -1466,7 +1466,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    #pump.history.read(1)
+    pump.history.read()
 
     # Send bolus to pump
     #pump.bolus.deliver(0.1)
@@ -1475,11 +1475,11 @@ def main():
     #pump.TBR.read()
 
     # Send TBR to pump
-    pump.TBR.set(0.05, "U/h", 30)
-    pump.TBR.set(34.95, "U/h", 30)
+    #pump.TBR.set(0.05, "U/h", 30)
+    #pump.TBR.set(34.95, "U/h", 30)
     #pump.TBR.set(1, "%", 90)
     #pump.TBR.set(99, "%", 90)
-    pump.TBR.cancel()
+    #pump.TBR.cancel()
 
     # Stop dialogue with pump
     pump.stop()

@@ -98,7 +98,7 @@ class PumpError(BaseError):
 class StickError(BaseError):
     pass
 
-class RequesterError(BaseError):
+class CGMError(BaseError):
     pass
 
 class ReporterError(BaseError):
@@ -204,8 +204,7 @@ class NoStick(StickError):
 
 
 
-# Requester related errors
-class NoDevice(RequesterError):
+class MaxRead(StickError):
 
     def prepare(self):
 
@@ -216,28 +215,12 @@ class NoDevice(RequesterError):
         """
 
         # Define error info
-        self.info = ("No device. Requester needs to know from whom the " +
-                     "requests are coming!")
+        self.info = ("Maximal reading time reached (" + str(self.args[0]) +
+                     ").")
 
 
 
-class NoHandle(RequesterError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("No handle. Requester needs something to make requests " +
-                     "with!")
-
-
-
-class MaxRead(RequesterError):
+class MaxPoll(StickError):
 
     def prepare(self):
 
@@ -248,29 +231,12 @@ class MaxRead(RequesterError):
         """
 
         # Define error info
-        self.info = ("Maximal number of reading attempts reached (" +
-                     str(self.args[0]) + ").")
+        self.info = ("Maximal polling time reached (" + str(self.args[0]) +
+                     "). Is battery too low? Is pump still within range?")
 
 
 
-class MaxPoll(RequesterError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Maximal number of polling attempts reached (" +
-                     str(self.args[0]) + "). Is battery too low? Is pump " +
-                     "within range?")
-
-
-
-class Fatal(RequesterError):
+class OutsideRange(StickError):
 
     def prepare(self):
 
@@ -281,12 +247,26 @@ class Fatal(RequesterError):
         """
 
         # Define error info
-        self.info = ("It seems like a communication problem occured between " +
-                     "stick and pump.")
+        self.info = ("Pump seems to be outside of stick's range.")
 
 
 
-class MismatchNBytes(RequesterError):
+class IncorrectNExpectedBytes(StickError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Incorrect number of expected bytes.")
+
+
+
+class MismatchNBytes(StickError):
 
     def prepare(self):
 
