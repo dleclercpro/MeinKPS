@@ -70,8 +70,8 @@ class Command(object):
         self.nBytesExpected = 0
         self.nBytesReceived = 0
 
-        # Define read time (s)
-        self.readTime = 10
+        # Define max read attempts
+        self.nReadAttempts = 100
 
         # Define sleep times (s)
         self.writeSleep = 0
@@ -125,17 +125,14 @@ class Command(object):
         # Initialize reading attempt variable
         n = 0
 
-        # Define start time
-        start = time.time()
-
         # Read until there is a response
-        while len(self.bytes) == 0 and time.time() < start + self.readTime:
+        while len(self.bytes) == 0 and n < self.nReadAttempts:
 
             # Update reading attempt variable
             n += 1
 
             # Give user info
-            print "Reading attempt: " + str(n) + "/-"
+            print "Reading attempt: " + str(n) + "/" + str(self.nReadAttempts)
 
             # Read raw bytes from device
             self.bytes = self.stick.read(nBytes)
@@ -143,11 +140,11 @@ class Command(object):
             # Give stick a break before reading again
             time.sleep(self.readSleep)
 
-        # Exit after a maximal number of poll attempts
-        if len(self.bytes) == 0:
+        # Exit after a maximal number of read attempts
+        if n == self.nReadAttempts:
 
             # Raise error
-            raise errors.MaxRead(self.readTime)
+            raise errors.MaxRead(self.nReadAttempts)
 
         # Give user info
         print "Read data in " + str(n) + " attempt(s)."
@@ -310,8 +307,8 @@ class PumpCommand(Command):
         # Define end of download byte
         self.EOD = 128
 
-        # Define poll time (s)
-        self.pollTime = 10
+        # Define max poll attempts
+        self.nPollAttempts = 100
 
         # Define sleep times (s)
         self.pollSleep = 0.1
@@ -348,17 +345,14 @@ class PumpCommand(Command):
         # Define polling attempt variable
         n = 0
 
-        # Define start time
-        start = time.time()
-
         # Poll until data is ready to be read
-        while self.nBytesExpected == 0 and time.time() < start + self.pollTime:
+        while self.nBytesExpected == 0 and n < self.nPollAttempts:
 
             # Update attempt variable
             n += 1
 
             # Keep track of attempts
-            print "Polling data: " + str(n) + "/-"
+            print "Polling data: " + str(n) + "/" + str(self.nPollAttempts)
 
             # Send packet
             self.send()
@@ -370,10 +364,10 @@ class PumpCommand(Command):
             time.sleep(self.pollSleep)
 
         # Exit after a maximal number of poll attempts
-        if self.nBytesExpected == 0:
+        if n == self.nPollAttempts:
 
             # Raise error
-            raise errors.MaxPoll(self.pollTime)
+            raise errors.MaxPoll(self.nPollAttempts)
 
         # Give user info
         print "Polled data in " + str(n) + " attempt(s)."

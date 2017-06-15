@@ -603,7 +603,7 @@ class Settings(object):
 
 
 
-    def verify(self, bolus = None, rate = None, units = None):
+    def verify(self, rate = None, units = None, bolus = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1170,7 +1170,7 @@ class Bolus(object):
         if not self.pump.status.verify():
             return
 
-        if not self.pump.settings.verify(bolus):
+        if not self.pump.settings.verify(None, None, bolus):
             return
 
         # Do command
@@ -1237,6 +1237,9 @@ class TBR(object):
               another TBR with same units can be set.
         """
 
+        # TODO: Test problematic cases where pump status/settings do not allow
+        #       desired course of action
+
         # Verify size of TBR
         if (TBR["Rate"] < {"U/h": 0, "%": 0}[TBR["Units"]] or
             TBR["Rate"] > {"U/h": 35, "%": 200}[TBR["Units"]]):
@@ -1261,7 +1264,7 @@ class TBR(object):
         if not self.pump.status.verify():
             return
 
-        if not self.pump.settings.verify(None, TBR["Rate"], TBR["Units"]):
+        if not self.pump.settings.verify(TBR["Rate"], TBR["Units"]):
             return
 
         # Before issuing any TBR, read the current one
