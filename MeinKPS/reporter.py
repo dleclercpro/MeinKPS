@@ -45,7 +45,7 @@ class Reporter:
         """
 
         # Set source path to reports
-        self.source = "./Reports/"
+        self.source = "/home/pi/MeinKPS/MeinKPS/Reports/"
 
         # Initialize section
         self.section = []
