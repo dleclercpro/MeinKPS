@@ -215,8 +215,8 @@ class MaxRead(StickError):
         """
 
         # Define error info
-        self.info = ("Maximal reading time reached (" + str(self.args[0]) +
-                     ").")
+        self.info = ("Maximal number of reading attempts reached (" +
+                     str(self.args[0]) + ").")
 
 
 
@@ -231,8 +231,25 @@ class MaxPoll(StickError):
         """
 
         # Define error info
-        self.info = ("Maximal polling time reached (" + str(self.args[0]) +
-                     "). Is battery too low? Is pump still within range?")
+        self.info = ("Maximal number of polling attempts reached (" +
+                     str(self.args[0]) + "). Is battery too low? Is pump " +
+                     "still within range?")
+
+
+
+class MaxDownload(StickError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Maximal number of download attempts reached (" +
+                     str(self.args[0]) + ").")
 
 
 

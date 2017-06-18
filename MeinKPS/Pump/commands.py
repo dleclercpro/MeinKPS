@@ -70,7 +70,7 @@ class Command(object):
         self.nBytesExpected = 0
         self.nBytesReceived = 0
 
-        # Define max read attempts
+        # Define max attempts
         self.nReadAttempts = 100
 
         # Define sleep times (s)
@@ -126,25 +126,28 @@ class Command(object):
         n = 0
 
         # Read until there is a response
-        while len(self.bytes) == 0 and n < self.nReadAttempts:
+        while len(self.bytes) == 0:
 
             # Update reading attempt variable
             n += 1
 
             # Give user info
-            print "Reading attempt: " + str(n) + "/" + str(self.nReadAttempts)
+            print "Reading: " + str(n) + "/" + str(self.nReadAttempts)
 
             # Read raw bytes from device
             self.bytes = self.stick.read(nBytes)
 
-            # Give stick a break before reading again
-            time.sleep(self.readSleep)
+            # Exit after a maximal number of attempts
+            if n == self.nReadAttempts:
 
-        # Exit after a maximal number of read attempts
-        if n == self.nReadAttempts:
+                # Raise error
+                raise errors.MaxRead(self.nReadAttempts)
 
-            # Raise error
-            raise errors.MaxRead(self.nReadAttempts)
+            # Otherwise
+            else:
+
+                # Give stick a break before reading again
+                time.sleep(self.readSleep)
 
         # Give user info
         print "Read data in " + str(n) + " attempt(s)."
@@ -307,11 +310,13 @@ class PumpCommand(Command):
         # Define end of download byte
         self.EOD = 128
 
-        # Define max poll attempts
+        # Define max attempts
         self.nPollAttempts = 100
+        self.nDownloadAttempts = 50
 
         # Define sleep times (s)
         self.pollSleep = 0.1
+        self.downloadSleep = 0
         self.executionSleep = 0.5
 
         # Define report
@@ -346,13 +351,13 @@ class PumpCommand(Command):
         n = 0
 
         # Poll until data is ready to be read
-        while self.nBytesExpected == 0 and n < self.nPollAttempts:
+        while self.nBytesExpected == 0:
 
             # Update attempt variable
             n += 1
 
             # Keep track of attempts
-            print "Polling data: " + str(n) + "/" + str(self.nPollAttempts)
+            print "Polling: " + str(n) + "/" + str(self.nPollAttempts)
 
             # Send packet
             self.send()
@@ -360,14 +365,17 @@ class PumpCommand(Command):
             # Get size of response waiting in radio buffer
             self.nBytesExpected = self.bytes[7]
 
-            # Poll sleep
-            time.sleep(self.pollSleep)
+            # Exit after a maximal number of attempts
+            if n == self.nPollAttempts:
 
-        # Exit after a maximal number of poll attempts
-        if n == self.nPollAttempts:
+                # Raise error
+                raise errors.MaxPoll(self.nPollAttempts)
 
-            # Raise error
-            raise errors.MaxPoll(self.nPollAttempts)
+            # Otherwise
+            else:
+
+                # Poll sleep
+                time.sleep(self.pollSleep)
 
         # Give user info
         print "Polled data in " + str(n) + " attempt(s)."
@@ -399,7 +407,7 @@ class PumpCommand(Command):
             n += 1
 
             # Keep track of download process
-            print "Downloading data: " + str(n) + "/-"
+            print "Downloading: " + str(n) + "/" + str(self.nDownloadAttempts)
 
             # Poll data
             self.poll()
@@ -413,15 +421,26 @@ class PumpCommand(Command):
             # Verify and store downloaded data if it corresponds to expectations
             self.verify()
 
-	        # Look for end of data (EOD) condition
+	        # Look for end of data condition
             if self.bytes[5] >= self.EOD:
 
-                # Give user info
-                print "End of data. Exiting download loop."
-
+                # Exit loop
                 break
 
+            # Exit after a maximal number of attempts
+            elif n == self.nDownloadAttempts:
+
+                # Raise error
+                raise errors.MaxDownload(self.nDownloadAttempts)
+
+            # Otherwise
+            else:
+
+                # Download sleep
+                time.sleep(self.downloadSleep)
+
         # Give user info
+        print "End of data. Exiting download loop."
         print "Downloaded data in " + str(n) + " attempt(s)."
 
 
@@ -1817,7 +1836,6 @@ class ReadPumpBasalProfile(PumpCommand):
             else:
 
                 # Decode time
-                print entry
                 time = entry[2] * self.pump.TBR.timeBlock
 
                 # Format time
