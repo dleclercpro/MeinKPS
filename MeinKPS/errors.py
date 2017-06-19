@@ -25,6 +25,7 @@
 
 # LIBRARIES
 import sys
+import os
 
 
 
@@ -216,7 +217,10 @@ class MaxRead(StickError):
 
         # Define error info
         self.info = ("Maximal number of reading attempts reached (" +
-                     str(self.args[0]) + ").")
+                     str(self.args[0]) + "). Trying to reset stick...")
+
+        # Reset stick
+        os.system("sudo sh reset.sh")
 
 
 

@@ -1,15 +1,15 @@
 {
-    "Attempts": 250,
-    "BG Targets": 136,
-    "BG Units": 136,
-    "Basal Profile": 136,
-    "Battery": 136,
-    "CSF": 136,
-    "Carb Units": 136,
-    "ISF": 136,
-    "Model": 136,
-    "Reservoir": 136,
-    "TB": 134,
-    "TB Units": 136,
-    "Time": 136
+    "Attempts": 0,
+    "BG Targets": 0,
+    "BG Units": 0,
+    "Basal Profile": 0,
+    "Battery": 0,
+    "CSF": 0,
+    "Carb Units": 0,
+    "ISF": 0,
+    "Model": 0,
+    "Reservoir": 0,
+    "TB": 0,
+    "TB Units": 0,
+    "Time": 0
 }
