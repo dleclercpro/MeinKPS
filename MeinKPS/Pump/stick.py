@@ -91,7 +91,7 @@ class Stick(object):
         try:
 
             # Define serial port
-            os.system("sudo modprobe --quiet --first-time usbserial " +
+            os.system("modprobe --quiet --first-time usbserial " +
                       "vendor=" + str(self.vendor) + " " +
                       "product=" + str(self.product))
 
