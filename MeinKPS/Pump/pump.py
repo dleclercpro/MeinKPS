@@ -1103,11 +1103,8 @@ class History(object):
             # Extend known history of pump
             self.pages.extend(page)
 
-        # Compute number of bytes read
-        size = len(page)
-
         # Print collected history pages
-        print "Read " + str(n) + " page(s) [or " + str(size) + " byte(s)]:"
+        print "Read " + str(n) + " page(s) [or " + str(len(page)) + " byte(s)]:"
         print self.pages
 
 
@@ -1469,7 +1466,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    pump.history.read()
+    #pump.history.read()
 
     # Send bolus to pump
     #pump.bolus.deliver(0.1)
@@ -1478,7 +1475,7 @@ def main():
     #pump.TB.read()
 
     # Send TB to pump
-    #pump.TB.set(0.05, "U/h", 30)
+    pump.TB.set(0.05, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)

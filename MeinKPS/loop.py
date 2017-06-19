@@ -223,7 +223,7 @@ class Loop(object):
 
         # React to TB recommendation
         #if TB is None:
-        if False is None:
+        if False:
 
             # Cancel TB
             self.pump.TB.cancel()
