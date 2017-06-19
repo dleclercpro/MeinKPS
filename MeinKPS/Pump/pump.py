@@ -1259,10 +1259,14 @@ class TB(object):
 
         # Verify pump status and settings before doing anything
         if not self.pump.status.verify():
-            return
+
+            # Raise error
+            raise errors.IncorrectStatus()
 
         if not self.pump.settings.verify(TB["Rate"], TB["Units"]):
-            return
+
+            # Raise error
+            raise errors.IncorrectSettings()
 
         # Before issuing any TB, read the current one
         self.read()
