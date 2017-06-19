@@ -1404,7 +1404,7 @@ def main():
     pump.start()
 
     # Read pump time
-    pump.time.read()
+    #pump.time.read()
 
     # Read pump model
     #pump.model.read()
@@ -1475,7 +1475,7 @@ def main():
     #pump.TB.read()
 
     # Send TB to pump
-    pump.TB.set(0.05, "U/h", 30)
+    #pump.TB.set(0.05, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)

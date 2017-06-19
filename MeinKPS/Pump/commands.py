@@ -1851,7 +1851,7 @@ class ReadPumpBasalProfile(PumpCommand):
                         str(time % 60).zfill(2))
 
                 # Decode entry
-                rate = entry[0] / self.pump.bolus.rate
+                rate = lib.unpack(entry[0:2]) / self.pump.bolus.rate
 
                 # Store decoded rate and its corresponding ending time
                 rates.append(rate)
