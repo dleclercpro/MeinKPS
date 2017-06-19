@@ -1,15 +1,15 @@
 {
-    "Attempts": 0,
-    "BG Targets": 0,
-    "BG Units": 0,
-    "Basal Profile": 0,
-    "Battery": 0,
-    "CSF": 0,
-    "Carb Units": 0,
-    "ISF": 0,
-    "Model": 0,
-    "Reservoir": 0,
+    "Attempts": 3,
+    "BG Targets": 2,
+    "BG Units": 2,
+    "Basal Profile": 2,
+    "Battery": 2,
+    "CSF": 2,
+    "Carb Units": 2,
+    "ISF": 2,
+    "Model": 2,
+    "Reservoir": 2,
     "TB": 0,
-    "TB Units": 0,
-    "Time": 0
+    "TB Units": 2,
+    "Time": 2
 }

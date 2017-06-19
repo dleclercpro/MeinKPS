@@ -417,11 +417,8 @@ class PumpCommand(Command):
 		    # Send packet
             self.send()
 
-            # Verify and store downloaded data if it corresponds to expectations
-            self.verify()
-
-	        # Look for end of data condition
-            if self.bytes[5] >= self.EOD:
+            # Verify downloaded data
+            if self.verify():
 
                 # Exit loop
                 break
@@ -456,10 +453,10 @@ class PumpCommand(Command):
         [head, body, CRC] = self.parse()
 
         # Check for communication problems
-        if self.nBytesExpected == 14 and len(self.data) == 0:
+        if head[2] == 5:
 
             # Raise error
-            raise errors.OutsideRange()
+            raise errors.NoPump()
 
         # Check for problematic number of bytes
         if self.nBytesExpected < 14:
@@ -492,6 +489,18 @@ class PumpCommand(Command):
 
         # Store response body
         self.data.extend(body)
+
+        # If end of data
+        if head[5] >= self.EOD:
+
+            # Exit
+            return True
+
+        # Otherwise keep downloading
+        else:
+
+            # Do not exit
+            return False
 
 
 
@@ -700,7 +709,7 @@ class PowerPump(PumpCommand):
         self.info = "Powering pump's radio transmitter..."
 
         # Define time for which pump will listen to RF communications (m)
-        self.sessionTime = 15
+        self.sessionTime = 10
 
         # Define packet bytes
         self.packet.power = 85

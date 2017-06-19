@@ -32,10 +32,11 @@ import logging
 
 
 # USER LIBRARIES
-from CGM import cgm
-from Pump import pump
+import lib
 import calculator
 import reporter
+from CGM import cgm
+from Pump import pump
 
 
 
@@ -80,6 +81,9 @@ class Loop(object):
 
         # Define current time
         self.now = datetime.datetime.now()
+
+        # Give user info
+        print "Start: " + lib.formatTime(self.now)
 
         # Load pump report
         Reporter.load("loop.json")
@@ -191,6 +195,9 @@ class Loop(object):
 
         # Stop dialogue with pump
         self.pump.stop()
+
+        # Give user info
+        print "End: " + lib.formatTime(datetime.datetime.now())
 
 
 

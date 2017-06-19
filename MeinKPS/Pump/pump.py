@@ -1407,7 +1407,7 @@ def main():
     pump.start()
 
     # Read pump time
-    #pump.time.read()
+    pump.time.read()
 
     # Read pump model
     #pump.model.read()
@@ -1469,7 +1469,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    #pump.history.read()
+    pump.history.read()
 
     # Send bolus to pump
     #pump.bolus.deliver(0.1)

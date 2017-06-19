@@ -257,7 +257,7 @@ class MaxDownload(StickError):
 
 
 
-class OutsideRange(StickError):
+class NoPump(StickError):
 
     def prepare(self):
 
@@ -268,7 +268,7 @@ class OutsideRange(StickError):
         """
 
         # Define error info
-        self.info = ("Pump seems to be outside of stick's range.")
+        self.info = ("Pump does not respond. Is it still within stick's range?")
 
 
 
