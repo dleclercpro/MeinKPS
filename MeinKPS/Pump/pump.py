@@ -143,7 +143,7 @@ class Pump(object):
         print "Starting dialogue with pump..."
 
         # Connect to stick
-        self.stick.connect()
+        #self.stick.connect()
 
         # Start stick
         self.stick.start()
