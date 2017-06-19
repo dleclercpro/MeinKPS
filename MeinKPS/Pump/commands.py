@@ -27,6 +27,7 @@
 import datetime
 import time
 import sys
+import os
 
 
 
@@ -80,6 +81,9 @@ class Command(object):
         # Link with stick
         self.stick = stick
 
+        # Set source path
+        self.src = "/home/pi/MeinKPS/MeinKPS/"
+
 
 
     def send(self):
@@ -125,6 +129,9 @@ class Command(object):
         # Initialize reading attempt variable
         n = 0
 
+        # Define retry boolean
+        retry = True
+
         # Read until there is a response
         while len(self.bytes) == 0:
 
@@ -140,8 +147,27 @@ class Command(object):
             # Exit after a maximal number of attempts
             if n == self.nReadAttempts:
 
-                # Raise error
-                raise errors.MaxRead(self.nReadAttempts)
+                # If not yet tried to recover
+                if retry:
+
+                    # Give user info
+                    print ("Maximal number of reading attempts reached. " +
+                           "Trying once more after resetting stick...")
+
+                    # Reset reading attempt variable
+                    n = 0
+
+                    # No more retries
+                    retry = False
+
+                    # Reset stick
+                    os.system("sudo sh " + self.src + "reset.sh")
+
+                # Otherwise
+                else:
+
+                    # Raise error
+                    raise errors.MaxRead(self.nReadAttempts)
 
             # Otherwise
             else:

@@ -27,6 +27,7 @@ import datetime
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
 
 
 
@@ -35,6 +36,11 @@ from CGM import cgm
 from Pump import pump
 import calculator
 import reporter
+
+
+
+# Define a reporter
+Reporter = reporter.Reporter()
 
 
 
@@ -75,20 +81,103 @@ class Loop(object):
         # Define current time
         self.now = datetime.datetime.now()
 
+        # Load pump report
+        Reporter.load("loop.json")
+        Reporter.addEntries([], "Attempts", Reporter.getEntry([], "Attempts") + 1, True)
+
         # Dump CGM readings
-        self.cgm.dumpLastBG()
+        #self.cgm.dumpLastBG()
 
         # Start dialogue with pump
         self.pump.start()
 
         # Read pump time
-        self.pump.time.read()
+        try:
+            self.pump.time.read()
+            Reporter.addEntries([], "Time", Reporter.getEntry([], "Time") + 1, True)
+
+        except:
+            pass
 
         # Read pump model
-        self.pump.model.read()
+        try:
+            self.pump.model.read()
+            Reporter.addEntries([], "Model", Reporter.getEntry([], "Model") + 1, True)
 
-        # Read pump's history
-        #self.pump.history.read()
+        except:
+            pass
+
+        # Read pump battery level
+        try:
+            self.pump.battery.read()
+            Reporter.addEntries([], "Battery", Reporter.getEntry([], "Battery") + 1, True)
+
+        except:
+            pass
+
+        # Read remaining amount of insulin in pump
+        try:
+            self.pump.reservoir.read()
+            Reporter.addEntries([], "Reservoir", Reporter.getEntry([], "Reservoir") + 1, True)
+
+        except:
+            pass
+
+        # Read BG units set in pump's bolus wizard
+        try:
+            self.pump.units["BG"].read()
+            Reporter.addEntries([], "BG Units", Reporter.getEntry([], "BG Units") + 1, True)
+
+        except:
+            pass
+
+        # Read carb units set in pump's bolus wizard
+        try:
+            self.pump.units["C"].read()
+            Reporter.addEntries([], "Carb Units", Reporter.getEntry([], "Carb Units") + 1, True)
+
+        except:
+            pass
+
+        # Read current TBR units
+        try:
+            self.pump.units["TBR"].read()
+            Reporter.addEntries([], "TB Units", Reporter.getEntry([], "TB Units") + 1, True)
+
+        except:
+            pass
+
+        # Read BG targets stored in pump
+        try:
+            self.pump.BGTargets.read()
+            Reporter.addEntries([], "BG Targets", Reporter.getEntry([], "BG Targets") + 1, True)
+
+        except:
+            pass
+
+        # Read insulin sensitivity factors stored in pump
+        try:
+            self.pump.ISF.read()
+            Reporter.addEntries([], "ISF", Reporter.getEntry([], "ISF") + 1, True)
+
+        except:
+            pass
+
+        # Read carb sensitivity factors stored in pump
+        try:
+            self.pump.CSF.read()
+            Reporter.addEntries([], "CSF", Reporter.getEntry([], "CSF") + 1, True)
+
+        except:
+            pass
+
+        # Read basal profile stored in pump
+        try:
+            self.pump.basalProfile.read("Standard")
+            Reporter.addEntries([], "Basal Profile", Reporter.getEntry([], "Basal Profile") + 1, True)
+
+        except:
+            pass
 
 
 
@@ -117,16 +206,17 @@ class Loop(object):
         self.prepare()
 
         # Run calculator and get TB recommendation
-        TB = self.calc.run(self.now)
+        #TB = self.calc.run(self.now)
 
         # Show loop
-        self.show(self.calc.net,
-                  self.calc.BG,
-                  self.calc.IOB,
-                  self.calc.IDC.DIA)
+        #self.show(self.calc.net,
+        #          self.calc.BG,
+        #          self.calc.IOB,
+        #          self.calc.IDC.DIA)
 
         # React to TB recommendation
-        if TB is None:
+        #if TB is None:
+        if False is None:
 
             # Cancel TB
             self.pump.TBR.cancel()
@@ -134,7 +224,13 @@ class Loop(object):
         else:
 
             # Enact TB
-            self.pump.TBR.set(*TB)
+            try:
+                #self.pump.TBR.set(*TB)
+                self.pump.TBR.set(0.5, "U/h", 30)
+                Reporter.addEntries([], "TB", Reporter.getEntry([], "TB") + 1, True)
+
+            except:
+                pass
 
         # Finish loop
         self.finish()

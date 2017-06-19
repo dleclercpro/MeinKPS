@@ -91,7 +91,7 @@ class Stick(object):
         try:
 
             # Define serial port
-            os.system("modprobe --quiet --first-time usbserial" + " " +
+            os.system("modprobe --quiet --first-time usbserial " +
                       "vendor=" + str(self.vendor) + " " +
                       "product=" + str(self.product))
 
@@ -136,7 +136,7 @@ class Stick(object):
         """
 
         # Before anything, make sure buffer is empty
-        self.empty()
+        #self.empty()
 
         # Read infos
         self.infos.read()

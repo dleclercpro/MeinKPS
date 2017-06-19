@@ -45,7 +45,7 @@ class Reporter:
         """
 
         # Set source path to reports
-        self.source = "/home/pi/MeinKPS/MeinKPS/Reports/"
+        self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
 
         # Initialize section
         self.section = []
@@ -67,17 +67,17 @@ class Reporter:
         print "Loading '" + self.name + "'..."
 
         # Check if report exists. If not, generate it.
-        if not os.path.exists(self.source + self.name):
+        if not os.path.exists(self.src + self.name):
 
             # Give user info
             print "'" + self.name + "' does not exist. Creating it..."
 
             # Creating new empty report
-            with open(self.source + self.name, "w") as f:
+            with open(self.src + self.name, "w") as f:
                 json.dump({}, f)
 
         # Load report
-        with open(self.source + self.name, "r") as f:
+        with open(self.src + self.name, "r") as f:
             self.report = json.load(f)
 
         # Give user info
@@ -97,7 +97,7 @@ class Reporter:
         print "Updating '" + self.name + "'..."
 
         # Rewrite report
-        with open(self.source + self.name, "w") as f:
+        with open(self.src + self.name, "w") as f:
             json.dump(self.report,
                       f,
                       indent = 4,
