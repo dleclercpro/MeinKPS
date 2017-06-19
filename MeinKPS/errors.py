@@ -124,7 +124,7 @@ class NoHistory(PumpError):
 
 
 
-class TBRFail(PumpError):
+class TBFail(PumpError):
 
     def prepare(self):
 
@@ -135,11 +135,11 @@ class TBRFail(PumpError):
         """
 
         # Define error info
-        self.info = ("New TBR could not be correctly set.")
+        self.info = ("New TB could not be correctly set.")
 
 
 
-class TBROutsideLimits(PumpError):
+class TBOutsideLimits(PumpError):
 
     def prepare(self):
 
@@ -150,14 +150,14 @@ class TBROutsideLimits(PumpError):
         """
 
         # Define error info
-        self.info = ("New TBR (" + str(self.args[0]) + " " + self.args[1] +
+        self.info = ("New TB (" + str(self.args[0]) + " " + self.args[1] +
                      ") is either too large or too small). It must be " +
                      "comprised within the theoretical limits of [0, 35] U/h " +
                      "or [0, 200] %.")
 
 
 
-class TBRIncorrectRate(PumpError):
+class TBIncorrectRate(PumpError):
 
     def prepare(self):
 
@@ -168,12 +168,12 @@ class TBRIncorrectRate(PumpError):
         """
 
         # Define error info
-        self.info = ("New TBR rate (" + str(self.args[0]) + "U/h) precision" +
+        self.info = ("New TB rate (" + str(self.args[0]) + "U/h) precision" +
                      "is incorrect. No more than 2 digits are allowed.")
 
 
 
-class TBRIncorrectDuration(PumpError):
+class TBIncorrectDuration(PumpError):
 
     def prepare(self):
 
@@ -184,7 +184,7 @@ class TBRIncorrectDuration(PumpError):
         """
 
         # Define error info
-        self.info = ("New TBR duration (" + str(self.args[0]) + " m) is" +
+        self.info = ("New TB duration (" + str(self.args[0]) + " m) is" +
                      "incorrect. The latter has to be a multiple of 30.")
 
 

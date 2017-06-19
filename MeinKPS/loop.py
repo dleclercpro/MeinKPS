@@ -143,9 +143,9 @@ class Loop(object):
         except:
             pass
 
-        # Read current TBR units
+        # Read current TB units
         try:
-            self.pump.units["TBR"].read()
+            self.pump.units["TB"].read()
             Reporter.addEntries([], "TB Units", Reporter.getEntry([], "TB Units") + 1, True)
 
         except:
@@ -226,14 +226,14 @@ class Loop(object):
         if False is None:
 
             # Cancel TB
-            self.pump.TBR.cancel()
+            self.pump.TB.cancel()
 
         else:
 
             # Enact TB
             try:
-                #self.pump.TBR.set(*TB)
-                self.pump.TBR.set(0.5, "U/h", 30)
+                #self.pump.TB.set(*TB)
+                self.pump.TB.set(0.5, "U/h", 30)
                 Reporter.addEntries([], "TB", Reporter.getEntry([], "TB") + 1, True)
 
             except:

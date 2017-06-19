@@ -342,7 +342,7 @@ class ResumeRecord(Record):
 
 
 
-class TBRRecord(Record):
+class TBRecord(Record):
 
     def __init__(self, pump):
 
@@ -359,16 +359,16 @@ class TBRRecord(Record):
                       "Body": 8}
 
         # Define theoretical max basal
-        minTBR = {"U/h": 0, "%": 0}
-        maxTBR = {"U/h": 35, "%": 200}
+        minTB = {"U/h": 0, "%": 0}
+        maxTB = {"U/h": 35, "%": 200}
 
         # Define record's criteria
         self.criteria = (lambda x: x[0] == self.code and
-                                  (x[1] >= (minTBR["U/h"] / pump.TBR.stroke) and
-                                   x[1] <= (maxTBR["U/h"] / pump.TBR.stroke) and
+                                  (x[1] >= (minTB["U/h"] / pump.TB.stroke) and
+                                   x[1] <= (maxTB["U/h"] / pump.TB.stroke) and
                                    x[7] >= 0 and x[7] < 8 or
-                                   x[1] >= minTBR["%"] and
-                                   x[1] <= maxTBR["%"] and
+                                   x[1] >= minTB["%"] and
+                                   x[1] <= maxTB["%"] and
                                    x[7] == 8))
 
         # Initialize rest of record
@@ -390,12 +390,12 @@ class TBRRecord(Record):
         # Decode record time
         super(self.__class__, self).decode()
 
-        # Decode TBR rate and units
+        # Decode TB rate and units
         if self.body[0] >= 0 and self.body[0] < 8:
 
             # Decode rate
             rate = (lib.unpack([self.head[1], self.body[0]]) *
-                    self.pump.TBR.stroke)
+                    self.pump.TB.stroke)
 
             # Decode units
             units = "U/h"
@@ -408,14 +408,14 @@ class TBRRecord(Record):
             # Decode units
             units = "%"
 
-        # Decode TBR duration
-        duration = self.body[2] * self.pump.TBR.timeBlock
+        # Decode TB duration
+        duration = self.body[2] * self.pump.TB.timeBlock
 
-        # Build TBR vector
-        TBR = [rate, units, duration]
+        # Build TB vector
+        TB = [rate, units, duration]
         
-        # Store TBR
-        self.values.append(TBR)
+        # Store TB
+        self.values.append(TB)
 
 
 
@@ -428,7 +428,7 @@ class TBRRecord(Record):
         """
 
         # Give user info
-        print "Adding TBRs to report: '" + self.report + "'..."
+        print "Adding TBs to report: '" + self.report + "'..."
 
         # Load report
         Reporter.load(self.report)

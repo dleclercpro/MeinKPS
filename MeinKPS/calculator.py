@@ -61,8 +61,8 @@ class Calculator(object):
         # Give calculator a basal profile
         self.basal = BasalProfile("Standard")
 
-        # Give calculator a TBR profile
-        self.TBR = TBRProfile()
+        # Give calculator a TB profile
+        self.TB = TBProfile()
 
         # Give calculator a bolus profile
         self.bolus = BolusProfile()
@@ -161,14 +161,14 @@ class Calculator(object):
         # Build basal profile
         self.basal.build(past, now)
 
-        # Build TBR profile
-        self.TBR.build(past, now, self.basal)
+        # Build TB profile
+        self.TB.build(past, now, self.basal)
 
         # Build bolus profile
         self.bolus.build(past, now)
 
         # Build net profile using suspend times
-        self.net.build(past, now, self.TBR.subtract(self.basal).add(self.bolus))
+        self.net.build(past, now, self.TB.subtract(self.basal).add(self.bolus))
 
         # Define IDC
         self.IDC = WalshIDC(self.DIA)
@@ -1510,7 +1510,7 @@ class BasalProfile(PastProfile):
 
 
 
-class TBRProfile(PastProfile):
+class TBProfile(PastProfile):
 
     def __init__(self):
 
@@ -1521,7 +1521,7 @@ class TBRProfile(PastProfile):
         """
 
         # Start initialization
-        super(TBRProfile, self).__init__()
+        super(TBProfile, self).__init__()
 
         # Renitialize units
         self.u = []
@@ -1541,7 +1541,7 @@ class TBRProfile(PastProfile):
         """
 
         # Start decoupling
-        super(TBRProfile, self).decouple()
+        super(TBProfile, self).decouple()
 
         # Get number of steps
         n = len(self.T)
@@ -1569,7 +1569,7 @@ class TBRProfile(PastProfile):
         """
 
         # Start filtering
-        super(TBRProfile, self).filter()
+        super(TBProfile, self).filter()
 
         # Get number of steps
         n = len(self.T)
@@ -1581,7 +1581,7 @@ class TBRProfile(PastProfile):
             if self.u[i] != "U/h":
 
                 # Give user info
-                sys.exit("TBR units mismatch. Exiting...")
+                sys.exit("TB units mismatch. Exiting...")
 
 
 

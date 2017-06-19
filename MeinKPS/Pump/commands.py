@@ -1178,7 +1178,7 @@ class ReadPumpSettings(PumpCommand):
         self.response = {"DIA": self.data[17],
                          "Max Bolus": self.data[5] * self.pump.bolus.stroke,
                          "Max Basal": (lib.unpack(self.data[6:8], ">") *
-                                       self.pump.TBR.stroke)}
+                                       self.pump.TB.stroke)}
 
 
 
@@ -1318,7 +1318,7 @@ class ReadPumpCU(PumpCommand):
 
 
 
-class SetPumpTBRU(PumpCommand):
+class SetPumpTBU(PumpCommand):
 
     def __init__(self, pump):
 
@@ -1332,7 +1332,7 @@ class SetPumpTBRU(PumpCommand):
         super(self.__class__, self).__init__(pump)
 
         # Define info
-        self.info = "Setting pump's TBR units..."
+        self.info = "Setting pump's TB units..."
 
         # Define packet bytes
         self.packet.attempts = 0
@@ -1349,7 +1349,7 @@ class SetPumpTBRU(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # If absolute TBR
+        # If absolute TB
         if units == "U/h":
             self.packet.parameters = [0]
 
@@ -1433,7 +1433,7 @@ class ReadPumpBGTargets(PumpCommand):
             else:
 
                 # Decode time
-                time = entry[2] * self.pump.TBR.timeBlock
+                time = entry[2] * self.pump.TB.timeBlock
 
                 # Format time
                 time = (str(time / 60).zfill(2) + ":" +
@@ -1561,7 +1561,7 @@ class ReadPumpISF(PumpCommand):
             else:
 
                 # Decode time
-                time = entry[1] * self.pump.TBR.timeBlock
+                time = entry[1] * self.pump.TB.timeBlock
 
                 # Format time
                 time = (str(time / 60).zfill(2) + ":" +
@@ -1692,7 +1692,7 @@ class ReadPumpCSF(PumpCommand):
             else:
 
                 # Decode time
-                time = entry[1] * self.pump.TBR.timeBlock
+                time = entry[1] * self.pump.TB.timeBlock
 
                 # Format time
                 time = (str(time / 60).zfill(2) + ":" +
@@ -1844,7 +1844,7 @@ class ReadPumpBasalProfile(PumpCommand):
             else:
 
                 # Decode time
-                time = entry[2] * self.pump.TBR.timeBlock
+                time = entry[2] * self.pump.TB.timeBlock
 
                 # Format time
                 time = (str(time / 60).zfill(2) + ":" +
@@ -2060,7 +2060,7 @@ class DeliverPumpBolus(PumpCommand):
 
 
 
-class ReadPumpTBR(PumpCommand):
+class ReadPumpTB(PumpCommand):
 
     def __init__(self, pump):
 
@@ -2074,7 +2074,7 @@ class ReadPumpTBR(PumpCommand):
         super(self.__class__, self).__init__(pump)
 
         # Define info
-        self.info = "Reading current TBR..."
+        self.info = "Reading current TB..."
 
         # Define packet bytes
         self.packet.code = 152
@@ -2094,27 +2094,27 @@ class ReadPumpTBR(PumpCommand):
                          "Rate": None,
                          "Duration": None}
 
-        # Decode TBR [U/h]
+        # Decode TB [U/h]
         if self.data[0] == 0:
 
-            # Decode TBR characteristics
+            # Decode TB characteristics
             self.response["Units"] = "U/h"
             self.response["Rate"] = round(lib.unpack(self.data[2:4], ">") *
-                                          self.pump.TBR.stroke, 2)
+                                          self.pump.TB.stroke, 2)
 
-        # Decode TBR [%]
+        # Decode TB [%]
         elif self.data[0] == 1:
 
-            # Decode TBR characteristics
+            # Decode TB characteristics
             self.response["Units"] = "%"
             self.response["Rate"] = round(self.data[1], 2)
 
-        # Decode TBR remaining time
+        # Decode TB remaining time
         self.response["Duration"] = round(lib.unpack(self.data[4:6], ">"), 0)
 
 
 
-class SetPumpTBR(PumpCommand):
+class SetPumpTB(PumpCommand):
 
     def __init__(self, pump):
 
@@ -2132,7 +2132,7 @@ class SetPumpTBR(PumpCommand):
 
 
 
-    def do(self, TBR):
+    def do(self, TB):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2141,31 +2141,31 @@ class SetPumpTBR(PumpCommand):
         """
 
         # Define info
-        self.info = ("Setting TBR...")
+        self.info = ("Setting TB...")
 
-        # If absolute TBR
-        if TBR["Units"] == "U/h":
+        # If absolute TB
+        if TB["Units"] == "U/h":
 
             # Define packet code
             self.packet.code = 76
 
             # Define packet parameters
             self.packet.parameters = ([0] * 2 +
-                                      lib.pack(TBR["Rate"] /
-                                               self.pump.TBR.stroke, ">"))[-2:]
+                                      lib.pack(TB["Rate"] /
+                                               self.pump.TB.stroke, ">"))[-2:]
 
-        # If percentage TBR
-        elif TBR["Units"] == "%":
+        # If percentage TB
+        elif TB["Units"] == "%":
 
             # Define packet code
             self.packet.code = 105
 
             # Define packet parameters
-            self.packet.parameters = [int(TBR["Rate"])]
+            self.packet.parameters = [int(TB["Rate"])]
 
         # Define rest of packet parameters
-        self.packet.parameters += [int(TBR["Duration"] /
-                                       self.pump.TBR.timeBlock)]
+        self.packet.parameters += [int(TB["Duration"] /
+                                       self.pump.TB.timeBlock)]
 
         # Do rest of command
         super(self.__class__, self).do()
