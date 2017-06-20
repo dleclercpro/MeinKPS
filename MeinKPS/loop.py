@@ -96,92 +96,48 @@ class Loop(object):
         self.pump.start()
 
         # Read pump time
-        try:
-            self.pump.time.read()
-            Reporter.addEntries([], "Time", Reporter.getEntry([], "Time") + 1, True)
-
-        except:
-            pass
+        self.pump.time.read()
+        Reporter.addEntries([], "Time", Reporter.getEntry([], "Time") + 1, True)
 
         # Read pump model
-        try:
-            self.pump.model.read()
-            Reporter.addEntries([], "Model", Reporter.getEntry([], "Model") + 1, True)
-
-        except:
-            pass
+        self.pump.model.read()
+        Reporter.addEntries([], "Model", Reporter.getEntry([], "Model") + 1, True)
 
         # Read pump battery level
-        try:
-            self.pump.battery.read()
-            Reporter.addEntries([], "Battery", Reporter.getEntry([], "Battery") + 1, True)
-
-        except:
-            pass
+        self.pump.battery.read()
+        Reporter.addEntries([], "Battery", Reporter.getEntry([], "Battery") + 1, True)
 
         # Read remaining amount of insulin in pump
-        try:
-            self.pump.reservoir.read()
-            Reporter.addEntries([], "Reservoir", Reporter.getEntry([], "Reservoir") + 1, True)
-
-        except:
-            pass
+        self.pump.reservoir.read()
+        Reporter.addEntries([], "Reservoir", Reporter.getEntry([], "Reservoir") + 1, True)
 
         # Read BG units set in pump's bolus wizard
-        try:
-            self.pump.units["BG"].read()
-            Reporter.addEntries([], "BG Units", Reporter.getEntry([], "BG Units") + 1, True)
-
-        except:
-            pass
+        self.pump.units["BG"].read()
+        Reporter.addEntries([], "BG Units", Reporter.getEntry([], "BG Units") + 1, True)
 
         # Read carb units set in pump's bolus wizard
-        try:
-            self.pump.units["C"].read()
-            Reporter.addEntries([], "Carb Units", Reporter.getEntry([], "Carb Units") + 1, True)
-
-        except:
-            pass
+        self.pump.units["C"].read()
+        Reporter.addEntries([], "Carb Units", Reporter.getEntry([], "Carb Units") + 1, True)
 
         # Read current TB units
-        try:
-            self.pump.units["TB"].read()
-            Reporter.addEntries([], "TB Units", Reporter.getEntry([], "TB Units") + 1, True)
-
-        except:
-            pass
+        self.pump.units["TB"].read()
+        Reporter.addEntries([], "TB Units", Reporter.getEntry([], "TB Units") + 1, True)
 
         # Read BG targets stored in pump
-        try:
-            self.pump.BGTargets.read()
-            Reporter.addEntries([], "BG Targets", Reporter.getEntry([], "BG Targets") + 1, True)
-
-        except:
-            pass
+        self.pump.BGTargets.read()
+        Reporter.addEntries([], "BG Targets", Reporter.getEntry([], "BG Targets") + 1, True)
 
         # Read insulin sensitivity factors stored in pump
-        try:
-            self.pump.ISF.read()
-            Reporter.addEntries([], "ISF", Reporter.getEntry([], "ISF") + 1, True)
-
-        except:
-            pass
+        self.pump.ISF.read()
+        Reporter.addEntries([], "ISF", Reporter.getEntry([], "ISF") + 1, True)
 
         # Read carb sensitivity factors stored in pump
-        try:
-            self.pump.CSF.read()
-            Reporter.addEntries([], "CSF", Reporter.getEntry([], "CSF") + 1, True)
-
-        except:
-            pass
+        self.pump.CSF.read()
+        Reporter.addEntries([], "CSF", Reporter.getEntry([], "CSF") + 1, True)
 
         # Read basal profile stored in pump
-        try:
-            self.pump.basalProfile.read("Standard")
-            Reporter.addEntries([], "Basal Profile", Reporter.getEntry([], "Basal Profile") + 1, True)
-
-        except:
-            pass
+        self.pump.basalProfile.read("Standard")
+        Reporter.addEntries([], "Basal Profile", Reporter.getEntry([], "Basal Profile") + 1, True)
 
 
 
@@ -231,13 +187,9 @@ class Loop(object):
         else:
 
             # Enact TB
-            try:
-                #self.pump.TB.set(*TB)
-                self.pump.TB.set(0.5, "U/h", 30)
-                Reporter.addEntries([], "TB", Reporter.getEntry([], "TB") + 1, True)
-
-            except:
-                pass
+            #self.pump.TB.set(*TB)
+            self.pump.TB.set(0.5, "U/h", 30)
+            Reporter.addEntries([], "TB", Reporter.getEntry([], "TB") + 1, True)
 
         # Finish loop
         self.finish()

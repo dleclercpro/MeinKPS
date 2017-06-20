@@ -250,7 +250,7 @@ class MaxRead(StickError):
                      str(self.args[0]) + "). Trying to reset stick...")
 
         # Reset stick
-        os.system("sudo sh reset.sh")
+        os.system("sudo sh /home/pi/MeinKPS/MeinKPS/reset.sh")
 
 
 
