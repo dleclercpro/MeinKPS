@@ -2105,6 +2105,25 @@ class ReadPumpTB(PumpCommand):
 
 
 
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Adding pump's TB units to '" + self.report + "'..."
+
+        # Load report
+        Reporter.load(self.report)
+
+        # Store TB units
+        Reporter.addEntries([], "TB Units", self.response["Units"], True)
+
+
+
 class SetPumpTB(PumpCommand):
 
     def __init__(self, pump):

@@ -111,18 +111,6 @@ class Loop(object):
         self.pump.reservoir.read()
         Reporter.addEntries([], "Reservoir", Reporter.getEntry([], "Reservoir") + 1, True)
 
-        # Read BG units set in pump's bolus wizard
-        self.pump.units["BG"].read()
-        Reporter.addEntries([], "BG Units", Reporter.getEntry([], "BG Units") + 1, True)
-
-        # Read carb units set in pump's bolus wizard
-        self.pump.units["C"].read()
-        Reporter.addEntries([], "Carb Units", Reporter.getEntry([], "Carb Units") + 1, True)
-
-        # Read current TB units
-        self.pump.units["TB"].read()
-        Reporter.addEntries([], "TB Units", Reporter.getEntry([], "TB Units") + 1, True)
-
         # Read BG targets stored in pump
         self.pump.BGTargets.read()
         Reporter.addEntries([], "BG Targets", Reporter.getEntry([], "BG Targets") + 1, True)

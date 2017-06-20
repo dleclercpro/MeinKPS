@@ -138,5 +138,6 @@
         "DIA": 3,
         "Max Basal": 35.0,
         "Max Bolus": 25.0
-    }
+    },
+    "TB Units": "U/h"
 }
