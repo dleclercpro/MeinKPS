@@ -563,6 +563,8 @@ class CarbsRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        TODO: decode rest of record (this is actually a bolus wizard record)
         """
 
         # Decode record time
@@ -621,10 +623,10 @@ class CarbsRecord(Record):
             mC = 0
 
         # Decode record
-        BG = (self.head[1] + mBG) / 10 ** mBGU
         C = (self.body[0] + mC) / 10 ** mCU
 
         # Not really necessary, but those are correct
+        BG = (self.head[1] + mBG) / 10 ** mBGU
         BGTargets = [self.body[4] / 10 ** mBGU, self.body[12] / 10 ** mBGU]
         CSF = self.body[2] / 10 ** mCU
 

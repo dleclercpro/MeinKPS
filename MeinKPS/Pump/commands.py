@@ -1420,7 +1420,7 @@ class ReadPumpBGTargets(PumpCommand):
             # Define start (a) and end (b) indexes of current factor based
             # on number of bytes per entry
             n = 3
-            a = 2 + n * i
+            a = 1 + n * i
             b = a + n
 
             # Get current target entry
@@ -1433,14 +1433,14 @@ class ReadPumpBGTargets(PumpCommand):
             else:
 
                 # Decode time
-                time = entry[2] * self.pump.TB.timeBlock
+                time = entry[0] * self.pump.TB.timeBlock
 
                 # Format time
                 time = (str(time / 60).zfill(2) + ":" +
                         str(time % 60).zfill(2))
 
                 # Decode entry
-                target = [entry[0] / 10 ** m, entry[1] / 10 ** m]
+                target = [entry[1] / 10 ** m, entry[2] / 10 ** m]
 
                 # Store decoded target and its corresponding ending time
                 targets.append(target)
@@ -1449,11 +1449,9 @@ class ReadPumpBGTargets(PumpCommand):
             # Increment index
             i += 1
 
-        # Rearrange and store targets to have starting times instead of ending
-        # times
-        for i in range(len(targets)):
-            self.response["Times"].append(times[i - 1])
-            self.response["Targets"].append(targets[i])
+        # Assign times and targets
+        self.response["Times"] = times
+        self.response["Targets"] = targets
 
 
 
@@ -1548,7 +1546,7 @@ class ReadPumpISF(PumpCommand):
             # Define start (a) and end (b) indexes of current factor based
             # on number of bytes per entry
             n = 2
-            a = 2 + n * i
+            a = 1 + n * i
             b = a + n
 
             # Get current factor entry
@@ -1561,14 +1559,15 @@ class ReadPumpISF(PumpCommand):
             else:
 
                 # Decode time
-                time = entry[1] * self.pump.TB.timeBlock
+                time = entry[0] % 64 * self.pump.TB.timeBlock
 
                 # Format time
                 time = (str(time / 60).zfill(2) + ":" +
                         str(time % 60).zfill(2))
 
                 # Decode entry
-                factor = entry[0] / 10 ** m
+                factor = lib.unpack([entry[0] / 64,
+                                     entry[1]], order = ">") / 10 ** m
 
                 # Store decoded factor and its corresponding ending time
                 factors.append(factor)
@@ -1577,11 +1576,9 @@ class ReadPumpISF(PumpCommand):
             # Increment index
             i += 1
 
-        # Rearrange and store factors to have starting times instead of ending
-        # times
-        for i in range(len(factors)):
-            self.response["Times"].append(times[i - 1])
-            self.response["Factors"].append(factors[i])
+        # Assign times and factors
+        self.response["Times"] = times
+        self.response["Factors"] = factors
 
 
 
@@ -1679,7 +1676,7 @@ class ReadPumpCSF(PumpCommand):
             # Define start (a) and end (b) indexes of current factor based
             # on number of bytes per entry
             n = 2
-            a = 2 + n * i
+            a = 1 + n * i
             b = a + n
 
             # Get current factor entry
@@ -1692,14 +1689,15 @@ class ReadPumpCSF(PumpCommand):
             else:
 
                 # Decode time
-                time = entry[1] * self.pump.TB.timeBlock
+                time = entry[0] % 64 * self.pump.TB.timeBlock
 
                 # Format time
                 time = (str(time / 60).zfill(2) + ":" +
                         str(time % 60).zfill(2))
 
                 # Decode entry
-                factor = entry[0] / 10 ** m
+                factor = lib.unpack([entry[0] / 64,
+                                     entry[1]], order = ">") / 10 ** m
 
                 # Store decoded factor and its corresponding ending time
                 factors.append(factor)
@@ -1708,11 +1706,9 @@ class ReadPumpCSF(PumpCommand):
             # Increment index
             i += 1
 
-        # Rearrange and store factors to have starting times instead of ending
-        # times
-        for i in range(len(factors)):
-            self.response["Times"].append(times[i - 1])
-            self.response["Factors"].append(factors[i])
+        # Assign times and factors
+        self.response["Times"] = times
+        self.response["Factors"] = factors
 
 
 
@@ -1860,11 +1856,9 @@ class ReadPumpBasalProfile(PumpCommand):
             # Increment index
             i += 1
 
-        # Rearrange and store rates to have starting times instead of ending
-        # times
-        for i in range(len(rates)):
-            self.response["Times"].append(times[i])
-            self.response["Rates"].append(rates[i])
+        # Assign times and rates
+        self.response["Times"] = times
+        self.response["Rates"] = rates
 
 
 
