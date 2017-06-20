@@ -1701,6 +1701,7 @@ class ISFProfile(FutureProfile):
 
         # Define report info
         self.report = "pump.json"
+        self.key = "ISF"
 
 
 
@@ -1717,9 +1718,6 @@ class ISFProfile(FutureProfile):
 
         # Read units
         self.u = Reporter.getEntry([], "BG Units") + "/U"
-
-        # Define report info
-        self.key = "ISF (" + self.u + ")"
 
         # Load rest
         super(ISFProfile, self).load()
@@ -1741,6 +1739,7 @@ class CSFProfile(FutureProfile):
 
         # Define report info
         self.report = "pump.json"
+        self.key = "CSF"
 
 
 
@@ -1770,9 +1769,6 @@ class CSFProfile(FutureProfile):
             # Adapt units
             self.u = "U/" + self.u
 
-        # Define report info
-        self.key = "CSF (" + self.u + ")"
-
         # Load rest
         super(CSFProfile, self).load()
 
@@ -1793,6 +1789,7 @@ class BGTargets(FutureProfile):
 
         # Define report info
         self.report = "pump.json"
+        self.key = "BG Targets"
 
 
 
@@ -1809,9 +1806,6 @@ class BGTargets(FutureProfile):
 
         # Read units
         self.u = Reporter.getEntry([], "BG Units")
-
-        # Define report info
-        self.key = "BG Targets (" + self.u + ")"
 
         # Load rest
         super(BGTargets, self).load()

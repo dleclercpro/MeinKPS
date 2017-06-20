@@ -1475,7 +1475,7 @@ class ReadPumpBGTargets(PumpCommand):
         Reporter.load(self.report)
 
         # Define path
-        path = ["BG Targets (" + units + ")"]
+        path = ["BG Targets"]
 
         # Remove old entries
         Reporter.delete([], path[0])
@@ -1602,7 +1602,7 @@ class ReadPumpISF(PumpCommand):
         Reporter.load(self.report)
 
         # Define path
-        path = ["ISF (" + units + ")"]
+        path = ["ISF"]
 
         # Remove old entries
         Reporter.delete([], path[0])
@@ -1732,7 +1732,7 @@ class ReadPumpCSF(PumpCommand):
         Reporter.load(self.report)
 
         # Define path
-        path = ["CSF (" + units + ")"]
+        path = ["CSF"]
 
         # Remove old entries
         Reporter.delete([], path[0])
@@ -1870,10 +1870,6 @@ class ReadPumpBasalProfile(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link with values
-        t = self.response["Times"]
-        rates = self.response["Rates"]
-
         # Give user info
         print ("Adding pump's basal profile " + self.profile + " to '" + 
                self.report + "'...")
@@ -1888,7 +1884,8 @@ class ReadPumpBasalProfile(PumpCommand):
         Reporter.delete([], path[0])
 
         # Store targets
-        Reporter.addEntries(path, t, rates)
+        Reporter.addEntries(path, self.response["Times"],
+                                  self.response["Rates"])
 
 
 

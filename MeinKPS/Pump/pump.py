@@ -1462,7 +1462,7 @@ def main():
     #pump.CSF.read()
 
     # Read basal profile stored in pump
-    pump.basalProfile.read("Standard")
+    #pump.basalProfile.read("Standard")
     #pump.basalProfile.read("A")
     #pump.basalProfile.read("B")
 
