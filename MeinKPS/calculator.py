@@ -1717,7 +1717,7 @@ class ISFProfile(FutureProfile):
         Reporter.load(self.report)
 
         # Read units
-        self.u = Reporter.getEntry([], "BG Units") + "/U"
+        self.u = Reporter.getEntry(["Units"], "BG") + "/U"
 
         # Load rest
         super(ISFProfile, self).load()
@@ -1755,7 +1755,7 @@ class CSFProfile(FutureProfile):
         Reporter.load(self.report)
 
         # Read units
-        self.u = Reporter.getEntry([], "Carb Units")
+        self.u = Reporter.getEntry(["Units"], "Carbs")
 
         # In case of grams
         if self.u == "g":
@@ -1805,7 +1805,7 @@ class BGTargets(FutureProfile):
         Reporter.load(self.report)
 
         # Read units
-        self.u = Reporter.getEntry([], "BG Units")
+        self.u = Reporter.getEntry(["Units"], "BG")
 
         # Load rest
         super(BGTargets, self).load()
@@ -2043,7 +2043,7 @@ class PastBGProfile(PastProfile):
         Reporter.load("pump.json")
 
         # Read units
-        self.u = Reporter.getEntry([], "BG Units")
+        self.u = Reporter.getEntry(["Units"], "BG")
 
         # Load rest
         super(PastBGProfile, self).load()

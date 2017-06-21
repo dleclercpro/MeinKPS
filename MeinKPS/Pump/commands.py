@@ -842,7 +842,7 @@ class ReadPumpModel(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntries([], "Model", self.response, True)
+        Reporter.addEntries(["Properties"], "Model", self.response, True)
 
 
 
@@ -896,7 +896,7 @@ class ReadPumpFirmware(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntries([], "Firmware", self.response, True)
+        Reporter.addEntries(["Properties"], "Firmware", self.response, True)
 
 
 
@@ -1257,7 +1257,7 @@ class ReadPumpBGU(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntries([], "BG Units", self.response, True)
+        Reporter.addEntries(["Units"], "BG", self.response, True)
 
 
 
@@ -1314,7 +1314,7 @@ class ReadPumpCU(PumpCommand):
         Reporter.load(self.report)
 
         # Add entry
-        Reporter.addEntries([], "Carb Units", self.response, True)
+        Reporter.addEntries(["Units"], "Carbs", self.response, True)
 
 
 
@@ -1484,7 +1484,7 @@ class ReadPumpBGTargets(PumpCommand):
         Reporter.addEntries(path, t, targets)
 
         # Store BG units
-        Reporter.addEntries([], "BG Units", units, True)
+        Reporter.addEntries(["Units"], "BG", units, True)
 
 
 
@@ -1614,7 +1614,7 @@ class ReadPumpISF(PumpCommand):
         units = units[:-2]
 
         # Store BG units (without insulin units)
-        Reporter.addEntries([], "BG Units", units, True)
+        Reporter.addEntries(["Units"], "BG", units, True)
 
 
 
@@ -1748,7 +1748,7 @@ class ReadPumpCSF(PumpCommand):
             units = units[2:] + "s"
 
         # Store carb units (without insulin units)
-        Reporter.addEntries([], "Carb Units", units, True)
+        Reporter.addEntries(["Units"], "Carbs", units, True)
 
 
 
@@ -2120,7 +2120,7 @@ class ReadPumpTB(PumpCommand):
         Reporter.load(self.report)
 
         # Store TB units
-        Reporter.addEntries([], "TB Units", self.response["Units"], True)
+        Reporter.addEntries(["Units"], "TB", self.response["Units"], True)
 
 
 
