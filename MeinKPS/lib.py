@@ -209,7 +209,7 @@ def uniqify(x):
 
 
 
-def hexify(x):
+def hexify(x, n = 2):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -220,7 +220,7 @@ def hexify(x):
     if type(x) is not list:
         x = [x]
 
-    return ["0x" + hex(y)[2:].zfill(2) for y in x]
+    return ["0x" + hex(y)[2:].zfill(n) for y in x]
 
 
 

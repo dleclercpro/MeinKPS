@@ -1,0 +1,52 @@
+Power-cycling USB devices...
+Powering off...
+Powering on...
+Start: 2017.06.22 - 00:06:02
+Loading 'loop.json'...
+'loop.json' loaded.
+Attempting to find section: . > Status
+Section found.
+Attempting to add entry: . > Status > Last > "2017.06.22 - 00:06:02"
+Entry overwritten.
+Updating 'loop.json'...
+'loop.json' updated.
+Attempting to find section: . > Status
+Section found.
+Attempting to find entry: . > Status > N
+Entry found:
+1
+Attempting to find section: . > Status
+Section found.
+Attempting to add entry: . > Status > N > 2
+Entry overwritten.
+Updating 'loop.json'...
+'loop.json' updated.
+Starting dialogue with pump...
+Reading stick's infos...
+Sending packet: [4, 0, 0]
+Traceback (most recent call last):
+  File "/home/pi/MeinKPS/MeinKPS/loop.py", line 289, in <module>
+    main()
+  File "/home/pi/MeinKPS/MeinKPS/loop.py", line 283, in main
+    loop.run()
+  File "/home/pi/MeinKPS/MeinKPS/loop.py", line 162, in run
+    self.pump.start()
+  File "/home/pi/MeinKPS/MeinKPS/Pump/pump.py", line 149, in start
+    self.stick.start()
+  File "/home/pi/MeinKPS/MeinKPS/Pump/stick.py", line 143, in start
+    self.ping()
+  File "/home/pi/MeinKPS/MeinKPS/Pump/stick.py", line 203, in ping
+    self.infos.read()
+  File "/home/pi/MeinKPS/MeinKPS/Pump/stick.py", line 240, in read
+    self.command.do()
+  File "/home/pi/MeinKPS/MeinKPS/Pump/commands.py", line 286, in do
+    super(StickCommand, self).do()
+  File "/home/pi/MeinKPS/MeinKPS/Pump/commands.py", line 252, in do
+    self.send()
+  File "/home/pi/MeinKPS/MeinKPS/Pump/commands.py", line 96, in send
+    self.stick.write(self.packet.bytes)
+  File "/home/pi/MeinKPS/MeinKPS/Pump/stick.py", line 168, in write
+    self.handle.write(bytearray(bytes))
+  File "/usr/local/lib/python2.7/dist-packages/serial/serialposix.py", line 554, in write
+    raise SerialException('write failed: {}'.format(v))
+serial.serialutil.SerialException: write failed: [Errno 5] Input/output error

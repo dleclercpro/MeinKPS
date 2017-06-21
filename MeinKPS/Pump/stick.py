@@ -35,6 +35,7 @@
 
 # LIBRARIES
 import os
+import glob
 import datetime
 import serial
 
@@ -65,6 +66,9 @@ class Stick(object):
         self.timeout = 0.1
         self.emptyTime = 0.5
 
+        # Initialize stick's USB port
+        self.port = None
+
         # Give the stick a handle
         self.handle = serial.Serial()
 
@@ -88,6 +92,9 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Scan for stick
+        self.scan()
+
         # Try opening port and define a handle
         try:
 
@@ -97,7 +104,7 @@ class Stick(object):
                       "product=" + str(self.product))
 
             # Define handle
-            self.handle.port = "/dev/ttyUSB0"
+            self.handle.port = self.port
             self.handle.rtscts = True
             self.handle.dsrdtr = True
             self.handle.timeout = self.timeout
@@ -105,11 +112,11 @@ class Stick(object):
             # Open handle
             self.handle.open()
 
-        # Otherwise no stick
+        # Otherwise
         except:
 
-            # Raise error
-            raise errors.NoStick
+            # Everything fine
+            pass
 
 
 
@@ -205,6 +212,49 @@ class Stick(object):
 
             # Power-cycle USB ports
             os.system("sudo sh /home/pi/MeinKPS/MeinKPS/reset.sh")
+
+            # Reconnect
+            self.connect()
+
+
+
+    def scan(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SCAN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Scanning for stick..."
+
+        # Build USB ID
+        usb = lib.hexify([self.vendor, self.product], 4)
+
+        # Remove beginning
+        usb = str(usb[0][2:]) + "_" + str(usb[1][2:])
+
+        # Define port criteria
+        criteria = "/dev/serial/by-id/*-" + usb + "*"
+
+        # Find corresponding ports
+        ports = glob.glob(criteria)
+
+        # If ports found
+        if ports:
+
+            # Give user info
+            print "Found following ports: " + str(ports)
+
+            # Store first port
+            self.port = ports[0]
+
+        # Otherwise, stick missing
+        else:
+
+            # Raise error
+            raise errors.NoStick
 
 
 

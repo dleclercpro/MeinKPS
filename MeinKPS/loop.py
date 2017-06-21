@@ -79,28 +79,6 @@ class Loop(object):
         Q: is reading time/model necessary at beginning of loop?
         """
 
-        # Define current time
-        self.now = datetime.datetime.now()
-
-        # Format current time
-        T = lib.formatTime(self.now)
-
-        # Give user info
-        print "Start: " + T
-
-        # Load loop report
-        Reporter.load("loop.json")
-
-        # Update loop infos
-        Reporter.addEntries(["Status"], "Last", T, True)
-        Reporter.increment(["Status"], "N")
-
-        # Read CGM
-        #self.do(self.cgm.dumpLastBG, ["CGM"], "BG")
-
-        # Start dialogue with pump
-        self.pump.start()
-
         # Read pump time
         self.do(self.pump.time.read, ["Pump"], "Time")
 
@@ -126,21 +104,8 @@ class Loop(object):
         self.do(self.pump.basalProfile.read, ["Pump"], "Basal Profile",
                                                        "Standard")
 
-
-
-    def finish(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FINISH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Stop dialogue with pump
-        self.pump.stop()
-
-        # Give user info
-        print "End: " + lib.formatTime(datetime.datetime.now())
+        # Read CGM
+        #self.do(self.cgm.dumpLastBG, ["CGM"], "BG")
 
 
 
@@ -177,6 +142,25 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define current time
+        self.now = datetime.datetime.now()
+
+        # Format current time
+        T = lib.formatTime(self.now)
+
+        # Give user info
+        print "Start: " + T
+
+        # Load loop report
+        Reporter.load("loop.json")
+
+        # Update loop infos
+        Reporter.addEntries(["Status"], "Last", T, True)
+        Reporter.increment(["Status"], "N")
+
+        # Start dialogue with pump
+        self.pump.start()
+
         # Prepare loop
         self.prepare()
 
@@ -199,8 +183,11 @@ class Loop(object):
             #self.pump.TB.set(*TB)
             self.do(self.pump.TB.set, ["Pump"], "TB", 0.5, "U/h", 30)
 
-        # Finish loop
-        self.finish()
+        # Stop dialogue with pump
+        self.pump.stop()
+
+        # Give user info
+        print "End: " + lib.formatTime(datetime.datetime.now())
 
 
 
@@ -225,10 +212,7 @@ class Loop(object):
 
         # Define axis labels
         x = ["(h)"] * 4
-        y = ["(" + BG.u + ")",
-             "(U/h)",
-             "(U)",
-             "(g)"]
+        y = ["(" + BG.u + ")", "(U/h)", "(U)", "(g)"]
 
         # Define axis limits
         xlim = [[-DIA, DIA]] * 4
@@ -297,9 +281,6 @@ def main():
 
     # Loop
     loop.run()
-
-    # End of script
-    print "Looped successfully!"
 
 
 
