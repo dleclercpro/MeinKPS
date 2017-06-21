@@ -307,11 +307,33 @@ class Reporter:
                 # Add entry to report
                 self.section[keys[i]] = entries[i]
 
-                # Give user info
-                print "Entry added."
+                # If overwritten
+                if overwrite:
+
+                    # Give user info
+                    print "Entry overwritten."
+
+                # Otherwise
+                else:
+
+                    # Give user info
+                    print "Entry added."
 
         # Rewrite report
         self.save()
+
+
+
+    def increment(self, path, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INCREMENT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Increment entry
+        self.addEntries(path, key, self.getEntry(path, key) + 1, True)
 
 
 

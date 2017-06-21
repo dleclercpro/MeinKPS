@@ -33,7 +33,6 @@
             102
         ]
     },
-    "BG Units": "mg/dL",
     "Basal Profile (A)": {
         "00:00": 1.1,
         "01:00": 1.1,
@@ -121,8 +120,6 @@
         "03:00": 44,
         "03:30": 87
     },
-    "Carb Units": "g",
-    "Firmware": "2.4A 1.1",
     "ISF": {
         "00:00": 49,
         "00:30": 10,
@@ -133,11 +130,17 @@
         "22:00": 400,
         "23:00": 292
     },
-    "Model": "522",
+    "Properties": {
+        "Model": "522"
+    },
     "Settings": {
         "DIA": 3,
         "Max Basal": 35.0,
         "Max Bolus": 25.0
     },
-    "TB Units": "U/h"
+    "Units": {
+        "BG": "mg/dL",
+        "Carbs": "g",
+        "TB": "U/h"
+    }
 }

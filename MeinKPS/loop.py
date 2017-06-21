@@ -87,7 +87,7 @@ class Loop(object):
 
         # Load pump report
         Reporter.load("loop.json")
-        Reporter.addEntries([], "Attempts", Reporter.getEntry([], "Attempts") + 1, True)
+        Reporter.increment([], "Attempts")
 
         # Dump CGM readings
         #self.cgm.dumpLastBG()
@@ -97,35 +97,35 @@ class Loop(object):
 
         # Read pump time
         self.pump.time.read()
-        Reporter.addEntries([], "Time", Reporter.getEntry([], "Time") + 1, True)
+        Reporter.increment([], "Time")
 
         # Read pump model
         self.pump.model.read()
-        Reporter.addEntries([], "Model", Reporter.getEntry([], "Model") + 1, True)
+        Reporter.increment([], "Model")
 
         # Read pump battery level
         self.pump.battery.read()
-        Reporter.addEntries([], "Battery", Reporter.getEntry([], "Battery") + 1, True)
+        Reporter.increment([], "Battery")
 
         # Read remaining amount of insulin in pump
         self.pump.reservoir.read()
-        Reporter.addEntries([], "Reservoir", Reporter.getEntry([], "Reservoir") + 1, True)
+        Reporter.increment([], "Reservoir")
 
         # Read BG targets stored in pump
         self.pump.BGTargets.read()
-        Reporter.addEntries([], "BG Targets", Reporter.getEntry([], "BG Targets") + 1, True)
+        Reporter.increment([], "BG Targets")
 
         # Read insulin sensitivity factors stored in pump
         self.pump.ISF.read()
-        Reporter.addEntries([], "ISF", Reporter.getEntry([], "ISF") + 1, True)
+        Reporter.increment([], "ISF")
 
         # Read carb sensitivity factors stored in pump
         self.pump.CSF.read()
-        Reporter.addEntries([], "CSF", Reporter.getEntry([], "CSF") + 1, True)
+        Reporter.increment([], "CSF")
 
         # Read basal profile stored in pump
         self.pump.basalProfile.read("Standard")
-        Reporter.addEntries([], "Basal Profile", Reporter.getEntry([], "Basal Profile") + 1, True)
+        Reporter.increment([], "Basal Profile")
 
 
 
@@ -160,10 +160,7 @@ class Loop(object):
         #TB = self.calc.run(self.now)
 
         # Show loop
-        #self.show(self.calc.net,
-        #          self.calc.BG,
-        #          self.calc.IOB,
-        #          self.calc.IDC.DIA)
+        #self.show(self.calc.net, self.calc.BG, self.calc.IOB, self.calc.IDC.DIA)
 
         # React to TB recommendation
         #if TB is None:
@@ -177,7 +174,7 @@ class Loop(object):
             # Enact TB
             #self.pump.TB.set(*TB)
             self.pump.TB.set(0.5, "U/h", 30)
-            Reporter.addEntries([], "TB", Reporter.getEntry([], "TB") + 1, True)
+            Reporter.increment([], "TB")
 
         # Finish loop
         self.finish()

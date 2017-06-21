@@ -1,12 +1,12 @@
 {
-    "Attempts": 4,
-    "BG Targets": 4,
-    "Basal Profile": 4,
-    "Battery": 4,
-    "CSF": 4,
-    "ISF": 4,
-    "Model": 4,
-    "Reservoir": 4,
-    "TB": 4,
-    "Time": 4
+    "Attempts": 16,
+    "BG Targets": 15,
+    "Basal Profile": 15,
+    "Battery": 15,
+    "CSF": 15,
+    "ISF": 15,
+    "Model": 15,
+    "Reservoir": 15,
+    "TB": 13,
+    "Time": 15
 }
