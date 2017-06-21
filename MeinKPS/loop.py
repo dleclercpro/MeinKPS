@@ -82,50 +82,49 @@ class Loop(object):
         # Define current time
         self.now = datetime.datetime.now()
 
+        # Format current time
+        T = lib.formatTime(self.now)
+
         # Give user info
-        print "Start: " + lib.formatTime(self.now)
+        print "Start: " + T
 
-        # Load pump report
+        # Load loop report
         Reporter.load("loop.json")
-        Reporter.increment([], "Attempts")
 
-        # Dump CGM readings
-        #self.cgm.dumpLastBG()
+        # Update loop infos
+        Reporter.addEntries(["Status"], "Last", T, True)
+        Reporter.increment(["Status"], "N")
+
+        # Read CGM
+        #self.do(self.cgm.dumpLastBG, ["CGM"], "BG")
 
         # Start dialogue with pump
         self.pump.start()
 
         # Read pump time
-        self.pump.time.read()
-        Reporter.increment([], "Time")
+        self.do(self.pump.time.read, ["Pump"], "Time")
 
         # Read pump model
-        self.pump.model.read()
-        Reporter.increment([], "Model")
+        self.do(self.pump.model.read, ["Pump"], "Model")
 
         # Read pump battery level
-        self.pump.battery.read()
-        Reporter.increment([], "Battery")
+        self.do(self.pump.battery.read, ["Pump"], "Battery")
 
         # Read remaining amount of insulin in pump
-        self.pump.reservoir.read()
-        Reporter.increment([], "Reservoir")
+        self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
 
         # Read BG targets stored in pump
-        self.pump.BGTargets.read()
-        Reporter.increment([], "BG Targets")
+        self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
 
         # Read insulin sensitivity factors stored in pump
-        self.pump.ISF.read()
-        Reporter.increment([], "ISF")
+        self.do(self.pump.ISF.read, ["Pump"], "ISF")
 
         # Read carb sensitivity factors stored in pump
-        self.pump.CSF.read()
-        Reporter.increment([], "CSF")
+        self.do(self.pump.CSF.read, ["Pump"], "CSF")
 
         # Read basal profile stored in pump
-        self.pump.basalProfile.read("Standard")
-        Reporter.increment([], "Basal Profile")
+        self.do(self.pump.basalProfile.read, ["Pump"], "Basal Profile",
+                                                       "Standard")
 
 
 
@@ -145,11 +144,36 @@ class Loop(object):
 
 
 
-    def do(self):
+    def do(self, task, path, key, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Trying doing given task
+        try:
+
+            # Do task
+            task(*args)
+
+            # Update loop log
+            Reporter.increment(path, key)
+
+        # Otherwise, skip
+        except:
+
+            # Give user info
+            print "Could not execute task '" + key + "'."
+
+
+
+    def run(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -173,8 +197,7 @@ class Loop(object):
 
             # Enact TB
             #self.pump.TB.set(*TB)
-            self.pump.TB.set(0.5, "U/h", 30)
-            Reporter.increment([], "TB")
+            self.do(self.pump.TB.set, ["Pump"], "TB", 0.5, "U/h", 30)
 
         # Finish loop
         self.finish()
@@ -273,7 +296,7 @@ def main():
     loop = Loop()
 
     # Loop
-    loop.do()
+    loop.run()
 
     # End of script
     print "Looped successfully!"

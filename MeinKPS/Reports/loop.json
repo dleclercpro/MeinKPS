@@ -1,12 +1,20 @@
 {
-    "Attempts": 16,
-    "BG Targets": 15,
-    "Basal Profile": 15,
-    "Battery": 15,
-    "CSF": 15,
-    "ISF": 15,
-    "Model": 15,
-    "Reservoir": 15,
-    "TB": 13,
-    "Time": 15
+    "CGM": {
+        "BG": 0
+    },
+    "Pump": {
+        "BG Targets": 3,
+        "Basal Profile": 3,
+        "Battery": 3,
+        "CSF": 3,
+        "ISF": 3,
+        "Model": 3,
+        "Reservoir": 3,
+        "TB": 3,
+        "Time": 3
+    },
+    "Status": {
+        "Last": "2017.06.21 - 20:32:08",
+        "N": 3
+    }
 }
