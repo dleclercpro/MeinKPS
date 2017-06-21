@@ -3,18 +3,18 @@
         "BG": 0
     },
     "Pump": {
-        "BG Targets": 3,
-        "Basal Profile": 3,
-        "Battery": 3,
-        "CSF": 3,
-        "ISF": 3,
-        "Model": 3,
-        "Reservoir": 3,
-        "TB": 3,
-        "Time": 3
+        "BG Targets": 1,
+        "Basal Profile": 1,
+        "Battery": 1,
+        "CSF": 1,
+        "ISF": 1,
+        "Model": 1,
+        "Reservoir": 1,
+        "TB": 1,
+        "Time": 1
     },
     "Status": {
-        "Last": "2017.06.22 - 01:09:35",
-        "N": 27
+        "Last": "2017.06.22 - 01:12:02",
+        "N": 1
     }
 }

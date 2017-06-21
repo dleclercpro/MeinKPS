@@ -245,7 +245,7 @@ class Stick(object):
         if ports:
 
             # Give user info
-            print "Found following ports: " + str(ports)
+            print "Found following port(s): " + str(ports)
 
             # Store first port
             self.port = ports[0]
