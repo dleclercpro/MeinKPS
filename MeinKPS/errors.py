@@ -249,9 +249,6 @@ class MaxRead(StickError):
         self.info = ("Maximal number of reading attempts reached (" +
                      str(self.args[0]) + "). Trying to reset stick...")
 
-        # Reset stick
-        os.system("sudo sh /home/pi/MeinKPS/MeinKPS/reset.sh")
-
 
 
 class MaxPoll(StickError):

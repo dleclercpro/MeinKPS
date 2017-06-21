@@ -88,6 +88,7 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Try opening port and define a handle
         try:
 
             # Define serial port
@@ -104,6 +105,7 @@ class Stick(object):
             # Open handle
             self.handle.open()
 
+        # Otherwise no stick
         except:
 
             # Raise error
@@ -135,8 +137,8 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Before anything, make sure buffer is empty
-        #self.empty()
+        # Ping stick
+        self.ping()
 
         # Read infos
         self.infos.read()
@@ -184,39 +186,25 @@ class Stick(object):
 
 
 
-    def empty(self):
+    def ping(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EMPTY
+            PING
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Read initial time
-        then = datetime.datetime.now()
+        # Try reading infos
+        try:
 
-        # Give user info
-        print "Emptying buffer for " + str(self.emptyTime) + "s..."
+            # Read infos
+            self.infos.read()
 
-        # Initialize byte count
-        n = 0
+        # If failed, stick is most probably in dead state
+        except errors.MaxRead:
 
-        # Try reading for a certain number of attempts, before concluding buffer
-        # must really be empty
-        while True:
-
-            # Update time
-            now = datetime.datetime.now()
-
-            # Empty buffer
-            n += len(self.handle.read(64))
-
-            # If maximum amount of time reached, exit
-            if (now - then).seconds >= self.emptyTime:
-                break
-
-        # Give user output
-        print "Found " + str(n) + " byte(s) while emptying buffer."
+            # Power-cycle USB ports
+            os.system("sudo sh /home/pi/MeinKPS/MeinKPS/reset.sh")
 
 
 

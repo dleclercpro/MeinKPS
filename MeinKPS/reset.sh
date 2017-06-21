@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -39,16 +39,25 @@ if [ -e $FILE ]; then
     # Give user info
     echo "Power-cycling USB devices..."
 
+    # Wait...
     sleep 0.1
+
+    # Give user info
+    echo "Powering off..."
 
     # Power off
     echo 0 > $FILE
 
+    # Wait...
     sleep 1
+
+    # Give user info
+    echo "Powering on..."
 
     # Power on
     echo 1 > $FILE
 
+    # Wait...
     sleep 2
 
 # Otherwise
