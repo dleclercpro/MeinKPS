@@ -140,6 +140,31 @@ class Stick(object):
 
 
 
+    def ping(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PING
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Try reading infos
+        try:
+
+            # Read infos
+            self.infos.read()
+
+        # If failed, stick is most probably in dead state
+        except errors.MaxRead:
+
+            # Power-cycle USB ports
+            os.system("sudo sh " + self.path + "reset.sh")
+
+            # Reconnect
+            self.connect()
+
+
+
     def start(self):
 
         """
@@ -194,31 +219,6 @@ class Stick(object):
 
         # Return response
         return response
-
-
-
-    def ping(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PING
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Try reading infos
-        try:
-
-            # Read infos
-            self.infos.read()
-
-        # If failed, stick is most probably in dead state
-        except:
-
-            # Power-cycle USB ports
-            os.system("sudo sh " + self.path + "reset.sh")
-
-            # Reconnect
-            self.connect()
 
 
 
