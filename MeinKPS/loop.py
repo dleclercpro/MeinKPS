@@ -142,20 +142,20 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define current time
-        self.now = datetime.datetime.now()
-
-        # Format current time
-        T = lib.formatTime(self.now)
+        # Define starting time
+        start = datetime.datetime.now()
 
         # Give user info
-        print "Start: " + T
+        print "Start: " + lib.formatTime(start)
+
+        # Store it
+        self.now = start
 
         # Load loop report
         Reporter.load("loop.json")
 
         # Update loop infos
-        Reporter.addEntries(["Status"], "Last", T, True)
+        Reporter.addEntries(["Status"], "Time", lib.formatTime(start), True)
         Reporter.increment(["Status"], "N")
 
         # Start dialogue with pump
@@ -186,8 +186,17 @@ class Loop(object):
         # Stop dialogue with pump
         self.pump.stop()
 
+        # Define ending time
+        end = datetime.datetime.now()
+
+        # Get duration of loop
+        d = end - start
+
+        # Update loop infos
+        Reporter.addEntries(["Status"], "Duration", d.seconds, True)
+
         # Give user info
-        print "End: " + lib.formatTime(datetime.datetime.now())
+        print "End: " + lib.formatTime(end)
 
 
 

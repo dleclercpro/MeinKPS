@@ -163,6 +163,12 @@ class Stick(object):
             # Reconnect
             self.connect()
 
+        # Otherwise
+        else:
+
+            # Give user info
+            print "Oops, something went wrong with the stick."
+
 
 
     def start(self):
