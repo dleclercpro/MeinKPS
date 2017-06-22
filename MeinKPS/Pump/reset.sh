@@ -58,7 +58,7 @@ if [ -e $FILE ]; then
     sleep 2
 
     # Replug stick
-    sh "./plug.sh"
+    sudo sh ./plug.sh
 
 # Otherwise
 else
