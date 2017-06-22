@@ -62,6 +62,9 @@ class Stick(object):
         self.vendor = 0x0a21
         self.product = 0x8001
 
+        # Define path to files
+        self.path = "/home/pi/MeinKPS/MeinKPS/Pump/"
+
         # Define times
         self.timeout = 0.1
         self.emptyTime = 0.5
@@ -92,19 +95,14 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Scan for stick
-        self.scan()
+        # Plug stick
+        os.system("sudo sh " + self.path + "plug.sh")
 
         # Try opening port and define a handle
         try:
 
-            # Define serial port
-            os.system("modprobe --quiet --first-time usbserial " +
-                      "vendor=" + str(self.vendor) + " " +
-                      "product=" + str(self.product))
-
             # Define handle
-            self.handle.port = self.port
+            self.handle.port = "/dev/ttyUSB.stick"
             self.handle.rtscts = True
             self.handle.dsrdtr = True
             self.handle.timeout = self.timeout
@@ -113,10 +111,19 @@ class Stick(object):
             self.handle.open()
 
         # Otherwise
-        except:
+        except serial.SerialException as e:
 
-            # Everything fine
-            pass
+            # If stick is missing
+            if e.errno == 2:
+
+                # Raise error
+                raise errors.NoStick
+
+            # Otherwise
+            else:
+
+                # Everything should be fine
+                pass
 
 
 
@@ -130,9 +137,6 @@ class Stick(object):
 
         # Close serial port
         self.handle.close()
-
-        # Remove serial port
-        os.system("modprobe --quiet --remove usbserial")
 
 
 
@@ -208,53 +212,13 @@ class Stick(object):
             self.infos.read()
 
         # If failed, stick is most probably in dead state
-        except errors.MaxRead:
+        except:
 
             # Power-cycle USB ports
-            os.system("sudo sh /home/pi/MeinKPS/MeinKPS/reset.sh")
+            os.system("sudo sh " + self.path + "reset.sh")
 
             # Reconnect
             self.connect()
-
-
-
-    def scan(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SCAN
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Scanning for stick..."
-
-        # Build USB ID
-        usb = lib.hexify([self.vendor, self.product], 4)
-
-        # Remove beginning
-        usb = str(usb[0][2:]) + "_" + str(usb[1][2:])
-
-        # Define port criteria
-        criteria = "/dev/serial/by-id/*-" + usb + "*"
-
-        # Find corresponding ports
-        ports = glob.glob(criteria)
-
-        # If ports found
-        if ports:
-
-            # Give user info
-            print "Found following port(s): " + str(ports)
-
-            # Store first port
-            self.port = ports[0]
-
-        # Otherwise, stick missing
-        else:
-
-            # Raise error
-            raise errors.NoStick
 
 
 
