@@ -214,7 +214,7 @@ class Calculator(object):
         # Give user info
         print "Recommending treatment..."
 
-        # Compute eventual BG based on complete IOB decay
+        # Compute eventual BG after complete IOB decay
         naiveBG = self.BG.expect(self.IDC.DIA, self.IOB)
 
         # Compute BG deviation based on CGM readings and expected BG due to IOB
@@ -227,8 +227,8 @@ class Calculator(object):
         # Compute BG difference with average target
         dBG = np.mean(self.BGTargets.y[-1]) - eventualBG
 
-        # Compute necessary bolus
-        bolus = self.BG.dose(dBG, self.ISF, self.IDC)
+        # Compute necessary dose
+        dose = self.BG.dose(dBG, self.ISF, self.IDC)
 
         # Give user info
         print "Target: " + str(self.BGTargets.y[-1]) + " " + self.BG.u
@@ -237,9 +237,9 @@ class Calculator(object):
         print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
         print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.u
         print "dBG: " + str(round(dBG, 1)) + " " + self.BG.u
-        print "Recommended bolus: " + str(round(bolus, 1)) + " U"
+        print "Recommended dose: " + str(round(dose, 1)) + " U"
 
-        # Define time to enact equivalent of bolus (m)
+        # Define time to enact equivalent of dose (m)
         T = 0.5
 
         # Give user info
@@ -247,7 +247,7 @@ class Calculator(object):
 
         # Find required basal difference to enact over given time (round to
         # pump's precision)
-        dTB = round(bolus / T, 2)
+        dTB = round(dose / T, 2)
 
         # Compute TB to enact 
         TB = self.basal.y[-1] + dTB
@@ -261,7 +261,7 @@ class Calculator(object):
         T *= 60
 
         # If less insulin is needed
-        if bolus < 0:
+        if dose < 0:
 
             # Define minimal basal allowed (U/h)
             minTB = 0
@@ -277,7 +277,7 @@ class Calculator(object):
                 return [minTB, "U/h", T]
 
         # If more insulin is needed
-        elif bolus > 0:
+        elif dose > 0:
 
             # Find maximal basal allowed (U/h)
             maxTB = min(self.max["Basal"],
@@ -295,7 +295,7 @@ class Calculator(object):
 
                 # Give user info
                 print ("External action required: maximal basal exceeded. " +
-                       "Enact bolus manually!")
+                       "Enact dose manually!")
 
                 # Max out TB
                 return [maxTB, "U/h", T]

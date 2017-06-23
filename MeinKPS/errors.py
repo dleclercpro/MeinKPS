@@ -23,17 +23,6 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# LIBRARIES
-import sys
-import os
-
-
-
-# USER LIBRARIES
-import lib
-
-
-
 class BaseError(Exception):
 
     def __init__(self, *args):
@@ -50,9 +39,6 @@ class BaseError(Exception):
 
         # Store arguments
         self.args = args[0]
-
-        # Exit boolean
-        self.exit = True
 
         # Prepare error
         self.prepare()
@@ -90,12 +76,6 @@ class BaseError(Exception):
 
         # Give user info about error
         print errorType + " > " + errorName + ": " + self.info
-
-        # If exit wanted
-        if self.exit:
-
-            # Exit
-            sys.exit("Exiting...")
 
 
 
@@ -255,9 +235,6 @@ class MaxRead(StickError):
         self.info = ("Maximal number of reading attempts reached (" +
                      str(self.args[0]) + "). Trying to reset stick...")
 
-        # Do not exit
-        self.exit = False
-
 
 
 class MaxPoll(StickError):
@@ -293,7 +270,7 @@ class MaxDownload(StickError):
 
 
 
-class NoPump(StickError):
+class BadCommunications(StickError):
 
     def prepare(self):
 
@@ -304,7 +281,7 @@ class NoPump(StickError):
         """
 
         # Define error info
-        self.info = ("Pump does not respond. Is it still within stick's range?")
+        self.info = ("Bad communications with pump.")
 
 
 

@@ -456,7 +456,7 @@ class PumpCommand(Command):
         if head[2] == 5:
 
             # Raise error
-            raise errors.NoPump()
+            raise errors.BadCommunications()
 
         # Check for problematic number of bytes
         if self.nBytesExpected < 14:
