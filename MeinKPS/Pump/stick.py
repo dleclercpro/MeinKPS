@@ -155,19 +155,13 @@ class Stick(object):
             self.infos.read()
 
         # If failed, stick is most probably in dead state
-        except errors.MaxRead:
+        except:
 
             # Power-cycle USB ports
             os.system("sudo sh " + self.path + "reset.sh")
 
             # Reconnect
             self.connect()
-
-        # Otherwise
-        else:
-
-            # Give user info
-            print "Oops, something went wrong with the stick."
 
 
 
