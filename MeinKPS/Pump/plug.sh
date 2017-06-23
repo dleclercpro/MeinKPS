@@ -13,8 +13,7 @@
 #    License:  GNU General Public License, Version 3
 #              (http://www.gnu.org/licenses/gpl.html)
 #
-#    Overview: This script can be used to power-cycle the Raspberry Pi USB bus
-#              in order to reset the attached USB devices.
+#    Overview: This script can be used to plug the stick.
 #
 #    Notes:    ...
 #
