@@ -51,6 +51,9 @@ class BaseError(Exception):
         # Store arguments
         self.args = args[0]
 
+        # Exit boolean
+        self.exit = True
+
         # Prepare error
         self.prepare()
 
@@ -88,8 +91,11 @@ class BaseError(Exception):
         # Give user info about error
         print errorType + " > " + errorName + ": " + self.info
 
-        # Exit
-        sys.exit("Exiting...")
+        # If exit wanted
+        if self.exit:
+
+            # Exit
+            sys.exit("Exiting...")
 
 
 
@@ -248,6 +254,9 @@ class MaxRead(StickError):
         # Define error info
         self.info = ("Maximal number of reading attempts reached (" +
                      str(self.args[0]) + "). Trying to reset stick...")
+
+        # Do not exit
+        self.exit = False
 
 
 
