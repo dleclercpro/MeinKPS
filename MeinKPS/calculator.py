@@ -2074,7 +2074,7 @@ class PastBGProfile(PastProfile):
         for i in range(N):
 
             # They should not be older than a certain duration
-            if self.T[-(i - 1)] < self.end - datetime.timedelta(minutes = T):
+            if self.T[-(i + 1)] < self.end - datetime.timedelta(minutes = T):
 
                 # Exit
                 break
@@ -2190,7 +2190,7 @@ class FutureBGProfile(FutureProfile):
 
         # Give user info
         print ("Initial BG: " + str(BG) + " " + self.u + " " +
-               "(" + lib.formatTime(self.T[-1]) + ")")
+               "(" + lib.formatTime(self.past.T[-1]) + ")")
 
         # Compute change in IOB (insulin that has kicked in within ISF step)
         for i in range(n):
