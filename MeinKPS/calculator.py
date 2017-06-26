@@ -285,7 +285,7 @@ class Calculator(object):
                         4 * self.basal.y[0])
 
             # Give user info
-            print "Max basal: " + str(self.max["Basal"]) + " U/h"
+            print "Theoretical max basal: " + str(self.max["Basal"]) + " U/h"
             print "3x max daily basal: " + str(3 * self.basal.max) + " U/h"
             print "4x current basal: " + str(4 * self.basal.y[0]) + " U/h"
             print "Max basal selected: " + str(maxTB) + " U/h"
