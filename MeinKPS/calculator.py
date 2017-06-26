@@ -224,14 +224,17 @@ class Calculator(object):
         # Update eventual BG
         eventualBG = naiveBG + deltaBG
 
+        # Compute BG target
+        target = np.mean(self.BGTargets.y[-1])
+
         # Compute BG difference with average target
-        dBG = np.mean(self.BGTargets.y[-1]) - eventualBG
+        dBG = target - eventualBG
 
         # Compute necessary dose
         dose = self.BG.dose(dBG, self.ISF, self.IDC)
 
         # Give user info
-        print "Target: " + str(self.BGTargets.y[-1]) + " " + self.BG.u
+        print "BG target: " + str(target) + " " + self.BG.u
         print "Current BG: " + str(self.BG.past.y[-1]) + " " + self.BG.u
         print "Current ISF: " + str(self.ISF.y[0]) + " " + self.BG.u + "/U"
         print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
@@ -260,6 +263,9 @@ class Calculator(object):
         # Convert enactment time to minutes
         T *= 60
 
+        # Define computed TB recommendation
+        R = [TB, "U/h", T]
+
         # If less insulin is needed
         if dose < 0:
 
@@ -274,7 +280,7 @@ class Calculator(object):
                        "Eat something!")
 
                 # Stop insulin delivery
-                return [minTB, "U/h", T]
+                R = [minTB, "U/h", T]
 
         # If more insulin is needed
         elif dose > 0:
@@ -298,7 +304,7 @@ class Calculator(object):
                        "Enact dose manually!")
 
                 # Max out TB
-                return [maxTB, "U/h", T]
+                R = [maxTB, "U/h", T]
 
         # No modification to insulin dosage necessary
         else:
@@ -307,7 +313,7 @@ class Calculator(object):
             print ("No modification to insulin dosage necessary.")
 
             # No TB recommendation
-            return None
+            R = None
 
         # Look for conflictual info
         if (np.sign(BGI) == -1 and eventualBG > max(self.BGTargets.y[-1]) or
@@ -318,16 +324,14 @@ class Calculator(object):
                    "expected to land higher/lower than target range.")
 
             # No TB recommendation
-            return None
+            R = None
 
-        # Otherwise everything is fine
-        else:
+        # Give user info
+        print ("Recommended TB: " + str(R[0]) + " " + R[1] + " (" + str(R[2]) +
+               " m)")
 
-            # Give user info
-            print ("Loop may enact TB recommendation.")
-
-            # Return TB recommendation
-            return [TB, "U/h", T]
+        # Return recommendation
+        return R
 
 
 
@@ -2101,7 +2105,7 @@ class PastBGProfile(PastProfile):
         if n == 0:
 
             # Exit
-            sys.exit("Not enough recent BGs to take action. Exiting...")
+            sys.exit("No recent BG. Exiting...")
 
         # Otherwise
         else:
@@ -2239,9 +2243,6 @@ class FutureBGProfile(FutureProfile):
             self.T.append(b)
             self.y.append(BG)
 
-            # Make some air
-            print
-
         # Normalize
         self.normalize()
 
@@ -2319,7 +2320,6 @@ class FutureBGProfile(FutureProfile):
         """
 
         # Give user info
-        print
         print "Analyzing BG..."
 
         # Define prediction time (h)
@@ -2355,7 +2355,9 @@ class FutureBGProfile(FutureProfile):
                "/h")
         print ("BGI deviation: " + str(round(deltaBGI, 1)) + " " + self.u +
                "/h")
-        print
+
+        # Give user info
+        print "End of BG analysis."
 
         # Return computations
         return [deltaBG, BGI, expectedBGI]
