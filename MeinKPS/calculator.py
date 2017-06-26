@@ -967,8 +967,8 @@ class Profile(object):
                 # Otherwise
                 else:
 
-                    # Add missing value
-                    y.insert(0, None)
+                    # Add zero value
+                    y.insert(0, self.zero)
 
             # End of profile
             if T[-1] != b:
