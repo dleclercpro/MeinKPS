@@ -462,13 +462,13 @@ class PumpCommand(Command):
         if self.nBytesExpected < 14:
 
             # Raise error
-            raise errors.IncorrectNExpectedBytes()
+            raise errors.BadNExpectedBytes()
 
         # Check for mismatching numbers of bytes
         if self.nBytesReceived != self.nBytesExpected:
 
             # Raise error
-            raise errors.MismatchNBytes([self.nBytesExpected,
+            raise errors.NBytesMismatch([self.nBytesExpected,
                                          self.nBytesReceived])
 
         # Compute CRC based on received data

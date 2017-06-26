@@ -79,10 +79,10 @@ class BaseError(Exception):
 
 
 
-class PumpError(BaseError):
+class StickError(BaseError):
     pass
 
-class StickError(BaseError):
+class PumpError(BaseError):
     pass
 
 class CGMError(BaseError):
@@ -91,121 +91,12 @@ class CGMError(BaseError):
 class ReporterError(BaseError):
     pass
 
-
-
-# Pump related errors
-class NoHistory(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("No pump history data read yet. Make sure to do that " +
-                     "before trying to find records.")
+class CalculatorError(BaseError):
+    pass
 
 
 
-class TBFail(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("New TB could not be correctly set.")
-
-
-
-class TBOutsideLimits(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("New TB (" + str(self.args[0]) + " " + self.args[1] +
-                     ") is either too large or too small). It must be " +
-                     "comprised within the theoretical limits of [0, 35] U/h " +
-                     "or [0, 200] %.")
-
-
-
-class TBIncorrectRate(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("New TB rate (" + str(self.args[0]) + "U/h) precision" +
-                     "is incorrect. No more than 2 digits are allowed.")
-
-
-
-class TBIncorrectDuration(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("New TB duration (" + str(self.args[0]) + " m) is" +
-                     "incorrect. The latter has to be a multiple of 30.")
-
-
-
-class IncorrectStatus(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Pump status does not allow enaction of new TB.")
-
-
-
-class IncorrectSettings(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Pump settings do not allow enaction of new TB.")
-
-
-
-# Stick related errors
+# Stick errors
 class NoStick(StickError):
 
     def prepare(self):
@@ -285,7 +176,7 @@ class BadCommunications(StickError):
 
 
 
-class IncorrectNExpectedBytes(StickError):
+class BadNExpectedBytes(StickError):
 
     def prepare(self):
 
@@ -296,11 +187,11 @@ class IncorrectNExpectedBytes(StickError):
         """
 
         # Define error info
-        self.info = ("Incorrect number of expected bytes.")
+        self.info = ("Bad number of expected bytes.")
 
 
 
-class MismatchNBytes(StickError):
+class NBytesMismatch(StickError):
 
     def prepare(self):
 
@@ -314,6 +205,118 @@ class MismatchNBytes(StickError):
         self.info = ("Expected " + str(self.args[0]) + " bytes." +
                      "Tried to read " + str(self.args[1]) + " bytes." +
                      "Received " + str(self.args[2]) + " bytes.")
+
+
+
+# Pump errors
+class NoHistory(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("No pump history data read yet. Make sure to do that " +
+                     "before trying to find records.")
+
+
+
+class TBFail(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("New TB could not be correctly set.")
+
+
+
+class TBOutsideLimits(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("New TB (" + str(self.args[0]) + " " + self.args[1] +
+                     ") is either too large or too small). It must be " +
+                     "comprised within the theoretical limits of [0, 35] U/h " +
+                     "or [0, 200] %.")
+
+
+
+class TBBadRate(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("New TB rate (" + str(self.args[0]) + "U/h) precision" +
+                     "is incorrect. No more than 2 digits are allowed.")
+
+
+
+class TBBadDuration(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("New TB duration (" + str(self.args[0]) + " m) is" +
+                     "incorrect. The latter has to be a multiple of 30.")
+
+
+
+class BadStatus(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Pump status does not allow enaction of new TB.")
+
+
+
+class BadSettings(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Pump settings do not allow enaction of new TB.")
 
 
 
@@ -335,6 +338,7 @@ class BadPath(ReporterError):
 
 
 
+# Reporter errors
 class NoSection(ReporterError):
 
     def prepare(self):
@@ -351,8 +355,8 @@ class NoSection(ReporterError):
 
 
 
-# General errors
-class IncorrectTime(BaseError):
+# Calculator errors
+class BadDIA(CalculatorError):
 
     def prepare(self):
 
@@ -363,7 +367,164 @@ class IncorrectTime(BaseError):
         """
 
         # Define error info
-        self.info = "Incorrect time."
+        self.info = ("No IDC found for DIA = " + str(self.args[0]) + " h.")
+
+
+
+class ProfileEndsTypeMismatch(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Type of profile ends (" + str(self.args[0]) + " vs " +
+                     str(self.args[1]) + ") do not match.")
+
+
+
+class NoNormalizedCut(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Cannot cut profile using normalized time limits yet.")
+
+
+
+class NoNorm(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Profile t-axis cannot be normalized: profile does not " +
+                     "have a norm.")
+
+
+
+class BadTypeNormalization(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Time axis can only be normalized using a datetime " +
+                     "object.")
+
+
+
+class ProfileAxesLengthMismatch(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Cannot compute f(t): axes' length do not fit.")
+
+
+
+class ProfileLimitsMismatch(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Operation impossible due to unfitting limits between " +
+                     "profiles: '" + self.args[0] + "' and '" + self.args[1] +
+                     "'.")
+
+
+
+class BadTBUnits(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Bad TB units (%).")
+
+
+
+class MissingBGs(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Not enough recent BGs to proceed.")
+
+
+
+class BadBGTime(CalculatorError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Required BG expectation does not fit on time axis of " +
+                     "predicted BG profile.")
+
+
+
+# General errors
+class BadTime(BaseError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "Bad time."
 
 
 

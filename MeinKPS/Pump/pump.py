@@ -1249,24 +1249,24 @@ class TB(object):
             TB["Units"] == "%" and TB["Rate"] != round(TB["Rate"], 0)):
 
             # Raise error
-            raise errors.TBIncorrectRate(TB["Rate"])
+            raise errors.TBBadRate(TB["Rate"])
 
         # Verify if duration is a multiple of 30
         if TB["Duration"] % 30:
 
             # Raise error
-            raise errors.TBIncorrectDuration(TB["Duration"])
+            raise errors.TBBadDuration(TB["Duration"])
 
         # Verify pump status and settings before doing anything
         if not self.pump.status.verify():
 
             # Raise error
-            raise errors.IncorrectStatus()
+            raise errors.BadStatus()
 
         if not self.pump.settings.verify(TB["Rate"], TB["Units"]):
 
             # Raise error
-            raise errors.IncorrectSettings()
+            raise errors.BadSettings()
 
         # Before issuing any TB, read the current one
         self.read()

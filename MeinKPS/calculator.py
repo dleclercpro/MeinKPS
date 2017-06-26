@@ -26,14 +26,13 @@
 import numpy as np
 import datetime
 import copy
-import sys
-import time
 
 
 
 # USER LIBRARIES
 import lib
 import reporter
+import errors
 
 
 
@@ -484,8 +483,8 @@ class WalshIDC(IDC):
         # Bad DIA
         else:
 
-            # Exit
-            sys.exit("No IDC found for DIA = " + str(DIA) + " h. Exiting...")
+            # Raise error
+            raise errors.BadDIA(DIA)
 
 
 
@@ -912,14 +911,13 @@ class Profile(object):
         if type(a) is not type(b):
 
             # Exit
-            sys.exit("Type of ends do not match. Exiting...")
+            raise errors.ProfileEndsTypeMismatch(type(a), type(b))
 
         # Get desired axis
         if type(a) is not datetime.datetime:
 
             # Exit
-            sys.exit("Cannot cut profile using normalized time limits yet. " +
-                     "Exiting...")
+            raise errors.NoNormalizedCut()
 
         # Initialize cut-off profile components
         T = []
@@ -1129,15 +1127,13 @@ class Profile(object):
                 else:
 
                     # Exit
-                    sys.exit("Time axis cannot be normalized: profile does " +
-                             "not have a norm. Exiting...")
+                    raise errors.NoNorm()
 
             # Before using given reference time, verify its type
             elif type(T) is not datetime.datetime:
 
                 # Exit
-                sys.exit("Time axis can only be normalized using a datetime " +
-                         "object. Exiting...")
+                raise errors.BadTypeNormalization()
 
             # Initialize normalized axis
             t = []
@@ -1279,7 +1275,7 @@ class Profile(object):
         if n != len(self.y):
 
             # Exit
-            sys.exit("Cannot compute f(t): axes' length do not fit. Exiting...")
+            raise errors.ProfileAxesLengthMismatch()
 
         # Compute profile value
         for i in range(n):
@@ -1355,9 +1351,7 @@ class Profile(object):
             if p.start != self.start or p.end != self.end:
 
                 # Exit
-                sys.exit("Operation impossible due to '" + profile + "': " +
-                         "limits do not fit with '" + base + "'. " +
-                         "Exiting...")
+                raise errors.ProfileLimitsMismatch(profile, base)
 
 
 
@@ -1594,7 +1588,7 @@ class TBProfile(PastProfile):
             if self.u[i] != "U/h":
 
                 # Give user info
-                sys.exit("TB units mismatch. Exiting...")
+                raise errors.BadTBUnits()
 
 
 
@@ -2105,7 +2099,7 @@ class PastBGProfile(PastProfile):
         if n == 0:
 
             # Exit
-            sys.exit("No recent BG. Exiting...")
+            raise errors.MissingBGs()
 
         # Otherwise
         else:
@@ -2127,7 +2121,7 @@ class PastBGProfile(PastProfile):
         if self.n < 2:
 
             # Exit
-            sys.exit("Not enough recent BGs to compute BGI. Exiting...")
+            raise errors.MissingBGs()
 
         # Otherwise
         else:
@@ -2301,8 +2295,7 @@ class FutureBGProfile(FutureProfile):
         if int(n) != n or n < 0:
 
             # Exit
-            sys.exit("Required BG expectation does not fit on time axis of " +
-                     "predicted BG profile. Exiting...")
+            raise errors.BadBGTime()
 
         # Return expected BG
         return self.y[int(n)]
