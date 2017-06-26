@@ -667,7 +667,7 @@ class Profile(object):
             self.y.append(self.data[t])
 
         # If time is not mapped
-        if type(self.T[0]) is datetime.time:
+        if len(self.T) and type(self.T[0]) is datetime.time:
 
             # Map it
             self.map()
@@ -954,8 +954,17 @@ class Profile(object):
                 # Add time
                 T.insert(0, a)
 
-                # Extend last step's value
-                y.insert(0, self.y[index])
+                # If precedent step was found
+                if index is not None:
+
+                    # Extend precedent step's value
+                    y.insert(0, self.y[index])
+
+                # Otherwise
+                else:
+
+                    # Add missing value
+                    y.insert(0, None)
 
             # End of profile
             if T[-1] != b:
@@ -1145,7 +1154,7 @@ class Profile(object):
         else:
 
             # Give user info
-            print "Profiles without time axes cannot be normalized. Exiting..."
+            print "Profiles without time axes cannot be normalized."
 
 
 
