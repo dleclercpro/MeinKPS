@@ -2023,6 +2023,9 @@ class PastBGProfile(PastProfile):
         # Start initialization
         super(PastBGProfile, self).__init__()
 
+        # Initialize number of valid recent BGs
+        self.n = 0
+
         # Define type
         self.type = "Dot"
 
@@ -2058,35 +2061,44 @@ class PastBGProfile(PastProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define minimum number of BGs required
-        N = 2
-
         # Define maximum age of BGs (m)
         T = 20
 
-        # Initialize number of valid BGs
+        # Read number of BGs
+        N = len(self.T)
+
+        # Initialize number of recent BGs
         n = 0
 
         # Check age of most recent BGs
-        while True:
+        for i in range(N):
 
             # They should not be older than a certain duration
-            if self.T[-(n + 1)] < self.end - datetime.timedelta(minutes = T):
+            if self.T[-(i - 1)] < self.end - datetime.timedelta(minutes = T):
 
                 # Exit
                 break
 
-            # Update number of BGs
-            n += 1
+            # If so, update count
+            else:
+
+                # Update
+                n += 1
+
+        # Give user info
+        print "Found " + str(n) + " BGs within last " + str(T) + " m."
 
         # Check for insufficient data
-        if n < N:
+        if n == 0:
 
             # Exit
-            sys.exit("Not enough valid BGs to take action. Exiting...")
+            sys.exit("Not enough recent BGs to take action. Exiting...")
 
-        # Return number of valid BGs
-        return n
+        # Otherwise
+        else:
+
+            # Store number of valid recent BGs
+            self.n = n
 
 
 
@@ -2098,22 +2110,17 @@ class PastBGProfile(PastProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Verify and get number of valid BGs for analysis
-        n = self.verify()
+        # Check for insufficient data
+        if self.n < 2:
 
-        # Compute most relevant BG derivative
-        if n > 2:
+            # Exit
+            sys.exit("Not enough recent BGs to compute BGI. Exiting...")
 
-            # Average dBG/dt
-            BGI = np.mean(self.dydt[-(n - 1):])
-
+        # Otherwise
         else:
 
-            # Last dBG/dt
-            BGI = self.dydt[-1]
-
-        # Return dBG/dt
-        return BGI
+            # Return BGI (mean of most recent values of dBG/dt)
+            return np.mean(self.dydt[-(self.n - 1):])
 
 
 
@@ -2135,6 +2142,19 @@ class FutureBGProfile(FutureProfile):
 
 
 
+    def link(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LINK
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Link units
+        self.u = self.past.u
+
+
+
     def build(self, IOB, ISF):
 
         """
@@ -2144,12 +2164,16 @@ class FutureBGProfile(FutureProfile):
         
         Use IOB and ISF to predict where BG will land after insulin activity is
         over, assuming a natural decay.
-
-        Note: why small difference between decay and predict?
         """
 
         # Give user info
         print "Decaying BG..."
+
+        # Verify number of recent BGs
+        self.past.verify()
+
+        # Link with past profile
+        self.link()
 
         # Reset previous BG predictions
         self.reset()
@@ -2164,11 +2188,9 @@ class FutureBGProfile(FutureProfile):
         # Read latest BG
         BG = self.past.y[-1]
 
-        # Link units
-        self.u = self.past.u
-
         # Give user info
-        print "Initial BG: " + str(BG) + " " + self.u
+        print ("Initial BG: " + str(BG) + " " + self.u + " " +
+               "(" + lib.formatTime(self.T[-1]) + ")")
 
         # Compute change in IOB (insulin that has kicked in within ISF step)
         for i in range(n):
