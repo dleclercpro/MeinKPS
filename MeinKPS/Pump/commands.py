@@ -1752,7 +1752,7 @@ class ReadPumpCSF(PumpCommand):
 
 
 
-class ReadPumpBasalProfile(PumpCommand):
+class ReadPumpBasal(PumpCommand):
 
     def __init__(self, pump):
 

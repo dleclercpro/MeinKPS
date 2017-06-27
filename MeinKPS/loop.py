@@ -160,7 +160,7 @@ class Loop(object):
         self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
 
         # Read basal profile stored in pump
-        self.do(self.pump.basalProfile.read, ["Pump"], "Basal", "Standard")
+        self.do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
 
 
 

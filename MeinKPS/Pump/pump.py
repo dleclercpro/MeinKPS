@@ -115,7 +115,7 @@ class Pump(object):
         self.CSF = CSF(self)
 
         # Give the pump a basal profile instance
-        self.basalProfile = BasalProfile(self)
+        self.basal = Basal(self)
 
         # Give the pump a daily totals instance
         self.dailyTotals = DailyTotals(self)
@@ -941,7 +941,7 @@ class CSF(object):
 
 
 
-class BasalProfile(object):
+class Basal(object):
 
     def __init__(self, pump):
 
@@ -955,7 +955,7 @@ class BasalProfile(object):
         self.values = None
 
         # Link with its respective command
-        self.command = commands.ReadPumpBasalProfile(pump)
+        self.command = commands.ReadPumpBasal(pump)
 
 
 
@@ -1462,9 +1462,9 @@ def main():
     #pump.CSF.read()
 
     # Read basal profile stored in pump
-    #pump.basalProfile.read("Standard")
-    #pump.basalProfile.read("A")
-    #pump.basalProfile.read("B")
+    #pump.basal.read("Standard")
+    #pump.basal.read("A")
+    #pump.basal.read("B")
 
     # Read daily totals on pump
     #pump.dailyTotals.read()
