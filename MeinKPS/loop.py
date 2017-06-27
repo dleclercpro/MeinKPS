@@ -117,13 +117,13 @@ class Loop(object):
         """
 
         # Establish connection with CGM
-        self.connect()
+        self.cgm.connect()
 
         # Prepare CGM
         self.prepareCGM()
 
         # End connection with CGM
-        self.disconnect()
+        self.cgm.disconnect()
 
 
 
@@ -180,7 +180,7 @@ class Loop(object):
 
         # Run calculator and get TB recommendation
         #TB = self.calculator.run(self.now)
-        TB = False
+        TB = [round(self.now.minute / 60.0 * 3.0, 2), "U/h", 30]
 
         # React to TB recommendation
         if TB is None:
@@ -192,8 +192,7 @@ class Loop(object):
         else:
 
             # Enact TB
-            #self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
-            self.do(self.pump.TB.set, ["Pump"], "TB", 0.5, "U/h", 30)
+            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
         # Stop dialogue with pump
         self.pump.stop()
@@ -250,7 +249,7 @@ class Loop(object):
         Reporter.increment(["Status"], "N")
 
         # Do CGM stuff
-        #self.doCGM()
+        self.doCGM()
 
         # Do pump stuff
         self.doPump()
@@ -269,9 +268,9 @@ class Loop(object):
 
         # Show loop
         #self.show(self.calculator.net,
-                   #self.calculator.BG,
-                   #self.calculator.IOB,
-                   #self.calculator.IDC.DIA)
+        #          self.calculator.BG,
+        #          self.calculator.IOB,
+        #          self.calculator.IDC.DIA)
 
 
 

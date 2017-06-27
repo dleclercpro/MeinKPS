@@ -269,7 +269,7 @@ class TBBadRate(PumpError):
         """
 
         # Define error info
-        self.info = ("New TB rate (" + str(self.args[0]) + "U/h) precision" +
+        self.info = ("New TB rate (" + str(self.args[0]) + " U/h) precision " +
                      "is incorrect. No more than 2 digits are allowed.")
 
 
@@ -317,6 +317,22 @@ class BadSettings(PumpError):
 
         # Define error info
         self.info = ("Pump settings do not allow enaction of new TB.")
+
+
+
+# CGM errors
+class NoCGM(CGMError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "No CGM detected. Are you sure it's plugged in?"
 
 
 

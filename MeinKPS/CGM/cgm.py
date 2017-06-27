@@ -39,6 +39,7 @@ import lib
 import commands
 import databases
 import reporter
+import errors
 
 
 
@@ -103,7 +104,9 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Try opening port and define a handle
         try:
+
             # Define handle
             self.handle.port = "/dev/ttyACM0"
             self.handle.baudrate = 115200
@@ -111,8 +114,20 @@ class CGM(object):
             # Open handle
             self.handle.open()
 
-        except:
-            sys.exit("Can't connect to CGM. Is it plugged in? Exiting...")
+        # Otherwise
+        except serial.SerialException as e:
+
+            # If CGM is missing
+            if e.errno == 2:
+
+                # Raise error
+                raise errors.NoCGM
+
+            # Otherwise
+            else:
+
+                # Everything should be fine
+                pass
 
 
 
