@@ -1244,8 +1244,8 @@ class TB(object):
             # Raise error
             raise errors.TBOutsideLimits(TB["Rate"], TB["Units"])
 
-        # Verify if rate is valid (if U/h, only in 0.05 increments and precision
-        # of 2 digits, else if %, precision of 0 digit)
+        # Verify if rate is valid (if U/h, only in increments of 0.05 U/h and
+        # max precision of 2 digits, else if %, max precision of 0 digit)
         if (TB["Units"] == "U/h" and TB["Rate"] * 100 % 5 != 0 or
             TB["Units"] == "U/h" and TB["Rate"] != round(TB["Rate"], 2) or
             TB["Units"] == "%" and TB["Rate"] != round(TB["Rate"], 0)):

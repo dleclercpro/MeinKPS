@@ -9,19 +9,19 @@
         "Units": 0
     },
     "Pump": {
-        "BG Targets": 14,
-        "Basal": 14,
+        "BG Targets": 15,
+        "Basal": 15,
         "Battery": 0,
-        "CSF": 14,
-        "History": 14,
-        "ISF": 14,
+        "CSF": 15,
+        "History": 15,
+        "ISF": 15,
         "Model": 0,
         "Reservoir": 0,
-        "TB": 8,
+        "TB": 9,
         "Time": 0
     },
     "Status": {
-        "Duration": 23,
+        "Duration": 48,
         "N": 15,
         "Time": "2017.06.28 - 00:24:02"
     }
