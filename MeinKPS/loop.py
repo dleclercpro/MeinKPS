@@ -183,7 +183,7 @@ class Loop(object):
 
         # Run calculator and get TB recommendation
         #TB = self.calculator.run(self.now)
-        TB = [round(self.now.minute / 60.0, 2), "U/h", 30]
+        TB = [round(self.now.minute / 60.0, 1), "U/h", 30]
 
         # React to TB recommendation
         if TB is None:
