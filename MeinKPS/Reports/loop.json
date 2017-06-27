@@ -1,6 +1,6 @@
 {
     "CGM": {
-        "BG": 2,
+        "BG": 0,
         "Battery": 0,
         "Clock": 0,
         "Firmware": 0,
@@ -9,19 +9,20 @@
         "Units": 0
     },
     "Pump": {
-        "BG Targets": 693,
-        "Basal": 693,
-        "Battery": 685,
-        "CSF": 694,
-        "ISF": 693,
-        "Model": 685,
-        "Reservoir": 685,
-        "TB": 682,
-        "Time": 685
+        "BG Targets": 0,
+        "Basal": 0,
+        "Battery": 0,
+        "CSF": 0,
+        "History": 0,
+        "ISF": 0,
+        "Model": 0,
+        "Reservoir": 0,
+        "TB": 0,
+        "Time": 0
     },
     "Status": {
-        "Duration": 50,
-        "N": 707,
-        "Time": "2017.06.27 - 23:42:09"
+        "Duration": 0,
+        "N": 0,
+        "Time": "2017.06.27 - 23:53:23"
     }
 }

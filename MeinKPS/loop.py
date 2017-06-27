@@ -138,29 +138,32 @@ class Loop(object):
         # If not a quick run
         if not quick:
 
-            # Read pump time
+            # Read time
             self.do(self.pump.time.read, ["Pump"], "Time")
 
-            # Read pump model
+            # Read model
             self.do(self.pump.model.read, ["Pump"], "Model")
 
-            # Read pump battery level
+            # Read battery level
             self.do(self.pump.battery.read, ["Pump"], "Battery")
 
-            # Read remaining amount of insulin in pump
+            # Read remaining amount of insulin
             self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
 
-        # Read insulin sensitivity factors stored in pump
+        # Read ISF
         self.do(self.pump.ISF.read, ["Pump"], "ISF")
 
-        # Read carb sensitivity factors stored in pump
+        # Read CSF
         self.do(self.pump.CSF.read, ["Pump"], "CSF")
 
-        # Read BG targets stored in pump
+        # Read BG targets
         self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
 
-        # Read basal profile stored in pump
+        # Read basal
         self.do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
+
+        # Read latest history
+        self.do(self.pump.history.update, ["Pump"], "History")
 
 
 
@@ -180,7 +183,7 @@ class Loop(object):
 
         # Run calculator and get TB recommendation
         #TB = self.calculator.run(self.now)
-        TB = [round(self.now.minute / 60.0 * 3.0, 2), "U/h", 30]
+        TB = [round(self.now.minute / 60.0, 2), "U/h", 30]
 
         # React to TB recommendation
         if TB is None:
