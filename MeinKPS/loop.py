@@ -64,34 +64,91 @@ class Loop(object):
         self.pump = pump.Pump()
 
         # Give the loop a calculator
-        self.calc = calculator.Calculator()
+        self.calculator = calculator.Calculator()
 
 
 
-    def prepare(self):
+    def prepareCGM(self, quick = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            PREPARECGM
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Q: is reading time/model necessary at beginning of loop?
         """
 
-        # Read pump time
-        self.do(self.pump.time.read, ["Pump"], "Time")
+        # If not a quick run
+        if not quick:
 
-        # Read pump model
-        self.do(self.pump.model.read, ["Pump"], "Model")
+            # Read clock
+            self.do(self.cgm.clock.read, ["CGM"], "Clock")
 
-        # Read pump battery level
-        self.do(self.pump.battery.read, ["Pump"], "Battery")
+            # Read battery
+            self.do(self.cgm.battery.read, ["CGM"], "Battery")
 
-        # Read remaining amount of insulin in pump
-        self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
+            # Read units
+            self.do(self.cgm.units.read, ["CGM"], "Units")
 
-        # Read BG targets stored in pump
-        self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
+            # Read language
+            self.do(self.cgm.language.read, ["CGM"], "Language")
+
+            # Read firmware
+            self.do(self.cgm.firmware.read, ["CGM"], "Firmware")
+
+            # Read transmitter
+            self.do(self.cgm.transmitter.read, ["CGM"], "Transmitter")
+
+            # Read BG
+            self.do(self.cgm.dumpBG, ["CGM"], "BG")
+
+        # Otherwise
+        else:
+
+            # Read CGM
+            self.do(self.cgm.dumpNewBG, ["CGM"], "BG")
+
+
+
+    def doCGM(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DOCGM
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Establish connection with CGM
+        self.connect()
+
+        # Prepare CGM
+        self.prepareCGM()
+
+        # End connection with CGM
+        self.disconnect()
+
+
+
+    def preparePump(self, quick = True):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPAREPUMP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # If not a quick run
+        if not quick:
+
+            # Read pump time
+            self.do(self.pump.time.read, ["Pump"], "Time")
+
+            # Read pump model
+            self.do(self.pump.model.read, ["Pump"], "Model")
+
+            # Read pump battery level
+            self.do(self.pump.battery.read, ["Pump"], "Battery")
+
+            # Read remaining amount of insulin in pump
+            self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
 
         # Read insulin sensitivity factors stored in pump
         self.do(self.pump.ISF.read, ["Pump"], "ISF")
@@ -99,12 +156,47 @@ class Loop(object):
         # Read carb sensitivity factors stored in pump
         self.do(self.pump.CSF.read, ["Pump"], "CSF")
 
-        # Read basal profile stored in pump
-        self.do(self.pump.basalProfile.read, ["Pump"], "Basal Profile",
-                                                       "Standard")
+        # Read BG targets stored in pump
+        self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
 
-        # Read CGM
-        #self.do(self.cgm.dumpLastBG, ["CGM"], "BG")
+        # Read basal profile stored in pump
+        self.do(self.pump.basalProfile.read, ["Pump"], "Basal", "Standard")
+
+
+
+    def doPump(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DOPUMP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start dialogue with pump
+        self.pump.start()
+
+        # Prepare pump
+        self.preparePump()
+
+        # Run calculator and get TB recommendation
+        #TB = self.calculator.run(self.now)
+        TB = False
+
+        # React to TB recommendation
+        if TB is None:
+
+            # Cancel TB
+            self.pump.TB.cancel()
+
+        # Otherwise
+        else:
+
+            # Enact TB
+            #self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
+            self.do(self.pump.TB.set, ["Pump"], "TB", 0.5, "U/h", 30)
+
+        # Stop dialogue with pump
+        self.pump.stop()
 
 
 
@@ -157,33 +249,11 @@ class Loop(object):
         Reporter.addEntries(["Status"], "Time", lib.formatTime(start), True)
         Reporter.increment(["Status"], "N")
 
-        # Start dialogue with pump
-        self.pump.start()
+        # Do CGM stuff
+        #self.doCGM()
 
-        # Prepare loop
-        self.prepare()
-
-        # Run calculator and get TB recommendation
-        #TB = self.calc.run(self.now)
-
-        # Show loop
-        #self.show(self.calc.net, self.calc.BG, self.calc.IOB, self.calc.IDC.DIA)
-
-        # React to TB recommendation
-        #if TB is None:
-        if False:
-
-            # Cancel TB
-            self.pump.TB.cancel()
-
-        else:
-
-            # Enact TB
-            #self.pump.TB.set(*TB)
-            self.do(self.pump.TB.set, ["Pump"], "TB", 0.5, "U/h", 30)
-
-        # Stop dialogue with pump
-        self.pump.stop()
+        # Do pump stuff
+        self.doPump()
 
         # Define ending time
         end = datetime.datetime.now()
@@ -196,6 +266,12 @@ class Loop(object):
 
         # Give user info
         print "End: " + lib.formatTime(end)
+
+        # Show loop
+        #self.show(self.calculator.net,
+                   #self.calculator.BG,
+                   #self.calculator.IOB,
+                   #self.calculator.IDC.DIA)
 
 
 

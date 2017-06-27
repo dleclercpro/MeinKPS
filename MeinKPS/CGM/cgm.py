@@ -233,11 +233,11 @@ class CGM(object):
 
 
 
-    def dumpLastBG(self):
+    def dumpNewBG(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DUMPLASTBG
+            DUMPNEWBG
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         Dump about 24 h of CGM readings (38 records per page separated by 5 m
