@@ -1303,20 +1303,17 @@ class TB(object):
         # If U/h
         if TB["Units"] == "U/h":
 
-            # Round to 2 decimals
-            TB["Rate"] = round(TB["Rate"], 2)
-
-            # Round to fit pump's range
+            # Round
             TB["Rate"] = round(round(TB["Rate"] / self.stroke) * self.stroke, 2)
 
         # If %
         elif TB["Units"] == "%":
 
-            # Round to 0 decimal
+            # Round
             TB["Rate"] = round(TB["Rate"])
 
         # Give user info
-        print "Rounded new TB:"
+        print "New rounded TB:"
 
         # Show new rounded TB
         self.show(TB)
