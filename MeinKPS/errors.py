@@ -240,7 +240,7 @@ class TBFail(PumpError):
 
 
 
-class TBOutsideLimits(PumpError):
+class TBBadRate(PumpError):
 
     def prepare(self):
 
@@ -255,22 +255,6 @@ class TBOutsideLimits(PumpError):
                      ") is either too large or too small). It must be " +
                      "comprised within the theoretical limits of [0, 35] U/h " +
                      "or [0, 200] %.")
-
-
-
-class TBBadRate(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("New TB rate (" + str(self.args[0]) + " U/h) precision " +
-                     "is incorrect. No more than 2 digits are allowed.")
 
 
 

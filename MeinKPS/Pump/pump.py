@@ -1242,16 +1242,7 @@ class TB(object):
             TB["Rate"] > {"U/h": 35, "%": 200}[TB["Units"]]):
 
             # Raise error
-            raise errors.TBOutsideLimits(TB["Rate"], TB["Units"])
-
-        # Verify if rate is valid (if U/h, only in increments of 0.05 U/h and
-        # max precision of 2 digits, else if %, max precision of 0 digit)
-        if (TB["Units"] == "U/h" and TB["Rate"] * 100 % 5 != 0 or
-            TB["Units"] == "U/h" and TB["Rate"] != round(TB["Rate"], 2) or
-            TB["Units"] == "%" and TB["Rate"] != round(TB["Rate"], 0)):
-
-            # Raise error
-            raise errors.TBBadRate(TB["Rate"])
+            raise errors.TBBadRate(TB["Rate"], TB["Units"])
 
         # Verify if duration is a multiple of 30
         if TB["Duration"] % 30:
@@ -1259,12 +1250,13 @@ class TB(object):
             # Raise error
             raise errors.TBBadDuration(TB["Duration"])
 
-        # Verify pump status and settings before doing anything
+        # Verify pump status
         if not self.pump.status.verify():
 
             # Raise error
             raise errors.BadStatus()
 
+        # Verify pump settings
         if not self.pump.settings.verify(TB["Rate"], TB["Units"]):
 
             # Raise error
@@ -1294,6 +1286,43 @@ class TB(object):
 
 
 
+    def round(self, TB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ROUND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "New TB:"
+
+        # Show new TB
+        self.show(TB)
+
+        # If U/h
+        if TB["Units"] == "U/h":
+
+            # Round to 2 decimals
+            TB["Rate"] = round(TB["Rate"], 2)
+
+            # Round to fit pump's range
+            TB["Rate"] = round(round(TB["Rate"] / self.stroke) * self.stroke, 2)
+
+        # If %
+        elif TB["Units"] == "%":
+
+            # Round to 0 decimal
+            TB["Rate"] = round(TB["Rate"])
+
+        # Give user info
+        print "Rounded new TB:"
+
+        # Show new rounded TB
+        self.show(TB)
+
+
+
     def set(self, rate, units, duration, cancel = False):
 
         """
@@ -1307,15 +1336,12 @@ class TB(object):
                  "Units": units,
                  "Duration": duration}
 
-        # Give user info
-        print "Trying to set new TB:"
-
-        # Show new TB
-        self.show(newTB)
-
         # Verify if TB can be set on pump
         if not cancel:
             self.verify(newTB)
+
+        # Round new TB to fit pump's range
+        self.round(newTB)
 
         # Do command
         self.commands["Set"].do(newTB)
@@ -1481,7 +1507,7 @@ def main():
     #pump.TB.read()
 
     # Send TB to pump
-    #pump.TB.set(0.05, "U/h", 30)
+    pump.TB.set(0.06, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)

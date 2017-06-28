@@ -252,7 +252,7 @@ class Loop(object):
         Reporter.increment(["Status"], "N")
 
         # Do CGM stuff
-        self.doCGM()
+        #self.doCGM()
 
         # Do pump stuff
         self.doPump()
