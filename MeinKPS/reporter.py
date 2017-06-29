@@ -221,7 +221,7 @@ class Reporter:
 
 
 
-    def getEntry(self, path, key):
+    def getEntry(self, path, key = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -251,10 +251,11 @@ class Reporter:
             # Give user info
             print "Entry found:"
 
-            # Print entry based on type
+            # If entry is a dict
             if type(entry) is dict:
                 lib.printJSON(entry)
 
+            # Otherwise
             else:
                 print entry
 
@@ -266,6 +267,46 @@ class Reporter:
 
             # Give user info
             print "No matching entry found."
+
+
+
+    def getLastEntry(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETLASTENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load report section
+        self.getSection(path)
+
+        # Give user info
+        print ("Attempting to find last entry in: " + self.formatPath(path))
+
+        # Look if at least one entry exists
+        if len(self.section) > 0:
+
+            # Get latest entry time
+            t = max(self.section)
+
+            # Get corresponding entry
+            entry = self.section[t]
+
+            # Give user info
+            print "Entry found:"
+
+            # Give user info
+            print str(entry) + " (" + str(t) + ")" 
+
+            # Return entry for external access
+            return [t, entry]
+
+        # Otherwise
+        else:
+
+            # Give user info
+            print "No entry found."
 
 
 

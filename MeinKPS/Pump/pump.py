@@ -1155,6 +1155,28 @@ class Bolus(object):
 
 
 
+    def last(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LAST
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load report
+        Reporter.load("treatments.json")
+
+        # Find last bolus
+        [t, bolus] = Reporter.getLastEntry(["Boluses"])
+
+        # Give user info
+        print "Last bolus: " + str(bolus) + " U (" + t + ")"
+
+        # Return it
+        return [t, bolus]
+
+
+
     def deliver(self, bolus):
 
         """
@@ -1163,8 +1185,6 @@ class Bolus(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # TODO: Check if last bolus stored fits to the one just delivered
-
         # Verify pump status and settings before doing anything
         if not self.pump.status.verify():
             return
@@ -1172,11 +1192,61 @@ class Bolus(object):
         if not self.pump.settings.verify(None, bolus):
             return
 
+        # Get current time
+        now = datetime.datetime.now()
+
         # Do command
         self.command.do(bolus)
 
         # Update reports by reading last page(s) of pump history
         self.pump.history.update()
+
+        # Read last bolus stored
+        [lastTime, lastBolus] = self.last()
+
+        # Read current pump time
+        self.pump.time.read()
+
+        # Get it
+        pumpNow = self.pump.time.value
+
+        # Format times
+        lastTime_ = lib.formatTime(lastTime)
+        pumpNow_ = lib.formatTime(pumpNow)
+
+        # Get time difference (s) between current pump time and last bolus
+        dt = (pumpNow_ - lastTime_).seconds
+
+        # Compute bolus enactment time
+        bolusDuration = self.rate * lastBolus + self.sleep
+
+        # Define error margin (s)
+        e = 1.5 * 60
+
+        # Check for last bolus time
+        if dt > bolusDuration + e:
+
+            # Give user info
+            print "Error: last bolus too old."
+            print "Last bolus: " + lastTime
+            print "Pump current time: " + pumpNow
+
+            # Exit
+            return
+
+        # Check for last bolus amount
+        if lastBolus != bolus:
+
+            # Give user info
+            print "Error: last bolus wrong."
+            print "Last bolus: " + str(lastBolus) + " U"
+            print "Bolus to deliver: " + str(bolus) + " U"
+
+            # Exit
+            return
+
+        # Give user info
+        print "Bolus was delivered successfully!"
 
 
 
@@ -1438,7 +1508,7 @@ def main():
     #pump.time.read()
 
     # Read pump model
-    pump.model.read()
+    #pump.model.read()
 
     # Read pump firmware version
     #pump.firmware.read()
@@ -1500,7 +1570,7 @@ def main():
     #pump.history.read()
 
     # Send bolus to pump
-    #pump.bolus.deliver(0.1)
+    pump.bolus.deliver(0.5)
 
     # Read current TB
     #pump.TB.read()
