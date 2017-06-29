@@ -603,7 +603,7 @@ class Settings(object):
 
 
 
-    def verify(self, rate = None, units = None, bolus = None):
+    def verify(self, TB = None, bolus = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -614,27 +614,29 @@ class Settings(object):
         # Read pump settings
         self.read()
 
-        # Check if pump is ready to take action
-        if bolus is not None:
+        # If TB is asked for
+        if TB is not None:
 
+            # Verify it does not exceed max settings
+            if TB["Units"] == "U/h" and TB["Rate"] > self.value["Max Basal"]:
+
+                # Give user info
+                print ("Pump cannot issue TB since it is bigger than its " +
+                       "maximal basal rate. Update the latter before trying " +
+                       "again.") 
+
+                return False
+
+        # If bolus is asked for
+        elif bolus is not None:
+
+            # Verify it does not exceed max settings
             if bolus > self.value["Max Bolus"]:
 
                 # Give user info
                 print ("Pump cannot issue bolus since it is bigger than its " +
                        "maximal allowed bolus. Update the latter before " +
                        "trying again." )
-
-                return False
-
-        elif (rate is not None) and (units is not None):
-
-            if ((units == "U/h") and (rate > self.value["Max Basal"]) or
-                (units == "%") and (rate > 200)):
-
-                # Give user info
-                print ("Pump cannot issue TB since it is " +
-                       "bigger than its maximal basal rate. Update the " +
-                       "latter before trying again.") 
 
                 return False
 
@@ -1167,7 +1169,7 @@ class Bolus(object):
         if not self.pump.status.verify():
             return
 
-        if not self.pump.settings.verify(None, None, bolus):
+        if not self.pump.settings.verify(None, bolus):
             return
 
         # Do command
@@ -1242,13 +1244,13 @@ class TB(object):
             TB["Rate"] > {"U/h": 35, "%": 200}[TB["Units"]]):
 
             # Raise error
-            raise errors.TBBadRate(TB["Rate"], TB["Units"])
+            raise errors.TBBadRate(TB)
 
         # Verify if duration is a multiple of 30
         if TB["Duration"] % 30:
 
             # Raise error
-            raise errors.TBBadDuration(TB["Duration"])
+            raise errors.TBBadDuration(TB)
 
         # Verify pump status
         if not self.pump.status.verify():
@@ -1257,7 +1259,7 @@ class TB(object):
             raise errors.BadStatus()
 
         # Verify pump settings
-        if not self.pump.settings.verify(TB["Rate"], TB["Units"]):
+        if not self.pump.settings.verify(TB):
 
             # Raise error
             raise errors.BadSettings()

@@ -251,10 +251,9 @@ class TBBadRate(PumpError):
         """
 
         # Define error info
-        self.info = ("New TB (" + str(self.args[0]) + " " + self.args[1] +
-                     ") is either too large or too small). It must be " +
-                     "comprised within the theoretical limits of [0, 35] U/h " +
-                     "or [0, 200] %.")
+        self.info = ("New TB rate (" + str(self.args[0]["Rate"]) + " " +
+                     self.args[0]["Units"] + ") must be within theoretical " +
+                     "limits of [0, 35] U/h or [0, 200] %.")
 
 
 
@@ -269,8 +268,8 @@ class TBBadDuration(PumpError):
         """
 
         # Define error info
-        self.info = ("New TB duration (" + str(self.args[0]) + " m) is" +
-                     "incorrect. The latter has to be a multiple of 30.")
+        self.info = ("New TB duration (" + str(self.args[0]["Duration"]) + " " +
+                     "m) is incorrect. The latter must be a multiple of 30.")
 
 
 
