@@ -163,7 +163,7 @@ class Loop(object):
         self.do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
 
         # Read latest history
-        self.do(self.pump.history.update, ["Pump"], "History")
+        #self.do(self.pump.history.update, ["Pump"], "History")
 
 
 
@@ -182,8 +182,8 @@ class Loop(object):
         self.preparePump()
 
         # Run calculator and get TB recommendation
-        #TB = self.calculator.run(self.now)
-        TB = [self.now.minute / 60.0, "U/h", 30]
+        TB = self.calculator.run(self.now)
+        #TB = [self.now.minute / 60.0, "U/h", 30]
 
         # React to TB recommendation
         if TB is None:
@@ -252,7 +252,7 @@ class Loop(object):
         Reporter.increment(["Status"], "N")
 
         # Do CGM stuff
-        #self.doCGM()
+        self.doCGM()
 
         # Do pump stuff
         self.doPump()
@@ -270,10 +270,10 @@ class Loop(object):
         print "End: " + lib.formatTime(end)
 
         # Show loop
-        #self.show(self.calculator.net,
-        #          self.calculator.BG,
-        #          self.calculator.IOB,
-        #          self.calculator.IDC.DIA)
+        self.show(self.calculator.net,
+                  self.calculator.BG,
+                  self.calculator.IOB,
+                  self.calculator.IDC.DIA)
 
 
 
