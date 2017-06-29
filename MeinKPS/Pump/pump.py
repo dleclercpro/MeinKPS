@@ -1226,10 +1226,8 @@ class Bolus(object):
         # Check for last bolus time
         if dt > bolusDuration + e:
 
-            # Give user info
-            print "Error: last bolus too old."
-            print "Last bolus: " + lastTime
-            print "Pump current time: " + pumpNow
+            # Raise error
+            raise errors.BolusBadTime(lastTime, pumpNow)
 
             # Exit
             return
@@ -1237,10 +1235,8 @@ class Bolus(object):
         # Check for last bolus amount
         if lastBolus != bolus:
 
-            # Give user info
-            print "Error: last bolus wrong."
-            print "Last bolus: " + str(lastBolus) + " U"
-            print "Bolus to deliver: " + str(bolus) + " U"
+            # Raise error
+            raise errors.BolusBadAmount(lastBolus, bolus)
 
             # Exit
             return
@@ -1570,7 +1566,7 @@ def main():
     #pump.history.read()
 
     # Send bolus to pump
-    pump.bolus.deliver(0.5)
+    pump.bolus.deliver(5.6)
 
     # Read current TB
     #pump.TB.read()

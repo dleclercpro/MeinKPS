@@ -273,6 +273,39 @@ class TBBadDuration(PumpError):
 
 
 
+class BolusBadTime(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Last bolus too far away from current pump time (" +
+                     self.args[0] + " vs " + self.args[1] + ").")
+
+
+
+class BolusBadAmount(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Last bolus amount does not match with bolus to deliver " +
+                     "(" + str(self.args[0]) + " U vs " + str(self.args[1]) +
+                     " U).")
+
+
+
 class BadStatus(PumpError):
 
     def prepare(self):
