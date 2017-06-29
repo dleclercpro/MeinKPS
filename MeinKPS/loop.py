@@ -64,7 +64,7 @@ class Loop(object):
         self.pump = pump.Pump()
 
         # Give the loop a calculator
-        self.calculator = calculator.Calculator()
+        self.calc = calculator.Calculator()
 
 
 
@@ -163,7 +163,7 @@ class Loop(object):
         self.do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
 
         # Read latest history
-        #self.do(self.pump.history.update, ["Pump"], "History")
+        self.do(self.pump.history.update, ["Pump"], "History")
 
 
 
@@ -182,16 +182,16 @@ class Loop(object):
         self.preparePump()
 
         # Run calculator and get TB recommendation
-        TB = self.calculator.run(self.now)
-        #TB = [self.now.minute / 60.0, "U/h", 30]
+        #TB = self.calc.run(self.now)
+        TB = [self.now.minute / 60.0, "U/h", 30]
 
-        # React to TB recommendation
+        # If no TB is required
         if TB is None:
 
             # Cancel TB
             self.pump.TB.cancel()
 
-        # Otherwise
+        # Otherwise, enact recommendation
         else:
 
             # Enact TB
@@ -270,20 +270,23 @@ class Loop(object):
         print "End: " + lib.formatTime(end)
 
         # Show loop
-        self.show(self.calculator.net,
-                  self.calculator.BG,
-                  self.calculator.IOB,
-                  self.calculator.IDC.DIA)
+        #self.show()
 
 
 
-    def show(self, net, BG, IOB, DIA):
+    def show(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Link with profiles
+        net = self.calc.net,
+        BG = self.calc.BG,
+        IOB = self.calc.IOB,
+        DIA = self.calc.IDC.DIA
 
         # Initialize plot
         mpl.rc("font", size = 10, family = "Ubuntu")

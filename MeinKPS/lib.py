@@ -30,6 +30,11 @@ import numpy as np
 
 
 
+# USER LIBRARIES
+import errors
+
+
+
 def derivate(x, t):
 
     """
@@ -293,6 +298,12 @@ def pack(x, order = "<"):
         PACK
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
+
+    # Verify if input is an integer
+    if x != int(x):
+
+        # Exit
+        raise errors.NoInteger
 
     # Initialize bytes
     bytes = []

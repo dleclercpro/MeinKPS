@@ -1436,7 +1436,7 @@ def main():
     #pump.time.read()
 
     # Read pump model
-    #pump.model.read()
+    pump.model.read()
 
     # Read pump firmware version
     #pump.firmware.read()
@@ -1504,7 +1504,7 @@ def main():
     #pump.TB.read()
 
     # Send TB to pump
-    pump.TB.set(0.06, "U/h", 30)
+    #pump.TB.set(0.3, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)
