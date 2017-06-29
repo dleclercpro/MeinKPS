@@ -188,15 +188,22 @@ class Loop(object):
         # Get last bolus time
         [t, bolus] = self.pump.bolus.last()
 
+        # Compute elapsed time since last bolus (h)
+        d = (self.now - lib.formatTime(t)).seconds / 3600.0
+
         # Define bolus snooze (h)
         #snooze = 0.5 * self.calc.IDC.DIA
-        snooze = 0.5 * 3
+        snooze = 0
 
         # Snooze
-        if (self.now - lib.formatTime(t)).seconds / 3600.0 < snooze:
+        if d < snooze:
+
+            # Compute remaining snooze (m)
+            T = int(round((snooze - d) * 60))
 
             # Give user info
-            print "Looping paused: bolus snooze.
+            print ("Bolus snooze. If no more bolus issued, looping will " +
+                   "restart in " + str(T) + " m.")
 
         # If no TB is required
         elif TB is None:
