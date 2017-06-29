@@ -1566,7 +1566,7 @@ def main():
     #pump.history.read()
 
     # Send bolus to pump
-    pump.bolus.deliver(5.6)
+    pump.bolus.deliver(0.6)
 
     # Read current TB
     #pump.TB.read()

@@ -2044,7 +2044,7 @@ class DeliverPumpBolus(PumpCommand):
                                self.pump.bolus.sleep)
 
         # Define parameters byte
-        self.packet.parameters = [int(bolus / self.pump.bolus.stroke)]
+        self.packet.parameters = [int(round(bolus / self.pump.bolus.stroke))]
         
         # Do rest of command
         super(self.__class__, self).do()
