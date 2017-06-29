@@ -252,7 +252,7 @@ class Loop(object):
         Reporter.increment(["Status"], "N")
 
         # Do CGM stuff
-        self.doCGM()
+        #self.doCGM()
 
         # Do pump stuff
         self.doPump()
@@ -283,9 +283,9 @@ class Loop(object):
         """
 
         # Link with profiles
-        net = self.calc.net,
-        BG = self.calc.BG,
-        IOB = self.calc.IOB,
+        net = self.calc.net
+        BG = self.calc.BG
+        IOB = self.calc.IOB
         DIA = self.calc.IDC.DIA
 
         # Initialize plot
