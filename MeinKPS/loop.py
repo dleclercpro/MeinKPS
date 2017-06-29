@@ -144,11 +144,11 @@ class Loop(object):
             # Read model
             self.do(self.pump.model.read, ["Pump"], "Model")
 
-            # Read battery level
-            self.do(self.pump.battery.read, ["Pump"], "Battery")
+        # Read battery level
+        self.do(self.pump.battery.read, ["Pump"], "Battery")
 
-            # Read remaining amount of insulin
-            self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
+        # Read remaining amount of insulin
+        self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
 
         # Read ISF
         self.do(self.pump.ISF.read, ["Pump"], "ISF")
