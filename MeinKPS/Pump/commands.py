@@ -719,7 +719,7 @@ class PowerPump(PumpCommand):
         self.packet.parameters = [1, self.sessionTime]
 
         # Define time needed for the pump's radio to power up (s)
-        self.executionSleep = 15
+        self.executionSleep = 12
 
         # Define report
         self.report = "history.json"

@@ -1221,7 +1221,7 @@ class Bolus(object):
         bolusDuration = self.rate * lastBolus + self.sleep
 
         # Define error margin (s)
-        e = 1.5 * 60
+        e = 1.0 * 60
 
         # Check for last bolus time
         if dt > bolusDuration + e:
@@ -1566,7 +1566,7 @@ def main():
     #pump.history.read()
 
     # Send bolus to pump
-    pump.bolus.deliver(0.6)
+    pump.bolus.deliver(0.7)
 
     # Read current TB
     #pump.TB.read()
