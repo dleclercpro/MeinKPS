@@ -91,7 +91,7 @@ class CGMError(BaseError):
 class ReporterError(BaseError):
     pass
 
-class CalculatorError(BaseError):
+class ProfileError(BaseError):
     pass
 
 
@@ -388,7 +388,7 @@ class NoSection(ReporterError):
 
 
 # Calculator errors
-class BadDIA(CalculatorError):
+class BadDIA(ProfileError):
 
     def prepare(self):
 
@@ -403,7 +403,7 @@ class BadDIA(CalculatorError):
 
 
 
-class ProfileEndsTypeMismatch(CalculatorError):
+class ProfileEndsTypeMismatch(ProfileError):
 
     def prepare(self):
 
@@ -419,7 +419,7 @@ class ProfileEndsTypeMismatch(CalculatorError):
 
 
 
-class NoNormalizedCut(CalculatorError):
+class NoNormalizedCut(ProfileError):
 
     def prepare(self):
 
@@ -434,7 +434,7 @@ class NoNormalizedCut(CalculatorError):
 
 
 
-class NoNorm(CalculatorError):
+class NoNorm(ProfileError):
 
     def prepare(self):
 
@@ -450,7 +450,7 @@ class NoNorm(CalculatorError):
 
 
 
-class BadTypeNormalization(CalculatorError):
+class BadTypeNormalization(ProfileError):
 
     def prepare(self):
 
@@ -466,7 +466,7 @@ class BadTypeNormalization(CalculatorError):
 
 
 
-class ProfileAxesLengthMismatch(CalculatorError):
+class ProfileAxesLengthMismatch(ProfileError):
 
     def prepare(self):
 
@@ -481,7 +481,7 @@ class ProfileAxesLengthMismatch(CalculatorError):
 
 
 
-class ProfileLimitsMismatch(CalculatorError):
+class ProfileLimitsMismatch(ProfileError):
 
     def prepare(self):
 
@@ -498,7 +498,7 @@ class ProfileLimitsMismatch(CalculatorError):
 
 
 
-class BadTBUnits(CalculatorError):
+class BadTBUnits(ProfileError):
 
     def prepare(self):
 
@@ -513,7 +513,7 @@ class BadTBUnits(CalculatorError):
 
 
 
-class MissingBGs(CalculatorError):
+class MissingBGs(ProfileError):
 
     def prepare(self):
 
@@ -528,7 +528,7 @@ class MissingBGs(CalculatorError):
 
 
 
-class BadBGTime(CalculatorError):
+class BadBGTime(ProfileError):
 
     def prepare(self):
 
