@@ -1372,7 +1372,7 @@ class TB(object):
         if TB["Units"] == "U/h":
 
             # Round
-            TB["Rate"] = round(TB["Rate"], 2)
+            TB["Rate"] = round(round(TB["Rate"] / self.stroke) * self.stroke, 2)
 
         # If %
         elif TB["Units"] == "%":
