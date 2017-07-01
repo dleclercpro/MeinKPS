@@ -32,8 +32,9 @@ import numpy as np
 
 # USER LIBRARIES
 import lib
-import calculator
 import reporter
+import uploader
+import calculator
 from CGM import cgm
 from Pump import pump
 
@@ -276,6 +277,9 @@ class Loop(object):
 
         # Do pump stuff
         self.doPump()
+
+        # Upload stuff
+        uploader.main()
 
         # Define ending time
         end = datetime.datetime.now()
