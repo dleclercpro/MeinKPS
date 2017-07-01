@@ -279,7 +279,7 @@ class Loop(object):
         self.doPump()
 
         # Upload stuff
-        uploader.main()
+        self.do(uploader.main, [], "Upload")
 
         # Define ending time
         end = datetime.datetime.now()
