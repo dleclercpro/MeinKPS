@@ -122,7 +122,7 @@ def main():
     ftp.cwd(Reporter.getEntry([], "Path"))
 
     # Define file paths
-    path = "/home/david/MeinKPS/MeinKPS/Reports"
+    path =  os.getcwd() + "/Reports/"
 
     # Upload files within path
     upload(ftp, path, "json")
