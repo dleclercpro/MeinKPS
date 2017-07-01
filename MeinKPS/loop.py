@@ -183,8 +183,8 @@ class Loop(object):
         self.preparePump()
 
         # Run calculator and get TB recommendation
-        #TB = self.calc.run(self.now)
-        TB = [self.now.minute / 60.0, "U/h", 30]
+        TB = self.calc.run(self.now)
+        #TB = [self.now.minute / 60.0, "U/h", 30]
 
         # Get last bolus time
         [t, bolus] = self.pump.bolus.last()
@@ -273,7 +273,7 @@ class Loop(object):
         Reporter.increment(["Status"], "N")
 
         # Do CGM stuff
-        #self.doCGM()
+        self.doCGM()
 
         # Do pump stuff
         self.doPump()
