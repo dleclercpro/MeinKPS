@@ -118,13 +118,13 @@ class Loop(object):
         """
 
         # Establish connection with CGM
-        self.cgm.connect()
+        self.do(self.cgm.connect, ["CGM"], "Start")
 
         # Prepare CGM
         self.prepareCGM()
 
         # End connection with CGM
-        self.cgm.disconnect()
+        self.do(self.cgm.disconnect, ["CGM"], "Stop")
 
 
 
@@ -177,7 +177,7 @@ class Loop(object):
         """
 
         # Start dialogue with pump
-        self.pump.start()
+        self.do(self.pump.start, ["Pump"], "Start")
 
         # Prepare pump
         self.preparePump()
@@ -218,8 +218,8 @@ class Loop(object):
             # Enact TB
             self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
-        # Stop dialogue with pump
-        self.pump.stop()
+        # Start dialogue with pump
+        self.do(self.pump.stop, ["Pump"], "Stop")
 
 
 

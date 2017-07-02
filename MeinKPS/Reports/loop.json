@@ -6,7 +6,9 @@
         "Firmware": 0,
         "Language": 0,
         "Transmitter": 0,
-        "Units": 0
+        "Units": 0,
+        "Start": 0,
+        "Stop": 0
     },
     "Pump": {
         "BG Targets": 0,
@@ -18,7 +20,9 @@
         "Model": 0,
         "Reservoir": 0,
         "TB": 0,
-        "Time": 0
+        "Time": 0,
+        "Start": 0,
+        "Stop": 0
     },
     "Status": {
         "Duration": 25,
