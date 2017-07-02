@@ -93,7 +93,7 @@ class PastBGProfile(base.PastProfile):
         """
 
         # Define maximum age of BGs (m)
-        T = 20
+        T = 45
 
         # Read number of BGs
         N = len(self.T)
