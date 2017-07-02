@@ -235,6 +235,7 @@ class Calculator(object):
         print "BG target: " + str(target) + " " + self.BG.u
         print "Current BG: " + str(self.BG.past.y[-1]) + " " + self.BG.u
         print "Current ISF: " + str(self.ISF.y[0]) + " " + self.BG.u + "/U"
+        print "Current IOB: " + str(self.IOB.y[0]) + " U"
         print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
         print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.u
         print "dBG: " + str(round(dBG, 1)) + " " + self.BG.u
