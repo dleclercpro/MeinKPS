@@ -117,14 +117,23 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Establish connection with CGM
-        self.do(self.cgm.connect, ["CGM"], "Start")
+        # Try doing CGM tasks
+        try:
 
-        # Prepare CGM
-        self.prepareCGM()
+            # Establish connection with CGM
+            self.cgm.connect()
 
-        # End connection with CGM
-        self.do(self.cgm.disconnect, ["CGM"], "Stop")
+            # Prepare CGM
+            self.prepareCGM()
+
+            # End connection with CGM
+            self.cgm.disconnect()
+
+        # Otherwise
+        except:
+
+            # Skip
+            pass
 
 
 
@@ -176,50 +185,59 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start dialogue with pump
-        self.do(self.pump.start, ["Pump"], "Start")
+        # Try doing pump tasks
+        try:
 
-        # Prepare pump
-        self.preparePump()
+            # Start dialogue with pump
+            self.pump.start()
 
-        # Run calculator and get TB recommendation
-        TB = self.calc.run(self.now)
-        #TB = [self.now.minute / 60.0, "U/h", 30]
+            # Prepare pump
+            self.preparePump()
 
-        # Get last bolus time
-        [t, bolus] = self.pump.bolus.last()
+            # Run calculator and get TB recommendation
+            TB = self.calc.run(self.now)
+            #TB = [self.now.minute / 60.0, "U/h", 30]
 
-        # Compute elapsed time since last bolus (h)
-        d = (self.now - lib.formatTime(t)).seconds / 3600.0
+            # Get last bolus time
+            [t, bolus] = self.pump.bolus.last()
 
-        # Define bolus snooze (h)
-        #snooze = 0.5 * self.calc.IDC.DIA
-        snooze = 0
+            # Compute elapsed time since last bolus (h)
+            d = (self.now - lib.formatTime(t)).seconds / 3600.0
 
-        # Snooze
-        if d < snooze:
+            # Define bolus snooze (h)
+            #snooze = 0.5 * self.calc.IDC.DIA
+            snooze = 0
 
-            # Compute remaining snooze (m)
-            T = int(round((snooze - d) * 60))
+            # Snooze
+            if d < snooze:
 
-            # Give user info
-            print ("Bolus snooze. If no more bolus issued, looping will " +
-                   "restart in " + str(T) + " m.")
+                # Compute remaining snooze (m)
+                T = int(round((snooze - d) * 60))
 
-        # If no TB is required
-        elif TB is None:
+                # Give user info
+                print ("Bolus snooze. If no more bolus issued, looping will " +
+                       "restart in " + str(T) + " m.")
 
-            # Cancel TB
-            self.pump.TB.cancel()
+            # If no TB is required
+            elif TB is None:
 
-        # Otherwise, enact recommendation
-        else:
+                # Cancel TB
+                self.pump.TB.cancel()
 
-            # Enact TB
-            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
+            # Otherwise, enact recommendation
+            else:
 
-        # Start dialogue with pump
-        self.do(self.pump.stop, ["Pump"], "Stop")
+                # Enact TB
+                self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
+
+            # Stop dialogue with pump
+            self.pump.stop()
+
+        # Otherwise
+        except:
+
+            # Skip
+            pass
 
 
 
