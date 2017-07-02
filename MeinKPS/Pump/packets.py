@@ -111,7 +111,7 @@ class PumpPacket(Packet):
         self.parameters = []
 
         # Define typical packet bytes
-        self.serial = 503593 # 799163
+        self.serial = 799163 # 503593
         self.power = 0
         self.attempts = 2
         self.size = 1
