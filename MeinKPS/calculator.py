@@ -156,7 +156,8 @@ class Calculator(object):
         future = now + datetime.timedelta(hours = self.DIA)
 
         # Define IDC
-        self.IDC = IDC.WalshIDC(self.DIA)
+        #self.IDC = IDC.WalshIDC(self.DIA)
+        self.IDC = IDC.FiaspIDC(self.DIA)
 
         # Build basal profile
         self.basal.build(past, now)

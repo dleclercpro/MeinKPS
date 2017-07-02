@@ -27,7 +27,7 @@ import errors
 
 
 
-class IDC(object):
+class FourthOrderIDC(object):
 
     def __init__(self, DIA):
 
@@ -99,7 +99,7 @@ class IDC(object):
              self.m1 * t ** 1 +
              self.m0)
 
-        # Return f(t)
+        # Return it
         return f
 
 
@@ -122,12 +122,166 @@ class IDC(object):
              self.m1 * t ** 2 / 2 +
              self.m0 * t ** 1 / 1)
 
-        # Return F(t) of IDC
+        # Return it
         return F
 
 
 
-class WalshIDC(IDC):
+class TriangleIDC(object):
+
+    def __init__(self, DIA, PIA):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Modelization of IDC based on a triangle IAC.
+        """
+
+        # Define DIA
+        self.DIA = float(DIA)
+
+        # Define PIA
+        self.PIA = float(PIA)
+
+        # Define coefficients
+        self.y0 = 2 / self.DIA
+        self.m0 = self.y0 / (self.DIA - self.PIA)
+        self.m1 = -self.y0 / self.PIA
+        self.b0 = self.m0 * self.DIA
+        self.b1 = 0
+
+        # Define integrals
+        self.I = lambda t, m, b: m * t ** 2 / 2 + b * t
+        self.II = lambda t, m, b: m * t ** 3 / 6 + b * t ** 2 / 2
+
+
+
+    def verify(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Verify that given time is within insulin's range of action.
+        """
+
+        # If too old
+        if t < -self.DIA:
+
+            # Bring it back up
+            t = -self.DIA
+
+        # If too new
+        elif t > 0:
+
+            # Bring it back down
+            t = 0
+
+        # Return verified time
+        return t
+
+
+
+    def f(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Gives fraction of active insulin remaining in body t hours after
+        enacting it. Takes negative input!
+        """
+
+        # Verify time
+        t = self.verify(t)
+
+        # Initialize result
+        f = 0
+
+        # From -DIA to PIA
+        if -self.DIA <= t <= -self.PIA:
+
+            # Define reference point
+            T = -self.DIA
+
+            # Link coefficients
+            m = self.m0
+            b = self.b0
+
+        # From PIA to 0
+        elif -self.PIA < t <= 0:
+
+            # Define reference point
+            T = -self.PIA
+
+            # Link coefficients
+            m = self.m1
+            b = self.b1
+
+            # Add first part of integral
+            f += self.f(T)
+
+        # Compute it
+        f += self.I(t, m, b) - self.I(T, m, b)
+
+        # Return it
+        return f
+
+
+
+    def F(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Verify time
+        t = self.verify(t)
+
+        # Initialize result
+        F = 0
+
+        # From -DIA to PIA
+        if -self.DIA <= t <= -self.PIA:
+
+            # Define reference point
+            T = -self.DIA
+
+            # Link coefficients
+            m = self.m0
+            b = self.b0
+
+        # From PIA to 0
+        elif -self.PIA < t <= 0:
+
+            # Define reference point
+            T = -self.PIA
+
+            # Link coefficients
+            m = self.m1
+            b = self.b1
+
+            # Add first part of integral
+            F += self.f(T) * t - self.f(T) * T + self.F(T)
+
+        # Compute it
+        F += (self.II(t, m, b) -
+              self.I(T, m, b) * t +
+              self.I(T, m, b) * T -
+              self.II(T, m, b))
+
+        # Return it
+        return F
+
+
+
+class WalshIDC(FourthOrderIDC):
 
     def __init__(self, DIA):
 
@@ -178,3 +332,18 @@ class WalshIDC(IDC):
 
             # Raise error
             raise errors.BadDIA(DIA)
+
+
+
+class FiaspIDC(TriangleIDC):
+
+    def __init__(self, DIA):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(self.__class__, self).__init__(DIA, DIA / 6)
