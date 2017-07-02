@@ -205,8 +205,7 @@ class Loop(object):
             d = (self.now - lib.formatTime(t)).seconds / 3600.0
 
             # Define bolus snooze (h)
-            #snooze = 0.5 * self.calc.IDC.DIA
-            snooze = 0
+            snooze = 0.5 * self.calc.IDC.DIA
 
             # Snooze
             if d < snooze:
