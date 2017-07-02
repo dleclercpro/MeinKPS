@@ -528,10 +528,9 @@ class Status(object):
         elif self.value["Suspended"]:
 
             # Give user info
-            print "Pump is suspended, but will be asked to resume activity."
+            print "Pump is suspended. Try again later."
 
-            # Resume pump activity
-            self.resume()
+            return False
 
         # Give user info
         print "Pump's status allows desired course of action. Proceeding..."
