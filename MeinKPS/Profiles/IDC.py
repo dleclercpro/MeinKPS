@@ -346,4 +346,4 @@ class FiaspIDC(TriangleIDC):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(DIA, DIA / 6)
+        super(self.__class__, self).__init__(DIA, DIA / 6.0)

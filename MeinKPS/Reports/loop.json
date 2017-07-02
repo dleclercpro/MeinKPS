@@ -1,32 +1,33 @@
 {
     "CGM": {
-        "BG": 0,
+        "BG": 185,
         "Battery": 0,
         "Clock": 0,
         "Firmware": 0,
         "Language": 0,
+        "Start": 1,
+        "Stop": 1,
         "Transmitter": 0,
-        "Units": 0,
-        "Start": 0,
-        "Stop": 0
+        "Units": 0
     },
     "Pump": {
-        "BG Targets": 0,
-        "Basal": 0,
-        "Battery": 0,
-        "CSF": 0,
-        "History": 0,
-        "ISF": 0,
+        "BG Targets": 180,
+        "Basal": 180,
+        "Battery": 180,
+        "CSF": 181,
+        "History": 175,
+        "ISF": 180,
         "Model": 0,
-        "Reservoir": 0,
-        "TB": 0,
-        "Time": 0,
+        "Reservoir": 180,
         "Start": 0,
-        "Stop": 0
+        "Stop": 1,
+        "TB": 91,
+        "Time": 0
     },
     "Status": {
-        "Duration": 25,
-        "N": 0,
-        "Time": "2017.06.29 - 23:36:11"
+        "Duration": 41,
+        "N": 185,
+        "Time": "2017.07.02 - 23:22:32",
+        "Upload": 0
     }
 }
