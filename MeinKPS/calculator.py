@@ -23,8 +23,10 @@
 """
 
 # LIBRARIES
-import numpy as np
 import datetime
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 
 
@@ -334,6 +336,87 @@ class Calculator(object):
 
 
 
+    def show(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize plot
+        mpl.rc("font", size = 10, family = "Ubuntu")
+        fig = plt.figure(0, figsize = (10, 8))
+        axes = [plt.subplot(221),
+                plt.subplot(222),
+                plt.subplot(223),
+                plt.subplot(224)]
+
+        # Define titles
+        titles = ["BG", "Net Insulin Profile", "IOB", "COB"]
+
+        # Define axis labels
+        x = ["(h)"] * 4
+        y = ["(" + self.BG.u + ")", "(U/h)", "(U)", "(g)"]
+
+        # Define axis limits
+        xlim = [[-self.DIA, self.DIA]] * 4
+        ylim = [[2, 20], None, None, None]
+
+        # Define subplots
+        for i in range(4):
+
+            # Set titles
+            axes[i].set_title(titles[i], fontweight = "semibold")
+
+            # Set x-axis labels
+            axes[i].set_xlabel(x[i])
+
+            # Set y-axis labels
+            axes[i].set_ylabel(y[i])
+
+            # Set x-axis limits
+            axes[i].set_xlim(xlim[i])
+
+        # Set y-axis limits
+        axes[0].set_ylim(ylim[0])
+
+        # Add BGs to plot
+        axes[0].plot(self.BG.past.t, self.BG.past.y,
+                     marker = "o", ms = 3.5, lw = 0, c = "red")
+
+        # Add BG predictions to plot
+        axes[0].plot(self.BG.t, self.BG.y,
+                     marker = "o", ms = 3.5, lw = 0, c = "black")
+
+        # Add net insulin profile to plot
+        axes[1].step(self.net.t, np.append(0, self.net.y[:-1]),
+                     lw = 2, ls = "-", c = "#ff7500")
+
+        # Add past IOB to plot
+        axes[2].plot(self.IOB.past.t, self.IOB.past.y,
+                     marker = "o", ms = 3.5, lw = 0, c = "purple")
+
+        # Add IOB predictions to plot
+        axes[2].plot(self.IOB.t, self.IOB.y,
+                     lw = 2, ls = "-", c = "black")
+
+        # Add COB to plot
+        axes[3].plot([-self.DIA, 0], [0, 0],
+                     lw = 2, ls = "-", c = "#99e500")
+
+        # Add COB predictions to plot
+        axes[3].plot([0, self.DIA], [0, 0],
+                     lw = 2, ls = "-", c = "black")
+
+        # Tighten up
+        plt.tight_layout()
+
+        # Show plot
+        plt.show()
+
+
+
 def main():
 
     """
@@ -350,6 +433,9 @@ def main():
 
     # Run calculator
     calculator.run(now)
+
+    # Show results
+    calculator.show()
 
 
 
