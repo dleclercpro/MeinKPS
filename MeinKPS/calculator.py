@@ -215,7 +215,7 @@ class Calculator(object):
         print "Recommending treatment..."
 
         # Compute eventual BG after complete IOB decay
-        naiveBG = self.BG.expect(self.IDC.DIA, self.IOB)
+        naiveBG = self.BG.expect(self.DIA, self.IOB)
 
         # Compute BG deviation based on CGM readings and expected BG due to IOB
         # decay
