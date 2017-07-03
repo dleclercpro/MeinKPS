@@ -93,6 +93,9 @@ class BolusProfile(base.PastProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Give user info
+        print "Looking for last bolus..."
+
         # Initialize last bolus index
         index = None
 
@@ -114,11 +117,18 @@ class BolusProfile(base.PastProfile):
         # If no last bolus found
         if index is None:
 
+            # Give user info
+            print "No bolus found."
+
             # Return none values
             return [None, None]
 
         # Otherwise
         else:
+
+            # Give user info
+            print ("Last bolus found: " + str(self.y[index]) + " U " +
+                   "(" + lib.formatTime(self.T[index]) + ")")
 
             # Return it
             return [self.T[index], self.y[index]]
