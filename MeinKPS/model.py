@@ -414,7 +414,7 @@ def main():
     MID = DIA / 2
     N = 1000
 
-    t = np.linspace(-DIA, 0, N)
+    t = np.linspace(-(DIA + 1), 1, N)
 
     #args = optimizeIAC(t = t, PIA = PIA, DIA = DIA, MID = MID)
 
@@ -423,7 +423,7 @@ def main():
     #plotInsulinActivity()
 
     walshIDC = IDC.WalshIDC(DIA)
-    fiaspIDC = IDC.ThreePointsIDC(DIA, PIA)
+    fiaspIDC = IDC.TriangleIDC(DIA, PIA)
 
     walsh = []
     walshI = []
