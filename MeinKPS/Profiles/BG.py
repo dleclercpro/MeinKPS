@@ -93,7 +93,7 @@ class PastBGProfile(base.PastProfile):
         """
 
         # Define maximum age of BGs (m)
-        T = 45
+        T = 30
 
         # Read number of BGs
         N = len(self.T)
@@ -150,8 +150,11 @@ class PastBGProfile(base.PastProfile):
         # Otherwise
         else:
 
-            # Return BGI (mean of most recent values of dBG/dt)
-            return np.mean(self.dydt[-(self.n - 1):])
+            # Get fit over last minutes
+            [m, b] = np.polyfit(self.t[-self.n:], self.y[-self.n:], 1)
+
+            # Return fit slope, which corresponds to BGI
+            return m
 
 
 

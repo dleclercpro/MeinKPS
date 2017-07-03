@@ -271,10 +271,8 @@ class TriangleIDC(object):
             F += self.f(T) * t - self.f(T) * T + self.F(T)
 
         # Compute it
-        F += (self.II(t, m, b) -
-              self.I(T, m, b) * t +
-              self.I(T, m, b) * T -
-              self.II(T, m, b))
+        F += (self.II(t, m, b) - self.II(T, m, b) -
+              (self.I(T, m, b) * t - self.I(T, m, b) * T))
 
         # Return it
         return F

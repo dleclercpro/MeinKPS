@@ -230,7 +230,7 @@ class Calculator(object):
         # Compute BG difference with average target
         dBG = target - eventualBG
 
-        # Compute necessary dose
+        # Compute required dose
         dose = self.BG.dose(dBG, self.ISF, self.IDC)
 
         # Give user info

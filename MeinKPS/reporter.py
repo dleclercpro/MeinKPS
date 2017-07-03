@@ -45,8 +45,8 @@ class Reporter:
         """
 
         # Set source path to reports
-        #self.src = os.getcwd() + "/Reports/"
-        self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
+        self.src = os.getcwd() + "/Reports/"
+        #self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
 
         # Initialize section
         self.section = []
