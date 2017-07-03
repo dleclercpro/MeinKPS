@@ -82,3 +82,43 @@ class BolusProfile(base.PastProfile):
 
             # Convert bolus to delivery rate
             self.y[i] = self.rate
+
+
+
+    def getLast(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETLAST
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize last bolus index
+        index = None
+
+        # Read number of entries in bolus profile
+        n = len(self.y)
+
+        # Find last bolus
+        for i in range(n):
+
+            # If entry is non-zero, then it's a bolus
+            if self.y[i] != 0:
+
+                # Store index
+                index = i
+
+                # Exit loop
+                break
+
+        # If no last bolus found
+        if index is None:
+
+            # Return none values
+            return [None, None]
+
+        # Otherwise
+        else:
+
+            # Return it
+            return [self.T[index], self.y[index]]

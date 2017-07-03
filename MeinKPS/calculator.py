@@ -51,6 +51,9 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize current time
+        self.now = None
+
         # Initialize DIA
         self.DIA = None
 
@@ -101,11 +104,14 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Store current time
+        self.now = now
+
         # Load components
         self.load()
 
         # Prepare components
-        self.prepare(now)
+        self.prepare()
 
         # Recommend TB and return it
         return self.recommend()
@@ -143,7 +149,7 @@ class Calculator(object):
 
 
 
-    def prepare(self, now):
+    def prepare(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,47 +158,47 @@ class Calculator(object):
         """
 
         # Compute past start of insulin action
-        past = now - datetime.timedelta(hours = self.DIA)
+        past = self.now - datetime.timedelta(hours = self.DIA)
 
         # Compute future end of insulin action
-        future = now + datetime.timedelta(hours = self.DIA)
+        future = self.now + datetime.timedelta(hours = self.DIA)
 
         # Define IDC
         #self.IDC = IDC.WalshIDC(self.DIA)
         self.IDC = IDC.FiaspIDC(self.DIA)
 
         # Build basal profile
-        self.basal.build(past, now)
+        self.basal.build(past, self.now)
 
         # Build TB profile
-        self.TB.build(past, now, self.basal)
+        self.TB.build(past, self.now, self.basal)
 
         # Build bolus profile
-        self.bolus.build(past, now)
+        self.bolus.build(past, self.now)
 
         # Build net profile using suspend times
-        self.net.build(past, now, self.TB.subtract(self.basal).add(self.bolus))
+        self.net.build(past, self.now, self.TB.subtract(self.basal).add(self.bolus))
 
         # Build past IOB profile
-        self.IOB.past.build(past, now)
+        self.IOB.past.build(past, self.now)
 
         # Build future IOB profile
         self.IOB.build(self.net, self.IDC)
 
         # Build COB profile
-        #self.COB.build(past, now)
+        #self.COB.build(past, self.now)
 
         # Build ISF profile (over the next DIA)
-        self.ISF.build(now, future)
+        self.ISF.build(self.now, future)
 
         # Build CSF profile (over the next DIA)
-        #self.CSF.build(now, future)
+        #self.CSF.build(self.now, future)
 
         # Build BG targets profile (over the next DIA)
-        self.BGTargets.build(now, future)
+        self.BGTargets.build(self.now, future)
 
         # Build past BG profile
-        self.BG.past.build(past, now)
+        self.BG.past.build(past, self.now)
 
         # Build future BG profile
         self.BG.build(self.IOB, self.ISF)
@@ -267,8 +273,44 @@ class Calculator(object):
         # Define computed TB recommendation
         R = [TB, "U/h", T]
 
+        # Get last bolus
+        lastBolus = self.bolus.getLast()
+
+        # Bolus snooze
+        if lastBolus[0] is not None:
+
+            # Compute elapsed time since last bolus (h)
+            d = (self.now - lastBolus[0]).seconds / 3600.0
+
+            # Define bolus snooze (h)
+            snooze = 0.5 * self.DIA
+
+            # Snooze
+            if d < snooze:
+
+                # Compute remaining snooze (m)
+                T = int(round((snooze - d) * 60))
+
+                # Give user info
+                print ("Bolus snooze. If no more bolus issued, looping will " +
+                       "restart in " + str(T) + " m.")
+
+                # No TB recommendation
+                R = None
+
+        # Look for conflictual info
+        elif (np.sign(BGI) == -1 and eventualBG > max(self.BGTargets.y[-1]) or
+              np.sign(BGI) == 1 and eventualBG < min(self.BGTargets.y[-1])):
+
+            # Give user info
+            print ("Conflictual information: BG decreasing/rising although " +
+                   "expected to land higher/lower than target range.")
+
+            # No TB recommendation
+            R = None
+
         # If less insulin is needed
-        if dose < 0:
+        elif dose < 0:
 
             # Define minimal basal allowed (U/h)
             minTB = 0
@@ -316,20 +358,12 @@ class Calculator(object):
             # No TB recommendation
             R = None
 
-        # Look for conflictual info
-        if (np.sign(BGI) == -1 and eventualBG > max(self.BGTargets.y[-1]) or
-            np.sign(BGI) == 1 and eventualBG < min(self.BGTargets.y[-1])):
+        # If recommendation was not canceled
+        if R is not None:
 
             # Give user info
-            print ("Conflictual information: BG decreasing/rising although " +
-                   "expected to land higher/lower than target range.")
-
-            # No TB recommendation
-            R = None
-
-        # Give user info
-        print ("Recommended TB: " + str(R[0]) + " " + R[1] + " (" + str(R[2]) +
-               " m)")
+            print ("Recommended TB: " + str(R[0]) + " " + R[1] + " (" +
+                   str(R[2]) + " m)")
 
         # Return recommendation
         return R
