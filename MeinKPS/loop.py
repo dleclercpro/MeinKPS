@@ -274,7 +274,7 @@ class Loop(object):
         self.doPump()
 
         # Upload stuff
-        self.do(uploader.main, [], "Upload")
+        self.do(uploader.main, ["Status"], "Upload")
 
         # Define ending time
         end = datetime.datetime.now()

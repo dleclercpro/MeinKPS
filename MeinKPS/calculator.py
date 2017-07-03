@@ -273,14 +273,14 @@ class Calculator(object):
         # Define computed TB recommendation
         R = [TB, "U/h", T]
 
-        # Get last bolus
-        lastBolus = self.bolus.getLast()
+        # Get last bolus time
+        lastBolusTime = self.bolus.getLastTime()
 
         # Bolus snooze
-        if lastBolus[0] is not None:
+        if lastBolusTime is not None:
 
             # Compute elapsed time since last bolus (h)
-            d = (self.now - lastBolus[0]).seconds / 3600.0
+            d = (self.now - lastBolusTime).seconds / 3600.0
 
             # Define bolus snooze (h)
             snooze = 0.5 * self.DIA
@@ -292,8 +292,8 @@ class Calculator(object):
                 T = int(round((snooze - d) * 60))
 
                 # Give user info
-                print ("Bolus snooze. If no more bolus issued, looping will " +
-                       "restart in " + str(T) + " m.")
+                print ("Bolus snooze. If no more bolus is issued, looping " +
+                       "will restart in " + str(T) + " m.")
 
                 # No TB recommendation
                 R = None

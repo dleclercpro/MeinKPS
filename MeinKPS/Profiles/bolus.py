@@ -28,6 +28,7 @@ import datetime
 
 
 # USER LIBRARIES
+import lib
 import base
 
 
@@ -85,16 +86,16 @@ class BolusProfile(base.PastProfile):
 
 
 
-    def getLast(self):
+    def getLastTime(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETLAST
+            GETLASTTIME
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Give user info
-        print "Looking for last bolus..."
+        print "Looking for last still active bolus..."
 
         # Initialize last bolus index
         index = None
@@ -118,17 +119,16 @@ class BolusProfile(base.PastProfile):
         if index is None:
 
             # Give user info
-            print "No bolus found."
+            print "No bolus found within last DIA."
 
             # Return none values
-            return [None, None]
+            return None
 
         # Otherwise
         else:
 
             # Give user info
-            print ("Last bolus found: " + str(self.y[index]) + " U " +
-                   "(" + lib.formatTime(self.T[index]) + ")")
+            print "Last bolus still active found at: " + lib.formatTime(self.T[index])
 
             # Return it
-            return [self.T[index], self.y[index]]
+            return self.T[index]
