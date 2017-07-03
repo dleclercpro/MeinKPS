@@ -273,44 +273,8 @@ class Calculator(object):
         # Define computed TB recommendation
         R = [TB, "U/h", T]
 
-        # Get last bolus time
-        lastBolusTime = self.bolus.getLastTime()
-
-        # Bolus snooze
-        if lastBolusTime is not None:
-
-            # Compute elapsed time since last bolus (h)
-            d = (self.now - lastBolusTime).seconds / 3600.0
-
-            # Define bolus snooze (h)
-            snooze = 0.5 * self.DIA
-
-            # Snooze
-            if d < snooze:
-
-                # Compute remaining snooze (m)
-                T = int(round((snooze - d) * 60))
-
-                # Give user info
-                print ("Bolus snooze. If no more bolus is issued, looping " +
-                       "will restart in " + str(T) + " m.")
-
-                # No TB recommendation
-                R = None
-
-        # Look for conflictual info
-        elif (np.sign(BGI) == -1 and eventualBG > max(self.BGTargets.y[-1]) or
-              np.sign(BGI) == 1 and eventualBG < min(self.BGTargets.y[-1])):
-
-            # Give user info
-            print ("Conflictual information: BG decreasing/rising although " +
-                   "expected to land higher/lower than target range.")
-
-            # No TB recommendation
-            R = None
-
         # If less insulin is needed
-        elif dose < 0:
+        if dose < 0:
 
             # Define minimal basal allowed (U/h)
             minTB = 0
@@ -354,6 +318,43 @@ class Calculator(object):
 
             # Give user info
             print ("No modification to insulin dosage necessary.")
+
+            # No TB recommendation
+            R = None
+
+        # Get last bolus time
+        lastBolusTime = self.bolus.getLastTime()
+
+        # Bolus snooze
+        if lastBolusTime is not None:
+
+            # Compute elapsed time since last bolus (h)
+            d = (self.now - lastBolusTime).seconds / 3600.0
+
+            # Define bolus snooze (h)
+            snooze = 0.5 * self.DIA
+
+            # Snooze
+            if d < snooze:
+
+                # Compute remaining snooze (m)
+                T = int(round((snooze - d) * 60))
+
+                # Give user info
+                print ("Bolus snooze (" + str(snooze) + " h). If no more " +
+                       "bolus is issued, looping will restart in " + str(T) +
+                       " m.")
+
+                # No TB recommendation
+                R = None
+
+        # Look for conflictual info
+        if (np.sign(BGI) == -1 and eventualBG > max(self.BGTargets.y[-1]) or
+            np.sign(BGI) == 1 and eventualBG < min(self.BGTargets.y[-1])):
+
+            # Give user info
+            print ("Conflictual information: BG decreasing/rising although " +
+                   "expected to land higher/lower than target range.")
 
             # No TB recommendation
             R = None
