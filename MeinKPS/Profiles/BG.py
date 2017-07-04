@@ -84,11 +84,11 @@ class PastBGProfile(base.PastProfile):
 
 
 
-    def verify(self):
+    def count(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFY
+            COUNT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -203,8 +203,8 @@ class FutureBGProfile(base.FutureProfile):
         # Give user info
         print "Decaying BG..."
 
-        # Verify number of recent BGs
-        self.past.verify()
+        # Count number of recent BGs
+        self.past.count()
 
         # Link with past profile
         self.link()

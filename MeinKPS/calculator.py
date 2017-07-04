@@ -371,6 +371,16 @@ class Calculator(object):
 
 
 
+    def autosens(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            AUTOSENS
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+
+
     def show(self):
 
         """
@@ -471,6 +481,9 @@ def main():
 
     # Show results
     calculator.show()
+
+    # Run autosens
+    calculator.autosens()
 
 
 
