@@ -119,17 +119,8 @@ class PastBGProfile(base.PastProfile):
         # Give user info
         print "Found " + str(n) + " BGs within last " + str(T) + " m."
 
-        # Check for insufficient data
-        if n == 0:
-
-            # Exit
-            raise errors.MissingBGs()
-
-        # Otherwise
-        else:
-
-            # Store number of valid recent BGs
-            self.n = n
+        # Store number of valid recent BGs
+        self.n = n
 
 
 
@@ -203,11 +194,20 @@ class FutureBGProfile(base.FutureProfile):
         # Give user info
         print "Decaying BG..."
 
+        # Link with past profile
+        self.link()
+
         # Count number of recent BGs
         self.past.count()
 
-        # Link with past profile
-        self.link()
+        # Check for insufficient data
+        if self.past.n == 0:
+
+            # Give user info
+            print "Not enough BG to predict future. Skipping..."
+
+            # Skip
+            return
 
         # Reset previous BG predictions
         self.reset()

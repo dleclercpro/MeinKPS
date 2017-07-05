@@ -113,9 +113,6 @@ class Calculator(object):
         # Prepare components
         self.prepare()
 
-        # Recommend TB and return it
-        return self.recommend()
-
 
 
     def load(self):
@@ -326,7 +323,7 @@ class Calculator(object):
         lastBolusTime = self.bolus.getLastTime()
 
         # Bolus snooze
-        if lastBolusTime is not None:
+        if False:
 
             # Compute elapsed time since last bolus (h)
             d = (self.now - lastBolusTime).seconds / 3600.0
@@ -474,7 +471,7 @@ def main():
     calculator = Calculator()
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(hours = 2)
+    now = datetime.datetime.now() - datetime.timedelta(hours = 0)
 
     # Run calculator
     calculator.run(now)
@@ -484,6 +481,9 @@ def main():
 
     # Run autosens
     calculator.autosens()
+
+    # Recommend TB
+    #calculator.recommend()
 
 
 
