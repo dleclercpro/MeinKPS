@@ -436,11 +436,11 @@ class Calculator(object):
 
         # Add net insulin profile to plot
         axes[1].step(self.net.t, np.append(0, self.net.y[:-1]),
-                     lw = 2, ls = "-", c = "#ff7500")
+                     lw = 2, ls = "-", c = "purple")
 
         # Add past IOB to plot
         axes[2].plot(self.IOB.past.t, self.IOB.past.y,
-                     marker = "o", ms = 3.5, lw = 0, c = "purple")
+                     marker = "o", ms = 3.5, lw = 0, c = "orange")
 
         # Add IOB predictions to plot
         axes[2].plot(self.IOB.t, self.IOB.y,
@@ -474,7 +474,7 @@ def main():
     calculator = Calculator()
 
     # Get current time
-    now = datetime.datetime.now()
+    now = datetime.datetime.now() - datetime.timedelta(hours = 2)
 
     # Run calculator
     calculator.run(now)
