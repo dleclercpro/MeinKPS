@@ -44,8 +44,7 @@ class SuspendProfile(base.PastProfile):
         self.u = "U/h"
 
         # Define report info
-        self.report = "history.json"
-        self.path = ["Pump"]
+        self.report = "treatments.json"
         self.key = "Suspend/Resume"
 
 
