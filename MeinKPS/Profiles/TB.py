@@ -49,6 +49,9 @@ class TBProfile(base.PastProfile):
         # Renitialize units
         self.u = []
 
+        # Define profile zero
+        self.zero = 0
+
         # Define report info
         self.report = "treatments.json"
         self.key = "Temporary Basals"

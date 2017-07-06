@@ -168,7 +168,7 @@ class Calculator(object):
         self.basal.build(past, self.now)
 
         # Build TB profile
-        self.TB.build(past, self.now, self.basal)
+        self.TB.build(past, self.now)
 
         # Build bolus profile
         self.bolus.build(past, self.now)
@@ -217,6 +217,18 @@ class Calculator(object):
         # Give user info
         print "Recommending treatment..."
 
+        # Get current BG
+        BG = self.BG.past.y[-1]
+
+        # Get current basal
+        basal = self.basal.y[-1]
+
+        # Get current IOB
+        IOB = self.IOB.y[0]
+
+        # Get current ISF
+        ISF = self.ISF.y[0]
+
         # Compute eventual BG after complete IOB decay
         naiveBG = self.BG.expect(self.DIA, self.IOB)
 
@@ -238,9 +250,9 @@ class Calculator(object):
 
         # Give user info
         print "BG target: " + str(target) + " " + self.BG.u
-        print "Current BG: " + str(self.BG.past.y[-1]) + " " + self.BG.u
-        print "Current ISF: " + str(self.ISF.y[0]) + " " + self.BG.u + "/U"
-        print "Current IOB: " + str(round(self.IOB.y[0], 1)) + " U"
+        print "Current BG: " + str(BG) + " " + self.BG.u
+        print "Current ISF: " + str(ISF) + " " + self.BG.u + "/U"
+        print "Current IOB: " + str(round(IOB, 1)) + " U"
         print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
         print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.u
         print "dBG: " + str(round(dBG, 1)) + " " + self.BG.u
@@ -254,14 +266,14 @@ class Calculator(object):
 
         # Find required basal difference to enact over given time (round to
         # pump's precision)
-        dTB = round(dose / T, 2)
+        dB = round(dose / T, 2)
 
         # Compute TB to enact 
-        TB = self.basal.y[-1] + dTB
+        TB = basal + dB
 
         # Give user info
-        print "Current basal: " + str(self.basal.y[-1]) + " U/h"
-        print "Required basal difference: " + str(dTB) + " U/h"
+        print "Current basal: " + str(basal) + " U/h"
+        print "Required basal difference: " + str(dB) + " U/h"
         print "Temporary basal to enact: " + str(TB) + " U/h"
 
         # Convert enactment time to minutes
@@ -292,12 +304,12 @@ class Calculator(object):
             # Find maximal basal allowed (U/h)
             maxTB = min(self.max["Basal"],
                         3 * self.basal.max,
-                        4 * self.basal.y[0])
+                        4 * basal)
 
             # Give user info
             print "Theoretical max basal: " + str(self.max["Basal"]) + " U/h"
             print "3x max daily basal: " + str(3 * self.basal.max) + " U/h"
-            print "4x current basal: " + str(4 * self.basal.y[0]) + " U/h"
+            print "4x current basal: " + str(4 * basal) + " U/h"
             print "Max basal selected: " + str(maxTB) + " U/h"
 
             # Is required TB allowed?
@@ -323,7 +335,7 @@ class Calculator(object):
         lastBolusTime = self.bolus.getLastTime()
 
         # Bolus snooze
-        if False:
+        if lastBolusTime is not None:
 
             # Compute elapsed time since last bolus (h)
             d = (self.now - lastBolusTime).seconds / 3600.0
@@ -354,7 +366,7 @@ class Calculator(object):
                    "expected to land higher/lower than target range.")
 
             # No TB recommendation
-            R = None
+            #R = None
 
         # If recommendation was not canceled
         if R is not None:
@@ -471,19 +483,19 @@ def main():
     calculator = Calculator()
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(hours = 0)
+    now = datetime.datetime.now() - datetime.timedelta(hours = 9)
 
     # Run calculator
     calculator.run(now)
-
-    # Show results
-    calculator.show()
 
     # Run autosens
     calculator.autosens()
 
     # Recommend TB
-    #calculator.recommend()
+    calculator.recommend()
+
+    # Show results
+    calculator.show()
 
 
 

@@ -69,5 +69,5 @@ class SuspendProfile(base.PastProfile):
             # If resume
             if self.y[i]:
 
-                # Convert to none and fill later
+                # Replace by None and fill later
                 self.y[i] = None

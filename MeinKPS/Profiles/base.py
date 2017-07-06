@@ -240,7 +240,7 @@ class Profile(object):
         # Give user info
         print "Mapping time..."
 
-        # If past profile
+        # If future profile
         if self.norm == "Start":
 
             # Define now
@@ -268,15 +268,15 @@ class Profile(object):
             # Add value
             y.append(self.y[i])
 
-        # Initialize current index (-1 to handle between 23:00 and 00:00 of
+        # Initialize current index (handle between 23:00 and 00:00 of
         # following day)
-        index = -1
+        index = n - 1
 
         # Find current time
         for i in range(n - 1):
 
             # Current time criteria
-            if T[i] <= now < T[i + 1]:
+            if T[i] <= now < T[(i + 1)]:
 
                 # Store index
                 index = i
@@ -288,10 +288,16 @@ class Profile(object):
         for i in range(n):
 
             # Find times in future and bring them in the past
-            if T[i] > T[index]:
+            if self.norm == "End" and i > index:
 
                 # Update time
                 T[i] -= datetime.timedelta(days = 1)
+
+            # Find times in past and bring them in the future
+            elif self.norm == "Start" and i < index:
+
+                # Update time
+                T[i] += datetime.timedelta(days = 1)
 
         # Zip and sort profile
         z = sorted(zip(T, y))
@@ -350,7 +356,7 @@ class Profile(object):
                 # Store index
                 index = i
 
-        # If no last entry was found
+        # If last step was found
         if index is not None:
 
             # Add last entry
@@ -412,7 +418,7 @@ class Profile(object):
                 dt = self.T[i + 1] - self.T[i]
 
                 # If step is a canceling one
-                if d == 0:
+                if d == datetime.timedelta(0):
 
                     # Replace value with zero
                     y[-1] = self.zero
@@ -475,11 +481,11 @@ class Profile(object):
         T = []
         y = []
 
-        # Get number of steps
-        n = len(self.T)
-
         # Initialize index of last step before profile
         index = None
+
+        # Get number of steps
+        n = len(self.T)
 
         # Cut-off steps outside of start and end limits
         for i in range(n):
@@ -786,7 +792,7 @@ class Profile(object):
                     if type(y) is float or type(y) is np.float64:
 
                         # Format it
-                        y = round(y, 1)
+                        y = round(y, 2)
 
                     # Give user info
                     print str(y) + " - (" + str(t) + ")"
