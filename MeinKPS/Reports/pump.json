@@ -98,7 +98,7 @@
     },
     "Settings": {
         "DIA": 3,
-        "Max Basal": 5.0,
+        "Max Basal": 10.0,
         "Max Bolus": 25.0
     },
     "Units": {
