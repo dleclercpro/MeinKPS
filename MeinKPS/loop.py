@@ -52,8 +52,9 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize current time
-        self.now = None
+        # Initialize start/end times
+        self.start = None
+        self.end = None
 
         # Give the loop a CGM
         self.cgm = cgm.CGM()
@@ -192,11 +193,11 @@ class Loop(object):
             self.preparePump()
 
             # Run calculator
-            self.calc.run(self.now)
+            self.calc.run(self.start)
 
             # Get TB recommendation
             TB = self.calc.recommend()
-            #TB = [self.now.minute / 60.0, "U/h", 30]
+            #TB = [self.start.minute / 60.0, "U/h", 30]
 
             # If no TB is required
             if TB is None:
@@ -255,19 +256,16 @@ class Loop(object):
         """
 
         # Define starting time
-        start = datetime.datetime.now()
+        self.start = datetime.datetime.now()
 
         # Give user info
-        print "Start: " + lib.formatTime(start)
-
-        # Store it
-        self.now = start
+        print "Start: " + lib.formatTime(self.start)
 
         # Load loop report
         Reporter.load("loop.json")
 
         # Update loop infos
-        Reporter.addEntries(["Status"], "Time", lib.formatTime(start), True)
+        Reporter.addEntries(["Status"], "Time", lib.formatTime(self.start), True)
         Reporter.increment(["Status"], "N")
 
         # Do CGM stuff
@@ -280,16 +278,16 @@ class Loop(object):
         self.do(uploader.main, ["Status"], "Upload")
 
         # Define ending time
-        end = datetime.datetime.now()
+        self.end = datetime.datetime.now()
 
         # Get duration of loop
-        d = end - start
+        d = self.end - self.start
 
         # Update loop infos
         Reporter.addEntries(["Status"], "Duration", d.seconds, True)
 
         # Give user info
-        print "End: " + lib.formatTime(end)
+        print "End: " + lib.formatTime(self.end)
 
 
 

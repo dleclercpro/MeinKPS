@@ -306,7 +306,7 @@ class BolusBadAmount(PumpError):
 
 
 
-class BadStatus(PumpError):
+class StatusAbnormal(PumpError):
 
     def prepare(self):
 
@@ -317,11 +317,11 @@ class BadStatus(PumpError):
         """
 
         # Define error info
-        self.info = ("Pump status does not allow enaction of new TB.")
+        self.info = ("Pump status is abnormal.")
 
 
 
-class BadSettings(PumpError):
+class StatusBolusing(PumpError):
 
     def prepare(self):
 
@@ -332,7 +332,52 @@ class BadSettings(PumpError):
         """
 
         # Define error info
-        self.info = ("Pump settings do not allow enaction of new TB.")
+        self.info = ("Pump is bolusing.")
+
+
+
+class StatusSuspended(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Pump is suspended.")
+
+
+
+class SettingsMaxBasalExceeded(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Max basal exceeded.")
+
+
+
+class SettingsMaxBolusExceeded(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Max bolus exceeded.")
 
 
 

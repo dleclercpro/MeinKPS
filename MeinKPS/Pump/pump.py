@@ -513,29 +513,21 @@ class Status(object):
         # Check if pump is ready to take action
         if not self.value["Normal"]:
 
-            # Give user info
-            print "There seems to be a problem with the pump. Try again later."
-
-            return False
+            # Raise error
+            raise errors.StatusAbnormal
 
         elif self.value["Bolusing"]:
 
-            # Give user info
-            print "Pump is bolusing. Try again later."
-
-            return False
+            # Raise error
+            raise errors.StatusBolusing
 
         elif self.value["Suspended"]:
 
-            # Give user info
-            print "Pump is suspended. Try again later."
-
-            return False
+            # Raise error
+            raise errors.StatusSuspended
 
         # Give user info
         print "Pump's status allows desired course of action. Proceeding..."
-
-        return True
 
 
 
@@ -613,36 +605,21 @@ class Settings(object):
         # Read pump settings
         self.read()
 
-        # If TB is asked for
-        if TB is not None:
+        # If TB is asked for, but exceeds max settings
+        if (TB is not None and TB["Units"] == "U/h" and
+            TB["Rate"] > self.value["Max Basal"]):
 
-            # Verify it does not exceed max settings
-            if TB["Units"] == "U/h" and TB["Rate"] > self.value["Max Basal"]:
+            # Raise error
+            raise errors.SettingsMaxBasalExceeded
 
-                # Give user info
-                print ("Pump cannot issue TB since it is bigger than its " +
-                       "maximal basal rate. Update the latter before trying " +
-                       "again.") 
+        # If bolus is asked for, but exceeds max settings
+        elif bolus is not None and bolus > self.value["Max Bolus"]:
 
-                return False
-
-        # If bolus is asked for
-        elif bolus is not None:
-
-            # Verify it does not exceed max settings
-            if bolus > self.value["Max Bolus"]:
-
-                # Give user info
-                print ("Pump cannot issue bolus since it is bigger than its " +
-                       "maximal allowed bolus. Update the latter before " +
-                       "trying again." )
-
-                return False
+            # Raise error
+            raise errors.SettingsMaxBolusExceeded
 
         # Give user info
         print "Pump's settings allow desired course of action. Proceeding..."
-
-        return True
 
 
 
@@ -1184,12 +1161,11 @@ class Bolus(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Verify pump status and settings before doing anything
-        if not self.pump.status.verify():
-            return
+        # Verify pump status
+        self.pump.status.verify()
 
-        if not self.pump.settings.verify(None, bolus):
-            return
+        # Verify pump settings
+        self.pump.settings.verify(None, bolus):
 
         # Get current time
         now = datetime.datetime.now()
@@ -1318,16 +1294,10 @@ class TB(object):
             raise errors.TBBadDuration(TB)
 
         # Verify pump status
-        if not self.pump.status.verify():
-
-            # Raise error
-            raise errors.BadStatus()
+        self.pump.status.verify():
 
         # Verify pump settings
-        if not self.pump.settings.verify(TB):
-
-            # Raise error
-            raise errors.BadSettings()
+        self.pump.settings.verify(TB):
 
         # Before issuing any TB, read the current one
         self.read()

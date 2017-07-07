@@ -483,7 +483,7 @@ def main():
     calculator = Calculator()
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(hours = 9)
+    now = datetime.datetime.now() - datetime.timedelta(hours = 0)
 
     # Run calculator
     calculator.run(now)
