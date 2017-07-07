@@ -151,6 +151,18 @@ def formatTime(t):
 
 
 
+def getDay(t):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        GETDAY
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    return datetime.datetime.strftime(t, "%Y.%m.%d")
+
+
+
 def normalizeTime(t, T):
 
     """
@@ -384,20 +396,6 @@ def translate(bytes):
     """
 
     return "".join([chr(x) for x in bytes])
-
-
-
-def printJSON(x):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        printJSON
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Print a dictionary using a particular JSON formatting.
-    """
-
-    print json.dumps(x, indent = 2, separators = (",", ": "), sort_keys = True)
 
 
 

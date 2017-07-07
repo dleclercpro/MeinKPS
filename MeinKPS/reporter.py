@@ -24,6 +24,7 @@
 
 # LIBRARIES
 import json
+import datetime
 import os
 
 
@@ -45,15 +46,77 @@ class Reporter:
         """
 
         # Set source path to reports
-        #self.src = os.getcwd() + "/Reports/"
-        self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
+        self.src = os.getcwd() + "/Reports/"
+        #self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
+
+        # Initialize name
+        self.name = None
+
+        # Initialize dates
+        self.dates = []
+
+        # Initialize paths
+        self.paths = []
+
+        # Initialize reports
+        self.reports = {}
 
         # Initialize section
         self.section = []
 
 
 
-    def load(self, report):
+    def find(self, path, n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FIND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # On first run
+        if n == 1:
+
+            # Convert path to list
+            path = path.split("/")
+
+            # Remove empty entries
+            path = [p for p in path if p != ""]
+
+        # Stringify current path
+        p = "/".join(path[:n])
+
+        # If destination directory not yet attained
+        if n < len(path):
+
+            # If it does not exist
+            if not os.path.exists(p):
+
+                # Give user info
+                print "Making '" + p + "'/..."
+
+                # Make it
+                os.makedirs(p)
+
+            # Contine looking
+            self.find(path, n + 1)
+
+        # Otherwise, time to look for file
+        else:
+
+            # If it does not exist
+            if not os.path.exists(p):
+
+                # Give user info
+                print "Making '" + p + "'..."
+
+                # Create it
+                with open(p, "w") as f:
+                    json.dump({}, f)
+
+
+
+    def load(self, name, dates = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,27 +125,49 @@ class Reporter:
         """
 
         # Store report's name
-        self.name = report
+        self.name = name
 
-        # Give user info
-        print "Loading '" + self.name + "'..."
+        # No dates
+        if dates is None:
 
-        # Check if report exists. If not, generate it.
-        if not os.path.exists(self.src + self.name):
+            # Define path
+            self.paths.append(self.src)
+
+        # Otherwise
+        else:
+
+            # Loop on dates
+            for i in range(len(dates)):
+
+                # Format current date
+                d = datetime.datetime.strftime(dates[i], "%Y/%m/%d")
+
+                # Store it
+                self.dates.append(d)
+
+                # Define path
+                self.paths.append(self.src + d + "/")
+
+        # Load report(s)
+        for i in range(len(self.paths)):
+
+            # Get current path to file
+            p = self.paths[i] + name
 
             # Give user info
-            print "'" + self.name + "' does not exist. Creating it..."
+            print "Loading '" + p + "'..."
 
-            # Creating new empty report
-            with open(self.src + self.name, "w") as f:
-                json.dump({}, f)
+            # Make sure report exists
+            self.find(p)
 
-        # Load report
-        with open(self.src + self.name, "r") as f:
-            self.report = json.load(f)
+            # Open report
+            with open(p, "r") as f:
 
-        # Give user info
-        print "'" + self.name + "' loaded."
+                # Load JSON
+                self.reports[p] = json.load(f)
+
+        # Show reports
+        self.show()
 
 
 
@@ -94,19 +179,52 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
-        print "Updating '" + self.name + "'..."
+        # Rewrite reports
+        for p in self.reports:
 
-        # Rewrite report
-        with open(self.src + self.name, "w") as f:
-            json.dump(self.report,
-                      f,
-                      indent = 4,
-                      separators = (",", ": "),
-                      sort_keys = True)
+            # Give user info
+            print "Updating '" + p + "'..."
 
-        # Give user info
-        print "'" + self.name + "' updated."
+            # Rewrite report
+            with open(p, "w") as f:
+                json.dump(self.reports[p], f,
+                          indent = 4,
+                          separators = (",", ": "),
+                          sort_keys = True)
+
+
+
+    def show(self, report = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define default report to show
+        if report is None:
+
+            # Last report
+            report = self.reports
+
+        # Print report entries
+        print json.dumps(report, indent = 2,
+                                 separators = (",", ": "),
+                                 sort_keys = True)
+
+
+
+    def showPath(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOWPATH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Format path
+        return " > ".join(["."] + path)
 
 
 
@@ -122,7 +240,7 @@ class Reporter:
         self.getSection(path)
 
         # Give user info
-        print ("Attempting to delete entry: " + self.formatPath(path) + " > " +
+        print ("Attempting to delete entry: " + self.showPath(path) + " > " +
                str(key))
 
         # If it does, delete it
@@ -141,32 +259,6 @@ class Reporter:
 
             # Give user info
             print ("No such entry: no need to delete.")
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Print report entries
-        print self.report
-
-
-
-    def formatPath(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FORMATPATH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Format path
-        return " > ".join(["."] + path)
 
 
 
@@ -192,7 +284,7 @@ class Reporter:
         d = len(path)
 
         # Give user info
-        print "Attempting to find section: " + self.formatPath(path)
+        print "Attempting to find section: " + self.showPath(path)
 
         # Loop through whole report to find section
         for i in range(d):
@@ -240,7 +332,7 @@ class Reporter:
             return self.section
 
         # Give user info
-        print ("Attempting to find entry: " + self.formatPath(path) + " > " +
+        print ("Attempting to find entry: " + self.showPath(path) + " > " +
                str(key))
 
         # Look if entry exists
@@ -254,7 +346,7 @@ class Reporter:
 
             # If entry is a dict
             if type(entry) is dict:
-                lib.printJSON(entry)
+                self.show(entry)
 
             # Otherwise
             else:
@@ -283,7 +375,7 @@ class Reporter:
         self.getSection(path)
 
         # Give user info
-        print ("Attempting to find last entry in: " + self.formatPath(path))
+        print ("Attempting to find last entry in: " + self.showPath(path))
 
         # Look if at least one entry exists
         if len(self.section) > 0:
@@ -334,7 +426,7 @@ class Reporter:
         for i in range(n):
 
             # Give user info
-            print ("Attempting to add entry: " + self.formatPath(path) + " > " +
+            print ("Attempting to add entry: " + self.showPath(path) + " > " +
                    str(keys[i]) + " > " + json.dumps(entries[i]))
 
             # Look if entry is already in report
@@ -387,8 +479,15 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Get current time
+    now = datetime.datetime.now()
+
     # Instanciate a reporter for me
     reporter = Reporter()
+
+    # Test
+    #reporter.find("/2017/07/05/BG.json")
+    reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
 
 
 
