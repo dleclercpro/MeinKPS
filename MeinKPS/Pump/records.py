@@ -241,7 +241,7 @@ class SuspendRecord(Record):
         super(self.__class__, self).__init__(pump)
 
         # Define record's report
-        self.report = "history.json"
+        self.report = "treatments.json"
 
 
 
@@ -276,7 +276,7 @@ class SuspendRecord(Record):
         Reporter.load(self.report)
 
         # Add entries
-        Reporter.addEntries(["Pump", "Suspend/Resume"], self.t, self.values)
+        Reporter.addEntries(["Suspend/Resume"], self.t, self.values)
 
 
 
@@ -303,7 +303,7 @@ class ResumeRecord(Record):
         super(self.__class__, self).__init__(pump)
 
         # Define record's report
-        self.report = "history.json"
+        self.report = "treatments.json"
 
 
 
@@ -338,7 +338,7 @@ class ResumeRecord(Record):
         Reporter.load(self.report)
 
         # Add entries
-        Reporter.addEntries(["Pump", "Suspend/Resume"], self.t, self.values)
+        Reporter.addEntries(["Suspend/Resume"], self.t, self.values)
 
 
 

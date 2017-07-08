@@ -1532,7 +1532,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    #pump.history.read()
+    pump.history.read(2)
 
     # Send bolus to pump
     #pump.bolus.deliver(0.6)

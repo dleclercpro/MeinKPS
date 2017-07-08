@@ -387,6 +387,19 @@ def unpack(bytes, order = "<"):
 
 
 
+def printJSON(x):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PRINTJSON
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Print a dictionary using a particular JSON formatting.
+    """
+
+    print json.dumps(x, indent = 2, separators = (",", ": "), sort_keys = True)
+
+
+
 def translate(bytes):
 
     """
