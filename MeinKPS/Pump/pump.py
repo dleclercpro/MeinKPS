@@ -1165,7 +1165,7 @@ class Bolus(object):
         self.pump.status.verify()
 
         # Verify pump settings
-        self.pump.settings.verify(None, bolus):
+        self.pump.settings.verify(None, bolus)
 
         # Get current time
         now = datetime.datetime.now()
@@ -1294,10 +1294,10 @@ class TB(object):
             raise errors.TBBadDuration(TB)
 
         # Verify pump status
-        self.pump.status.verify():
+        self.pump.status.verify()
 
         # Verify pump settings
-        self.pump.settings.verify(TB):
+        self.pump.settings.verify(TB)
 
         # Before issuing any TB, read the current one
         self.read()

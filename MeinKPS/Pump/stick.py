@@ -155,7 +155,9 @@ class Stick(object):
             self.infos.read()
 
         # If failed, stick is most probably in dead state
-        except:
+        except Exception as e:
+
+            print e.message
 
             # Give user info
             print "Stick seems to be dead. Resetting it..."
