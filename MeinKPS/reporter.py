@@ -96,11 +96,11 @@ class Reporter:
 
 
 
-    def new(self, name = None, path = None, date = None, json = None):
+    def show(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            NEW
+            SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -110,18 +110,31 @@ class Reporter:
             # Get current report
             report = self.reports[i]
 
+            # Show report
+            report.show()
+
+
+
+    def new(self, name = None, path = None, date = None, json = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NEW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Loop on reports
+        for report in self.reports:
+
             # Check if report already exists
-            if report["Name"] == name and report["Date"] == date:
+            if report.name == name and report.date == date:
 
                 # Exit
                 sys.exit("Report '" + name + "' (" + str(date) + ") already " +
                          "exists.")
 
         # Generate new report
-        self.reports.append({"Name": name,
-                             "Path": path,
-                             "Date": date,
-                             "JSON": json})
+        self.reports.append(Report(name, path, date, json))
 
 
 
@@ -222,10 +235,10 @@ class Reporter:
             report = self.reports[-(i + 1)]
 
             # Get current path to file
-            p = report["Path"] + name
+            p = report.path + name
 
             # Give user info
-            print ("Loading: '" + report["Name"] + "' (" + str(report["Date"]) +
+            print ("Loading: '" + report.name + "' (" + str(report.date) +
                    ")")
 
             # Make sure report exists
@@ -235,10 +248,10 @@ class Reporter:
             with open(p, "r") as f:
 
                 # Load JSON
-                report["JSON"] = json.load(f)
+                report.json = json.load(f)
 
         # Show reports
-        lib.printJSON(self.reports)
+        self.show()
 
 
 
@@ -263,26 +276,26 @@ class Reporter:
             report = self.reports[i]
 
             # If name fits
-            if report["Name"] != name:
+            if report.name != name:
 
                 # Skip
                 continue
 
             # If dates
-            if date is not None and report["Date"] != d:
+            if date is not None and report.date != d:
 
                 # Skip
                 continue
 
             # Give user info
-            print ("Unloading: " + report["Name"] + " (" + str(report["Date"]) +
+            print ("Unloading: " + report.name + " (" + str(report.date) +
                    ")")
 
             # Delete it
             del self.reports[i]
 
             # Show reports
-            lib.printJSON(self.reports)
+            self.show()
 
             # Exit
             return
@@ -314,29 +327,26 @@ class Reporter:
         """
 
         # Rewrite reports
-        for i in range(len(self.reports)):
-
-            # Get current report
-            report = self.reports[i]
+        for report in self.reports:
 
             # If report has date
-            if report["Date"] is not None:
+            if report.date is not None:
 
                 # Give user info
-                print ("Updating: '" + report["Name"] + "' (" + report["Date"] +
+                print ("Updating: '" + report.name + "' (" + report.date +
                        ")")
 
             # Otherwise
             else:
 
                 # Give user info
-                print "Updating: '" + report["Name"] + "'"
+                print "Updating: '" + report.name + "'"
 
             # Rewrite report
-            with open(report["Path"] + report["Name"], "w") as f:
+            with open(report.path + report.name, "w") as f:
 
                 # Dump JSON
-                json.dump(report["JSON"], f,
+                json.dump(report.json, f,
                           indent = 4,
                           separators = (",", ": "),
                           sort_keys = True)
@@ -364,13 +374,13 @@ class Reporter:
         for report in self.reports:
 
             # Check if names match
-            if report["Name"] != name:
+            if report.name != name:
 
                 # Skip
                 continue
 
             # Check if dates match
-            if report["Date"] != date:
+            if report.date != date:
 
                 # Skip
                 continue
@@ -379,7 +389,7 @@ class Reporter:
             print "Found report:"
 
             # Show report
-            lib.printJSON(report)
+            report.show()
 
             # Return report
             return report
@@ -408,7 +418,7 @@ class Reporter:
         d = len(path)
 
         # First level section is whole report
-        section = report["JSON"]
+        section = report.json
 
         # Give user info
         print "Attempting to find section: " + self.showPath(path)
@@ -431,9 +441,6 @@ class Reporter:
                     # Create it
                     section[p] = {}
 
-                    # Show section
-                    lib.printJSON({p: section[p]})
-
                 # Otherwise
                 else:
 
@@ -451,6 +458,77 @@ class Reporter:
 
         # Return section
         return section
+
+
+
+    def getEntry(self, section, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Attempting to find entry with key '" + str(key) + "' within:"
+
+        # Show section
+        lib.printJSON(section)
+
+        # Look if entry exists
+        if key in section:
+
+            # Get entry matching the key
+            entry = section[key]
+
+            # Give user info
+            print "Entry found: " + str(entry)
+
+            # Return entry for external access
+            return entry
+
+        # Otherwise
+        else:
+
+            # Give user info
+            print "No matching entry found."
+
+
+
+    def getLastEntry(self, section):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETLASTENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Attempting to find last entry within:"
+
+        # Show section
+        lib.printJSON(section)
+
+        # Look if at least one entry exists
+        if len(section) > 0:
+
+            # Get latest entry time
+            t = max(section)
+
+            # Get corresponding entry
+            entry = section[t]
+
+            # Give user info
+            print "Entry found: " + str(entry) + " (" + str(t) + ")" 
+
+            # Return entry for external access
+            return [t, entry]
+
+        # Otherwise
+        else:
+
+            # Give user info
+            print "No entry found."
 
 
 
@@ -497,6 +575,36 @@ class Reporter:
 
             # Show section
             lib.printJSON(section)
+
+
+
+    def deleteEntry(self, section, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DELETEENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Attempting to delete entry with key '" + str(key) + "' within:"
+
+        # Show section
+        lib.printJSON(section)
+
+        # If it does, delete it
+        if key in section:
+
+            # Delete entry
+            del section[key]
+
+            # Give user info
+            print "Entry deleted."
+
+        else:
+
+            # Give user info
+            print "No such entry."
 
 
 
@@ -558,124 +666,7 @@ class Reporter:
 
 
 
-
-
-
-
-
-
-
-
-    def deleteEntry(self, report, path, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DELETEENTRY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load section
-        section = self.getSection(report, path)
-
-        # Give user info
-        print ("Attempting to delete entry: " + self.showPath(path) + " > " +
-               str(key))
-
-        # If it does, delete it
-        if key in section:
-
-            # Delete entry
-            del section[key]
-
-            # Give user info
-            print "Entry deleted."
-
-            # Rewrite report
-            self.save()
-
-        else:
-
-            # Give user info
-            print "No such entry: no need to delete."
-
-
-
-    def getEntry(self, report, path, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETENTRY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print ("Attempting to find entry: " + self.showPath(path) + " > " +
-               str(key))
-
-        # Load section
-        section = self.getSection(report, path)
-
-        # Look if entry exists
-        if key in section:
-
-            # Get entry matching the key
-            entry = section[key]
-
-            # Give user info
-            print "Entry found: " + str(entry)
-
-            # Return entry for external access
-            return entry
-
-        # Otherwise
-        else:
-
-            # Give user info
-            print "No matching entry found."
-
-
-
-    def getLastEntry(self, report, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETLASTENTRY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load section
-        section = self.getSection(report, path)
-
-        # Give user info
-        print "Attempting to find last entry in: " + self.showPath(path)
-
-        # Look if at least one entry exists
-        if len(section) > 0:
-
-            # Get latest entry time
-            t = max(section)
-
-            # Get corresponding entry
-            entry = section[t]
-
-            # Give user info
-            print "Entry found: " + str(entry) + " (" + str(t) + ")" 
-
-            # Return entry for external access
-            return [t, entry]
-
-        # Otherwise
-        else:
-
-            # Give user info
-            print "No entry found."
-
-
-
-
-
-
-    def increment(self, path, key):
+    def increment(self, name, path, key, date = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -683,8 +674,48 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get report
+        report = self.getReport(name, date)
+
+        # Get section
+        section = self.getSection(report, path)
+
         # Increment entry
-        self.addEntries(path, key, self.getEntry(path, key) + 1, True)
+        self.addEntry(section, {key: self.getEntry(section, key) + 1}, True)
+
+
+
+class Report:
+
+    def __init__(self, name = None, path = None, date = None, json = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize report attributes
+        self.name = name
+        self.path = path
+        self.date = date
+        self.json = json
+
+
+
+    def show(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Show report
+        lib.printJSON({"Name": self.name,
+                       "Path": self.path,
+                       "Date": self.date,
+                       "JSON": self.json})
 
 
 
@@ -705,11 +736,13 @@ def main():
     # Test
     reporter.load("profile.json")
     reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
-    reporter.unload("profile.json")
-    #report = reporter.getReport("BG.json", now)
-    #section = reporter.getSection(report, ["A", "B"])
-    #reporter.addEntry(section, {"D": 1})
-    #reporter.addEntries("profile.json", ["A", "B"], {"C": 0, "D": 1})
+    #reporter.unload("profile.json")
+    report = reporter.getReport("BG.json", now)
+    section = reporter.getSection(report, ["A", "B"], True)
+    reporter.addEntry(section, {"D": 1})
+    reporter.addEntry(section, {"D": 2}, True)
+    reporter.deleteEntry(section, "D")
+    reporter.addEntries("profile.json", ["A", "B"], {"C": 0, "D": 1})
     #reporter.addEntries("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
 
 
