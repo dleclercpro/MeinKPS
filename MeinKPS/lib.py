@@ -129,24 +129,33 @@ def formatTime(t):
     f = "%Y.%m.%d - %H:%M:%S"
     F = "%H:%M"
 
+    # If datetime object
     if type(t) is datetime.datetime:
 
         t = datetime.datetime.strftime(t, f)
 
+    # Otherwise
     else:
 
+        # Try first format
         try:
 
             t = datetime.datetime.strptime(t, f)
 
         except:
 
+			pass
+
+        # Try second format
+        try:
+
             t = datetime.datetime.strptime(t, F).time()
 
-        else:
+        except:
 
             pass
 
+    # Return formatted time
     return t
 
 

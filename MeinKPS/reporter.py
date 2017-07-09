@@ -26,6 +26,7 @@
 import json
 import datetime
 import os
+import sys
 
 
 
@@ -49,20 +50,65 @@ class Reporter:
         self.src = os.getcwd() + "/Reports/"
         #self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
 
-        # Initialize name
-        self.name = None
-
-        # Initialize dates
-        self.dates = []
-
-        # Initialize paths
-        self.paths = []
-
         # Initialize reports
-        self.reports = {}
+        self.reports = []
 
-        # Initialize section
-        self.section = []
+
+
+    def splitPath(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SPLITPATH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Split path
+        return [p for p in path.split("/") if p != ""]
+
+
+
+    def mergePath(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MERGEPATH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: The first "/" will only work for Linux
+        """
+
+        # Merge path
+        return "/" + "/".join(path)
+
+
+
+    def showPath(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOWPATH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Format path
+        return " > ".join(["."] + path)
+
+
+
+    def new(self, name = None, path = None, date = None, JSON = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NEW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Generate new report entry
+        self.reports.append({"Name": name,
+                             "Path": path,
+                             "Date": date,
+                             "JSON": JSON})
 
 
 
@@ -78,13 +124,10 @@ class Reporter:
         if n == 1:
 
             # Convert path to list
-            path = path.split("/")
-
-            # Remove empty entries
-            path = [p for p in path if p != ""]
+            path = self.splitPath(path)
 
         # Stringify current path
-        p = "/".join(path[:n])
+        p = self.mergePath(path[:n])
 
         # If destination directory not yet attained
         if n < len(path):
@@ -112,6 +155,8 @@ class Reporter:
 
                 # Create it
                 with open(p, "w") as f:
+
+                    # Dump empty dict
                     json.dump({}, f)
 
 
@@ -124,35 +169,47 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Store report's name
-        self.name = name
-
         # No dates
         if dates is None:
 
+            # Define number of reports to load
+            n = 1
+
             # Define path
-            self.paths.append(self.src)
+            p = self.src
+
+            # Generate new report
+            self.new(name, p)
 
         # Otherwise
         else:
 
+            # Make sure dates appear only once
+            dates = list(set(dates))
+
+            # Define number of reports to load
+            n = len(dates)
+
             # Loop on dates
-            for i in range(len(dates)):
+            for i in range(n):
 
                 # Format current date
                 d = datetime.datetime.strftime(dates[i], "%Y/%m/%d")
 
-                # Store it
-                self.dates.append(d)
-
                 # Define path
-                self.paths.append(self.src + d + "/")
+                p = self.src + d + "/"
+
+                # Generate new report
+                self.new(name, p, d)
 
         # Load report(s)
-        for i in range(len(self.paths)):
+        for i in range(n):
+
+            # Get current new report
+            report = self.reports[-(i + 1)]
 
             # Get current path to file
-            p = self.paths[i] + name
+            p = report["Path"] + name
 
             # Give user info
             print "Loading '" + p + "'..."
@@ -164,10 +221,26 @@ class Reporter:
             with open(p, "r") as f:
 
                 # Load JSON
-                self.reports[p] = json.load(f)
+                report["JSON"] = json.load(f)
+
+            # Give user info
+            print "Loaded."
 
         # Show reports
-        self.show()
+        lib.printJSON(self.reports)
+
+
+
+    def unload(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UNLOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Unload reports
+        self.reports = []
 
 
 
@@ -180,89 +253,82 @@ class Reporter:
         """
 
         # Rewrite reports
-        for p in self.reports:
+        for i in range(len(self.reports)):
 
-            # Give user info
-            print "Updating '" + p + "'..."
+            # Get current report
+            report = self.reports[i]
+
+            # If report has date
+            if report["Date"] is not None:
+
+                # Give user info
+                print ("Updating: '" + report["Name"] + "' (" + report["Date"] +
+                       ")")
+
+            # Otherwise
+            else:
+
+                # Give user info
+                print "Updating: '" + report["Name"] + "'"
 
             # Rewrite report
-            with open(p, "w") as f:
-                json.dump(self.reports[p], f,
+            with open(report["Path"] + report["Name"], "w") as f:
+
+                # Dump JSON
+                json.dump(report["JSON"], f,
                           indent = 4,
                           separators = (",", ": "),
                           sort_keys = True)
 
 
 
-    def show(self, report = None):
+    def getReport(self, name, date = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
+            GETREPORT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define default report to show
-        if report is None:
+        # If date
+        if date is not None:
 
-            # Last report
-            report = self.reports
-
-        # Print report entries
-        print json.dumps(report, indent = 2,
-                                 separators = (",", ": "),
-                                 sort_keys = True)
-
-
-
-    def showPath(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOWPATH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Format path
-        return " > ".join(["."] + path)
-
-
-
-    def delete(self, path, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DELETE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load report section
-        self.getSection(path)
+            # Get and format date
+            date = datetime.datetime.strftime(date, "%Y/%m/%d")
 
         # Give user info
-        print ("Attempting to delete entry: " + self.showPath(path) + " > " +
-               str(key))
+        print "Looking for report: '" + name + "' (" + str(date) + ")"
 
-        # If it does, delete it
-        if key in self.section:
+        # Loop through reports
+        for report in self.reports:
 
-            # Delete entry
-            del self.section[key]
+            # Check if names match
+            if report["Name"] != name:
+
+                # Skip
+                continue
+
+            # Check if dates match
+            if report["Date"] != date:
+
+                # Skip
+                continue
 
             # Give user info
-            print ("Entry deleted.")
+            print "Found report:"
 
-            # Rewrite report
-            self.save()
+            # Show report
+            lib.printJSON(report)
 
-        else:
+            # Return report
+            return report
 
-            # Give user info
-            print ("No such entry: no need to delete.")
+        # Give user info
+        sys.exit("Did not find report.")
 
 
 
-    def getSection(self, path, create = False):
+    def getSection(self, report, path, make = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -270,18 +336,18 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Make sure section path is of list type!
+        # Make sure section path is of list type
         if type(path) is not list:
 
             # Raise error
             raise errors.BadPath
 
-        # First level section is whole report
-        self.section = self.report
-
         # Read section depth: if it is equal to 0, the following loop is
         # skipped and the section corresponds to the whole report
         d = len(path)
+
+        # First level section is whole report
+        section = report["JSON"]
 
         # Give user info
         print "Attempting to find section: " + self.showPath(path)
@@ -289,32 +355,191 @@ class Reporter:
         # Loop through whole report to find section
         for i in range(d):
 
-            # Check if section report exists
-            if path[i] not in self.section:
+            # Get current path
+            p = path[i]
 
-                # Create report if desired
-                if create:
+            # Check if section report exists
+            if p not in section:
+
+                # Make section if desired
+                if make:
                 
                     # Give user info
-                    print "Section not found. Creating it..."
+                    print "Section not found. Making it..."
 
-                    # Create missing report section
-                    self.section[path[i]] = {}
+                    # Create it
+                    section[p] = {}
 
+                    # Show section
+                    lib.printJSON({p: section[p]})
+
+                # Otherwise
                 else:
 
                     # Raise error
                     raise errors.NoSection
 
             # Update section
-            self.section = self.section[path[i]]
+            section = section[p]
 
         # Give user info
-        print "Section found."
+        print "Found section:"
+
+        # Print section
+        lib.printJSON(section)
+
+        # Return section
+        return section
 
 
 
-    def getEntry(self, path, key = None):
+    def addEntry(self, section, entry, overwrite = False):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ADDENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Attempting to add entry:"
+
+        # Show entry
+        lib.printJSON(entry)
+
+        # Decouple entry
+        (key, value) = entry.items()[0]
+
+        # Look if entry is already in report
+        if key in section and not overwrite:
+
+            # Give user info
+            print "Entry already exists."
+
+        # If not, write it down
+        else:
+
+            # Add entry to report
+            section[key] = value
+
+            # If overwritten
+            if overwrite:
+
+                # Give user info
+                print "Entry overwritten."
+
+            # Otherwise
+            else:
+
+                # Give user info
+                print "Entry added."
+
+            # Show section
+            lib.printJSON(section)
+
+
+
+    def addEntries(self, name, path, entries, overwrite = False):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ADDENTRIES
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # If entries are dated
+        if type(min(entries)) is datetime.datetime:
+
+            # Initialize date
+            date = True
+
+        # Otherwise
+        else:
+
+            # Initialize date
+            date = None
+
+            # Get corresponding report
+            report = self.getReport(name)
+
+            # Get corresponding section
+            section = self.getSection(report, path, True)
+
+        # Loop through entries
+        for key in sorted(entries):
+
+            # Get value
+            value = entries[key]
+
+            # If date
+            if date is not None:
+
+                # Get date
+                d = key.date()
+
+                # Format time
+                key = lib.formatTime(key)
+
+                # If date is different than previous one
+                if d != date:
+
+                    # Update date
+                    date = d
+
+                    # Get corresponding report
+                    report = self.getReport(name, date)
+
+                    # Get corresponding section
+                    section = self.getSection(report, path, True)
+
+            # Add entry
+            self.addEntry(section, {key: value}, overwrite)
+
+
+
+
+
+
+
+
+
+
+
+    def deleteEntry(self, report, path, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DELETEENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load section
+        section = self.getSection(report, path)
+
+        # Give user info
+        print ("Attempting to delete entry: " + self.showPath(path) + " > " +
+               str(key))
+
+        # If it does, delete it
+        if key in section:
+
+            # Delete entry
+            del section[key]
+
+            # Give user info
+            print "Entry deleted."
+
+            # Rewrite report
+            self.save()
+
+        else:
+
+            # Give user info
+            print "No such entry: no need to delete."
+
+
+
+    def getEntry(self, report, path, key):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -322,35 +547,21 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load report section
-        self.getSection(path)
-
-        # If no key
-        if key is None:
-
-            # Return section
-            return self.section
-
         # Give user info
         print ("Attempting to find entry: " + self.showPath(path) + " > " +
                str(key))
 
+        # Load section
+        section = self.getSection(report, path)
+
         # Look if entry exists
-        if key in self.section:
+        if key in section:
 
             # Get entry matching the key
-            entry = self.section[key]
+            entry = section[key]
 
             # Give user info
-            print "Entry found:"
-
-            # If entry is a dict
-            if type(entry) is dict:
-                self.show(entry)
-
-            # Otherwise
-            else:
-                print entry
+            print "Entry found: " + str(entry)
 
             # Return entry for external access
             return entry
@@ -363,7 +574,7 @@ class Reporter:
 
 
 
-    def getLastEntry(self, path):
+    def getLastEntry(self, report, path):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -371,26 +582,23 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load report section
-        self.getSection(path)
+        # Load section
+        section = self.getSection(report, path)
 
         # Give user info
-        print ("Attempting to find last entry in: " + self.showPath(path))
+        print "Attempting to find last entry in: " + self.showPath(path)
 
         # Look if at least one entry exists
-        if len(self.section) > 0:
+        if len(section) > 0:
 
             # Get latest entry time
-            t = max(self.section)
+            t = max(section)
 
             # Get corresponding entry
-            entry = self.section[t]
+            entry = section[t]
 
             # Give user info
-            print "Entry found:"
-
-            # Give user info
-            print str(entry) + " (" + str(t) + ")" 
+            print "Entry found: " + str(entry) + " (" + str(t) + ")" 
 
             # Return entry for external access
             return [t, entry]
@@ -403,58 +611,6 @@ class Reporter:
 
 
 
-    def addEntries(self, path, keys, entries, overwrite = False):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ADDENTRIES
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load report section
-        self.getSection(path, True)
-
-        # Make sure input is of list type
-        if type(keys) is not list:
-            keys = [keys]
-            entries = [entries]
-
-        # Compute number of entries
-        n = len(keys)
-
-        # Add entries
-        for i in range(n):
-
-            # Give user info
-            print ("Attempting to add entry: " + self.showPath(path) + " > " +
-                   str(keys[i]) + " > " + json.dumps(entries[i]))
-
-            # Look if entry is already in report
-            if keys[i] in self.section and not overwrite:
-
-                # Give user info
-                print "Entry already exists."
-
-            # If not, write it down
-            else:
-
-                # Add entry to report
-                self.section[keys[i]] = entries[i]
-
-                # If overwritten
-                if overwrite:
-
-                    # Give user info
-                    print "Entry overwritten."
-
-                # Otherwise
-                else:
-
-                    # Give user info
-                    print "Entry added."
-
-        # Rewrite report
-        self.save()
 
 
 
@@ -486,8 +642,13 @@ def main():
     reporter = Reporter()
 
     # Test
-    #reporter.find("/2017/07/05/BG.json")
+    reporter.load("profile.json")
     reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
+    #report = reporter.getReport("BG.json", now)
+    #section = reporter.getSection(report, ["A", "B"])
+    #reporter.addEntry(section, {"D": 1})
+    #reporter.addEntries("profile.json", ["A", "B"], {"C": 0, "D": 1})
+    reporter.addEntries("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
 
 
 
