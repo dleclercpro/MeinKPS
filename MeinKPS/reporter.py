@@ -96,7 +96,7 @@ class Reporter:
 
 
 
-    def new(self, name = None, path = None, date = None, JSON = None):
+    def new(self, name = None, path = None, date = None, json = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,11 +104,24 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Generate new report entry
+        # Loop on reports
+        for i in range(len(self.reports)):
+
+            # Get current report
+            report = self.reports[i]
+
+            # Check if report already exists
+            if report["Name"] == name and report["Date"] == date:
+
+                # Exit
+                sys.exit("Report '" + name + "' (" + str(date) + ") already " +
+                         "exists.")
+
+        # Generate new report
         self.reports.append({"Name": name,
                              "Path": path,
                              "Date": date,
-                             "JSON": JSON})
+                             "JSON": json})
 
 
 
@@ -212,7 +225,8 @@ class Reporter:
             p = report["Path"] + name
 
             # Give user info
-            print "Loading '" + p + "'..."
+            print ("Loading: '" + report["Name"] + "' (" + str(report["Date"]) +
+                   ")")
 
             # Make sure report exists
             self.find(p)
@@ -223,15 +237,12 @@ class Reporter:
                 # Load JSON
                 report["JSON"] = json.load(f)
 
-            # Give user info
-            print "Loaded."
-
         # Show reports
         lib.printJSON(self.reports)
 
 
 
-    def unload(self):
+    def unload(self, name, date = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -239,7 +250,57 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Unload reports
+        # If date
+        if date is not None:
+
+            # Get current date
+            d = datetime.datetime.strftime(date, "%Y/%m/%d")
+
+        # Loop on reports
+        for i in range(len(self.reports)):
+
+            # Get current report
+            report = self.reports[i]
+
+            # If name fits
+            if report["Name"] != name:
+
+                # Skip
+                continue
+
+            # If dates
+            if date is not None and report["Date"] != d:
+
+                # Skip
+                continue
+
+            # Give user info
+            print ("Unloading: " + report["Name"] + " (" + str(report["Date"]) +
+                   ")")
+
+            # Delete it
+            del self.reports[i]
+
+            # Show reports
+            lib.printJSON(self.reports)
+
+            # Exit
+            return
+
+        # Report not found
+        sys.exit("Report could not be found, thus not unloaded.")
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset reports
         self.reports = []
 
 
@@ -644,11 +705,12 @@ def main():
     # Test
     reporter.load("profile.json")
     reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
+    reporter.unload("profile.json")
     #report = reporter.getReport("BG.json", now)
     #section = reporter.getSection(report, ["A", "B"])
     #reporter.addEntry(section, {"D": 1})
     #reporter.addEntries("profile.json", ["A", "B"], {"C": 0, "D": 1})
-    reporter.addEntries("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
+    #reporter.addEntries("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
 
 
 
