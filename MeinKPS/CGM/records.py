@@ -140,9 +140,6 @@ class Record(object):
         t = (datetime.timedelta(seconds = lib.unpack(self.bytes[-1][4:8])) +
              self.cgm.clock.epoch)
 
-        # Format it
-        t = lib.formatTime(t)
-
         # Store it
         self.t.append(t)
 
@@ -270,9 +267,8 @@ class BGRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize new BGs and their respective times
-        t = []
-        BGs = []
+        # Initialize record dict
+        BGs = {}
 
         # Compute number of decoded records
         n = len(self.t)
@@ -283,9 +279,8 @@ class BGRecord(Record):
             # Only keep normal (numeric) BG values
             if type(self.values[i]["BG"]) is float:
 
-                # Fill new vectors
-                t.append(self.t[i])
-                BGs.append(self.values[i]["BG"])
+                # Store them
+                BGs[self.t[i]] = self.values[i]["BG"]
 
             # Print special values
             else:
@@ -294,7 +289,7 @@ class BGRecord(Record):
                 print self.values[i]["BG"] + " (" + str(self.t[i]) + ")"
 
         # Return them
-        return [t, BGs]
+        return BGs
 
 
 
@@ -309,14 +304,8 @@ class BGRecord(Record):
         # Give user info
         print "Adding BG records to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
-        # Filter BGs
-        [t, BGs] = self.filter()
-
         # Add entries
-        Reporter.addEntries([], t, BGs)
+        Reporter.add(self.report, [], self.filter())
 
 
 
@@ -385,11 +374,9 @@ class SensorRecord(Record):
         # Give user info
         print "Adding sensor statuses to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entries
-        Reporter.addEntries(["CGM", "Sensor Statuses"], self.t, self.values)
+        Reporter.add(self.report, ["CGM", "Sensor Statuses"],
+                     dict(zip(self.t, self.values)))
 
 
 
@@ -447,11 +434,9 @@ class CalibrationRecord(Record):
         # Give user info
         print "Adding sensor calibrations to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entries
-        Reporter.addEntries(["CGM", "Calibrations"], self.t, self.values)
+        Reporter.add(self.report, ["CGM", "Calibrations"],
+                     dict(zip(self.t, self.values)))
 
 
 

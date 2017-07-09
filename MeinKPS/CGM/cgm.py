@@ -190,9 +190,6 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Establish connection with CGM
-        self.connect()
-
         # Read battery
         self.battery.read()
 
@@ -224,9 +221,6 @@ class CGM(object):
         # Read BGs
         self.databases["BG"].read()
 
-        # End connection with CGM
-        self.disconnect()
-
 
 
     def dumpBG(self, n = None):
@@ -237,14 +231,8 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Establish connection with CGM
-        self.connect()
-
         # Read BGs
         self.databases["BG"].read(n)
-
-        # End connection with CGM
-        self.disconnect()
 
 
 
@@ -309,9 +297,6 @@ class Battery(object):
         # Get current time
         self.t = datetime.datetime.now()
 
-        # Format current time
-        self.t = lib.formatTime(self.t)
-
         # Link to command
         command = self.commands["ReadLevel"]
 
@@ -352,11 +337,9 @@ class Battery(object):
         # Give user info
         print "Storing BG units to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries(["CGM", "Battery Levels"], self.t, self.level)
+        Reporter.add(self.report, ["CGM", "Battery Levels"],
+                     {self.t: self.level})
 
 
 
@@ -435,11 +418,8 @@ class Language(object):
         # Give user info
         print "Storing language to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries([], "Language", self.value, True)
+        Reporter.add(self.report, [], {"Language": self.value}, True)
 
 
 
@@ -525,11 +505,8 @@ class Clock(object):
         # Give user info
         print "Storing clock mode to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries([], "Clock Mode", self.mode, True)
+        Reporter.add(self.report, [], {"Clock Mode": self.mode}, True)
 
 
 
@@ -593,11 +570,8 @@ class Units(object):
         # Give user info
         print "Storing BG units to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries([], "Units", self.value, True)
+        Reporter.add(self.report, [], {"Units": self.value}, True)
 
 
 
@@ -696,11 +670,8 @@ class Transmitter(object):
         # Give user info
         print "Storing current transmitter ID to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries([], "Transmitter ID", self.id, True)
+        Reporter.add(self.report, [], {"Transmitter ID": self.id}, True)
 
 
 
@@ -715,8 +686,14 @@ def main():
     # Instanciate CGM
     cgm = CGM()
 
+    # Establish connection with CGM
+    cgm.connect()
+
     # Dump data from CGM
     cgm.dump()
+
+    # End connection with CGM
+    cgm.disconnect()
 
 
 

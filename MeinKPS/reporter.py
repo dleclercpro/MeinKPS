@@ -129,9 +129,12 @@ class Reporter:
             # Check if report already exists
             if report.name == name and report.date == date:
 
-                # Exit
-                sys.exit("Report '" + name + "' (" + str(date) + ") already " +
-                         "exists.")
+                # Give user info
+                print ("Report '" + name + "' (" + str(date) + ") already " +
+                       "exists.")
+
+                # Skip
+                return
 
         # Generate new report
         self.reports.append(Report(name, path, date, json))
@@ -211,7 +214,7 @@ class Reporter:
         else:
 
             # Make sure dates appear only once
-            dates = list(set(dates))
+            dates = list(set([d.date() for d in dates]))
 
             # Define number of reports to load
             n = len(dates)
@@ -329,18 +332,8 @@ class Reporter:
         # Rewrite reports
         for report in self.reports:
 
-            # If report has date
-            if report.date is not None:
-
-                # Give user info
-                print ("Updating: '" + report.name + "' (" + report.date +
-                       ")")
-
-            # Otherwise
-            else:
-
-                # Give user info
-                print "Updating: '" + report.name + "'"
+            # Give user info
+            print "Updating: '" + report.name + "' (" + str(report.date) + ")"
 
             # Rewrite report
             with open(report.path + report.name, "w") as f:
@@ -478,14 +471,17 @@ class Reporter:
         # Look if entry exists
         if key in section:
 
-            # Get entry matching the key
-            entry = section[key]
+            # Get corresponding value
+            value = section[key]
 
             # Give user info
-            print "Entry found: " + str(entry)
+            print "Entry found:"
+
+            # Show entry
+            lib.printJSON({key: value})
 
             # Return entry for external access
-            return entry
+            return [key, value]
 
         # Otherwise
         else:
@@ -512,17 +508,20 @@ class Reporter:
         # Look if at least one entry exists
         if len(section) > 0:
 
-            # Get latest entry time
-            t = max(section)
+            # Get latest key
+            key = max(section)
 
-            # Get corresponding entry
-            entry = section[t]
+            # Get corresponding value
+            value = section[key]
 
             # Give user info
-            print "Entry found: " + str(entry) + " (" + str(t) + ")" 
+            print "Entry found:"
+
+            # Show entry
+            lib.printJSON({key: value}) 
 
             # Return entry for external access
-            return [t, entry]
+            return [key, value]
 
         # Otherwise
         else:
@@ -608,11 +607,11 @@ class Reporter:
 
 
 
-    def addEntries(self, name, path, entries, overwrite = False):
+    def add(self, name, path, entries, overwrite = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ADDENTRIES
+            ADD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -622,16 +621,22 @@ class Reporter:
             # Initialize date
             date = True
 
+            # Load report(s)
+            self.load(name, sorted(entries))
+
         # Otherwise
         else:
 
             # Initialize date
             date = None
 
-            # Get corresponding report
+            # Load report
+            self.load(name)
+
+            # Get it
             report = self.getReport(name)
 
-            # Get corresponding section
+            # Get section
             section = self.getSection(report, path, True)
 
         # Loop through entries
@@ -655,14 +660,29 @@ class Reporter:
                     # Update date
                     date = d
 
-                    # Get corresponding report
+                    # Get report
                     report = self.getReport(name, date)
 
-                    # Get corresponding section
+                    # Get section
                     section = self.getSection(report, path, True)
 
             # Add entry
             self.addEntry(section, {key: value}, overwrite)
+
+        # Save reports
+        self.save()
+
+
+
+    def get(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
 
 
 
@@ -741,6 +761,8 @@ def main():
     section = reporter.getSection(report, ["A", "B"], True)
     reporter.addEntry(section, {"D": 1})
     reporter.addEntry(section, {"D": 2}, True)
+    reporter.getEntry(section, "D")
+    reporter.getLastEntry(section)
     reporter.deleteEntry(section, "D")
     reporter.addEntries("profile.json", ["A", "B"], {"C": 0, "D": 1})
     #reporter.addEntries("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
