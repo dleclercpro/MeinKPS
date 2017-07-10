@@ -73,11 +73,8 @@ class PastBGProfile(base.PastProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load pump report
-        Reporter.load("pump.json")
-
         # Read units
-        self.u = Reporter.getEntry(["Units"], "BG")
+        self.u = Reporter.get("pump.json", ["Units"], "BG")
 
         # Load rest
         super(PastBGProfile, self).load()
@@ -415,3 +412,25 @@ class FutureBGProfile(base.FutureProfile):
 
         # Return bolus
         return bolus
+
+
+
+def main():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Instanciate a BG profile
+    BG = FutureBGProfile(PastBGProfile())
+
+    # Load past
+    BG.past.load()
+
+
+
+# Run this when script is called from terminal
+if __name__ == "__main__":
+    main()

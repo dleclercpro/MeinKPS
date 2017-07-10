@@ -105,10 +105,7 @@ class Reporter:
         """
 
         # Loop on reports
-        for i in range(len(self.reports)):
-
-            # Get current report
-            report = self.reports[i]
+        for report in self.reports:
 
             # Show report
             report.show()
@@ -213,8 +210,8 @@ class Reporter:
         # Otherwise
         else:
 
-            # Make sure dates appear only once
-            dates = list(set([d.date() for d in dates]))
+            # Make sure dates are sorted and appear only once
+            dates = sorted(list(set([d.date() for d in dates])))
 
             # Define number of reports to load
             n = len(dates)
@@ -481,13 +478,16 @@ class Reporter:
             lib.printJSON({key: value})
 
             # Return entry for external access
-            return [key, value]
+            return value
 
         # Otherwise
         else:
 
             # Give user info
             print "No matching entry found."
+
+            # Return nothing
+            return None
 
 
 
@@ -572,9 +572,6 @@ class Reporter:
                 # Give user info
                 print "Entry added."
 
-            # Show section
-            lib.printJSON(section)
-
 
 
     def deleteEntry(self, section, key):
@@ -622,7 +619,7 @@ class Reporter:
             date = True
 
             # Load report(s)
-            self.load(name, sorted(entries))
+            self.load(name, entries)
 
         # Otherwise
         else:
@@ -651,9 +648,6 @@ class Reporter:
                 # Get date
                 d = key.date()
 
-                # Format time
-                key = lib.formatTime(key)
-
                 # If date is different than previous one
                 if d != date:
 
@@ -667,14 +661,14 @@ class Reporter:
                     section = self.getSection(report, path, True)
 
             # Add entry
-            self.addEntry(section, {key: value}, overwrite)
+            self.addEntry(section, {lib.formatTime(key): value}, overwrite)
 
         # Save reports
         self.save()
 
 
 
-    def get(self):
+    def get(self, name, path, keys):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -682,7 +676,83 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        pass
+        # Make sure keys are a list
+        if type(keys) is not list:
+
+            # Set boolean
+            single = True
+
+            # Make single key to list
+            keys = [keys]
+
+        # Otherwise
+        else:
+
+            # Set boolean
+            single = False
+
+        # Initialize values
+        values = []
+
+        # If entries are dated
+        if type(min(keys)) is datetime.datetime:
+
+            # Initialize date
+            date = True
+
+            # Load report(s)
+            self.load(name, keys)
+
+        # Otherwise
+        else:
+
+            # Initialize date
+            date = None
+
+            # Load report
+            self.load(name)
+
+            # Get it
+            report = self.getReport(name)
+
+            # Get section
+            section = self.getSection(report, path, True)
+
+        # Loop through entries
+        for key in keys:
+
+            # If date
+            if date is not None:
+
+                # Get date
+                d = key.date()
+
+                # If date is different than previous one
+                if d != date:
+
+                    # Update date
+                    date = d
+
+                    # Get report
+                    report = self.getReport(name, date)
+
+                    # Get section
+                    section = self.getSection(report, path)
+
+            # Add value
+            values.append(self.getEntry(section, lib.formatTime(key)))
+
+        # If single key given
+        if single:
+
+            # Return single value
+            return values[0]
+
+        # Otherwise
+        else:
+
+            # Return values
+            return values
 
 
 
@@ -743,7 +813,7 @@ def main():
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    MAIN
+        MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
@@ -754,9 +824,9 @@ def main():
     reporter = Reporter()
 
     # Test
-    reporter.load("profile.json")
+    reporter.load("pump.json")
     reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
-    #reporter.unload("profile.json")
+    #reporter.unload("pump.json")
     report = reporter.getReport("BG.json", now)
     section = reporter.getSection(report, ["A", "B"], True)
     reporter.addEntry(section, {"D": 1})
@@ -764,8 +834,9 @@ def main():
     reporter.getEntry(section, "D")
     reporter.getLastEntry(section)
     reporter.deleteEntry(section, "D")
-    reporter.addEntries("profile.json", ["A", "B"], {"C": 0, "D": 1})
-    #reporter.addEntries("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
+    #reporter.add("profile.json", ["A", "B"], {"C": 0, "D": 1})
+    #reporter.add("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
+    reporter.get("pump.json", [], "Basal Profile (Standard)")
 
 
 
