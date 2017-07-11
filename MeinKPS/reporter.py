@@ -346,6 +346,9 @@ class Reporter:
                               separators = (",", ": "),
                               sort_keys = True)
 
+                # Report was updated
+                report.modified = False
+
 
 
     def getReport(self, name, date = None):
