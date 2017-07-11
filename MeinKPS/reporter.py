@@ -456,7 +456,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Finding entry with key '" + str(key) + "'."
+        print "Finding entry '" + str(key) + "'."
 
         # Look if entry exists
         if key in section:
@@ -567,7 +567,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Deleting entry with key '" + str(key) + "'."
+        print "Deleting entry '" + str(key) + "'."
 
         # If it does, delete it
         if key in section:
