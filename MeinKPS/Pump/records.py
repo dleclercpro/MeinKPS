@@ -272,11 +272,8 @@ class SuspendRecord(Record):
         # Give user info
         print "Adding suspend time to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entries
-        Reporter.addEntries(["Suspend/Resume"], self.t, self.values)
+        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t, self.values)))
 
 
 
@@ -334,11 +331,8 @@ class ResumeRecord(Record):
         # Give user info
         print "Adding resume time to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entries
-        Reporter.addEntries(["Suspend/Resume"], self.t, self.values)
+        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t, self.values)))
 
 
 
@@ -430,11 +424,8 @@ class TBRecord(Record):
         # Give user info
         print "Adding TBs to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entries
-        Reporter.addEntries(["Temporary Basals"], self.t, self.values)
+        Reporter.add(self.report, ["Temporary Basals"], dict(zip(self.t, self.values)))
 
 
 
@@ -506,11 +497,8 @@ class BolusRecord(Record):
         # Give user info
         print "Adding boluses to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entries
-        Reporter.addEntries(["Boluses"], self.t, self.values)
+        Reporter.add(self.report, ["Boluses"], dict(zip(self.t, self.values)))
 
 
 
@@ -646,11 +634,8 @@ class CarbsRecord(Record):
         # Give user info
         print "Adding carbs to report: '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entries
-        Reporter.addEntries(["Carbs"], self.t, self.values)
+        Reporter.add(self.report, ["Carbs"], dict(zip(self.t, self.values)))
 
 
 

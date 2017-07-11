@@ -167,6 +167,9 @@ class Calculator(object):
         # Build TB profile
         self.TB.build(past, self.now)
 
+        import sys
+        sys.exit()
+
         # Build bolus profile
         self.bolus.build(past, self.now)
 

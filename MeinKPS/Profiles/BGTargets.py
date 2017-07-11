@@ -60,11 +60,8 @@ class BGTargets(base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load pump report
-        Reporter.load(self.report)
-
         # Read units
-        self.u = Reporter.getEntry(["Units"], "BG")
+        self.u = Reporter.get(self.report, ["Units"], "BG")
 
         # Load rest
         super(BGTargets, self).load()

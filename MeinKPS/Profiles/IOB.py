@@ -220,14 +220,5 @@ class FutureIOBProfile(base.FutureProfile):
         # Give user info
         print "Adding current IOB to report: '" + self.report + "'..."
 
-        # Format time
-        T = lib.formatTime(self.T[0])
-
-        # Round value
-        y = round(self.y[0], 3)
-
-        # Load report
-        Reporter.load(self.report)
-
-        # Add entries
-        Reporter.addEntries(self.path, T, y)
+        # Add entry
+        Reporter.add(self.report, self.path, {self.T[0]: round(self.y[0], 3)})

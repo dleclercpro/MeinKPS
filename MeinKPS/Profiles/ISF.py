@@ -59,12 +59,9 @@ class ISFProfile(base.FutureProfile):
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Load pump report
-        Reporter.load(self.report)
-
+        
         # Read units
-        self.u = Reporter.getEntry(["Units"], "BG") + "/U"
+        self.u = Reporter.get(self.report, ["Units"], "BG") + "/U"
 
         # Load rest
         super(ISFProfile, self).load()

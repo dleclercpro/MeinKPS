@@ -183,11 +183,8 @@ class Profile(object):
         # Give user info
         print "Loading..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Read data
-        self.data = Reporter.getEntry(self.path, self.key)
+        self.data = Reporter.get(self.report, self.path, self.key)
 
         # Give user info
         print "'" + self.__class__.__name__ + "' loaded."

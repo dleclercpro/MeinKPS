@@ -192,11 +192,8 @@ class Power(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load pump's report
-        Reporter.load("history.json")
-
         # Read last time pump's radio transmitter was power up
-        then = Reporter.getEntry(["Pump"], "Power")
+        then = Reporter.get("history.json", ["Pump"], "Power")
 
         # Format time
         then = lib.formatTime(then)
@@ -1139,17 +1136,20 @@ class Bolus(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # FIXME
+        pass
+
         # Load report
-        Reporter.load("treatments.json")
+        #Reporter.load("treatments.json")
 
         # Find last bolus
-        [t, bolus] = Reporter.getLastEntry(["Boluses"])
+        #[t, bolus] = Reporter.getLastEntry(["Boluses"])
 
         # Give user info
-        print "Last bolus: " + str(bolus) + " U (" + t + ")"
+        #print "Last bolus: " + str(bolus) + " U (" + t + ")"
 
         # Return it
-        return [t, bolus]
+        #return [t, bolus]
 
 
 
@@ -1470,26 +1470,26 @@ def main():
     pump.start()
 
     # Read pump time
-    #pump.time.read()
+    pump.time.read()
 
     # Read pump model
-    #pump.model.read()
+    pump.model.read()
 
     # Read pump firmware version
-    #pump.firmware.read()
+    pump.firmware.read()
 
     # Push button on pump
     #pump.buttons.push("EASY")
     #pump.buttons.push("ESC")
     #pump.buttons.push("ACT")
     #pump.buttons.push("UP")
-    #pump.buttons.push("DOWN")
+    pump.buttons.push("DOWN")
 
     # Read pump battery level
-    #pump.battery.read()
+    pump.battery.read()
 
     # Read remaining amount of insulin in pump
-    #pump.reservoir.read()
+    pump.reservoir.read()
 
     # Read pump status
     #pump.status.read()
@@ -1502,43 +1502,43 @@ def main():
     #pump.settings.verify()
 
     # Read BG units set in pump's bolus wizard
-    #pump.units["BG"].read()
+    pump.units["BG"].read()
 
     # Read carb units set in pump's bolus wizard
-    #pump.units["C"].read()
+    pump.units["C"].read()
 
     # Read current TB units
-    #pump.units["TB"].read()
+    pump.units["TB"].read()
 
     # Set TB units
     #pump.units["TB"].set("U/h")
     #pump.units["TB"].set("%")
 
     # Read BG targets stored in pump
-    #pump.BGTargets.read()
+    pump.BGTargets.read()
 
     # Read insulin sensitivity factors stored in pump
-    #pump.ISF.read()
+    pump.ISF.read()
 
     # Read carb sensitivity factors stored in pump
-    #pump.CSF.read()
+    pump.CSF.read()
 
     # Read basal profile stored in pump
-    #pump.basal.read("Standard")
+    pump.basal.read("Standard")
     #pump.basal.read("A")
     #pump.basal.read("B")
 
     # Read daily totals on pump
-    #pump.dailyTotals.read()
+    pump.dailyTotals.read()
 
     # Read pump history
-    pump.history.read(2)
+    #pump.history.read(2)
 
     # Send bolus to pump
     #pump.bolus.deliver(0.6)
 
     # Read current TB
-    #pump.TB.read()
+    pump.TB.read()
 
     # Send TB to pump
     #pump.TB.set(0.3, "U/h", 30)
