@@ -55,6 +55,55 @@ class Reporter:
 
 
 
+    def find(self, path, n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FIND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # On first run
+        if n == 1:
+
+            # Convert path to list
+            path = self.splitPath(path)
+
+        # Stringify current path
+        p = self.mergePath(path[:n])
+
+        # If destination directory not yet attained
+        if n < len(path):
+
+            # If it does not exist
+            if not os.path.exists(p):
+
+                # Give user info
+                print "Making '" + p + "'/..."
+
+                # Make it
+                os.makedirs(p)
+
+            # Contine looking
+            self.find(path, n + 1)
+
+        # Otherwise, time to look for file
+        else:
+
+            # If it does not exist
+            if not os.path.exists(p):
+
+                # Give user info
+                print "Making '" + p + "'..."
+
+                # Create it
+                with open(p, "w") as f:
+
+                    # Dump empty dict
+                    json.dump({}, f)
+
+
+
     def splitPath(self, path):
 
         """
@@ -131,59 +180,13 @@ class Reporter:
                        "exists.")
 
                 # Skip
-                return
+                return False
 
         # Generate new report
         self.reports.append(Report(name, path, date, json))
 
-
-
-    def find(self, path, n = 1):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FIND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # On first run
-        if n == 1:
-
-            # Convert path to list
-            path = self.splitPath(path)
-
-        # Stringify current path
-        p = self.mergePath(path[:n])
-
-        # If destination directory not yet attained
-        if n < len(path):
-
-            # If it does not exist
-            if not os.path.exists(p):
-
-                # Give user info
-                print "Making '" + p + "'/..."
-
-                # Make it
-                os.makedirs(p)
-
-            # Contine looking
-            self.find(path, n + 1)
-
-        # Otherwise, time to look for file
-        else:
-
-            # If it does not exist
-            if not os.path.exists(p):
-
-                # Give user info
-                print "Making '" + p + "'..."
-
-                # Create it
-                with open(p, "w") as f:
-
-                    # Dump empty dict
-                    json.dump({}, f)
+        # Success
+        return True
 
 
 
@@ -195,39 +198,42 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize number of reports to load
+        n = 0
+
         # No dates
         if dates is None:
-
-            # Define number of reports to load
-            n = 1
 
             # Define path
             p = self.src
 
             # Generate new report
-            self.new(name, p)
+            if self.new(name, p):
+
+                # Update count
+                n += 1
 
         # Otherwise
         else:
 
-            # Make sure dates are sorted and appear only once
+            # Make sure dates only appear once
             # This can deal with both list and dict types
-            dates = sorted(list(set([d.date() for d in dates])))
+            dates = list(set([d.date() for d in dates]))
 
-            # Define number of reports to load
-            n = len(dates)
-
-            # Loop on dates
-            for i in range(n):
+            # Loop on sorted dates
+            for date in sorted(dates):
 
                 # Format current date
-                d = datetime.datetime.strftime(dates[i], "%Y/%m/%d")
+                d = datetime.datetime.strftime(date, "%Y/%m/%d")
 
                 # Define path
                 p = self.src + d + "/"
 
                 # Generate new report
-                self.new(name, p, d)
+                if self.new(name, p, d):
+
+                    # Update count
+                    n += 1
 
         # Load report(s)
         for i in range(n):
@@ -680,20 +686,8 @@ class Reporter:
         # Make sure keys are a list
         if type(keys) is not list:
 
-            # Set boolean
-            single = True
-
             # Make single key to list
             keys = [keys]
-
-        # Otherwise
-        else:
-
-            # Set boolean
-            single = False
-
-        # Initialize values
-        values = []
 
         # If entries are dated
         if type(min(keys)) is datetime.datetime:
@@ -719,6 +713,9 @@ class Reporter:
             # Get section
             section = self.getSection(report, path, True)
 
+        # Initialize values
+        values = []
+
         # Loop through entries
         for key in keys:
 
@@ -743,8 +740,8 @@ class Reporter:
             # Add value
             values.append(self.getEntry(section, lib.formatTime(key)))
 
-        # If single key given
-        if single:
+        # If single value
+        if len(values) == 1:
 
             # Return single value
             return values[0]

@@ -123,23 +123,20 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load pump report
-        Reporter.load("pump.json")
-
         # Read DIA
-        self.DIA = Reporter.getEntry(["Settings"], "DIA")
+        self.DIA = Reporter.get("pump.json", ["Settings"], "DIA")
 
         # Give user info
         print "DIA: " + str(self.DIA) + " h"
 
         # Read max basal
-        self.max["Basal"] = Reporter.getEntry(["Settings"], "Max Basal")
+        self.max["Basal"] = Reporter.get("pump.json", ["Settings"], "Max Basal")
 
         # Give user info
         print "Max basal: " + str(self.max["Basal"]) + " U/h"
 
         # Read max bolus
-        self.max["Bolus"] = Reporter.getEntry(["Settings"], "Max Bolus")
+        self.max["Bolus"] = Reporter.get("pump.json", ["Settings"], "Max Bolus")
 
         # Give user info
         print "Max bolus: " + str(self.max["Bolus"]) + " U"
