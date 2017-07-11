@@ -737,14 +737,11 @@ class PowerPump(PumpCommand):
         # Give user info
         print "Adding pump's last power up to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Get formatted current time
-        now = lib.formatTime(datetime.datetime.now())
+        now = datetime.datetime.now()
 
         # Add entry
-        Reporter.addEntries(["Pump"], "Power", now, True)
+        Reporter.add(self.report, ["Pump"], {"Power": now}, True)
 
 
 
@@ -838,11 +835,8 @@ class ReadPumpModel(PumpCommand):
         # Give user info
         print "Adding pump's model to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries(["Properties"], "Model", self.response, True)
+        Reporter.add(self.report, ["Properties"], {"Model": self.response}, True)
 
 
 
@@ -892,11 +886,8 @@ class ReadPumpFirmware(PumpCommand):
         # Give user info
         print "Adding pump's firmware to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries(["Properties"], "Firmware", self.response, True)
+        Reporter.add(self.report, ["Properties"], {"Firmware": self.response}, True)
 
 
 
@@ -994,14 +985,11 @@ class ReadPumpBattery(PumpCommand):
         # Give user info
         print "Adding pump's battery level to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Get formatted current time
-        now = lib.formatTime(datetime.datetime.now())
+        now = datetime.datetime.now()
 
         # Add entry
-        Reporter.addEntries(["Pump", "Battery Levels"], now, self.response)
+        Reporter.add(self.report, ["Pump", "Battery Levels"], {now: self.response})
 
 
 
@@ -1054,14 +1042,11 @@ class ReadPumpReservoir(PumpCommand):
         # Give user info
         print "Adding pump's reservoir level to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Get formatted current time
-        now = lib.formatTime(datetime.datetime.now())
+        now = datetime.datetime.now()
 
         # Add entry
-        Reporter.addEntries(["Pump", "Reservoir Levels"], now, self.response)
+        Reporter.add(self.report, ["Pump", "Reservoir Levels"], {now: self.response})
 
 
 
@@ -1193,14 +1178,8 @@ class ReadPumpSettings(PumpCommand):
         # Give user info
         print "Adding pump's settings to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
-        # Get formatted current time
-        now = lib.formatTime(datetime.datetime.now())
-
         # Add entry
-        Reporter.addEntries([], "Settings", self.response, True)
+        Reporter.add(self.report, [], {"Settings": self.response}, True)
 
 
 
@@ -1253,11 +1232,8 @@ class ReadPumpBGU(PumpCommand):
         # Give user info
         print "Adding pump's BG units to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries(["Units"], "BG", self.response, True)
+        Reporter.add(self.report, ["Units"], {"BG": self.response}, True)
 
 
 
@@ -1310,11 +1286,8 @@ class ReadPumpCU(PumpCommand):
         # Give user info
         print "Adding pump's carb units to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Add entry
-        Reporter.addEntries(["Units"], "Carbs", self.response, True)
+        Reporter.add(self.report, ["Units"], {"Carbs": self.response}, True)
 
 
 
@@ -1463,6 +1436,8 @@ class ReadPumpBGTargets(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # VERIFY
+
         # Link with values
         t = self.response["Times"]
         targets = self.response["Targets"]
@@ -1471,20 +1446,11 @@ class ReadPumpBGTargets(PumpCommand):
         # Give user info
         print "Adding pump's BG targets to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
-        # Define path
-        path = ["BG Targets"]
-
-        # Remove old entries
-        Reporter.delete([], path[0])
-
         # Store targets
-        Reporter.addEntries(path, t, targets)
+        Reporter.add(self.report, ["BG Targets"], dict(zip(t, targets)), True)
 
         # Store BG units
-        Reporter.addEntries(["Units"], "BG", units, True)
+        Reporter.add(self.report, ["Units"], {"BG": units}, True)
 
 
 
@@ -1590,6 +1556,8 @@ class ReadPumpISF(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # VERIFY
+
         # Link with values
         t = self.response["Times"]
         factors = self.response["Factors"]
@@ -1598,23 +1566,14 @@ class ReadPumpISF(PumpCommand):
         # Give user info
         print "Adding pump's ISF(s) to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
-        # Define path
-        path = ["ISF"]
-
-        # Remove old entries
-        Reporter.delete([], path[0])
-
-        # Store targets
-        Reporter.addEntries(path, t, factors)
+        # Store factors
+        Reporter.add(self.report, ["ISF"], dict(zip(t, factors)), True)
 
         # Update units for BGs
         units = units[:-2]
 
         # Store BG units (without insulin units)
-        Reporter.addEntries(["Units"], "BG", units, True)
+        Reporter.add(self.report, ["Units"], {"BG": units}, True)
 
 
 
@@ -1720,6 +1679,8 @@ class ReadPumpCSF(PumpCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # VERIFY
+
         # Link with values
         t = self.response["Times"]
         factors = self.response["Factors"]
@@ -1728,17 +1689,8 @@ class ReadPumpCSF(PumpCommand):
         # Give user info
         print "Adding pump's CSF(s) to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
-        # Define path
-        path = ["CSF"]
-
-        # Remove old entries
-        Reporter.delete([], path[0])
-
-        # Store targets
-        Reporter.addEntries(path, t, factors)
+        # Store factors
+        Reporter.add(self.report, ["CSF"], dict(zip(t, factors)), True)
 
         # Update units for carbs
         if units == "g/U":
@@ -1748,7 +1700,7 @@ class ReadPumpCSF(PumpCommand):
             units = units[2:] + "s"
 
         # Store carb units (without insulin units)
-        Reporter.addEntries(["Units"], "Carbs", units, True)
+        Reporter.add(self.report, ["Units"], {"Carbs": units}, True)
 
 
 
@@ -1874,18 +1826,10 @@ class ReadPumpBasal(PumpCommand):
         print ("Adding pump's basal profile " + self.profile + " to '" + 
                self.report + "'...")
 
-        # Load report
-        Reporter.load(self.report)
-
-        # Define path
-        path = ["Basal Profile (" + self.profile + ")"]
-
-        # Remove old entries
-        Reporter.delete([], path[0])
-
-        # Store targets
-        Reporter.addEntries(path, self.response["Times"],
-                                  self.response["Rates"])
+        # Store basal
+        Reporter.add(self.report, ["Basal Profile (" + self.profile + ")"],
+                     dict(zip(self.response["Times"],
+                              self.response["Rates"])), True)
 
 
 
@@ -2116,11 +2060,9 @@ class ReadPumpTB(PumpCommand):
         # Give user info
         print "Adding pump's TB units to '" + self.report + "'..."
 
-        # Load report
-        Reporter.load(self.report)
-
         # Store TB units
-        Reporter.addEntries(["Units"], "TB", self.response["Units"], True)
+        Reporter.add(self.report, ["Units"], {"TB": self.response["Units"]},
+                     True)
 
 
 
