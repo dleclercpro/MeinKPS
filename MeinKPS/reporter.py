@@ -211,6 +211,7 @@ class Reporter:
         else:
 
             # Make sure dates are sorted and appear only once
+            # This can deal with both list and dict types
             dates = sorted(list(set([d.date() for d in dates])))
 
             # Define number of reports to load
