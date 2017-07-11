@@ -190,6 +190,19 @@ class Reporter:
 
 
 
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset reports
+        self.reports = []
+
+
+
     def load(self, name, dates = None):
 
         """
@@ -306,19 +319,6 @@ class Reporter:
 
 
 
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Reset reports
-        self.reports = []
-
-
-
     def save(self):
 
         """
@@ -330,17 +330,21 @@ class Reporter:
         # Rewrite reports
         for report in self.reports:
 
-            # Give user info
-            print "Updating: '" + report.name + "' (" + str(report.date) + ")"
+            # If report was modified
+            if report.modified:
 
-            # Rewrite report
-            with open(report.path + report.name, "w") as f:
+                # Give user info
+                print ("Updating: '" + report.name + "' (" + str(report.date) +
+                       ")")
 
-                # Dump JSON
-                json.dump(report.json, f,
-                          indent = 4,
-                          separators = (",", ": "),
-                          sort_keys = True)
+                # Rewrite report
+                with open(report.path + report.name, "w") as f:
+
+                    # Dump JSON
+                    json.dump(report.json, f,
+                              indent = 4,
+                              separators = (",", ": "),
+                              sort_keys = True)
 
 
 
@@ -359,7 +363,7 @@ class Reporter:
             date = datetime.datetime.strftime(date, "%Y/%m/%d")
 
         # Give user info
-        print "Looking for report: '" + name + "' (" + str(date) + ")"
+        print "Getting: '" + name + "' (" + str(date) + ")"
 
         # Loop through reports
         for report in self.reports:
@@ -643,6 +647,9 @@ class Reporter:
             # Add entry
             self.addEntry(section, {lib.formatTime(key): value}, overwrite)
 
+            # Report was modified
+            report.modified = True
+
         # Save reports
         self.save()
 
@@ -761,6 +768,7 @@ class Report:
         self.path = path
         self.date = date
         self.json = json
+        self.modified = False
 
 
 
@@ -776,7 +784,8 @@ class Report:
         lib.printJSON({"Name": self.name,
                        "Path": self.path,
                        "Date": self.date,
-                       "JSON": self.json})
+                       "JSON": self.json,
+                       "Modified": self.modified})
 
 
 
