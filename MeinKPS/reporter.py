@@ -550,7 +550,7 @@ class Reporter:
         print "Attempting to add entry:"
 
         # Show entry
-        print entry
+        lib.printJSON(entry)
 
         # Decouple entry
         (key, value) = entry.items()[0]

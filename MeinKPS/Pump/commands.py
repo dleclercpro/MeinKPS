@@ -737,8 +737,8 @@ class PowerPump(PumpCommand):
         # Give user info
         print "Adding pump's last power up to '" + self.report + "'..."
 
-        # Get formatted current time
-        now = datetime.datetime.now()
+        # Get current formatted time
+        now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
         Reporter.add(self.report, ["Pump"], {"Power": now}, True)
@@ -985,7 +985,7 @@ class ReadPumpBattery(PumpCommand):
         # Give user info
         print "Adding pump's battery level to '" + self.report + "'..."
 
-        # Get formatted current time
+        # Get current time
         now = datetime.datetime.now()
 
         # Add entry
@@ -1042,7 +1042,7 @@ class ReadPumpReservoir(PumpCommand):
         # Give user info
         print "Adding pump's reservoir level to '" + self.report + "'..."
 
-        # Get formatted current time
+        # Get current time
         now = datetime.datetime.now()
 
         # Add entry
