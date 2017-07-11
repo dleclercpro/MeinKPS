@@ -141,7 +141,7 @@ class Reporter:
         """
 
         # Format path
-        return " > ".join(["."] + path)
+        return " > ".join(path)
 
 
 
