@@ -258,8 +258,8 @@ class Reporter:
             p = report.path + name
 
             # Give user info
-            print ("Loading: '" + report.name + "' (" + str(report.date) +
-                   ")")
+            print ("Loading report: '" + report.name + "' (" +
+                   str(report.date) + ")")
 
             # Make sure report exists
             self.find(p)
@@ -305,8 +305,8 @@ class Reporter:
                 continue
 
             # Give user info
-            print ("Unloading: " + report.name + " (" + str(report.date) +
-                   ")")
+            print ("Unloading report: " + report.name + " (" +
+                   str(report.date) + ")")
 
             # Delete it
             del self.reports[i]
@@ -334,8 +334,8 @@ class Reporter:
             if report.modified:
 
                 # Give user info
-                print ("Updating: '" + report.name + "' (" + str(report.date) +
-                       ")")
+                print ("Updating report: '" + report.name + "' (" +
+                       str(report.date) + ")")
 
                 # Rewrite report
                 with open(report.path + report.name, "w") as f:
@@ -366,7 +366,7 @@ class Reporter:
             date = datetime.datetime.strftime(date, "%Y/%m/%d")
 
         # Give user info
-        print "Getting: '" + name + "' (" + str(date) + ")"
+        print "Finding report: '" + name + "' (" + str(date) + ")"
 
         # Loop through reports
         for report in self.reports:
@@ -382,9 +382,6 @@ class Reporter:
 
                 # Skip
                 continue
-
-            # Give user info
-            print "Found report."
 
             # Return report
             return report
@@ -416,7 +413,7 @@ class Reporter:
         section = report.json
 
         # Give user info
-        print "Attempting to find section: " + self.showPath(path)
+        print "Finding section: " + self.showPath(path)
 
         # Loop through whole report to find section
         for i in range(d):
@@ -445,9 +442,6 @@ class Reporter:
             # Update section
             section = section[p]
 
-        # Give user info
-        print "Found section."
-
         # Return section
         return section
 
@@ -462,7 +456,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Attempting to find entry with key '" + str(key) + "'."
+        print "Finding entry with key '" + str(key) + "'."
 
         # Look if entry exists
         if key in section:
@@ -496,7 +490,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Attempting to find last entry."
+        print "Finding last entry."
 
         # Look if at least one entry exists
         if len(section) > 0:
@@ -530,7 +524,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Attempting to add entry:"
+        print "Adding entry:"
 
         # Show entry
         lib.printJSON(entry)
@@ -573,7 +567,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Attempting to delete entry with key '" + str(key) + "'."
+        print "Deleting entry with key '" + str(key) + "'."
 
         # If it does, delete it
         if key in section:
@@ -734,6 +728,18 @@ class Reporter:
 
             # Return values
             return values
+
+
+
+    def getLast(self, name, path, keys):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETLAST
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        pass
 
 
 
