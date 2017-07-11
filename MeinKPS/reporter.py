@@ -257,9 +257,6 @@ class Reporter:
                 # Load JSON
                 report.json = json.load(f)
 
-        # Show reports
-        self.show()
-
 
 
     def unload(self, name, date = None):
@@ -300,9 +297,6 @@ class Reporter:
 
             # Delete it
             del self.reports[i]
-
-            # Show reports
-            self.show()
 
             # Exit
             return
@@ -383,10 +377,7 @@ class Reporter:
                 continue
 
             # Give user info
-            print "Found report:"
-
-            # Show report
-            report.show()
+            print "Found report."
 
             # Return report
             return report
@@ -448,10 +439,7 @@ class Reporter:
             section = section[p]
 
         # Give user info
-        print "Found section:"
-
-        # Print section
-        lib.printJSON(section)
+        print "Found section."
 
         # Return section
         return section
@@ -467,10 +455,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Attempting to find entry with key '" + str(key) + "' within:"
-
-        # Show section
-        lib.printJSON(section)
+        print "Attempting to find entry with key '" + str(key) + "'."
 
         # Look if entry exists
         if key in section:
@@ -479,10 +464,7 @@ class Reporter:
             value = section[key]
 
             # Give user info
-            print "Entry found:"
-
-            # Show entry
-            lib.printJSON({key: value})
+            print "Entry found."
 
             # Return entry for external access
             return value
@@ -507,10 +489,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Attempting to find last entry within:"
-
-        # Show section
-        lib.printJSON(section)
+        print "Attempting to find last entry."
 
         # Look if at least one entry exists
         if len(section) > 0:
@@ -522,10 +501,7 @@ class Reporter:
             value = section[key]
 
             # Give user info
-            print "Entry found:"
-
-            # Show entry
-            lib.printJSON({key: value}) 
+            print "Entry found."
 
             # Return entry for external access
             return [key, value]
@@ -590,10 +566,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Attempting to delete entry with key '" + str(key) + "' within:"
-
-        # Show section
-        lib.printJSON(section)
+        print "Attempting to delete entry with key '" + str(key) + "'."
 
         # If it does, delete it
         if key in section:
