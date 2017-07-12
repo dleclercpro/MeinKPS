@@ -134,7 +134,7 @@ class Reporter:
                 if f == name:
 
                     # Store path
-                    results.append(os.path.abspath(f))
+                    results.append(os.getcwd())
 
             # If directory
             elif os.path.isdir(f):
@@ -150,6 +150,34 @@ class Reporter:
 
             # Return results
             return results
+
+
+
+    def getDateFromPath(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETDATEFROMPATH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize date
+        date = []
+
+        # Loop 3 directories up to get corresponding date
+        for i in range(3):
+
+            # Split path
+            path, file = os.path.split(path)
+
+            # Add date component
+            date.append(int(file))
+
+        # Reverse date
+        date.reverse()
+
+        # Return datetime object
+        return datetime.datetime(*date)
 
 
 
@@ -177,7 +205,8 @@ class Reporter:
         """
 
         # Merge path
-        return "/" + "/".join(path)
+        #return "/" + "/".join(path)
+        return "/".join(path)
 
 
 
@@ -278,12 +307,12 @@ class Reporter:
         # Otherwise
         else:
 
-            # Make sure dates only appear once
+            # Make sure dates are sorted out and only appear once
             # This can deal with both list and dict types
-            dates = list(set([d.date() for d in dates]))
+            dates = lib.uniqify(dates)
 
-            # Loop on sorted dates
-            for date in sorted(dates):
+            # Loop on dates
+            for date in dates:
 
                 # Format current date
                 d = datetime.datetime.strftime(date, "%Y/%m/%d")
@@ -678,6 +707,9 @@ class Reporter:
                 # Get date
                 d = key.date()
 
+                # Format key
+                key = lib.formatTime(key)
+
                 # If date is different than previous one
                 if d != date:
 
@@ -691,7 +723,7 @@ class Reporter:
                     section = self.getSection(report, path, True)
 
             # Add entry
-            self.addEntry(section, {lib.formatTime(key): value}, overwrite)
+            self.addEntry(section, {key: value}, overwrite)
 
             # Report was modified
             report.modified = True
@@ -751,6 +783,9 @@ class Reporter:
                 # Get date
                 d = key.date()
 
+                # Format key
+                key = lib.formatTime(key)
+
                 # If date is different than previous one
                 if d != date:
 
@@ -764,7 +799,7 @@ class Reporter:
                     section = self.getSection(report, path)
 
             # Add value
-            values.append(self.getEntry(section, lib.formatTime(key)))
+            values.append(self.getEntry(section, key))
 
         # If single value
         if len(values) == 1:
@@ -788,11 +823,38 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Scan for all possible reports
-        reports = self.scan(name)
+        # Scan for all possible report paths
+        paths = self.scan(name)
 
         # Get n most recent ones
-        print lib.nMax(reports, n)
+        paths = lib.nMax(paths, n)
+
+        # Initialize dates
+        dates = []
+
+        # Loop on paths
+        for p in paths:
+
+            # Get date from path
+            dates.append(self.getDateFromPath(p))
+
+        # Load corresponding reports
+        self.load(name, dates)
+
+        # Group all entries in one dict
+        entries = {}
+
+        # Loop on all reports
+        for date in dates:
+
+            # Get report
+            report = self.getReport(name, date)
+
+            # Extend entries dict
+            lib.printJSON(report.json)
+
+        # Return entries
+        return
 
 
 
