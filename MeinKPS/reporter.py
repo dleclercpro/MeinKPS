@@ -104,6 +104,55 @@ class Reporter:
 
 
 
+    def scan(self, name, path = None, results = [], n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SCAN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # If path undefined
+        if path is None:
+
+            # Define path
+            path = self.src
+
+        # Get all files from source path
+        files = os.listdir(path)
+
+        # Get inside source path
+        os.chdir(path)
+
+        # Upload files
+        for f in files:
+
+            # If file
+            if os.path.isfile(f):
+
+                # Check if name fits
+                if f == name:
+
+                    # Store path
+                    results.append(os.path.abspath(f))
+
+            # If directory
+            elif os.path.isdir(f):
+
+                # Upload files in directory
+                self.scan(name, f, results, n + 1)
+
+        # Go back up
+        os.chdir("..")
+
+        # If first level
+        if n == 1:
+
+            # Return results
+            return results
+
+
+
     def splitPath(self, path):
 
         """
@@ -731,7 +780,7 @@ class Reporter:
 
 
 
-    def getLast(self, name, path, keys):
+    def getLast(self, name, n = 2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -739,7 +788,11 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        pass
+        # Scan for all possible reports
+        reports = self.scan(name)
+
+        # Get n most recent ones
+        print max(reports)
 
 
 
@@ -813,19 +866,20 @@ def main():
     reporter = Reporter()
 
     # Test
-    reporter.load("pump.json")
-    reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
+    #reporter.load("pump.json")
+    #reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
     #reporter.unload("pump.json")
-    report = reporter.getReport("BG.json", now)
-    section = reporter.getSection(report, ["A", "B"], True)
-    reporter.addEntry(section, {"D": 1})
-    reporter.addEntry(section, {"D": 2}, True)
-    reporter.getEntry(section, "D")
-    reporter.getLastEntry(section)
-    reporter.deleteEntry(section, "D")
+    #report = reporter.getReport("BG.json", now)
+    #section = reporter.getSection(report, ["A", "B"], True)
+    #reporter.addEntry(section, {"D": 1})
+    #reporter.addEntry(section, {"D": 2}, True)
+    #reporter.getEntry(section, "D")
+    #reporter.getLastEntry(section)
+    #reporter.deleteEntry(section, "D")
     #reporter.add("profile.json", ["A", "B"], {"C": 0, "D": 1})
     #reporter.add("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
-    reporter.get("pump.json", [], "Basal Profile (Standard)")
+    #reporter.get("pump.json", [], "Basal Profile (Standard)")
+    reporter.getLast("BG.json")
 
 
 
