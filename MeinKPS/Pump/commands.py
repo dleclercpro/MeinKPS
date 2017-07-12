@@ -468,8 +468,8 @@ class PumpCommand(Command):
         if self.nBytesReceived != self.nBytesExpected:
 
             # Raise error
-            raise errors.NBytesMismatch([self.nBytesExpected,
-                                         self.nBytesReceived])
+            raise errors.NBytesMismatch(self.nBytesExpected,
+                                        self.nBytesReceived)
 
         # Compute CRC based on received data
         computedCRC = lib.computeCRC8(body)
