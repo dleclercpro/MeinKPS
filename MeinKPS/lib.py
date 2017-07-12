@@ -144,7 +144,7 @@ def formatTime(t):
 
         except:
 
-			pass
+            pass
 
         # Try second format
         try:
@@ -208,6 +208,37 @@ def encode(x):
     """
 
     return [ord(i) for i in str(x).decode("HEX")]
+
+
+
+def nMax(x, n = 1):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        NMAX
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Get max possible number of output values
+    n = min(n, len(x))
+
+    # Initialize results
+    X = []
+
+    # Find n max values in x
+    for i in range(n):
+
+        # Get index of max value
+        j = np.argmax(x)
+
+        # Store value
+        X.append(x[j])
+
+        # Delete it from x
+        del x[j]
+
+    # Return results
+    return X
 
 
 

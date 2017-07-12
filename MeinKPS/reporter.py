@@ -792,7 +792,7 @@ class Reporter:
         reports = self.scan(name)
 
         # Get n most recent ones
-        print max(reports)
+        print lib.nMax(reports, n)
 
 
 
