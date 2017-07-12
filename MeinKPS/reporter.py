@@ -153,11 +153,30 @@ class Reporter:
 
 
 
-    def getDateFromPath(self, path):
+    def merge(self, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETDATEFROMPATH
+            MERGE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get dictionaries
+        dicts = list(args)
+
+        # Loop through dicts
+        for d in dicts:
+
+            # Show it
+            lib.printJSON(d)
+
+
+
+    def getPathDate(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETPATHDATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -836,7 +855,7 @@ class Reporter:
         for p in paths:
 
             # Get date from path
-            dates.append(self.getDateFromPath(p))
+            dates.append(self.getPathDate(p))
 
         # Load corresponding reports
         self.load(name, dates)
@@ -941,7 +960,8 @@ def main():
     #reporter.add("profile.json", ["A", "B"], {"C": 0, "D": 1})
     #reporter.add("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
     #reporter.get("pump.json", [], "Basal Profile (Standard)")
-    reporter.getLast("BG.json")
+    #reporter.getLast("BG.json")
+    reporter.merge({"A": {"B": {"C": [{"D": {"E": 0}}, {"F": 1}]}}}, {"A": {"F": [2,3,4,5]}})
 
 
 
