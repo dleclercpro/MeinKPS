@@ -203,8 +203,7 @@ class NBytesMismatch(StickError):
 
         # Define error info
         self.info = ("Expected " + str(self.args[0]) + " bytes." +
-                     "Tried to read " + str(self.args[1]) + " bytes." +
-                     "Received " + str(self.args[2]) + " bytes.")
+                     "Received " + str(self.args[1]) + " bytes.")
 
 
 
