@@ -153,7 +153,7 @@ class Reporter:
 
 
 
-    def merge(self, *args):
+    def merge(self, base, new, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,14 +161,62 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Get dictionaries
-        dicts = list(args)
+        # On start, check if dict given as input
+        if n == 1 and type(new) is not dict:
 
-        # Loop through dicts
-        for d in dicts:
+            # Exit
+            sys.exit("Only dicts can be merged.")
+
+        # Loop over keys
+        for key, value in new.items():
+
+            # If dict/list
+            if type(value) is dict:
+
+                # If key does not exist in base
+                if key not in base:
+
+                    # Generate new entry
+                    base[key] = {}
+
+                # Give user info
+                print "-> " + str(key)
+
+                # Dive in
+                self.merge(base[key], value, n + 1)
+
+            # Otherwise
+            else:
+
+                # If key already exists
+                if key not in base:
+
+                    # Give user info
+                    print "Adding key:"
+
+                    # Add key
+                    base[key] = value
+
+                # Otherwise
+                else:
+
+                    # Give user info
+                    print "Key already exists:"
+
+                # Give user info
+                print str(key) + ": " + str(value)
+
+        # On end
+        if n == 1:
+
+            # Give user info
+            print "New extended dictionary:"
 
             # Show it
-            lib.printJSON(d)
+            lib.printJSON(base)
+
+            # Return it
+            return base
 
 
 
@@ -961,7 +1009,8 @@ def main():
     #reporter.add("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
     #reporter.get("pump.json", [], "Basal Profile (Standard)")
     #reporter.getLast("BG.json")
-    reporter.merge({"A": {"B": {"C": [{"D": {"E": 0}}, {"F": 1}]}}}, {"A": {"F": [2,3,4,5]}})
+    reporter.merge({"A": {"B": {"C": [1, 2, 3]}}, "D": 4, "E": 5},
+                   {"A": {"B": {"C": [4, 5, 6]}}, "F": 10})
 
 
 
