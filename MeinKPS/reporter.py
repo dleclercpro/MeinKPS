@@ -24,6 +24,7 @@
 
 # LIBRARIES
 import json
+import copy
 import datetime
 import os
 import sys
@@ -159,13 +160,21 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: dictionaries to merge must have same structure!
         """
 
-        # On start, check if dict given as input
-        if n == 1 and type(new) is not dict:
+        # On start
+        if n == 1:
 
-            # Exit
-            sys.exit("Only dicts can be merged.")
+            # Check if dict given as input
+            if type(new) is not dict:
+
+                # Exit
+                sys.exit("Only dicts can be merged.")
+
+            # Copy base in order to not overwrite it
+            base = copy.copy(base)
 
         # Loop over keys
         for key, value in new.items():
@@ -1009,8 +1018,11 @@ def main():
     #reporter.add("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
     #reporter.get("pump.json", [], "Basal Profile (Standard)")
     #reporter.getLast("BG.json")
-    reporter.merge({"A": {"B": {"C": [1, 2, 3]}}, "D": 4, "E": 5},
-                   {"A": {"B": {"C": [4, 5, 6]}}, "F": 10})
+    a = {"A": {"B": {"C": [1, 2, 3]}}, "D": 4, "E": 5}
+    b = {"A": {"B": {"C": [4, 5, 6]}}, "F": 10}
+    c = reporter.merge(a, b)
+    lib.printJSON(a)
+    lib.printJSON(c)
 
 
 
