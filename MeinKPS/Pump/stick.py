@@ -154,8 +154,8 @@ class Stick(object):
             # Read infos
             self.infos.read()
 
-        # If failed, stick is most probably in dead state
-        except errors.MaxRead:
+        # If failed, stick is most probably in error/dead state
+        except:
 
             # Give user info
             print "Stick seems to be dead. Resetting it..."
