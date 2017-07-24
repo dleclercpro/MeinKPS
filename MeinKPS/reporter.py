@@ -56,7 +56,7 @@ class Reporter:
 
 
 
-    def find(self, path, n = 1):
+    def find(self, path, name, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,7 +74,7 @@ class Reporter:
         p = self.mergePath(path[:n])
 
         # If destination directory not yet attained
-        if n < len(path):
+        if n <= len(path):
 
             # If it does not exist
             if not os.path.exists(p):
@@ -86,19 +86,19 @@ class Reporter:
                 os.makedirs(p)
 
             # Contine looking
-            self.find(path, n + 1)
+            self.find(path, name, n + 1)
 
         # Otherwise, time to look for file
         else:
 
             # If it does not exist
-            if not os.path.exists(p):
+            if not os.path.exists(name):
 
                 # Give user info
-                print "Making '" + p + "'..."
+                print "Making '" + name + "'..."
 
                 # Create it
-                with open(p, "w") as f:
+                with open(name, "w") as f:
 
                     # Dump empty dict
                     json.dump({}, f)
@@ -339,18 +339,15 @@ class Reporter:
             # Get current new report
             report = self.reports[-(i + 1)]
 
-            # Get current path to file
-            p = report.path + name
-
             # Give user info
             print ("Loading report: '" + report.name + "' (" +
                    str(report.date) + ")")
 
             # Make sure report exists
-            self.find(p)
+            self.find(report.path, name)
 
             # Open report
-            with open(p, "r") as f:
+            with open(report.path + name, "r") as f:
 
                 # Load JSON
                 report.json = json.load(f)

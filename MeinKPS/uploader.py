@@ -110,20 +110,17 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Load FTP infos
-    Reporter.load("FTP.json")
-
     # Instanciate an FTP object
-    ftp = ftplib.FTP(Reporter.getEntry([], "Host"),
-                     Reporter.getEntry([], "User"),
-                     Reporter.getEntry([], "Password"))
+    ftp = ftplib.FTP(Reporter.get("FTP.json", [], "Host"),
+                     Reporter.get("FTP.json", [], "User"),
+                     Reporter.get("FTP.json", [], "Password"))
 
     # Move to directory
-    ftp.cwd(Reporter.getEntry([], "Path"))
+    ftp.cwd(Reporter.get("FTP.json", [], "Path"))
 
     # Define file paths
-    #path = os.getcwd() + "/Reports/"
     path = "/home/pi/MeinKPS/MeinKPS/Reports/"
+    #path = os.getcwd() + "/Reports/"
 
     # Upload files within path
     upload(ftp, path, "json")
