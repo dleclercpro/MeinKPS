@@ -80,7 +80,7 @@ class Reporter:
             if not os.path.exists(p):
 
                 # Give user info
-                print "Making '" + p + "'/..."
+                print "Making '" + p + "/'..."
 
                 # Make it
                 os.makedirs(p)
@@ -116,13 +116,20 @@ class Reporter:
         # If path undefined
         if path is None:
 
-            # Define path
+            # Define source as path
             path = self.src
 
-        # Get all files from source path
+        # On first run
+        if n == 1:
+
+            # Give user info
+            print ("Scanning for '" + str(name) + "' within '" + str(path) +
+                   "'...")
+
+        # Get all files from path
         files = os.listdir(path)
 
-        # Get inside source path
+        # Get inside path
         os.chdir(path)
 
         # Upload files
@@ -140,7 +147,7 @@ class Reporter:
             # If directory
             elif os.path.isdir(f):
 
-                # Upload files in directory
+                # Scan further
                 self.scan(name, f, results, n + 1)
 
         # Go back up
@@ -154,86 +161,11 @@ class Reporter:
 
 
 
-    def merge(self, base, new, n = 1):
+    def datePath(self, path):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MERGE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: dictionaries to merge must have same structure!
-        """
-
-        # On start
-        if n == 1:
-
-            # Check if dict given as input
-            if type(new) is not dict:
-
-                # Exit
-                sys.exit("Only dicts can be merged.")
-
-            # Copy base in order to not overwrite it
-            base = copy.copy(base)
-
-        # Loop over keys
-        for key, value in new.items():
-
-            # If dict/list
-            if type(value) is dict:
-
-                # If key does not exist in base
-                if key not in base:
-
-                    # Generate new entry
-                    base[key] = {}
-
-                # Give user info
-                print "-> " + str(key)
-
-                # Dive in
-                self.merge(base[key], value, n + 1)
-
-            # Otherwise
-            else:
-
-                # If key already exists
-                if key not in base:
-
-                    # Give user info
-                    print "Adding key:"
-
-                    # Add key
-                    base[key] = value
-
-                # Otherwise
-                else:
-
-                    # Give user info
-                    print "Key already exists:"
-
-                # Give user info
-                print str(key) + ": " + str(value)
-
-        # On end
-        if n == 1:
-
-            # Give user info
-            print "New extended dictionary:"
-
-            # Show it
-            lib.printJSON(base)
-
-            # Return it
-            return base
-
-
-
-    def getPathDate(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETPATHDATE
+            DATEPATH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -281,8 +213,7 @@ class Reporter:
         """
 
         # Merge path
-        #return "/" + "/".join(path)
-        return "/".join(path)
+        return "/" + "/".join(path)
 
 
 
@@ -505,6 +436,75 @@ class Reporter:
 
 
 
+    def merge(self, base, new, n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MERGE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: dictionaries to merge must have same structure!
+        """
+
+        # On start
+        if n == 1:
+
+            # Check if dict given as input
+            if type(new) is not dict:
+
+                # Exit
+                sys.exit("Only dicts can be merged.")
+
+            # Copy base in order to not overwrite it
+            base = copy.copy(base)
+
+        # Loop over keys
+        for key, value in new.items():
+
+            # If dict/list
+            if type(value) is dict:
+
+                # If key does not exist in base
+                if key not in base:
+
+                    # Generate new entry
+                    base[key] = {}
+
+                # Dive in
+                self.merge(base[key], value, n + 1)
+
+            # Otherwise
+            else:
+
+                # If key already exists
+                if key not in base:
+
+                    # Add key
+                    base[key] = value
+
+                # Otherwise
+                else:
+
+                    # Give user info
+                    print "Key already exists:"
+
+                    # Give user info
+                    print str(key) + ": " + str(value)
+
+        # On end
+        if n == 1:
+
+            # Give user info
+            #print "New extended dictionary:"
+
+            # Show it
+            #lib.printJSON(base)
+
+            # Return it
+            return base
+
+
+
     def getReport(self, name, date = None):
 
         """
@@ -520,7 +520,7 @@ class Reporter:
             date = datetime.datetime.strftime(date, "%Y/%m/%d")
 
         # Give user info
-        print "Finding report: '" + name + "' (" + str(date) + ")"
+        print "Getting report: '" + name + "' (" + str(date) + ")"
 
         # Loop through reports
         for report in self.reports:
@@ -567,7 +567,7 @@ class Reporter:
         section = report.json
 
         # Give user info
-        print "Finding section: " + self.showPath(path)
+        print "Getting section: " + self.showPath(path)
 
         # Loop through whole report to find section
         for i in range(d):
@@ -610,7 +610,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Finding entry: " + str(key)
+        print "Getting entry: " + str(key)
 
         # Look if entry exists
         if key in section:
@@ -644,7 +644,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Finding last entry."
+        print "Getting last entry."
 
         # Look if at least one entry exists
         if len(section) > 0:
@@ -891,11 +891,11 @@ class Reporter:
 
 
 
-    def getLast(self, name, n = 2):
+    def getRecent(self, name, n = 2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETLAST
+            GETRECENT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -912,7 +912,7 @@ class Reporter:
         for p in paths:
 
             # Get date from path
-            dates.append(self.getPathDate(p))
+            dates.append(self.datePath(p))
 
         # Load corresponding reports
         self.load(name, dates)
@@ -926,11 +926,14 @@ class Reporter:
             # Get report
             report = self.getReport(name, date)
 
-            # Extend entries dict
-            lib.printJSON(report.json)
+            # Give user info
+            print "Merging '" + report.name + "' (" + report.date + ")"
+
+            # Merge entries
+            entries = self.merge(entries, report.json)
 
         # Return entries
-        return
+        return entries
 
 
 
@@ -1003,26 +1006,20 @@ def main():
     # Instanciate a reporter for me
     reporter = Reporter()
 
-    # Test
-    #reporter.load("pump.json")
-    #reporter.load("BG.json", [now, now - datetime.timedelta(days = 1)])
-    #reporter.unload("pump.json")
-    #report = reporter.getReport("BG.json", now)
-    #section = reporter.getSection(report, ["A", "B"], True)
-    #reporter.addEntry(section, {"D": 1})
-    #reporter.addEntry(section, {"D": 2}, True)
-    #reporter.getEntry(section, "D")
-    #reporter.getLastEntry(section)
-    #reporter.deleteEntry(section, "D")
-    #reporter.add("profile.json", ["A", "B"], {"C": 0, "D": 1})
-    #reporter.add("BG.json", ["A", "B"], {now: 0, now - datetime.timedelta(days = 1): 1})
-    #reporter.get("pump.json", [], "Basal Profile (Standard)")
-    #reporter.getLast("BG.json")
-    a = {"A": {"B": {"C": [1, 2, 3]}}, "D": 4, "E": 5}
-    b = {"A": {"B": {"C": [4, 5, 6]}}, "F": 10}
-    c = reporter.merge(a, b)
-    lib.printJSON(a)
-    lib.printJSON(c)
+    # Load reports
+    reporter.load("pump.json")
+
+    # Get basal profile from pump report
+    reporter.get("pump.json", [], "Basal Profile (Standard)")
+
+    # Unload pump report
+    reporter.unload("pump.json")
+
+    # Add entries to test report
+    #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
+
+    # Get most recent BG
+    reporter.getRecent("BG.json")
 
 
 
