@@ -65,7 +65,7 @@ def upload(ftp, path, ext = None):
                 continue
 
             # Give user info
-            print "Uploading: '" + f + "'"
+            print "Uploading: '" + os.getcwd() + "/" + f + "'"
 
             # Open file
             F = open(f, "r")
@@ -119,8 +119,8 @@ def main():
     ftp.cwd(Reporter.get("FTP.json", [], "Path"))
 
     # Define file paths
-    path = "/home/pi/MeinKPS/MeinKPS/Reports/"
-    #path = os.getcwd() + "/Reports/"
+    #path = "/home/pi/MeinKPS/MeinKPS/Reports/"
+    path = os.getcwd() + "/Reports/"
 
     # Upload files within path
     upload(ftp, path, "json")

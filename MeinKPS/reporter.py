@@ -74,7 +74,7 @@ class Reporter:
         p = self.mergePath(path[:n])
 
         # If destination directory not yet attained
-        if n <= len(path):
+        if n < len(path):
 
             # If it does not exist
             if not os.path.exists(p):
@@ -91,14 +91,17 @@ class Reporter:
         # Otherwise, time to look for file
         else:
 
+            # Complete path with file name
+            p += name
+
             # If it does not exist
-            if not os.path.exists(name):
+            if not os.path.exists(p):
 
                 # Give user info
-                print "Making '" + name + "'..."
+                print "Making '" + p + "'..."
 
                 # Create it
-                with open(name, "w") as f:
+                with open(p, "w") as f:
 
                     # Dump empty dict
                     json.dump({}, f)
@@ -213,7 +216,7 @@ class Reporter:
         """
 
         # Merge path
-        return "/" + "/".join(path)
+        return "/" + "/".join(path) + "/"
 
 
 
@@ -262,7 +265,7 @@ class Reporter:
 
                 # Give user info
                 print ("Report '" + name + "' (" + str(date) + ") already " +
-                       "exists.")
+                       "loaded.")
 
                 # Skip
                 return False
@@ -842,7 +845,7 @@ class Reporter:
             report = self.getReport(name)
 
             # Get section
-            section = self.getSection(report, path, True)
+            section = self.getSection(report, path)
 
         # Initialize values
         values = []
@@ -888,7 +891,7 @@ class Reporter:
 
 
 
-    def getRecent(self, name, n = 2):
+    def getRecent(self, name, path = [], n = 2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -898,6 +901,12 @@ class Reporter:
 
         # Scan for all possible report paths
         paths = self.scan(name)
+
+        # If no possible reports found
+        if not paths:
+
+            # Exit
+            sys.exit("Nothing found for '" + name + "'.")
 
         # Get n most recent ones
         paths = lib.nMax(paths, n)
@@ -923,11 +932,14 @@ class Reporter:
             # Get report
             report = self.getReport(name, date)
 
+            # Get section
+            section = self.getSection(report, path)
+
             # Give user info
             print "Merging '" + report.name + "' (" + report.date + ")"
 
             # Merge entries
-            entries = self.merge(entries, report.json)
+            entries = self.merge(entries, section)
 
         # Return entries
         return entries
@@ -1017,6 +1029,8 @@ def main():
 
     # Get most recent BG
     reporter.getRecent("BG.json")
+    # FIXME: results list within scan() is saved between those calls?!
+    reporter.getRecent("treatments.json", ["Temporary Basals"])
 
 
 
