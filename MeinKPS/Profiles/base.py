@@ -453,6 +453,51 @@ class Profile(object):
 
 
 
+    def pad(self, a, b, last = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Force specific profile limits.
+        """
+
+        # Only step profiles can be padded
+        if self.type == "Step":
+
+            # Give user info
+            print "Padding..."
+
+            # Start of profile
+            if len(self.T) == 0 or self.T[0] != a:
+
+                # Add time
+                self.T.insert(0, a)
+
+                # If precedent step was found
+                if last is not None:
+
+                    # Extend precedent step's value
+                    self.y.insert(0, last)
+
+                # Otherwise
+                else:
+
+                    # Add zero value
+                    self.y.insert(0, self.zero)
+
+            # End of profile
+            if self.T[-1] != b:
+
+                # Add time
+                self.T.append(b)
+
+                # Add rate
+                self.y.append(self.y[-1])
+
+
+
     def cut(self, a = None, b = None):
 
         """
@@ -516,39 +561,24 @@ class Profile(object):
                 # Store index
                 index = i
 
-        # Ensure ends of step profile fit
-        if self.type == "Step":
+        # If last step
+        if index is not None:
 
-            # Start of profile
-            if len(T) == 0 or T[0] != a:
+            # Define it
+            last = self.y[index]
 
-                # Add time
-                T.insert(0, a)
+        # Otherwise
+        else:
 
-                # If precedent step was found
-                if index is not None:
-
-                    # Extend precedent step's value
-                    y.insert(0, self.y[index])
-
-                # Otherwise
-                else:
-
-                    # Add zero value
-                    y.insert(0, self.zero)
-
-            # End of profile
-            if T[-1] != b:
-
-                # Add time
-                T.append(b)
-
-                # Add rate
-                y.append(y[-1])
+            # Define it
+            last = None
 
         # Update profile
         self.T = T
         self.y = y
+
+        # Ensure ends of step profile fit
+        self.pad(a, b, last)
 
 
 
@@ -655,12 +685,6 @@ class Profile(object):
             self.T = T
             self.y = y
 
-        # Dot profiles
-        else:
-
-            # Give user info
-            print "Only step profiles can be smoothed."
-
 
 
     def normalize(self, T = None):
@@ -745,12 +769,6 @@ class Profile(object):
 
             # Derivate
             self.dydt = lib.derivate(self.y, self.t)
-
-        # Otherwise
-        else:
-
-            # Give user info
-            print "Only normalized dot typed profiles can be derivated."
 
 
 
