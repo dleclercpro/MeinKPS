@@ -24,7 +24,6 @@
 
 # LIBRARIES
 import json
-import copy
 import datetime
 import os
 import sys
@@ -56,7 +55,7 @@ class Reporter:
 
 
 
-    def find(self, path, name, n = 1):
+    def find(self, path, file = None, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,7 +72,7 @@ class Reporter:
         # Stringify current path
         p = self.mergePath(path[:n])
 
-        # If destination directory not yet attained
+        # Look for path
         if n < len(path):
 
             # If it does not exist
@@ -86,13 +85,13 @@ class Reporter:
                 os.makedirs(p)
 
             # Contine looking
-            self.find(path, name, n + 1)
+            self.find(path, file, n + 1)
 
-        # Otherwise, time to look for file
-        else:
+        # Look for file
+        elif file is not None:
 
-            # Complete path with file name
-            p += name
+            # Complete path with filename
+            p += file
 
             # If it does not exist
             if not os.path.exists(p):
@@ -108,7 +107,7 @@ class Reporter:
 
 
 
-    def scan(self, name, path = None, results = [], n = 1):
+    def scan(self, file, path = None, results = None, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,8 +125,11 @@ class Reporter:
         if n == 1:
 
             # Give user info
-            print ("Scanning for '" + str(name) + "' within '" + str(path) +
+            print ("Scanning for '" + str(file) + "' within '" + str(path) +
                    "'...")
+
+            # Initialize results
+            results = []
 
         # Get all files from path
         files = os.listdir(path)
@@ -141,8 +143,8 @@ class Reporter:
             # If file
             if os.path.isfile(f):
 
-                # Check if name fits
-                if f == name:
+                # Check if filename fits
+                if f == file:
 
                     # Store path
                     results.append(os.getcwd())
@@ -151,7 +153,7 @@ class Reporter:
             elif os.path.isdir(f):
 
                 # Scan further
-                self.scan(name, f, results, n + 1)
+                self.scan(file, f, results, n + 1)
 
         # Go back up
         os.chdir("..")
@@ -161,6 +163,35 @@ class Reporter:
 
             # Return results
             return results
+
+
+
+    def splitPath(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SPLITPATH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Split path
+        return [p for p in path.split("/") if p != ""]
+
+
+
+    def mergePath(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MERGEPATH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: The first "/" will only work for Linux
+        """
+
+        # Merge path
+        #return "/" + "/".join(path) + "/"
+        return "/".join(path) + "/"
 
 
 
@@ -189,34 +220,6 @@ class Reporter:
 
         # Return datetime object
         return datetime.datetime(*date)
-
-
-
-    def splitPath(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SPLITPATH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Split path
-        return [p for p in path.split("/") if p != ""]
-
-
-
-    def mergePath(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MERGEPATH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: The first "/" will only work for Linux
-        """
-
-        # Merge path
-        return "/" + "/".join(path) + "/"
 
 
 
@@ -433,75 +436,6 @@ class Reporter:
 
                 # Report was updated
                 report.modified = False
-
-
-
-    def merge(self, base, new, n = 1):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MERGE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: dictionaries to merge must have same structure!
-        """
-
-        # On start
-        if n == 1:
-
-            # Check if dict given as input
-            if type(new) is not dict:
-
-                # Exit
-                sys.exit("Only dicts can be merged.")
-
-            # Copy base in order to not overwrite it
-            base = copy.copy(base)
-
-        # Loop over keys
-        for key, value in new.items():
-
-            # If dict/list
-            if type(value) is dict:
-
-                # If key does not exist in base
-                if key not in base:
-
-                    # Generate new entry
-                    base[key] = {}
-
-                # Dive in
-                self.merge(base[key], value, n + 1)
-
-            # Otherwise
-            else:
-
-                # If key already exists
-                if key not in base:
-
-                    # Add key
-                    base[key] = value
-
-                # Otherwise
-                else:
-
-                    # Give user info
-                    print "Key already exists:"
-
-                    # Give user info
-                    print str(key) + ": " + str(value)
-
-        # On end
-        if n == 1:
-
-            # Give user info
-            #print "New extended dictionary:"
-
-            # Show it
-            #lib.printJSON(base)
-
-            # Return it
-            return base
 
 
 
@@ -939,7 +873,7 @@ class Reporter:
             print "Merging '" + report.name + "' (" + report.date + ")"
 
             # Merge entries
-            entries = self.merge(entries, section)
+            entries = lib.mergeDict(entries, section)
 
         # Return entries
         return entries

@@ -26,6 +26,7 @@
 # LIBRARIES
 import datetime
 import json
+import copy
 import numpy as np
 
 
@@ -239,6 +240,75 @@ def nMax(x, n = 1):
 
     # Return results
     return X
+
+
+
+def mergeDict(base, new, n = 1):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MERGEDICT
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Note: dictionaries to merge must have same structure!
+    """
+
+    # On start
+    if n == 1:
+
+        # Check if dict given as input
+        if type(new) is not dict:
+
+            # Exit
+            sys.exit("Only dicts can be merged.")
+
+        # Copy base in order to not overwrite it
+        base = copy.copy(base)
+
+    # Loop over keys
+    for key, value in new.items():
+
+        # If dict/list
+        if type(value) is dict:
+
+            # If key does not exist in base
+            if key not in base:
+
+                # Generate new entry
+                base[key] = {}
+
+            # Dive in
+            self.merge(base[key], value, n + 1)
+
+        # Otherwise
+        else:
+
+            # If key already exists
+            if key not in base:
+
+                # Add key
+                base[key] = value
+
+            # Otherwise
+            else:
+
+                # Give user info
+                print "Key already exists:"
+
+                # Give user info
+                print str(key) + ": " + str(value)
+
+    # On end
+    if n == 1:
+
+        # Give user info
+        #print "New extended dictionary:"
+
+        # Show it
+        #lib.printJSON(base)
+
+        # Return it
+        return base
 
 
 
