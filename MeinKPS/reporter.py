@@ -73,7 +73,7 @@ class Reporter:
         p = self.mergePath(path[:n])
 
         # Look for path
-        if n < len(path):
+        if n <= len(path):
 
             # If it does not exist
             if not os.path.exists(p):
@@ -581,6 +581,33 @@ class Reporter:
 
 
 
+    def deleteEntry(self, section, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DELETEENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Deleting entry: " + str(key)
+
+        # If it does, delete it
+        if key in section:
+
+            # Delete entry
+            del section[key]
+
+            # Give user info
+            print "Entry deleted."
+
+        else:
+
+            # Give user info
+            print "No such entry."
+
+
+
     def addEntry(self, section, entry, overwrite = False):
 
         """
@@ -624,33 +651,6 @@ class Reporter:
 
 
 
-    def deleteEntry(self, section, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DELETEENTRY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Deleting entry: " + str(key)
-
-        # If it does, delete it
-        if key in section:
-
-            # Delete entry
-            del section[key]
-
-            # Give user info
-            print "Entry deleted."
-
-        else:
-
-            # Give user info
-            print "No such entry."
-
-
-
     def add(self, name, branch, entries, overwrite = False):
 
         """
@@ -666,7 +666,7 @@ class Reporter:
             date = True
 
             # Load report(s)
-            self.load(name, entries)
+            self.load(name, entries.keys())
 
         # Otherwise
         else:
@@ -721,7 +721,7 @@ class Reporter:
 
 
 
-    def get(self, name, branch, keys):
+    def get(self, name, branch, key = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -729,26 +729,23 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Make sure keys are a list
-        if type(keys) is not list:
+        # If key is dated
+        if type(key) is datetime.datetime:
 
-            # Make single key to list
-            keys = [keys]
+            # Load report
+            self.load(name, key)
 
-        # If entries are dated
-        if type(min(keys)) is datetime.datetime:
+            # Get date
+            date = key.date()
 
-            # Initialize date
-            date = True
+            # Format key
+            key = lib.formatTime(key)
 
-            # Load report(s)
-            self.load(name, keys)
+            # Get report
+            report = self.getReport(name, date)
 
         # Otherwise
         else:
-
-            # Initialize date
-            date = None
 
             # Load report
             self.load(name)
@@ -756,50 +753,20 @@ class Reporter:
             # Get it
             report = self.getReport(name)
 
-            # Get section
-            section = self.getSection(report, branch)
+        # Get section
+        section = self.getSection(report, branch)
 
-        # Initialize values
-        values = []
+        # If key was provided
+        if key is not None:
 
-        # Loop through entries
-        for key in keys:
-
-            # If date
-            if date is not None:
-
-                # Get date
-                d = key.date()
-
-                # Format key
-                key = lib.formatTime(key)
-
-                # If date is different than previous one
-                if d != date:
-
-                    # Update date
-                    date = d
-
-                    # Get report
-                    report = self.getReport(name, date)
-
-                    # Get section
-                    section = self.getSection(report, branch)
-
-            # Add value
-            values.append(self.getEntry(section, key))
-
-        # If single value
-        if len(values) == 1:
-
-            # Return single value
-            return values[0]
+            # Return corresponding value
+            return self.getEntry(section, key)
 
         # Otherwise
         else:
 
-            # Return values
-            return values
+            # Return section
+            return section
 
 
 
@@ -876,6 +843,9 @@ class Reporter:
 
         # Give user info
         print "Merged entries for " + str(N) + " most recent report(s):"
+
+        # Show entries
+        lib.printJSON(entries)
 
         # Return entries
         return entries
@@ -958,10 +928,10 @@ def main():
     reporter = Reporter()
 
     # Load reports
-    #reporter.load("pump.json")
+    reporter.load("pump.json")
 
     # Get basal profile from pump report
-    #reporter.get("pump.json", [], "Basal Profile (Standard)")
+    lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
 
     # Unload pump report
     #reporter.unload("pump.json")
@@ -970,8 +940,8 @@ def main():
     #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
 
     # Get most recent BG
-    lib.printJSON(reporter.getRecent("BG.json", [], 3))
-    lib.printJSON(reporter.getRecent("treatments.json", ["Temporary Basals"]))
+    #lib.printJSON(reporter.getRecent("BG.json", [], 3))
+    #lib.printJSON(reporter.getRecent("treatments.json", ["Temporary Basals"]))
 
 
 

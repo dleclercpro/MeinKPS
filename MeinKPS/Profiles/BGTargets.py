@@ -48,7 +48,7 @@ class BGTargets(base.FutureProfile):
 
         # Define report info
         self.report = "pump.json"
-        self.key = "BG Targets"
+        self.branch = ["BG Targets"]
 
 
 

@@ -48,7 +48,7 @@ class CSFProfile(base.FutureProfile):
 
         # Define report info
         self.report = "pump.json"
-        self.key = "CSF"
+        self.branch = ["CSF"]
 
 
 

@@ -55,9 +55,12 @@ class BolusProfile(base.PastProfile):
         # Define bolus delivery rate
         self.rate = 90.0
 
+        # Define dating
+        self.dated = True
+
         # Define report info
         self.report = "treatments.json"
-        self.key = "Boluses"
+        self.branch = ["Boluses"]
 
 
 

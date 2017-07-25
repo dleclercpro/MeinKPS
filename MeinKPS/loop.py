@@ -306,17 +306,7 @@ def main():
     loop = Loop()
 
     # Loop
-    #loop.run()
-
-    # Update last loop time
-    Reporter.add(loop.report, ["Status"],
-                 {"Time": lib.formatTime(datetime.datetime.now())}, True)
-
-    # Update loop iterations
-    Reporter.increment(loop.report, ["Status"], "N")
-
-    # Update loop infos
-    Reporter.add(loop.report, ["Status"], {"Duration": 100}, True)
+    loop.run()
 
 
 

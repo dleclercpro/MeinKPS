@@ -45,7 +45,7 @@ class BasalProfile(base.PastProfile):
 
         # Define report info
         self.report = "pump.json"
-        self.key = "Basal Profile (" + profile + ")"
+        self.branch = ["Basal Profile (" + profile + ")"]
 
 
 

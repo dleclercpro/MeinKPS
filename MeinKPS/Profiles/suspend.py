@@ -43,9 +43,12 @@ class SuspendProfile(base.PastProfile):
         # Define units
         self.u = "U/h"
 
+        # Define dating
+        self.dated = True
+
         # Define report info
         self.report = "treatments.json"
-        self.key = "Suspend/Resume"
+        self.branch = ["Suspend/Resume"]
 
 
 

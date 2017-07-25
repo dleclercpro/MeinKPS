@@ -165,18 +165,18 @@ class Calculator(object):
         self.basal.build(past, self.now)
 
         # Build TB profile
-        self.TB.build(past, self.now)
-
-        import sys
-        sys.exit()
+        # FIXME: does filling TB with basal cause bugs?!
+        self.TB.build(past, self.now, self.basal)
 
         # Build bolus profile
         self.bolus.build(past, self.now)
 
         # Build net profile using suspend times
-        self.net.build(past, self.now, self.TB.subtract(self.basal).add(self.bolus))
+        # FIXME: TB zero is 0?
+        self.net.build(past, self.now, self.TB.add(self.bolus))
 
         # Build past IOB profile
+        # FIXME: when no past data found
         self.IOB.past.build(past, self.now)
 
         # Build future IOB profile
@@ -195,6 +195,7 @@ class Calculator(object):
         self.BGTargets.build(self.now, future)
 
         # Build past BG profile
+        # FIXME: when no past data found
         self.BG.past.build(past, self.now)
 
         # Build future BG profile

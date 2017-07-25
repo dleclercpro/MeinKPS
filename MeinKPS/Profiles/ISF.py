@@ -48,7 +48,7 @@ class ISFProfile(base.FutureProfile):
 
         # Define report info
         self.report = "pump.json"
-        self.key = "ISF"
+        self.branch = ["ISF"]
 
 
 

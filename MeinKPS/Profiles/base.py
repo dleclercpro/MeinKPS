@@ -87,10 +87,12 @@ class Profile(object):
         # Initialize data
         self.data = None
 
+        # Initialize dating
+        self.dated = False
+
         # Initialize report info
         self.report = None
-        self.path = []
-        self.key = None
+        self.branch = []
 
         # Initialize profile type
         self.type = "Step"
@@ -183,8 +185,20 @@ class Profile(object):
         # Give user info
         print "Loading..."
 
-        # Read data
-        self.data = Reporter.get(self.report, self.path, self.key)
+        # If dated
+        if self.dated:
+
+            # Define loading function
+            load = Reporter.getRecent
+
+        # Otherwise
+        else:
+
+            # Define loading function
+            load = Reporter.get
+
+        # Load data
+        self.data = load(self.report, self.branch)
 
         # Give user info
         print "'" + self.__class__.__name__ + "' loaded."

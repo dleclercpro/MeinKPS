@@ -60,9 +60,12 @@ class PastIOBProfile(base.PastProfile):
         # Define type
         self.type = "Dot"
 
+        # Define dating
+        self.dated = True
+
         # Define report info
         self.report = "treatments.json"
-        self.key = "IOB"
+        self.branch = ["IOB"]
 
 
 
@@ -90,7 +93,7 @@ class FutureIOBProfile(base.FutureProfile):
 
         # Define report info
         self.report = "treatments.json"
-        self.path = ["IOB"]
+        self.branch = ["IOB"]
 
 
 
@@ -221,4 +224,4 @@ class FutureIOBProfile(base.FutureProfile):
         print "Adding current IOB to report: '" + self.report + "'..."
 
         # Add entry
-        Reporter.add(self.report, self.path, {self.T[0]: round(self.y[0], 3)})
+        Reporter.add(self.report, self.branch, {self.T[0]: round(self.y[0], 3)})
