@@ -55,7 +55,7 @@ class Reporter:
 
 
 
-    def find(self, path, file = None, n = 1):
+    def find(self, path, name = None, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -85,13 +85,13 @@ class Reporter:
                 os.makedirs(p)
 
             # Contine looking
-            self.find(path, file, n + 1)
+            self.find(path, name, n + 1)
 
         # Look for file
-        elif file is not None:
+        elif name is not None:
 
             # Complete path with filename
-            p += file
+            p += name
 
             # If it does not exist
             if not os.path.exists(p):
@@ -107,7 +107,7 @@ class Reporter:
 
 
 
-    def scan(self, file, path = None, results = None, n = 1):
+    def scan(self, name, path = None, results = None, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,12 +124,12 @@ class Reporter:
         # On first run
         if n == 1:
 
-            # Give user info
-            print ("Scanning for '" + str(file) + "' within '" + str(path) +
-                   "'...")
-
             # Initialize results
             results = []
+
+            # Give user info
+            print ("Scanning for '" + str(name) + "' within '" + str(path) +
+                   "'...")
 
         # Get all files from path
         files = os.listdir(path)
@@ -144,7 +144,7 @@ class Reporter:
             if os.path.isfile(f):
 
                 # Check if filename fits
-                if f == file:
+                if f == name:
 
                     # Store path
                     results.append(os.getcwd())
@@ -153,7 +153,7 @@ class Reporter:
             elif os.path.isdir(f):
 
                 # Scan further
-                self.scan(file, f, results, n + 1)
+                self.scan(name, f, results, n + 1)
 
         # Go back up
         os.chdir("..")
@@ -223,16 +223,16 @@ class Reporter:
 
 
 
-    def showPath(self, path):
+    def printBranch(self, path):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOWPATH
+            PRINTBRANCH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Format path
-        return " > ".join(path)
+        return "." + " > ".join(path)
 
 
 
@@ -294,7 +294,7 @@ class Reporter:
 
 
 
-    def load(self, name, dates = None):
+    def load(self, name, dates = None, path = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -305,11 +305,17 @@ class Reporter:
         # Initialize number of reports to load
         n = 0
 
+        # No path
+        if path is None:
+
+            # Define source
+            path = self.src
+
         # No dates
         if dates is None:
 
             # Define path
-            p = self.src
+            p = path
 
             # Generate new report
             if self.new(name, p):
@@ -320,18 +326,24 @@ class Reporter:
         # Otherwise
         else:
 
+            # Make sure dates are given in list form
+            if type(dates) is not list:
+
+                # Convert type
+                dates = [dates]
+
+            # Format dates
+            dates = [datetime.datetime.strftime(d, "%Y/%m/%d") for d in dates]
+
             # Make sure dates are sorted out and only appear once
             # This can deal with both list and dict types
             dates = lib.uniqify(dates)
 
             # Loop on dates
-            for date in dates:
-
-                # Format current date
-                d = datetime.datetime.strftime(date, "%Y/%m/%d")
+            for d in dates:
 
                 # Define path
-                p = self.src + d + "/"
+                p = path + d + "/"
 
                 # Generate new report
                 if self.new(name, p, d):
@@ -479,7 +491,7 @@ class Reporter:
 
 
 
-    def getSection(self, report, path, make = False):
+    def getSection(self, report, branch, make = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -487,30 +499,30 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Make sure section path is of list type
-        if type(path) is not list:
+        # Make sure section branch is of list type
+        if type(branch) is not list:
 
             # Raise error
             raise errors.BadPath
 
         # Read section depth: if it is equal to 0, the following loop is
         # skipped and the section corresponds to the whole report
-        d = len(path)
+        d = len(branch)
 
         # First level section is whole report
         section = report.json
 
         # Give user info
-        print "Getting section: " + self.showPath(path)
+        print "Getting section: " + self.printBranch(branch)
 
         # Loop through whole report to find section
         for i in range(d):
 
-            # Get current path
-            p = path[i]
+            # Get current branch
+            b = branch[i]
 
             # Check if section report exists
-            if p not in section:
+            if b not in section:
 
                 # Make section if desired
                 if make:
@@ -519,7 +531,7 @@ class Reporter:
                     print "Section not found. Making it..."
 
                     # Create it
-                    section[p] = {}
+                    section[b] = {}
 
                 # Otherwise
                 else:
@@ -528,7 +540,7 @@ class Reporter:
                     raise errors.NoSection
 
             # Update section
-            section = section[p]
+            section = section[b]
 
         # Return section
         return section
@@ -673,7 +685,7 @@ class Reporter:
 
 
 
-    def add(self, name, path, entries, overwrite = False):
+    def add(self, name, branch, entries, overwrite = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -703,7 +715,7 @@ class Reporter:
             report = self.getReport(name)
 
             # Get section
-            section = self.getSection(report, path, True)
+            section = self.getSection(report, branch, True)
 
         # Loop through entries
         for key in sorted(entries):
@@ -730,7 +742,7 @@ class Reporter:
                     report = self.getReport(name, date)
 
                     # Get section
-                    section = self.getSection(report, path, True)
+                    section = self.getSection(report, branch, True)
 
             # Add entry
             self.addEntry(section, {key: value}, overwrite)
@@ -743,7 +755,7 @@ class Reporter:
 
 
 
-    def get(self, name, path, keys):
+    def get(self, name, branch, keys):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -779,7 +791,7 @@ class Reporter:
             report = self.getReport(name)
 
             # Get section
-            section = self.getSection(report, path)
+            section = self.getSection(report, branch)
 
         # Initialize values
         values = []
@@ -806,7 +818,7 @@ class Reporter:
                     report = self.getReport(name, date)
 
                     # Get section
-                    section = self.getSection(report, path)
+                    section = self.getSection(report, branch)
 
             # Add value
             values.append(self.getEntry(section, key))
@@ -825,7 +837,7 @@ class Reporter:
 
 
 
-    def getRecent(self, name, path = [], n = 2):
+    def getRecent(self, name, branch, n = 2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -842,9 +854,6 @@ class Reporter:
             # Exit
             sys.exit("Nothing found for '" + name + "'.")
 
-        # Get n most recent ones
-        paths = lib.nMax(paths, n)
-
         # Initialize dates
         dates = []
 
@@ -854,33 +863,60 @@ class Reporter:
             # Get date from path
             dates.append(self.datePath(p))
 
-        # Load corresponding reports
-        self.load(name, dates)
-
-        # Group all entries in one dict
+        # Initialize dict for merged entries
         entries = {}
 
-        # Loop on all reports
-        for date in dates:
+        # Initialize number of reports merged
+        N = 0
+
+        # Loop on dates
+        for d in sorted(dates, reverse = True):
+
+            # Check if enough recent reports were fetched
+            if N == n:
+
+                # Quit
+                break
+
+            # Load report
+            self.load(name, d)
 
             # Get report
-            report = self.getReport(name, date)
+            report = self.getReport(name, d)
 
-            # Get section
-            section = self.getSection(report, path)
+            # Try getting section
+            try:
 
-            # Give user info
-            print "Merging '" + report.name + "' (" + report.date + ")"
+                # Get section
+                section = self.getSection(report, branch)
 
-            # Merge entries
-            entries = lib.mergeDict(entries, section)
+                # Give user info
+                print "Merging '" + report.name + "' (" + report.date + ")"
+
+                # Merge entries
+                entries = lib.mergeDict(entries, section)
+
+                # Update number of reports merged
+                N += 1
+
+            # In case of failure
+            except:
+
+                # Unload report
+                self.unload(name, d)
+
+                # Skip
+                continue
+
+        # Give user info
+        print "Merged entries for " + str(N) + " most recent report(s):"
 
         # Return entries
         return entries
 
 
 
-    def increment(self, name, path, key, date = None):
+    def increment(self, name, branch, key, date = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -892,7 +928,7 @@ class Reporter:
         report = self.getReport(name, date)
 
         # Get section
-        section = self.getSection(report, path)
+        section = self.getSection(report, branch)
 
         # Increment entry
         self.addEntry(section, {key: self.getEntry(section, key) + 1}, True)
@@ -943,26 +979,23 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Get current time
-    now = datetime.datetime.now()
-
     # Instanciate a reporter for me
     reporter = Reporter()
 
     # Load reports
-    reporter.load("pump.json")
+    #reporter.load("pump.json")
 
     # Get basal profile from pump report
-    reporter.get("pump.json", [], "Basal Profile (Standard)")
+    #reporter.get("pump.json", [], "Basal Profile (Standard)")
 
     # Unload pump report
-    reporter.unload("pump.json")
+    #reporter.unload("pump.json")
 
     # Add entries to test report
     #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
 
     # Get most recent BG
-    lib.printJSON(reporter.getRecent("BG.json"))
+    lib.printJSON(reporter.getRecent("BG.json", [], 3))
     lib.printJSON(reporter.getRecent("treatments.json", ["Temporary Basals"]))
 
 
