@@ -190,8 +190,8 @@ class Reporter:
         """
 
         # Merge path
-        #return "/" + "/".join(path) + "/"
-        return "/".join(path) + "/"
+        return "/" + "/".join(path) + "/"
+        #return "/".join(path) + "/"
 
 
 
@@ -223,16 +223,16 @@ class Reporter:
 
 
 
-    def printBranch(self, path):
+    def showBranch(self, path):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PRINTBRANCH
+            SHOWBRANCH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Format path
-        return "." + " > ".join(path)
+        return " > ".join(["."] + path)
 
 
 
@@ -513,7 +513,7 @@ class Reporter:
         section = report.json
 
         # Give user info
-        print "Getting section: " + self.printBranch(branch)
+        print "Getting section: " + self.showBranch(branch)
 
         # Loop through whole report to find section
         for i in range(d):
@@ -924,6 +924,9 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Load report
+        self.load(name, date)
+
         # Get report
         report = self.getReport(name, date)
 
@@ -932,6 +935,12 @@ class Reporter:
 
         # Increment entry
         self.addEntry(section, {key: self.getEntry(section, key) + 1}, True)
+
+        # Report was modified
+        report.modified = True
+
+        # Save report
+        self.save()
 
 
 

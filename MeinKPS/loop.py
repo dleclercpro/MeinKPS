@@ -65,6 +65,9 @@ class Loop(object):
         # Give the loop a calculator
         self.calc = calculator.Calculator()
 
+        # Define report
+        self.report = "loop.json"
+
 
 
     def prepareCGM(self, quick = True):
@@ -237,7 +240,7 @@ class Loop(object):
             task(*args)
 
             # Update loop log
-            Reporter.increment(path, key)
+            Reporter.increment(self.report, path, key)
 
         # Otherwise, skip
         except:
@@ -261,12 +264,12 @@ class Loop(object):
         # Give user info
         print "Start: " + lib.formatTime(self.start)
 
-        # Load loop report
-        Reporter.load("loop.json")
+        # Update last loop time
+        Reporter.add(self.report, ["Status"],
+                     {"Time": lib.formatTime(self.start)}, True)
 
-        # Update loop infos
-        Reporter.addEntries(["Status"], "Time", lib.formatTime(self.start), True)
-        Reporter.increment(["Status"], "N")
+        # Update loop iterations
+        Reporter.increment(self.report, ["Status"], "N")
 
         # Do CGM stuff
         self.doCGM()
@@ -284,7 +287,7 @@ class Loop(object):
         d = self.end - self.start
 
         # Update loop infos
-        Reporter.addEntries(["Status"], "Duration", d.seconds, True)
+        Reporter.add(self.report, ["Status"], {"Duration": d.seconds}, True)
 
         # Give user info
         print "End: " + lib.formatTime(self.end)
@@ -303,7 +306,17 @@ def main():
     loop = Loop()
 
     # Loop
-    loop.run()
+    #loop.run()
+
+    # Update last loop time
+    Reporter.add(loop.report, ["Status"],
+                 {"Time": lib.formatTime(datetime.datetime.now())}, True)
+
+    # Update loop iterations
+    Reporter.increment(loop.report, ["Status"], "N")
+
+    # Update loop infos
+    Reporter.add(loop.report, ["Status"], {"Duration": 100}, True)
 
 
 
