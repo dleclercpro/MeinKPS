@@ -581,40 +581,6 @@ class Reporter:
 
 
 
-    def getLastEntry(self, section):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETLASTENTRY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Getting last entry."
-
-        # Look if at least one entry exists
-        if len(section) > 0:
-
-            # Get latest key
-            key = max(section)
-
-            # Get corresponding value
-            value = section[key]
-
-            # Give user info
-            print "Entry found."
-
-            # Return entry for external access
-            return [key, value]
-
-        # Otherwise
-        else:
-
-            # Give user info
-            print "No entry found."
-
-
-
     def addEntry(self, section, entry, overwrite = False):
 
         """

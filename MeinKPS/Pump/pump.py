@@ -1136,20 +1136,22 @@ class Bolus(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # FIXME
-        pass
+        # FIXME: deal with no last bolus
 
-        # Load report
-        #Reporter.load("treatments.json")
+        # Get recent boluses
+        boluses = Reporter.getRecent("treatments.json", ["Boluses"])
 
-        # Find last bolus
-        #[t, bolus] = Reporter.getLastEntry(["Boluses"])
+        # Get latest bolus time
+        t = max(boluses)
+
+        # Get corresponding bolus
+        bolus = boluses[t]
 
         # Give user info
-        #print "Last bolus: " + str(bolus) + " U (" + t + ")"
+        print "Last bolus: " + str(bolus) + " U (" + t + ")"
 
         # Return it
-        #return [t, bolus]
+        return [t, bolus]
 
 
 
