@@ -962,9 +962,8 @@ def main():
     #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
 
     # Get most recent BG
-    reporter.getRecent("BG.json")
-    # FIXME: results list within scan() is saved between those calls?!
-    reporter.getRecent("treatments.json", ["Temporary Basals"])
+    lib.printJSON(reporter.getRecent("BG.json"))
+    lib.printJSON(reporter.getRecent("treatments.json", ["Temporary Basals"]))
 
 
 
