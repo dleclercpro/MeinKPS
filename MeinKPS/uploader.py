@@ -113,6 +113,7 @@ def main():
     # Export most recent data
     Reporter.export("BG.json")
     Reporter.export("treatments.json")
+    Reporter.export("history.json")
 
     # Instanciate an FTP object
     ftp = ftplib.FTP(Reporter.get("FTP.json", [], "Host"),
