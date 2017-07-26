@@ -215,11 +215,23 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Do task
-        task(*args)
+        # Trying doing given task
+        try:
 
-        # Update loop log
-        Reporter.increment(self.report, path, key)
+            # Do task
+            task(*args)
+
+            # Update loop log
+            Reporter.increment(self.report, path, key)
+
+        # Otherwise, skip
+        except Exception as e:
+
+            # Give user info
+            print "Could not execute task '" + key + "':"
+
+            # Show error message
+            print e.message
 
 
 
