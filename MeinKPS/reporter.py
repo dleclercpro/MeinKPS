@@ -55,203 +55,6 @@ class Reporter:
 
 
 
-    def find(self, path, name = None, n = 1):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FIND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # On first run
-        if n == 1:
-
-            # Convert path to list
-            path = self.splitPath(path)
-
-        # Stringify current path
-        p = self.mergePath(path[:n])
-
-        # Look for path
-        if n <= len(path):
-
-            # If it does not exist
-            if not os.path.exists(p):
-
-                # Give user info
-                print "Making '" + p + "/'..."
-
-                # Make it
-                os.makedirs(p)
-
-            # Contine looking
-            self.find(path, name, n + 1)
-
-        # Look for file
-        elif name is not None:
-
-            # Complete path with filename
-            p += name
-
-            # If it does not exist
-            if not os.path.exists(p):
-
-                # Give user info
-                print "Making '" + p + "'..."
-
-                # Create it
-                with open(p, "w") as f:
-
-                    # Dump empty dict
-                    json.dump({}, f)
-
-
-
-    def scan(self, name, path = None, results = None, n = 1):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SCAN
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If path undefined
-        if path is None:
-
-            # Define source as path
-            path = self.src
-
-        # On first run
-        if n == 1:
-
-            # Initialize results
-            results = []
-
-            # Give user info
-            print ("Scanning for '" + str(name) + "' within '" + str(path) +
-                   "'...")
-
-        # Get all files from path
-        files = os.listdir(path)
-
-        # Get inside path
-        os.chdir(path)
-
-        # Upload files
-        for f in files:
-
-            # If file
-            if os.path.isfile(f):
-
-                # Check if filename fits
-                if f == name:
-
-                    # Store path
-                    results.append(os.getcwd())
-
-            # If directory
-            elif os.path.isdir(f):
-
-                # Scan further
-                self.scan(name, f, results, n + 1)
-
-        # Go back up
-        os.chdir("..")
-
-        # If first level
-        if n == 1:
-
-            # Return results
-            return results
-
-
-
-    def splitPath(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SPLITPATH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Split path
-        return [p for p in path.split("/") if p != ""]
-
-
-
-    def mergePath(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MERGEPATH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: The first "/" will only work for Linux
-        """
-
-        # Merge path
-        return "/" + "/".join(path) + "/"
-        #return "/".join(path) + "/"
-
-
-
-    def datePath(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DATEPATH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize date
-        date = []
-
-        # Loop 3 directories up to get corresponding date
-        for i in range(3):
-
-            # Split path
-            path, file = os.path.split(path)
-
-            # Add date component
-            date.append(int(file))
-
-        # Reverse date
-        date.reverse()
-
-        # Return datetime object
-        return datetime.datetime(*date)
-
-
-
-    def showBranch(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOWBRANCH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Format path
-        return " > ".join(["."] + path)
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Loop on reports
-        for report in self.reports:
-
-            # Show report
-            report.show()
-
-
-
     def new(self, name = None, path = None, date = None, json = None):
 
         """
@@ -362,7 +165,7 @@ class Reporter:
                    str(report.date) + ")")
 
             # Make sure report exists
-            self.find(report.path, name)
+            Path(report.path).find(name)
 
             # Open report
             with open(report.path + name, "r") as f:
@@ -448,6 +251,35 @@ class Reporter:
 
                 # Report was updated
                 report.modified = False
+
+
+
+    def show(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Loop on reports
+        for report in self.reports:
+
+            # Show report
+            report.show()
+
+
+
+    def showBranch(self, branch):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOWBRANCH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Format path
+        return " > ".join(["."] + branch)
 
 
 
@@ -779,7 +611,7 @@ class Reporter:
         """
 
         # Scan for all possible report paths
-        paths = self.scan(name)
+        paths = Path(self.src).scan(name)
 
         # If no possible reports found
         if not paths:
@@ -794,7 +626,7 @@ class Reporter:
         for p in paths:
 
             # Get date from path
-            dates.append(self.datePath(p))
+            dates.append(Path(p).date())
 
         # Initialize dict for merged entries
         entries = {}
@@ -916,6 +748,203 @@ class Report:
 
 
 
+class Path:
+
+    def __init__(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # If input is string
+        if type(path) is str:
+
+            # Store it
+            self.str = path
+
+            # Generate a list from it
+            self.list = self.split()
+
+        # If it is list
+        elif type(path) is list:
+
+            # Store it
+            self.list = path
+
+            # Generate a string from it
+            self.str = self.merge()
+
+        # Compute path depth
+        self.depth = len(self.list)
+
+
+
+    def split(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SPLIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Split path
+        return [p for p in self.str.replace("\\", "/")
+                                   .replace("//", "/")
+                                   .split("/") if p != ""]
+
+
+
+    def merge(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MERGE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: The first "/" will only work for Linux
+        """
+
+        # Merge path
+        #return "/" + "/".join(self.list) + "/"
+        return "/".join(self.list) + "/"
+
+
+
+    def date(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize date
+        date = []
+
+        # Initialize path
+        path = self.str
+
+        # Loop 3 directories up to get corresponding date
+        for i in range(3):
+
+            # Split path
+            path, file = os.path.split(path)
+
+            # Add date component
+            date.append(int(file))
+
+        # Reverse date
+        date.reverse()
+
+        # Return datetime object
+        return datetime.datetime(*date)
+
+
+
+    def find(self, file = None, n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FIND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Stringify current path
+        path = Path(self.list[:n]).str
+
+        # Look for path
+        if n <= self.depth:
+
+            # If it does not exist
+            if not os.path.exists(path):
+
+                # Give user info
+                print "Making '" + path + "/'..."
+
+                # Make it
+                os.makedirs(path)
+
+            # Contine looking
+            self.find(file, n + 1)
+
+        # Look for file
+        elif file is not None:
+
+            # Complete path with filename
+            path += file
+
+            # If it does not exist
+            if not os.path.exists(path):
+
+                # Give user info
+                print "Making '" + path + "'..."
+
+                # Create it
+                with open(path, "w") as f:
+
+                    # Dump empty dict
+                    json.dump({}, f)
+
+
+
+    def scan(self, file, path = None, results = None, n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SCAN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # On first run
+        if n == 1:
+
+            # Initialize results
+            results = []
+
+            # Read source path
+            path = self.str
+
+            # Give user info
+            print ("Scanning for '" + str(file) + "' within '" + str(path) +
+                   "'...")
+
+        # Get all files from path
+        files = os.listdir(path)
+
+        # Get inside path
+        os.chdir(path)
+
+        # Upload files
+        for f in files:
+
+            # If file
+            if os.path.isfile(f):
+
+                # Check if filename fits
+                if f == file:
+
+                    # Store path
+                    results.append(os.getcwd())
+
+            # If directory
+            elif os.path.isdir(f):
+
+                # Scan further
+                self.scan(file, f, results, n + 1)
+
+        # Go back up
+        os.chdir("..")
+
+        # If first level
+        if n == 1:
+
+            # Return results
+            return results
+
+
+
 def main():
 
     """
@@ -931,17 +960,17 @@ def main():
     reporter.load("pump.json")
 
     # Get basal profile from pump report
-    lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
+    reporter.get("pump.json", [], "Basal Profile (Standard)")
 
     # Unload pump report
-    #reporter.unload("pump.json")
+    reporter.unload("pump.json")
 
     # Add entries to test report
     #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
 
     # Get most recent BG
-    #lib.printJSON(reporter.getRecent("BG.json", [], 3))
-    #lib.printJSON(reporter.getRecent("treatments.json", ["Temporary Basals"]))
+    reporter.getRecent("BG.json", [], 3)
+    reporter.getRecent("treatments.json", ["Temporary Basals"])
 
 
 
