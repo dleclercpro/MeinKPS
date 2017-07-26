@@ -192,9 +192,14 @@ class Power(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try reading
-        # Read last time pump's radio transmitter was power up
+        # Read last time pump's radio transmitter was powered up
         then = Reporter.getLatest("history.json", ["Pump"], "Power")
+
+        # If no time found
+        if then is None:
+
+            # Give old time
+            then = datetime.datetime(1, 1, 1)
 
         # Format time
         then = lib.formatTime(then)
@@ -252,6 +257,8 @@ class Power(object):
 
         # Do command
         self.command.do()
+        import sys
+        sys.exit()
 
 
 

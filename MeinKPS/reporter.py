@@ -717,14 +717,23 @@ class Reporter:
                 # Update number of reports merged
                 N += 1
 
-        # Give user info
-        print "Merged entries for " + str(N) + " most recent report(s):"
+        # If looking for specific key
+        if key is not None:
 
-        # Show entries
-        lib.printJSON(entries)
+            # Return None
+            return None
 
-        # Return entries
-        return entries
+        # Otherwise
+        else:
+
+            # Give user info
+            print "Merged entries for " + str(N) + " most recent report(s):"
+
+            # Show entries
+            lib.printJSON(entries)
+
+            # Return entries
+            return entries
 
 
 
@@ -1017,8 +1026,11 @@ def main():
     #reporter.getLatest("treatments.json", ["Temporary Basals"])
 
     # Export latest data
-    reporter.export("BG.json")
-    reporter.export("treatments.json")
+    #reporter.export("BG.json")
+    #reporter.export("treatments.json")
+
+    # Get latest pump power time
+    reporter.getLatest("history.json", ["Pump"], "Power")
 
 
 
