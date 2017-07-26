@@ -427,7 +427,7 @@ class NoSection(ReporterError):
 
         # Define error info
         self.info = ("Neither was a matching section found nor did the " +
-                     "reporter ask to create it in that case.")
+                     "reporter create it.")
 
 
 
