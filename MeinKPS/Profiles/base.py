@@ -189,7 +189,7 @@ class Profile(object):
         if self.dated:
 
             # Define loading function
-            load = Reporter.getRecent
+            load = Reporter.getLatest
 
         # Otherwise
         else:

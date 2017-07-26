@@ -270,7 +270,7 @@ class Reporter:
         Path(self.out).find(name)
 
         # Get recent data
-        data = self.getRecent(name, [])
+        data = self.getLatest(name, [])
 
         # Store recent data
         with open(self.out + name, "w") as f:
@@ -631,11 +631,11 @@ class Reporter:
 
 
 
-    def getRecent(self, name, branch, n = 2):
+    def getLatest(self, name, branch, key = None, n = 2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETRECENT
+            GETLATEST
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -663,7 +663,7 @@ class Reporter:
         # Initialize number of reports merged
         N = 0
 
-        # Loop on dates
+        # Loop on dates, starting with the latest one
         for d in sorted(dates, reverse = True):
 
             # Check if enough recent reports were fetched
@@ -684,15 +684,6 @@ class Reporter:
                 # Get section
                 section = self.getSection(report, branch)
 
-                # Give user info
-                print "Merging '" + report.name + "' (" + report.date + ")"
-
-                # Merge entries
-                entries = lib.mergeDict(entries, section)
-
-                # Update number of reports merged
-                N += 1
-
             # In case of failure
             except Exception as e:
 
@@ -704,6 +695,27 @@ class Reporter:
 
                 # Skip
                 continue
+
+            # If looking for specific key
+            if key is not None:
+
+                # Get corresponding value
+                value = self.getEntry(section, key)
+
+                # Return it
+                return value
+
+            # Otherwise
+            else:
+
+                # Give user info
+                print "Merging '" + report.name + "' (" + report.date + ")"
+
+                # Merge entries
+                entries = lib.mergeDict(entries, section)
+
+                # Update number of reports merged
+                N += 1
 
         # Give user info
         print "Merged entries for " + str(N) + " most recent report(s):"
@@ -1001,8 +1013,8 @@ def main():
     #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
 
     # Get most recent BG
-    #reporter.getRecent("BG.json", [], 3)
-    #reporter.getRecent("treatments.json", ["Temporary Basals"])
+    #reporter.getLatest("BG.json", [], 3)
+    #reporter.getLatest("treatments.json", ["Temporary Basals"])
 
     # Export latest data
     reporter.export("BG.json")

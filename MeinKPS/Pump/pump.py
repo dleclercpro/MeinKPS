@@ -192,8 +192,9 @@ class Power(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Try reading
         # Read last time pump's radio transmitter was power up
-        then = Reporter.get("history.json", ["Pump"], "Power")
+        then = Reporter.getLatest("history.json", ["Pump"], "Power")
 
         # Format time
         then = lib.formatTime(then)
@@ -1139,7 +1140,7 @@ class Bolus(object):
         # FIXME: deal with no last bolus
 
         # Get recent boluses
-        boluses = Reporter.getRecent("treatments.json", ["Boluses"])
+        boluses = Reporter.getLatest("treatments.json", ["Boluses"])
 
         # Get latest bolus time
         t = max(boluses)
