@@ -839,8 +839,8 @@ class Path:
         """
 
         # Merge path
-        #return "/" + "/".join(self.list) + "/"
-        return "/".join(self.list) + "/"
+        return "/" + "/".join(self.list) + "/"
+        #return "/".join(self.list) + "/"
 
 
 
@@ -1004,7 +1004,7 @@ def main():
     #reporter.getRecent("BG.json", [], 3)
     #reporter.getRecent("treatments.json", ["Temporary Basals"])
 
-    # Export latest BG and treatments
+    # Export latest data
     reporter.export("BG.json")
     reporter.export("treatments.json")
 

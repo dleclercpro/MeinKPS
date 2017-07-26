@@ -110,6 +110,10 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Export most recent data
+    Reporter.export("BG.json")
+    Reporter.export("treatments.json")
+
     # Instanciate an FTP object
     ftp = ftplib.FTP(Reporter.get("FTP.json", [], "Host"),
                      Reporter.get("FTP.json", [], "User"),
