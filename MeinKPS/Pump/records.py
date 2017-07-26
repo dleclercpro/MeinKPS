@@ -159,9 +159,6 @@ class Record(object):
             raise ValueError("Record and current year too far " +
                              "apart!")
 
-        # Format time
-        t = lib.formatTime(t)
-
         # Store time
         self.t.append(t)
 
@@ -273,8 +270,6 @@ class SuspendRecord(Record):
         print "Adding suspend time to report: '" + self.report + "'..."
 
         # Add entries
-        print self.t
-        sys.exit()
         Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t,
                                                                self.values)))
 
