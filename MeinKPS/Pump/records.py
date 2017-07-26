@@ -273,7 +273,10 @@ class SuspendRecord(Record):
         print "Adding suspend time to report: '" + self.report + "'..."
 
         # Add entries
-        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t, self.values)))
+        print self.t
+        sys.exit()
+        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t,
+                                                               self.values)))
 
 
 
@@ -332,7 +335,8 @@ class ResumeRecord(Record):
         print "Adding resume time to report: '" + self.report + "'..."
 
         # Add entries
-        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t, self.values)))
+        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t,
+                                                               self.values)))
 
 
 
@@ -425,7 +429,8 @@ class TBRecord(Record):
         print "Adding TBs to report: '" + self.report + "'..."
 
         # Add entries
-        Reporter.add(self.report, ["Temporary Basals"], dict(zip(self.t, self.values)))
+        Reporter.add(self.report, ["Temporary Basals"], dict(zip(self.t,
+                                                                 self.values)))
 
 
 
