@@ -199,7 +199,7 @@ class Power(object):
         if then is None:
 
             # Give old time
-            then = datetime.datetime(1, 1, 1)
+            then = datetime.datetime(1900, 1, 1)
 
         # Format time
         then = lib.formatTime(then)
