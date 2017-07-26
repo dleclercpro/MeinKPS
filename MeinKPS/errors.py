@@ -568,7 +568,7 @@ class MissingBGs(ProfileError):
         """
 
         # Define error info
-        self.info = ("Not enough recent BGs to proceed.")
+        self.info = ("Not enough recent BGs.")
 
 
 

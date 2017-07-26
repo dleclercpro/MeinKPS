@@ -173,7 +173,8 @@ class Calculator(object):
 
         # Build net profile using suspend times
         # FIXME: TB zero is 0?
-        self.net.build(past, self.now, self.TB.add(self.bolus))
+        self.net.build(past, self.now, self.TB.subtract(self.basal)
+                                              .add(self.bolus))
 
         # Build past IOB profile
         # FIXME: when no past data found
@@ -217,6 +218,9 @@ class Calculator(object):
 
         # Give user info
         print "Recommending treatment..."
+
+        # Check for insufficient data
+        self.BG.past.verify(1)
 
         # Get current BG
         BG = self.BG.past.y[-1]

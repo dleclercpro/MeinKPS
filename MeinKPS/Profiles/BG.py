@@ -124,6 +124,24 @@ class PastBGProfile(base.PastProfile):
 
 
 
+    def verify(self, n):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Verify there is enough recent BGs to do anything.
+        """
+
+        # Check for insufficient BG data
+        if self.n < n:
+
+            # Exit
+            raise errors.MissingBGs()
+
+
+
     def impact(self):
 
         """
@@ -133,19 +151,13 @@ class PastBGProfile(base.PastProfile):
         """
 
         # Check for insufficient data
-        if self.n < 2:
+        self.verify(2)
 
-            # Exit
-            raise errors.MissingBGs()
+        # Get fit over last minutes
+        [m, b] = np.polyfit(self.t[-self.n:], self.y[-self.n:], 1)
 
-        # Otherwise
-        else:
-
-            # Get fit over last minutes
-            [m, b] = np.polyfit(self.t[-self.n:], self.y[-self.n:], 1)
-
-            # Return fit slope, which corresponds to BGI
-            return m
+        # Return fit slope, which corresponds to BGI
+        return m
 
 
 
