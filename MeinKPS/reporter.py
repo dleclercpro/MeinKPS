@@ -631,7 +631,7 @@ class Reporter:
 
 
 
-    def getLatest(self, name, branch, key = None, n = 2):
+    def getLatest(self, name, branch, n = 2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -696,44 +696,23 @@ class Reporter:
                 # Skip
                 continue
 
-            # If looking for specific key
-            if key is not None:
-
-                # Get corresponding value
-                value = self.getEntry(section, key)
-
-                # Return it
-                return value
-
-            # Otherwise
-            else:
-
-                # Give user info
-                print "Merging '" + report.name + "' (" + report.date + ")"
-
-                # Merge entries
-                entries = lib.mergeDict(entries, section)
-
-                # Update number of reports merged
-                N += 1
-
-        # If looking for specific key
-        if key is not None:
-
-            # Return None
-            return None
-
-        # Otherwise
-        else:
-
             # Give user info
-            print "Merged entries for " + str(N) + " most recent report(s):"
+            print "Merging '" + report.name + "' (" + report.date + ")"
 
-            # Show entries
-            lib.printJSON(entries)
+            # Merge entries
+            entries = lib.mergeDict(entries, section)
 
-            # Return entries
-            return entries
+            # Update number of reports merged
+            N += 1
+
+        # Give user info
+        print "Merged entries for " + str(N) + " most recent report(s):"
+
+        # Show entries
+        lib.printJSON(entries)
+
+        # Return entries
+        return entries
 
 
 

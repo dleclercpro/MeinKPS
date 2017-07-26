@@ -722,7 +722,7 @@ class PowerPump(PumpCommand):
         self.executionSleep = 12
 
         # Define report
-        self.report = "history.json"
+        self.report = "pump.json"
 
 
 
@@ -741,7 +741,7 @@ class PowerPump(PumpCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.add(self.report, ["Pump"], {"Power": now}, True)
+        Reporter.add(self.report, [], {"Power": now}, True)
 
 
 

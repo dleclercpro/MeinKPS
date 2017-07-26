@@ -193,19 +193,10 @@ class Power(object):
         """
 
         # Read last time pump's radio transmitter was powered up
-        then = Reporter.getLatest("history.json", ["Pump"], "Power")
+        then = Reporter.get("pump.json", [], "Power")
 
-        # If no time found
-        if then is None:
-
-            # Give old time
-            then = datetime.datetime(1900, 1, 1)
-
-        # Otherwise
-        else:
-
-            # Format time
-            then = lib.formatTime(then)
+        # Format time
+        then = lib.formatTime(then)
 
         # Return last power up time
         return then
