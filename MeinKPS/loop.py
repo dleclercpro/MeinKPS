@@ -118,23 +118,14 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try doing CGM tasks
-        try:
+        # Establish connection with CGM
+        self.cgm.connect()
 
-            # Establish connection with CGM
-            self.cgm.connect()
+        # Prepare CGM
+        self.prepareCGM()
 
-            # Prepare CGM
-            self.prepareCGM()
-
-            # End connection with CGM
-            self.cgm.disconnect()
-
-        # Otherwise
-        except:
-
-            # Skip
-            pass
+        # End connection with CGM
+        self.cgm.disconnect()
 
 
 
@@ -186,42 +177,33 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try doing pump tasks
-        try:
+        # Start dialogue with pump
+        self.pump.start()
 
-            # Start dialogue with pump
-            self.pump.start()
+        # Prepare pump
+        self.preparePump()
 
-            # Prepare pump
-            self.preparePump()
+        # Run calculator
+        self.calc.run(self.start)
 
-            # Run calculator
-            self.calc.run(self.start)
+        # Get TB recommendation
+        TB = self.calc.recommend()
+        #TB = [self.start.minute / 60.0, "U/h", 30]
 
-            # Get TB recommendation
-            TB = self.calc.recommend()
-            #TB = [self.start.minute / 60.0, "U/h", 30]
+        # If no TB is required
+        if TB is None:
 
-            # If no TB is required
-            if TB is None:
+            # Cancel TB
+            self.pump.TB.cancel()
 
-                # Cancel TB
-                self.pump.TB.cancel()
+        # Otherwise, enact recommendation
+        else:
 
-            # Otherwise, enact recommendation
-            else:
+            # Enact TB
+            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
-                # Enact TB
-                self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
-
-            # Stop dialogue with pump
-            self.pump.stop()
-
-        # Otherwise
-        except:
-
-            # Skip
-            pass
+        # Stop dialogue with pump
+        self.pump.stop()
 
 
 
@@ -233,20 +215,11 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Trying doing given task
-        try:
+        # Do task
+        task(*args)
 
-            # Do task
-            task(*args)
-
-            # Update loop log
-            Reporter.increment(self.report, path, key)
-
-        # Otherwise, skip
-        except:
-
-            # Give user info
-            print "Could not execute task '" + key + "'."
+        # Update loop log
+        Reporter.increment(self.report, path, key)
 
 
 
