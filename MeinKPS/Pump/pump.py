@@ -203,7 +203,7 @@ class Power(object):
 
         # Otherwise
         else:
-            
+
             # Format time
             then = lib.formatTime(then)
 
@@ -260,8 +260,6 @@ class Power(object):
 
         # Do command
         self.command.do()
-        import sys
-        sys.exit()
 
 
 
