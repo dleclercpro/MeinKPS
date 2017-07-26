@@ -46,9 +46,13 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Set source path to reports
-        self.src = os.getcwd() + "/Reports/"
+        # Define source path
+        self.src = os.getcwd() + "/" + "Reports/"
         #self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
+
+        # Define export path
+        self.out = self.src + "Recent/"
+        #self.out = "/home/pi/MeinKPS/MeinKPS/Reports/Recent/"
 
         # Initialize reports
         self.reports = []
@@ -251,6 +255,31 @@ class Reporter:
 
                 # Report was updated
                 report.modified = False
+
+
+
+    def export(self, name):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Touch export file
+        Path(self.out).find(name)
+
+        # Get recent data
+        data = self.getRecent(name, [])
+
+        # Store recent data
+        with open(self.out + name, "w") as f:
+
+            # Dump JSON
+            json.dump(data, f,
+                      indent = 4,
+                      separators = (",", ": "),
+                      sort_keys = True)
 
 
 
@@ -665,7 +694,10 @@ class Reporter:
                 N += 1
 
             # In case of failure
-            except:
+            except Exception as e:
+
+                # Show error message
+                print e.message
 
                 # Unload report
                 self.unload(name, d)
@@ -928,8 +960,8 @@ class Path:
                     # Store path
                     results.append(os.getcwd())
 
-            # If directory
-            elif os.path.isdir(f):
+            # If directory and a digit (because a date)
+            elif os.path.isdir(f) and f.isdigit():
 
                 # Scan further
                 self.scan(file, f, results, n + 1)
@@ -957,20 +989,24 @@ def main():
     reporter = Reporter()
 
     # Load reports
-    reporter.load("pump.json")
+    #reporter.load("pump.json")
 
     # Get basal profile from pump report
-    reporter.get("pump.json", [], "Basal Profile (Standard)")
+    #reporter.get("pump.json", [], "Basal Profile (Standard)")
 
     # Unload pump report
-    reporter.unload("pump.json")
+    #reporter.unload("pump.json")
 
     # Add entries to test report
     #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
 
     # Get most recent BG
-    reporter.getRecent("BG.json", [], 3)
-    reporter.getRecent("treatments.json", ["Temporary Basals"])
+    #reporter.getRecent("BG.json", [], 3)
+    #reporter.getRecent("treatments.json", ["Temporary Basals"])
+
+    # Export latest BG and treatments
+    reporter.export("BG.json")
+    reporter.export("treatments.json")
 
 
 

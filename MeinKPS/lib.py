@@ -278,7 +278,7 @@ def mergeDict(base, new, n = 1):
                 base[key] = {}
 
             # Dive in
-            self.merge(base[key], value, n + 1)
+            mergeDict(base[key], value, n + 1)
 
         # Otherwise
         else:
