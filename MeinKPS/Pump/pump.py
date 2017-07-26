@@ -201,8 +201,11 @@ class Power(object):
             # Give old time
             then = datetime.datetime(1900, 1, 1)
 
-        # Format time
-        then = lib.formatTime(then)
+        # Otherwise
+        else:
+            
+            # Format time
+            then = lib.formatTime(then)
 
         # Return last power up time
         return then
