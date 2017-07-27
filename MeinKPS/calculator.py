@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 
 
 # USER LIBRARIES
+import lib
 import reporter
 from Profiles import *
 
@@ -99,6 +100,9 @@ class Calculator(object):
         # Initialize pump's max values
         self.max = {"Basal": None,
                     "Bolus": None}
+
+        # Give calculator a report
+        self.report = "net.json"
 
 
 
@@ -216,6 +220,39 @@ class Calculator(object):
 
         # Build future BG profile
         self.BG.build(self.IOB, self.ISF)
+
+
+
+    def export(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Generate new dict
+        entries = {}
+
+        # Count entries
+        n = len(self.net.T)
+
+        # Loop over net insulin profile
+        for i in range(n):
+
+            # Get considered time and corresponding net insulin and basal rates
+            T = self.net.T[i]
+            y = self.net.y[i]
+            Y = self.basal.f(T)
+
+            # Fill entries dict
+            entries[lib.formatTime(T)] = [y, Y]
+
+        # Erase it
+        Reporter.erase(self.report)
+
+        # Store it
+        Reporter.add(self.report, [], entries)
 
 
 
@@ -509,13 +546,16 @@ def main():
     calculator.run(now)
 
     # Run autosens
-    calculator.autosens()
+    #calculator.autosens()
 
     # Recommend TB
-    calculator.recommend()
+    #calculator.recommend()
 
     # Show results
-    calculator.show()
+    #calculator.show()
+
+    # Export processed treatments
+    calculator.export()
 
 
 

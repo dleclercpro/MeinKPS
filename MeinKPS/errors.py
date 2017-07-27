@@ -396,7 +396,7 @@ class NoCGM(CGMError):
 
 
 
-# Reporter related errors
+# Reporter errors
 class BadPath(ReporterError):
 
     def prepare(self):
@@ -414,7 +414,22 @@ class BadPath(ReporterError):
 
 
 
-# Reporter errors
+class NoReport(ReporterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Report '" + self.args[0] + "' (" + str(self.args[1]) +
+                     ") not loaded.")
+
+
+
 class NoSection(ReporterError):
 
     def prepare(self):

@@ -67,24 +67,26 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Loop on reports
-        for report in self.reports:
+        # Verify if report already exists
+        try:
 
-            # Check if report already exists
-            if report.name == name and report.date == date:
+            # Try loading report
+            self.getReport(name, date)
 
-                # Give user info
-                print ("Report '" + name + "' (" + str(date) + ") already " +
-                       "loaded.")
+            # Give user info
+            print "Report '" + name + "' (" + str(date) + ") already loaded."
 
-                # Skip
-                return False
+            # Skip
+            return False
 
-        # Generate new report
-        self.reports.append(Report(name, path, date, json))
+        # If it fails, then store it
+        except errors.NoReport:
 
-        # Success
-        return True
+            # Generate new report
+            self.reports.append(Report(name, path, date, json))
+
+            # Success
+            return True
 
 
 
@@ -177,6 +179,9 @@ class Reporter:
                 # Load JSON
                 report.json = json.load(f)
 
+            # Give user info
+            print "Report loaded."
+
 
 
     def unload(self, name, date = None):
@@ -187,42 +192,48 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # If date
-        if date is not None:
-
-            # Get current date
-            d = datetime.datetime.strftime(date, "%Y/%m/%d")
-
-        # Loop on reports
-        for i in range(len(self.reports)):
-
-            # Get current report
-            report = self.reports[i]
-
-            # If name fits
-            if report.name != name:
-
-                # Skip
-                continue
-
-            # If dates
-            if date is not None and report.date != d:
-
-                # Skip
-                continue
+        # Verify if report already exists
+        try:
 
             # Give user info
-            print ("Unloading report: " + report.name + " (" +
-                   str(report.date) + ")")
+            print "Unloading report: " + name + " (" + str(date) + ")"
 
-            # Delete it
+            # Try loading report
+            i = self.getReport(name, date)[1]
+
+            # Delete it using its index
             del self.reports[i]
 
-            # Exit
-            return
+            # Give user info
+            print "Report unloaded."
 
-        # Report not found
-        sys.exit("Report could not be found, thus not unloaded.")
+        # If it fails, then store it
+        except errors.NoReport as e:
+
+            # Show error message
+            print e.message
+
+
+
+    def erase(self, name, date = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ERASE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load report
+        self.load(name, date)
+
+        # Get report
+        report = self.getReport(name, date)[0]
+
+        # Erase report
+        report.reset()
+
+        # Save
+        self.save()
 
 
 
@@ -243,6 +254,9 @@ class Reporter:
                 # Give user info
                 print ("Updating report: '" + report.name + "' (" +
                        str(report.date) + ")")
+
+                # Show JSON
+                #lib.printJSON(report.json)
 
                 # Rewrite report
                 with open(report.path + report.name, "w") as f:
@@ -323,14 +337,24 @@ class Reporter:
         # If date
         if date is not None:
 
-            # Get and format date
-            date = datetime.datetime.strftime(date, "%Y/%m/%d")
+            # If date given as datetime object, format it
+            if (type(date) is datetime.datetime or
+                type(date) is datetime.date):
+
+                # Get and format date
+                date = datetime.datetime.strftime(date, "%Y/%m/%d")
 
         # Give user info
         print "Getting report: '" + name + "' (" + str(date) + ")"
 
+        # Count loaded reports
+        n = len(self.reports)
+
         # Loop through reports
-        for report in self.reports:
+        for i in range(n):
+
+            # Get current report
+            report = self.reports[i]
 
             # Check if names match
             if report.name != name:
@@ -344,11 +368,11 @@ class Reporter:
                 # Skip
                 continue
 
-            # Return report
-            return report
+            # Return report and corresponding index
+            return [report, i]
 
-        # Give user info
-        sys.exit("Did not find report.")
+        # Raise error
+        raise errors.NoReport(name, date)
 
 
 
@@ -539,7 +563,7 @@ class Reporter:
             self.load(name)
 
             # Get it
-            report = self.getReport(name)
+            report = self.getReport(name)[0]
 
             # Get section
             section = self.getSection(report, branch, True)
@@ -566,7 +590,7 @@ class Reporter:
                     date = d
 
                     # Get report
-                    report = self.getReport(name, date)
+                    report = self.getReport(name, date)[0]
 
                     # Get section
                     section = self.getSection(report, branch, True)
@@ -603,7 +627,7 @@ class Reporter:
             key = lib.formatTime(key)
 
             # Get report
-            report = self.getReport(name, date)
+            report = self.getReport(name, date)[0]
 
         # Otherwise
         else:
@@ -612,7 +636,7 @@ class Reporter:
             self.load(name)
 
             # Get it
-            report = self.getReport(name)
+            report = self.getReport(name)[0]
 
         # Get section
         section = self.getSection(report, branch)
@@ -676,7 +700,7 @@ class Reporter:
             self.load(name, d)
 
             # Get report
-            report = self.getReport(name, d)
+            report = self.getReport(name, d)[0]
 
             # Try getting section
             try:
@@ -716,7 +740,7 @@ class Reporter:
 
 
 
-    def increment(self, name, branch, key, date = None):
+    def increment(self, name, branch, key):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -724,20 +748,11 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load report
-        self.load(name, date)
+        # Get value
+        n = self.get(name, branch, key)
 
-        # Get report
-        report = self.getReport(name, date)
-
-        # Get section
-        section = self.getSection(report, branch)
-
-        # Increment entry
-        self.addEntry(section, {key: self.getEntry(section, key) + 1}, True)
-
-        # Report was modified
-        report.modified = True
+        # Update value
+        self.add(name, branch, {key: n + 1}, True)
 
         # Save report
         self.save()
@@ -760,6 +775,22 @@ class Report:
         self.date = date
         self.json = json
         self.modified = False
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset JSON
+        self.json = {}
+
+        # Report was modified
+        self.modified = True
 
 
 
@@ -839,8 +870,8 @@ class Path:
         """
 
         # Merge path
-        #return "/" + "/".join(self.list) + "/"
-        return "/".join(self.list) + "/"
+        return "/" + "/".join(self.list) + "/"
+        #return "/".join(self.list) + "/"
 
 
 
@@ -985,11 +1016,11 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Get current time
+    now = datetime.datetime.now()
+
     # Instanciate a reporter for me
     reporter = Reporter()
-
-    # Load reports
-    #reporter.load("pump.json")
 
     # Get basal profile from pump report
     #reporter.get("pump.json", [], "Basal Profile (Standard)")
@@ -998,7 +1029,10 @@ def main():
     #reporter.unload("pump.json")
 
     # Add entries to test report
-    #reporter.add("test.json", ["A", "B"], {"C": 0, "D": 1})
+    reporter.add("test.json", ["D", "A"], {now: 0})
+
+    # Erase entries from test report
+    #reporter.erase("test.json")
 
     # Get most recent BG
     #reporter.getLatest("BG.json", [], 3)
@@ -1008,8 +1042,8 @@ def main():
     #reporter.export("BG.json")
     #reporter.export("treatments.json")
 
-    # Get latest pump power time
-    reporter.getLatest("history.json", ["Pump"], "Power")
+    # Increment loop
+    #reporter.increment("loop.json", ["Status"], "N")
 
 
 

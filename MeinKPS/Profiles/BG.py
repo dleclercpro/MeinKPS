@@ -134,6 +134,9 @@ class PastBGProfile(base.PastProfile):
         Verify there is enough recent BGs to do anything.
         """
 
+        # Count recent BGs
+        self.count()
+
         # Check for insufficient BG data
         if self.n < n:
 
@@ -209,14 +212,17 @@ class FutureBGProfile(base.FutureProfile):
         # Link with past profile
         self.link()
 
-        # Count number of recent BGs
-        self.past.count()
+        # Is there at least one recent BG?
+        try:
 
-        # Check for insufficient data
-        if self.past.n == 0:
+            # Verify
+            self.past.verify(1)
 
-            # Give user info
-            print "Not enough BG to predict future. Skipping..."
+        # It failed, so there isn't
+        except Exception as e:
+
+            # Show error message
+            print e.message
 
             # Skip
             return
