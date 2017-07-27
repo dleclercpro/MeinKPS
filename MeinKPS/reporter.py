@@ -47,8 +47,8 @@ class Reporter:
         """
 
         # Define source path
-        #self.src = os.getcwd() + "/" + "Reports/"
-        self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
+        self.src = os.getcwd() + "/" + "Reports/"
+        #self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
 
         # Define export path
         self.out = self.src + "Recent/"
@@ -839,8 +839,8 @@ class Path:
         """
 
         # Merge path
-        return "/" + "/".join(self.list) + "/"
-        #return "/".join(self.list) + "/"
+        #return "/" + "/".join(self.list) + "/"
+        return "/".join(self.list) + "/"
 
 
 

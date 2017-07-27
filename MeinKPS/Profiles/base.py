@@ -453,7 +453,7 @@ class Profile(object):
 
 
 
-    def pad(self, a, b, last = None):
+    def pad(self, a, b, last):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

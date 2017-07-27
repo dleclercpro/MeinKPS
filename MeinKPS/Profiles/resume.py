@@ -4,13 +4,13 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    suspend
+    Title:    resume
 
     Author:   David Leclerc
 
     Version:  0.1
 
-    Date:     30.06.2017
+    Date:     27.07.2017
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -27,7 +27,7 @@ import base
 
 
 
-class SuspendProfile(base.PastProfile):
+class ResumeProfile(base.PastProfile):
 
     def __init__(self):
 
@@ -38,7 +38,7 @@ class SuspendProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(SuspendProfile, self).__init__()
+        super(ResumeProfile, self).__init__()
 
         # Define units
         self.u = "U/h"
@@ -61,7 +61,7 @@ class SuspendProfile(base.PastProfile):
         """
 
         # Start decoupling
-        super(SuspendProfile, self).decouple()
+        super(ResumeProfile, self).decouple()
 
         # Get number of steps
         n = len(self.T)
@@ -69,13 +69,13 @@ class SuspendProfile(base.PastProfile):
         # Decouple components
         for i in range(n):
 
-            # If suspend
-            if self.y[i] == 0:
+            # If resume
+            if self.y[i] == 1:
 
                 # Replace by None and fill later
                 self.y[i] = None
 
-            # If resume
+            # If suspend
             else:
 
                 # Replace by 0

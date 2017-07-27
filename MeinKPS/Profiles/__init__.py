@@ -3,6 +3,7 @@
 
 __all__ = ["basal",
            "bolus",
+           "resume",
            "suspend",
            "TB",
            "BGTargets",
