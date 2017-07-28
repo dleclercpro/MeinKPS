@@ -50,10 +50,20 @@ class Reporter:
         self.src = Path(os.path.dirname(os.path.realpath(__file__)) + os.sep +
                         "Reports")
 
-        # Define export path
-        self.exp = Path(self.src.str + "Recent")
-
         # Initialize reports
+        self.reports = []
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset reports
         self.reports = []
 
 
@@ -86,19 +96,6 @@ class Reporter:
 
             # Success
             return True
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Reset reports
-        self.reports = []
 
 
 
@@ -219,25 +216,19 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Load report
-        self.load(name, date)
-
         # Get report
         report = self.getReport(name, date)[0]
 
         # Erase report
-        report.reset()
-
-        # Save
-        self.save()
+        report.erase()
 
 
 
-    def save(self):
+    def store(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SAVE
+            STORE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -247,49 +238,8 @@ class Reporter:
             # If report was modified
             if report.modified:
 
-                # Give user info
-                print ("Updating report: '" + report.name + "' (" +
-                       str(report.date) + ")")
-
-                # Show JSON
-                #lib.printJSON(report.json)
-
-                # Rewrite report
-                with open(report.path + report.name, "w") as f:
-
-                    # Dump JSON
-                    json.dump(report.json, f,
-                              indent = 4,
-                              separators = (",", ": "),
-                              sort_keys = True)
-
-                # Report was updated
-                report.modified = False
-
-
-
-    def export(self, name):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPORT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Touch export file
-        self.exp.touch(name)
-
-        # Get recent data
-        data = self.getLatest(name, [])
-
-        # Store recent data
-        with open(self.exp.str + name, "w") as f:
-
-            # Dump JSON
-            json.dump(data, f,
-                      indent = 4,
-                      separators = (",", ": "),
-                      sort_keys = True)
+                # Store it
+                report.store()
 
 
 
@@ -309,16 +259,34 @@ class Reporter:
 
 
 
-    def showBranch(self, branch):
+    def getDates(self, name):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOWBRANCH
+            GETDATES
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Format path
-        return " > ".join(["."] + branch)
+        # Scan for all possible report paths
+        paths = self.src.scan(name)
+
+        # If no possible reports found
+        if not paths:
+
+            # Exit
+            sys.exit("No dated report found for '" + name + "'.")
+
+        # Initialize dates
+        dates = []
+
+        # Loop on paths
+        for p in paths:
+
+            # Get date from path
+            dates.append(Path(p).date())
+
+        # Return dates
+        return dates
 
 
 
@@ -396,7 +364,7 @@ class Reporter:
         section = report.json
 
         # Give user info
-        print "Getting section: " + self.showBranch(branch)
+        print "Getting section: " + " > ".join(["."] + branch)
 
         # Loop through whole report to find section
         for i in range(d):
@@ -464,33 +432,6 @@ class Reporter:
 
 
 
-    def deleteEntry(self, section, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DELETEENTRY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Deleting entry: " + str(key)
-
-        # If it does, delete it
-        if key in section:
-
-            # Delete entry
-            del section[key]
-
-            # Give user info
-            print "Entry deleted."
-
-        else:
-
-            # Give user info
-            print "No such entry."
-
-
-
     def addEntry(self, section, entry, overwrite = False):
 
         """
@@ -531,6 +472,49 @@ class Reporter:
 
                 # Give user info
                 print "Entry added."
+
+
+
+    def deleteEntry(self, section, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DELETEENTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Deleting entry: " + str(key)
+
+        # If it does, delete it
+        if key in section:
+
+            # Delete entry
+            del section[key]
+
+            # Give user info
+            print "Entry deleted."
+
+        else:
+
+            # Give user info
+            print "No such entry."
+
+
+
+    def increment(self, name, branch, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INCREMENT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get value
+        n = self.get(name, branch, key)
+
+        # Update value
+        self.add(name, branch, {key: n + 1}, True)
 
 
 
@@ -599,12 +583,12 @@ class Reporter:
             # Report was modified
             report.modified = True
 
-        # Save reports
-        self.save()
+        # Store modified reports
+        self.store()
 
 
 
-    def get(self, name, branch, key = None):
+    def get(self, name, branch, key = None, date = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -615,26 +599,17 @@ class Reporter:
         # If key is dated
         if type(key) is datetime.datetime:
 
-            # Load report
-            self.load(name, key)
-
             # Get date
             date = key.date()
 
             # Format key
             key = lib.formatTime(key)
 
-            # Get report
-            report = self.getReport(name, date)[0]
+        # Load report
+        self.load(name, date)
 
-        # Otherwise
-        else:
-
-            # Load report
-            self.load(name)
-
-            # Get it
-            report = self.getReport(name)[0]
+        # Get it
+        report = self.getReport(name, date)[0]
 
         # Get section
         section = self.getSection(report, branch)
@@ -653,31 +628,16 @@ class Reporter:
 
 
 
-    def getLatest(self, name, branch, n = 2):
+    def getRecent(self, name, branch, n = 2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETLATEST
+            GETRECENT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Scan for all possible report paths
-        paths = self.src.scan(name)
-
-        # If no possible reports found
-        if not paths:
-
-            # Exit
-            sys.exit("Nothing found for '" + name + "'.")
-
-        # Initialize dates
-        dates = []
-
-        # Loop on paths
-        for p in paths:
-
-            # Get date from path
-            dates.append(Path(p).date())
+        # Get dates of existing corresponding reports
+        dates = self.getDates(name)
 
         # Initialize dict for merged entries
         entries = {}
@@ -738,25 +698,6 @@ class Reporter:
 
 
 
-    def increment(self, name, branch, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INCREMENT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get value
-        n = self.get(name, branch, key)
-
-        # Update value
-        self.add(name, branch, {key: n + 1}, True)
-
-        # Save report
-        self.save()
-
-
-
 class Report:
 
     def __init__(self, name = None, path = None, date = None, json = None):
@@ -787,8 +728,87 @@ class Report:
         # Reset JSON
         self.json = {}
 
-        # Report was modified
-        self.modified = True
+
+
+    def update(self, json):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UPDATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Updating report: '" + self.name + "' (" + str(self.date) + ")"
+
+        # Update JSON
+        self.json = json
+
+
+
+    def erase(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ERASE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Erasing report: '" + self.name + "' (" + str(self.date) + ")"
+
+        # Reset JSON
+        self.reset()
+
+        # Store it
+        self.store()
+
+
+
+    def store(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Storing report: '" + self.name + "' (" + str(self.date) + ")"
+
+        # Rewrite report
+        with open(self.path + self.name, "w") as f:
+
+            # Dump JSON
+            json.dump(self.json, f,
+                      indent = 4,
+                      separators = (",", ": "),
+                      sort_keys = True)
+
+        # Reset modified boolean
+        self.modified = False
+
+
+
+    def export(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Exporting report: '" + self.name + "' (" + str(self.date) + ")"
+
+        # Export report
+        with open(path + self.name, "w") as f:
+
+            # Dump JSON
+            json.dump(self.json, f,
+                      indent = 4,
+                      separators = (",", ": "),
+                      sort_keys = True)
 
 
 
@@ -942,7 +962,7 @@ class Path:
         if n <= self.depth:
 
             # Show current path
-            print path
+            #print path
 
             # If it does not exist
             if not os.path.exists(path):
@@ -1049,8 +1069,11 @@ def main():
     # Get basal profile from pump report
     lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
 
+    # Get BGs of today
+    lib.printJSON(reporter.get("BG.json", [], None, now))
+
     # Unload pump report
-    reporter.unload("pump.json")
+    #reporter.unload("pump.json")
 
     # Add entries to test report
     #reporter.add("test.json", ["D", "A"], {now: 0})
@@ -1059,12 +1082,8 @@ def main():
     #reporter.erase("test.json", now)
 
     # Get most recent BG
-    #reporter.getLatest("BG.json", [], 3)
-    #reporter.getLatest("treatments.json", ["Temporary Basals"])
-
-    # Export latest data
-    #reporter.export("BG.json")
-    #reporter.export("treatments.json")
+    #reporter.getRecent("BG.json", [], 3)
+    #reporter.getRecent("treatments.json", ["Temporary Basals"])
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")

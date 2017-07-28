@@ -1139,7 +1139,7 @@ class Bolus(object):
         # FIXME: deal with no last bolus
 
         # Get recent boluses
-        boluses = Reporter.getLatest("treatments.json", ["Boluses"])
+        boluses = Reporter.getRecent("treatments.json", ["Boluses"])
 
         # Get latest bolus time
         t = max(boluses)
