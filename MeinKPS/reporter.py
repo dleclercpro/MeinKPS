@@ -666,26 +666,23 @@ class Reporter:
                 # Get section
                 section = self.getSection(report, branch)
 
+                # If section not empty
+                if section:
+
+                    # Give user info
+                    print "Merging '" + report.name + "' (" + report.date + ")"
+
+                    # Merge entries
+                    entries = lib.mergeDict(entries, section)
+
+                    # Update number of reports merged
+                    N += 1
+
             # In case of failure
             except Exception as e:
 
                 # Show error message
                 print e.message
-
-                # Unload report
-                self.unload(name, d)
-
-                # Skip
-                continue
-
-            # Give user info
-            print "Merging '" + report.name + "' (" + report.date + ")"
-
-            # Merge entries
-            entries = lib.mergeDict(entries, section)
-
-            # Update number of reports merged
-            N += 1
 
         # Give user info
         print "Merged entries for " + str(N) + " most recent report(s):"
@@ -790,28 +787,6 @@ class Report:
 
 
 
-    def export(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPORT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Exporting report: '" + self.name + "' (" + str(self.date) + ")"
-
-        # Export report
-        with open(path + self.name, "w") as f:
-
-            # Dump JSON
-            json.dump(self.json, f,
-                      indent = 4,
-                      separators = (",", ": "),
-                      sort_keys = True)
-
-
-
     def show(self):
 
         """
@@ -906,10 +881,12 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Note: The first slash might only work for Linux.
         """
 
         # Merge path
-        return os.sep.join(self.list)
+        return os.sep + os.sep.join(self.list)
 
 
 
@@ -1082,7 +1059,7 @@ def main():
     #reporter.erase("test.json", now)
 
     # Get most recent BG
-    #reporter.getRecent("BG.json", [], 3)
+    reporter.getRecent("BG.json", [], 3)
     #reporter.getRecent("treatments.json", ["Temporary Basals"])
 
     # Increment loop

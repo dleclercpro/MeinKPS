@@ -248,11 +248,8 @@ class Calculator(object):
             # Fill entries dict
             entries[lib.formatTime(T)] = [y, Y]
 
-        # Erase it
-        Reporter.erase(self.report)
-
-        # Store it
-        Reporter.add(self.report, [], entries)
+        # Generate report and store it
+        reporter.Report(self.report, Reporter.src.str, None, entries).store()
 
 
 
