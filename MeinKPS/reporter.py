@@ -47,12 +47,11 @@ class Reporter:
         """
 
         # Define source path
-        self.src = os.getcwd() + "/" + "Reports/"
-        #self.src = "/home/pi/MeinKPS/MeinKPS/Reports/"
+        self.src = Path(os.path.dirname(os.path.realpath(__file__)) + os.sep +
+                        "Reports")
 
         # Define export path
-        self.out = self.src + "Recent/"
-        #self.out = "/home/pi/MeinKPS/MeinKPS/Reports/Recent/"
+        self.exp = Path(self.src.str + "Recent")
 
         # Initialize reports
         self.reports = []
@@ -118,16 +117,13 @@ class Reporter:
         if path is None:
 
             # Define source
-            path = self.src
+            path = self.src.str
 
         # No dates
         if dates is None:
 
-            # Define path
-            p = path
-
             # Generate new report
-            if self.new(name, p):
+            if self.new(name, path):
 
                 # Update count
                 n += 1
@@ -142,7 +138,9 @@ class Reporter:
                 dates = [dates]
 
             # Format dates
-            dates = [datetime.datetime.strftime(d, "%Y/%m/%d") for d in dates]
+            dates = [datetime.datetime.strftime(d, "%Y" + os.sep +
+                                                   "%m" + os.sep +
+                                                   "%d") for d in dates]
 
             # Make sure dates are sorted out and only appear once
             # This can deal with both list and dict types
@@ -151,11 +149,8 @@ class Reporter:
             # Loop on dates
             for d in dates:
 
-                # Define path
-                p = path + d + "/"
-
                 # Generate new report
-                if self.new(name, p, d):
+                if self.new(name, path + d + os.sep, d):
 
                     # Update count
                     n += 1
@@ -171,7 +166,7 @@ class Reporter:
                    str(report.date) + ")")
 
             # Make sure report exists
-            Path(report.path).find(name)
+            Path(report.path).touch(name)
 
             # Open report
             with open(report.path + name, "r") as f:
@@ -195,11 +190,12 @@ class Reporter:
         # Verify if report already exists
         try:
 
-            # Give user info
-            print "Unloading report: " + name + " (" + str(date) + ")"
-
             # Try loading report
-            i = self.getReport(name, date)[1]
+            report, i = self.getReport(name, date)
+
+            # Give user info
+            print ("Unloading report: " + report.name + " (" +
+                   str(report.date) + ")")
 
             # Delete it using its index
             del self.reports[i]
@@ -281,13 +277,13 @@ class Reporter:
         """
 
         # Touch export file
-        Path(self.out).find(name)
+        self.exp.touch(name)
 
         # Get recent data
         data = self.getLatest(name, [])
 
         # Store recent data
-        with open(self.out + name, "w") as f:
+        with open(self.exp.str + name, "w") as f:
 
             # Dump JSON
             json.dump(data, f,
@@ -342,7 +338,9 @@ class Reporter:
                 type(date) is datetime.date):
 
                 # Get and format date
-                date = datetime.datetime.strftime(date, "%Y/%m/%d")
+                date = datetime.datetime.strftime(date, "%Y" + os.sep +
+                                                        "%m" + os.sep +
+                                                        "%d")
 
         # Give user info
         print "Getting report: '" + name + "' (" + str(date) + ")"
@@ -369,7 +367,7 @@ class Reporter:
                 continue
 
             # Return report and corresponding index
-            return [report, i]
+            return (report, i)
 
         # Raise error
         raise errors.NoReport(name, date)
@@ -664,7 +662,7 @@ class Reporter:
         """
 
         # Scan for all possible report paths
-        paths = Path(self.src).scan(name)
+        paths = self.src.scan(name)
 
         # If no possible reports found
         if not paths:
@@ -821,14 +819,17 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize string
+        self.str = None
+
+        # Initialize list
+        self.list = None
+
         # If input is string
         if type(path) is str:
 
             # Store it
             self.str = path
-
-            # Generate a list from it
-            self.list = self.split()
 
         # If it is list
         elif type(path) is list:
@@ -836,11 +837,33 @@ class Path:
             # Store it
             self.list = path
 
-            # Generate a string from it
-            self.str = self.merge()
+        # Normalize path
+        self.norm()
 
         # Compute path depth
         self.depth = len(self.list)
+
+
+
+    def norm(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NORM
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # If list given
+        if self.list is not None:
+
+            # Merge it
+            self.str = self.merge()
+
+        # Normalize string
+        self.str = os.path.abspath(self.str) + os.sep
+
+        # Split it
+        self.list = self.split()
 
 
 
@@ -853,9 +876,7 @@ class Path:
         """
 
         # Split path
-        return [p for p in self.str.replace("\\", "/")
-                                   .replace("//", "/")
-                                   .split("/") if p != ""]
+        return [p for p in self.str.split(os.sep) if p != ""]
 
 
 
@@ -865,13 +886,10 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: The first "/" will only work for Linux
         """
 
         # Merge path
-        return "/" + "/".join(self.list) + "/"
-        #return "/".join(self.list) + "/"
+        return os.sep.join(self.list)
 
 
 
@@ -886,8 +904,8 @@ class Path:
         # Initialize date
         date = []
 
-        # Initialize path
-        path = self.str
+        # Get path and remove last slash
+        path = os.path.split(self.str)[0]
 
         # Loop 3 directories up to get corresponding date
         for i in range(3):
@@ -906,31 +924,37 @@ class Path:
 
 
 
-    def find(self, file = None, n = 1):
+    def touch(self, file = None, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FIND
+            TOUCH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Stringify current path
-        path = Path(self.list[:n]).str
+        # Get current path
+        path = Path(self.list[:n])
+
+        # Stringify it
+        path = path.str
 
         # Look for path
         if n <= self.depth:
+
+            # Show current path
+            print path
 
             # If it does not exist
             if not os.path.exists(path):
 
                 # Give user info
-                print "Making '" + path + "/'..."
+                print "Making path '" + path + "'..."
 
                 # Make it
                 os.makedirs(path)
 
             # Contine looking
-            self.find(file, n + 1)
+            self.touch(file, n + 1)
 
         # Look for file
         elif file is not None:
@@ -942,7 +966,7 @@ class Path:
             if not os.path.exists(path):
 
                 # Give user info
-                print "Making '" + path + "'..."
+                print "Making file '" + path + "'..."
 
                 # Create it
                 with open(path, "w") as f:
@@ -1023,16 +1047,16 @@ def main():
     reporter = Reporter()
 
     # Get basal profile from pump report
-    #reporter.get("pump.json", [], "Basal Profile (Standard)")
+    lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
 
     # Unload pump report
-    #reporter.unload("pump.json")
+    reporter.unload("pump.json")
 
     # Add entries to test report
-    reporter.add("test.json", ["D", "A"], {now: 0})
+    #reporter.add("test.json", ["D", "A"], {now: 0})
 
     # Erase entries from test report
-    #reporter.erase("test.json")
+    #reporter.erase("test.json", now)
 
     # Get most recent BG
     #reporter.getLatest("BG.json", [], 3)
