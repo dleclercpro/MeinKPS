@@ -110,11 +110,6 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Export most recent data
-    Reporter.export("BG.json")
-    Reporter.export("treatments.json")
-    Reporter.export("history.json")
-
     # Instanciate an FTP object
     ftp = ftplib.FTP(Reporter.get("FTP.json", [], "Host"),
                      Reporter.get("FTP.json", [], "User"),
@@ -124,8 +119,7 @@ def main():
     ftp.cwd(Reporter.get("FTP.json", [], "Path"))
 
     # Define file paths
-    path = "/home/pi/MeinKPS/MeinKPS/Reports/Recent/"
-    #path = os.getcwd() + "/Reports/Recent/"
+    path = Reporter.exp.str
 
     # Upload files within path
     upload(ftp, path, "json")

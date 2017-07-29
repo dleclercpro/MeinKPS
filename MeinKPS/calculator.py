@@ -231,10 +231,11 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Generate new dict
-        entries = {}
+        # Generate new insulin dict
+        insulin = {"Boluses": {},
+                   "Basals": {}}
 
-        # Count entries
+        # Count treatments
         n = len(self.net.T)
 
         # Loop over net insulin profile
@@ -245,14 +246,17 @@ class Calculator(object):
             y = self.net.y[i]
             Y = self.basal.f(T)
 
-            # Fill entries dict
-            entries[lib.formatTime(T)] = [y, Y]
+            # Fill insulin dict
+            insulin["Basals"][lib.formatTime(T)] = [y, Y]
 
-        # Get report
-        report = Reporter.getReport(self.report)[0]
+        # Fill insulin dict with recent boluses
+        insulin["Boluses"] = Reporter.getRecent("treatments.json", ["Boluses"])
 
-        # Update it
-        report.update(entries)
+        # Export recent insulin treatments
+        Reporter.export("treatments.json", insulin)
+
+        # Export recent BGs
+        Reporter.export("BG.json", Reporter.getRecent("BG.json", []))
 
 
 

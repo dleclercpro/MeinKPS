@@ -50,6 +50,9 @@ class Reporter:
         self.src = Path(os.path.dirname(os.path.realpath(__file__)) + os.sep +
                         "Reports")
 
+        # Define export path
+        self.exp = Path(self.src.str + "Recent")
+
         # Initialize reports
         self.reports = []
 
@@ -158,21 +161,8 @@ class Reporter:
             # Get current new report
             report = self.reports[-(i + 1)]
 
-            # Give user info
-            print ("Loading report: '" + report.name + "' (" +
-                   str(report.date) + ")")
-
-            # Make sure report exists
-            Path(report.path).touch(name)
-
-            # Open report
-            with open(report.path + name, "r") as f:
-
-                # Load JSON
-                report.json = json.load(f)
-
-            # Give user info
-            print "Report loaded."
+            # Load its JSON
+            report.load()
 
 
 
@@ -240,6 +230,22 @@ class Reporter:
 
                 # Store it
                 report.store()
+
+
+
+    def export(self, name, json):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Generate temporary report
+        report = Report(name, self.exp.str, None, json)
+
+        # Store it
+        report.store()
 
 
 
@@ -768,6 +774,31 @@ class Report:
 
 
 
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Loading report: '" + self.name + "' (" + str(self.date) + ")"
+
+        # Make sure report exists
+        Path(self.path).touch(self.name)
+
+        # Open report
+        with open(self.path + self.name, "r") as f:
+
+            # Load JSON
+            self.json = json.load(f)
+
+        # Give user info
+        print "Report loaded."
+
+
+
     def store(self):
 
         """
@@ -778,6 +809,9 @@ class Report:
 
         # Give user info
         print "Storing report: '" + self.name + "' (" + str(self.date) + ")"
+
+        # Make sure report exists
+        Path(self.path).touch(self.name)
 
         # Rewrite report
         with open(self.path + self.name, "w") as f:
