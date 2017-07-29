@@ -79,8 +79,8 @@ class Reporter:
         # Verify if report already exists
         try:
 
-            # Try loading report
-            self.getReport(name, date)
+            # Try getting report (without loading it!)
+            self.getReport(name, date, False)
 
             # Give user info
             print "Report '" + name + "' (" + str(date) + ") already loaded."
@@ -290,13 +290,22 @@ class Reporter:
 
 
 
-    def getReport(self, name, date = None):
+    def getReport(self, name, date = None, load = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             GETREPORT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # If loading necessary
+        if load:
+
+            # Give user info
+            print "Getting report: '" + name + "' (" + str(date) + ")"
+
+            # Load report
+            self.load(name, date)
 
         # If date
         if date is not None:
@@ -309,9 +318,6 @@ class Reporter:
                 date = datetime.datetime.strftime(date, "%Y" + os.sep +
                                                         "%m" + os.sep +
                                                         "%d")
-
-        # Give user info
-        print "Getting report: '" + name + "' (" + str(date) + ")"
 
         # Count loaded reports
         n = len(self.reports)
@@ -333,6 +339,9 @@ class Reporter:
 
                 # Skip
                 continue
+
+            # Give user info
+            print "Report found."
 
             # Return report and corresponding index
             return (report, i)
@@ -392,6 +401,9 @@ class Reporter:
 
             # Update section
             section = section[b]
+
+        # Give user info
+        print "Section found."
 
         # Return section
         return section
@@ -526,14 +538,14 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get first value
+        first = min(entries)
+
         # If entries are dated
-        if type(min(entries)) is datetime.datetime:
+        if type(first) is datetime.datetime:
 
             # Initialize date
-            date = True
-
-            # Load report(s)
-            self.load(name, entries.keys())
+            date = first
 
         # Otherwise
         else:
@@ -541,14 +553,11 @@ class Reporter:
             # Initialize date
             date = None
 
-            # Load report
-            self.load(name)
+        # Get it
+        report = self.getReport(name, date)[0]
 
-            # Get it
-            report = self.getReport(name)[0]
-
-            # Get section
-            section = self.getSection(report, branch, True)
+        # Get section
+        section = self.getSection(report, branch, True)
 
         # Loop through entries
         for key in sorted(entries):
@@ -559,23 +568,20 @@ class Reporter:
             # If date
             if date is not None:
 
-                # Get date
-                d = key.date()
-
-                # Format key
-                key = lib.formatTime(key)
-
                 # If date is different than previous one
-                if d != date:
+                if key.date() != date:
 
                     # Update date
-                    date = d
+                    date = key.date()
 
                     # Get report
                     report = self.getReport(name, date)[0]
 
                     # Get section
                     section = self.getSection(report, branch, True)
+
+                # Format key
+                key = lib.formatTime(key)
 
             # Add entry
             self.addEntry(section, {key: value}, overwrite)
@@ -602,12 +608,6 @@ class Reporter:
             # Get date
             date = key.date()
 
-            # Format key
-            key = lib.formatTime(key)
-
-        # Load report
-        self.load(name, date)
-
         # Get it
         report = self.getReport(name, date)[0]
 
@@ -616,6 +616,9 @@ class Reporter:
 
         # If key was provided
         if key is not None:
+
+            # Format key
+            key = lib.formatTime(key)
 
             # Return corresponding value
             return self.getEntry(section, key)
@@ -646,7 +649,7 @@ class Reporter:
         N = 0
 
         # Loop on dates, starting with the latest one
-        for d in sorted(dates, reverse = True):
+        for date in sorted(dates, reverse = True):
 
             # Check if enough recent reports were fetched
             if N == n:
@@ -654,11 +657,8 @@ class Reporter:
                 # Quit
                 break
 
-            # Load report
-            self.load(name, d)
-
             # Get report
-            report = self.getReport(name, d)[0]
+            report = self.getReport(name, date)[0]
 
             # Try getting section
             try:
@@ -722,6 +722,9 @@ class Report:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Give user info
+        print "Resetting report: '" + self.name + "' (" + str(self.date) + ")"
+
         # Reset JSON
         self.json = {}
 
@@ -740,6 +743,9 @@ class Report:
 
         # Update JSON
         self.json = json
+
+        # Store it
+        self.store()
 
 
 
@@ -1047,7 +1053,7 @@ def main():
     lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
 
     # Get BGs of today
-    lib.printJSON(reporter.get("BG.json", [], None, now))
+    #lib.printJSON(reporter.get("BG.json", [], None, now))
 
     # Unload pump report
     #reporter.unload("pump.json")
@@ -1060,7 +1066,7 @@ def main():
 
     # Get most recent BG
     reporter.getRecent("BG.json", [], 3)
-    #reporter.getRecent("treatments.json", ["Temporary Basals"])
+    reporter.getRecent("treatments.json", ["Temporary Basals"])
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")

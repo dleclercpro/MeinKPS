@@ -248,8 +248,11 @@ class Calculator(object):
             # Fill entries dict
             entries[lib.formatTime(T)] = [y, Y]
 
-        # Generate report and store it
-        reporter.Report(self.report, Reporter.src.str, None, entries).store()
+        # Get report
+        report = Reporter.getReport(self.report)[0]
+
+        # Update it
+        report.update(entries)
 
 
 
