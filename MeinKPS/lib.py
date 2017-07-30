@@ -185,12 +185,12 @@ def normalizeTime(t, T):
     if t >= T:
 
         # Compute positive time difference (s)
-        dt = (t - T).seconds
+        dt = (t - T).total_seconds()
 
     else:
 
         # Compute negative time difference (s)
-        dt = -(T - t).seconds
+        dt = -(T - t).total_seconds()
 
     # Convert time difference to hours
     dt /= 3600.0

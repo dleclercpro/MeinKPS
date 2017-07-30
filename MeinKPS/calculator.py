@@ -121,7 +121,19 @@ class Calculator(object):
         self.load()
 
         # Prepare components
-        self.prepare()
+        #self.prepare()
+
+        # Show components
+        #self.show()
+
+        # Export preprocessed treatments
+        self.export()
+
+        # Run autosens
+        #self.autosens()
+
+        # Recommend and return TB
+        #return self.recommend()
 
 
 
@@ -167,33 +179,12 @@ class Calculator(object):
         # Compute future end of insulin action
         future = self.now + datetime.timedelta(hours = self.DIA)
 
+        # Build net insulin profile
+        self.build(past, self.now)
+
         # Define IDC
         #self.IDC = IDC.WalshIDC(self.DIA)
         self.IDC = IDC.FiaspIDC(self.DIA)
-
-        # Build basal profile
-        self.basal.build(past, self.now)
-
-        # Build TB profile
-        self.TB.build(past, self.now, self.basal)
-
-        # Build bolus profile
-        self.bolus.build(past, self.now)
-
-        # Build suspend profile
-        self.suspend.build(past, self.now, self.basal)
-
-        # Build resume profile
-        self.resume.build(past, self.now, self.TB.subtract(self.basal))
-                      
-        # Build net profile using suspend/resume and bolus profiles
-        self.net = self.resume.subtract(self.suspend).add(self.bolus)
-
-        # Give user info
-        print "Net insulin profile:"
-
-        # Show net insulin profile
-        self.net.show()
         
         # Build past IOB profile
         # FIXME: when no past data found
@@ -223,6 +214,42 @@ class Calculator(object):
 
 
 
+    def build(self, past, now):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            BUILD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Build net insulin profile.
+        """
+
+        # Build basal profile
+        self.basal.build(past, now)
+
+        # Build TB profile
+        self.TB.build(past, now, self.basal)
+
+        # Build bolus profile
+        self.bolus.build(past, now)
+
+        # Build suspend profile
+        self.suspend.build(past, now, self.basal)
+
+        # Build resume profile
+        self.resume.build(past, now, self.TB.subtract(self.basal))
+                      
+        # Build net profile using suspend/resume and bolus profiles
+        self.net = self.resume.subtract(self.suspend).add(self.bolus)
+
+        # Give user info
+        print "Net insulin profile:"
+
+        # Show net insulin profile
+        self.net.show()
+
+
+
     def export(self):
 
         """
@@ -235,6 +262,12 @@ class Calculator(object):
         insulin = {"Boluses": {},
                    "Basals": {}}
 
+        # Compute past start of insulin action
+        past = self.now - datetime.timedelta(hours = 24)
+
+        # Build insulin profiles for last 24 hours
+        self.build(past, self.now)
+
         # Count treatments
         n = len(self.net.T)
 
@@ -243,8 +276,8 @@ class Calculator(object):
 
             # Get considered time and corresponding net insulin and basal rates
             T = self.net.T[i]
-            y = self.net.y[i]
-            Y = self.basal.f(T)
+            Y = round(self.net.y[i], 2)
+            y = round(self.basal.f(T), 2)
 
             # Fill insulin dict
             insulin["Basals"][lib.formatTime(T)] = [y, Y]
@@ -548,18 +581,6 @@ def main():
 
     # Run calculator
     calculator.run(now)
-
-    # Run autosens
-    #calculator.autosens()
-
-    # Recommend TB
-    #calculator.recommend()
-
-    # Show results
-    #calculator.show()
-
-    # Export processed treatments
-    calculator.export()
 
 
 

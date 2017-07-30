@@ -137,6 +137,9 @@ class Profile(object):
         # Define end of profile
         self.end = end
 
+        # Reset profile components
+        self.reset()
+
         # Load profile components
         self.load()
 
@@ -220,9 +223,6 @@ class Profile(object):
         # Give user info
         print "Decoupling components..."
 
-        # Reset components
-        self.reset()
-
         # Decouple components
         for t in sorted(self.data):
 
@@ -267,17 +267,29 @@ class Profile(object):
         T = []
         y = []
 
+        # Get number of days to map
+        d = (self.end - self.start).days
+
         # Get number of entries
         n = len(self.T)
 
-        # Rebuild profile
-        for i in range(n):
+        # Loop on days
+        for i in range(d + 1):
 
-            # Add time
-            T.append(datetime.datetime.combine(now, self.T[i]))
+            # Rebuild profile
+            for j in range(n):
 
-            # Add value
-            y.append(self.y[i])
+                # Get day
+                day = now - datetime.timedelta(days = d - i)
+
+                # Add time
+                T.append(datetime.datetime.combine(day, self.T[j]))
+
+                # Add value
+                y.append(self.y[j])
+
+        # Update number of entries
+        n = len(T)
 
         # Initialize current index (handle between 23:00 and 00:00 of
         # following day)
@@ -302,13 +314,13 @@ class Profile(object):
             if self.norm == "End" and i > index:
 
                 # Update time
-                T[i] -= datetime.timedelta(days = 1)
+                T[i] -= datetime.timedelta(days = d + 1)
 
             # Find times in past and bring them in the future
             elif self.norm == "Start" and i < index:
 
                 # Update time
-                T[i] += datetime.timedelta(days = 1)
+                T[i] += datetime.timedelta(days = d + 1)
 
         # Zip and sort profile
         z = sorted(zip(T, y))
