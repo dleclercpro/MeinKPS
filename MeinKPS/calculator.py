@@ -260,7 +260,7 @@ class Calculator(object):
 
         # Generate new insulin dict
         insulin = {"Boluses": {},
-                   "Basals": {}}
+                   "Net Basals": {}}
 
         # Compute past start of insulin action
         past = self.now - datetime.timedelta(hours = 24)
@@ -268,12 +268,20 @@ class Calculator(object):
         # Build insulin profiles for last 24 hours
         self.build(past, self.now)
 
-        # Loop over net and basal times
-        for T in lib.uniqify(self.net.T + self.basal.T):
+        # Count number of net insulin profile entries
+        n = len(self.net.T)
 
-            # Fill insulin dict with corresponding net insulin and basal rates
-            insulin["Basals"][lib.formatTime(T)] = [round(self.basal.f(T), 2),
-                                                    round(self.net.f(T), 2)]
+        # Loop over net insulin profile
+        for i in range(n):
+
+            # Get and format time
+            T = lib.formatTime(self.net.T[i])
+
+            # Get and round net insulin
+            y = round(self.net.y[i], 2)
+
+            # Fill insulin dict with net insulin rates
+            insulin["Net Basals"][T] = y
 
         # Fill insulin dict with recent boluses
         insulin["Boluses"] = Reporter.getRecent("treatments.json", ["Boluses"])

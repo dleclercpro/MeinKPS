@@ -926,7 +926,8 @@ class Path:
         """
 
         # Merge path
-        return os.sep + os.sep.join(self.list)
+        return os.sep.join(self.list)
+        #return os.sep + os.sep.join(self.list)
 
 
 
