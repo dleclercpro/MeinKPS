@@ -121,7 +121,7 @@ class Calculator(object):
         self.load()
 
         # Prepare components
-        #self.prepare()
+        self.prepare()
 
         # Show components
         #self.show()
@@ -133,7 +133,7 @@ class Calculator(object):
         #self.autosens()
 
         # Recommend and return TB
-        #return self.recommend()
+        return self.recommend()
 
 
 
