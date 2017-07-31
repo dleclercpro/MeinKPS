@@ -199,6 +199,9 @@ class Loop(object):
             # Enact TB
             self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
+        # Export preprocessed treatments
+        self.calc.export()
+
         # Stop dialogue with pump
         self.pump.stop()
 

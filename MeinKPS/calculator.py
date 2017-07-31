@@ -126,9 +126,6 @@ class Calculator(object):
         # Show components
         #self.show()
 
-        # Export preprocessed treatments
-        self.export()
-
         # Run autosens
         #self.autosens()
 
