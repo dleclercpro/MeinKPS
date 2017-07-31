@@ -191,7 +191,7 @@ class Loop(object):
         if TB is None:
 
             # Cancel TB
-            self.pump.TB.cancel()
+            self.do(self.pump.TB.cancel, ["Pump"], "TB")
 
         # Otherwise, enact recommendation
         else:
