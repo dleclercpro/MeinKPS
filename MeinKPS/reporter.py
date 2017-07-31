@@ -138,9 +138,7 @@ class Reporter:
                 dates = [dates]
 
             # Format dates
-            dates = [datetime.datetime.strftime(d, "%Y" + os.sep +
-                                                   "%m" + os.sep +
-                                                   "%d") for d in dates]
+            dates = [lib.formatDate(d) for d in dates]
 
             # Make sure dates are sorted out and only appear once
             # This can deal with both list and dict types
@@ -308,7 +306,8 @@ class Reporter:
         if load:
 
             # Give user info
-            print "Getting report: '" + name + "' (" + str(date) + ")"
+            print ("Getting report: '" + name + "' (" + lib.formatDate(date) +
+                   ")")
 
             # Load report
             self.load(name, date)
@@ -321,9 +320,7 @@ class Reporter:
                 type(date) is datetime.date):
 
                 # Get and format date
-                date = datetime.datetime.strftime(date, "%Y" + os.sep +
-                                                        "%m" + os.sep +
-                                                        "%d")
+                date = lib.formatDate(date)
 
         # Count loaded reports
         n = len(self.reports)
@@ -926,8 +923,7 @@ class Path:
         """
 
         # Merge path
-        return os.sep.join(self.list)
-        #return os.sep + os.sep.join(self.list)
+        return os.sep + os.sep.join(self.list)
 
 
 

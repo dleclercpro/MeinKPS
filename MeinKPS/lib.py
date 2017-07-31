@@ -24,9 +24,10 @@
 """
 
 # LIBRARIES
-import datetime
+import os
 import json
 import copy
+import datetime
 import numpy as np
 
 
@@ -161,18 +162,6 @@ def formatTime(t):
 
 
 
-def getDay(t):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        GETDAY
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    return datetime.datetime.strftime(t, "%Y.%m.%d")
-
-
-
 def normalizeTime(t, T):
 
     """
@@ -197,6 +186,33 @@ def normalizeTime(t, T):
 
     # Return time difference
     return dt
+
+
+
+def formatDate(t):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        FORMATDATE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # If datetime object
+    if type(t) is datetime.datetime or type(t) is datetime.date:
+
+        # Format date
+        date = datetime.datetime.strftime(t, "%Y" + os.sep +
+                                             "%m" + os.sep +
+                                             "%d")
+
+    # Otherwise
+    else:
+
+        # No date
+        date = str(None)
+
+    # Return formatted date
+    return date
 
 
 
