@@ -140,7 +140,7 @@ class Command(object):
             if n == self.nReadAttempts:
 
                 # Raise error
-                raise errors.MaxRead(self.nReadAttempts)
+                raise errors.MaxRead(n)
 
             # Otherwise
             else:
