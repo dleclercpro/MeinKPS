@@ -470,6 +470,9 @@ class Reporter:
             # Give user info
             print "Entry already exists."
 
+            # Entry was not modified
+            return False
+
         # If not, write it down
         else:
 
@@ -487,6 +490,9 @@ class Reporter:
 
                 # Give user info
                 print "Entry added."
+
+            # Entry was modified
+            return True
 
 
 
@@ -586,11 +592,8 @@ class Reporter:
                 # Format key
                 key = lib.formatTime(key)
 
-            # Add entry
-            self.addEntry(section, {key: value}, overwrite)
-
-            # Report was modified
-            report.modified = True
+            # Add entry and note if report was modified
+            report.modified = self.addEntry(section, {key: value}, overwrite)
 
         # Store modified reports
         self.store()
@@ -1007,6 +1010,9 @@ class Path:
 
                     # Dump empty dict
                     json.dump({}, f)
+
+                # Give permissions
+                os.chmod(path, 0775)
 
 
 

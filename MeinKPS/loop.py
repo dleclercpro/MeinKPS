@@ -230,8 +230,8 @@ class Loop(object):
             # Give user info
             print "Could not execute task '" + key + "':"
 
-            # Show error message
-            print e.message
+            # Show error
+            print e
 
 
 
