@@ -231,7 +231,7 @@ class Loop(object):
             print "Could not execute task '" + key + "':"
 
             # Show error
-            print e
+            print e.message | e
 
 
 
