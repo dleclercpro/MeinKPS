@@ -107,6 +107,9 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Plug CGM
+        os.system("sudo sh " + self.src + "plug.sh")
+
         # Try opening port and define a handle
         try:
 

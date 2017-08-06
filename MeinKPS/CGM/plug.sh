@@ -13,11 +13,11 @@
 #    License:  GNU General Public License, Version 3
 #              (http://www.gnu.org/licenses/gpl.html)
 #
-#    Overview: This script can be used to plug the stick.
+#    Overview: This script can be used to plug the CGM.
 #
 #    Notes:    ...
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Plug stick
-sudo modprobe usbserial vendor=0x0a21 product=0x8001
+# Plug CGM
+sudo modprobe usbserial vendor=0x22a3 product=0x0047
