@@ -57,9 +57,6 @@ if [ -e $FILE ]; then
     # Wait...
     sleep 2
 
-    # Replug stick
-    sudo sh ./plug.sh
-
 # Otherwise
 else
 
