@@ -114,7 +114,7 @@ class CGM(object):
         try:
 
             # Define handle
-            self.handle.port = "/dev/ttyACM0"
+            self.handle.port = "/dev/ttyUSB.cgm"
             self.handle.baudrate = 115200
 
             # Open handle
