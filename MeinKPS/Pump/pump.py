@@ -142,9 +142,6 @@ class Pump(object):
         # Give user info
         print "Starting dialogue with pump..."
 
-        # Connect to stick
-        self.stick.connect()
-
         # Start stick
         self.stick.start()
 
@@ -164,8 +161,8 @@ class Pump(object):
         # Give user info
         print "Stopping dialogue with the pump..."
 
-        # Disconnect from stick
-        self.stick.disconnect()
+        # Stop stick
+        self.stick.stop()
 
 
 

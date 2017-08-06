@@ -62,6 +62,9 @@ class CGM(object):
         self.vendor = 0x22a3
         self.product = 0x0047
 
+        # Define source path
+        self.src = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
         # Give CGM a handle
         self.handle = serial.Serial()
 
@@ -141,6 +144,63 @@ class CGM(object):
 
         # Close handle
         self.handle.close()
+
+
+
+    def ping(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PING
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Try reading battery
+        try:
+
+            # Read battery
+            self.battery.read()
+
+        # If failed, CGM is most probably in error/dead state
+        except:
+
+            # Give user info
+            print "CGM seems to be dead. Resetting it..."
+
+            # Power-cycle USB ports
+            os.system("sudo sh " + self.src + "../reset.sh")
+
+            # Reconnect
+            self.connect()
+
+
+
+    def start(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            START
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Connect CGM
+        self.connect()
+
+        # Ping CGM
+        self.ping()
+
+
+
+    def stop(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STOP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Disconnect CGM
+        self.disconnect()
 
 
 
@@ -686,14 +746,14 @@ def main():
     # Instanciate CGM
     cgm = CGM()
 
-    # Establish connection with CGM
-    cgm.connect()
+    # Start CGM
+    cgm.start()
 
     # Dump data from CGM
     cgm.dump()
 
-    # End connection with CGM
-    cgm.disconnect()
+    # Stop CGM
+    cgm.stop()
 
 
 

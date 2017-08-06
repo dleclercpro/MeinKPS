@@ -35,7 +35,6 @@
 
 # LIBRARIES
 import os
-import glob
 import datetime
 import serial
 
@@ -62,8 +61,8 @@ class Stick(object):
         self.vendor = 0x0a21
         self.product = 0x8001
 
-        # Define path to files
-        self.path = "/home/pi/MeinKPS/MeinKPS/Pump/"
+        # Define source path
+        self.src = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
         # Define times
         self.timeout = 0.1
@@ -96,7 +95,7 @@ class Stick(object):
         """
 
         # Plug stick
-        os.system("sudo sh " + self.path + "plug.sh")
+        os.system("sudo sh " + self.src + "plug.sh")
 
         # Try opening port and define a handle
         try:
@@ -161,7 +160,7 @@ class Stick(object):
             print "Stick seems to be dead. Resetting it..."
 
             # Power-cycle USB ports
-            os.system("sudo sh " + self.path + "reset.sh")
+            os.system("sudo sh " + self.src + "../reset.sh")
 
             # Reconnect
             self.connect()
@@ -175,6 +174,9 @@ class Stick(object):
             START
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Connect stick
+        self.connect()
 
         # Ping stick
         self.ping()
@@ -190,6 +192,19 @@ class Stick(object):
 
         # Read radio state
         self.interfaces["Radio"].read()
+
+
+
+    def stop(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STOP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Disconnect stick
+        self.disconnect()
 
 
 
@@ -405,14 +420,11 @@ def main():
     # Instanciate a stick for me
     stick = Stick()
 
-    # Connect to stick
-    stick.connect()
-
     # Start stick
     stick.start()
 
-    # Disconnect from stick
-    stick.disconnect()
+    # Stop stick
+    stick.stop()
 
 
 

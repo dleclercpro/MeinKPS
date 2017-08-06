@@ -118,14 +118,14 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Establish connection with CGM
-        self.cgm.connect()
+        # Start CGM
+        self.cgm.start()
 
         # Prepare CGM
         self.prepareCGM()
 
-        # End connection with CGM
-        self.cgm.disconnect()
+        # Stop CGM
+        self.cgm.stop()
 
 
 
@@ -177,7 +177,7 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start dialogue with pump
+        # Start pump
         self.pump.start()
 
         # Prepare pump
@@ -185,7 +185,7 @@ class Loop(object):
 
         # Run calculator and get recommendation
         TB = self.calc.run(self.start)
-        #TB = [self.start.minute / 60.0, "U/h", 30]
+        # TB = [self.start.minute / 60.0, "U/h", 30]
 
         # If no TB is required
         if TB is None:
@@ -202,7 +202,7 @@ class Loop(object):
         # Export preprocessed treatments
         self.calc.export()
 
-        # Stop dialogue with pump
+        # Stop pump
         self.pump.stop()
 
 
@@ -231,7 +231,7 @@ class Loop(object):
             print "Could not execute task '" + key + "':"
 
             # Show error
-            print e.message | e
+            print e
 
 
 
