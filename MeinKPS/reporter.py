@@ -592,8 +592,11 @@ class Reporter:
                 # Format key
                 key = lib.formatTime(key)
 
-            # Add entry and note if report was modified
-            report.modified = self.addEntry(section, {key: value}, overwrite)
+            # Add entry
+            if self.addEntry(section, {key: value}, overwrite):
+
+                # If report was modified
+                report.modified = True
 
         # Store modified reports
         self.store()
