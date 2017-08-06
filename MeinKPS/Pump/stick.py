@@ -95,7 +95,7 @@ class Stick(object):
         """
 
         # Plug stick
-        #os.system("sudo sh " + self.src + "plug.sh")
+        os.system("sudo sh " + self.src + "plug.sh")
 
         # Try opening port and define a handle
         try:
