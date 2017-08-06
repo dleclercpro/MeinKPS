@@ -19,5 +19,11 @@
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Unplugging usb-serial devices
+sudo modprobe -r usbserial
+
+# Give user info
+echo "Plugging CGM..."
+
 # Plug CGM
 sudo modprobe usbserial vendor=0x22a3 product=0x0047

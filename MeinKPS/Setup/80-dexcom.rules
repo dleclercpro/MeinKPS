@@ -1,6 +1,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-#    Title:    stick.rules
+#    Title:    80-dexcom.rules
 #
 #    Author:   David Leclerc
 #
@@ -11,28 +11,20 @@
 #    License:  GNU General Public License, Version 3
 #              (http://www.gnu.org/licenses/gpl.html)
 #
-#    Overview: This is a UDEV rule to assign a fixed DEV path to a Medtronic
-#              Carelink stick.
+#    Overview: This is a UDEV rule to assign a fixed DEV path to a Dexcom G4
+#              receiver.
 #
 #    Notes:    This needs to be stored in: /etc/udev/rules.d/
 #              After storing it, enact it with: sudo udevadm trigger
 #
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ATTRS{idVendor}=="0a21", ATTRS{idProduct}=="8001", \
-  ENV{ID_MTP_DEVICE_IGNORE}="1", \
+ATTRS{idVendor}=="22a3", ATTRS{idProduct}=="0047", \
   ENV{ID_MM_DEVICE_IGNORE}="1"
 
 ACTION=="add", \
   SUBSYSTEM=="tty", \
-  ATTRS{idVendor}=="0a21", ATTRS{idProduct}=="8001", \
+  ATTRS{idVendor}=="22a3", ATTRS{idProduct}=="0047", \
   GROUP="plugdev", \
-  SYMLINK+="ttyUSB.stick", \
-  RUN+="/sbin/modprobe usbserial vendor=0x0a21 product=0x8001"
-
-ACTION=="remove", \
-  SUBSYSTEM=="usb", \
-  ATTR{idVendor}=="0a21", ATTR{idProduct}=="8001", \
-  ENV{ID_MODEL_ID}=="0a21", \
-  ENV{ID_VENDOR_ID}=="8001", \
-  RUN+="/sbin/modprobe -r usbserial"
+  SYMLINK+="ttyUSB.cgm", \
+  RUN+="/home/pi/MeinKPS/MeinKPS/CGM/plug.sh"

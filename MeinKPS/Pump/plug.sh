@@ -19,5 +19,11 @@
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Unplugging usb-serial devices
+sudo modprobe -r usbserial
+
+# Give user info
+echo "Plugging stick..."
+
 # Plug stick
 sudo modprobe usbserial vendor=0x0a21 product=0x8001
