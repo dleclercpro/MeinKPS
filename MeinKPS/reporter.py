@@ -795,7 +795,7 @@ class Report:
         with open(self.path + self.name, "r") as f:
 
             # Load JSON
-            self.json = json.load(f, "utf-8")
+            self.json = json.load(f)
 
         # Give user info
         print "Report loaded."
