@@ -433,7 +433,7 @@ class Calculator(object):
         lastBoluses = Reporter.getRecent("treatments.json", ["Boluses"], 1)
 
         # Bolus snooze
-        if lastBoluses is not None:
+        if lastBoluses:
 
             # Get last bolus time and format it to datetime object
             lastBolusTime = lib.formatTime(max(lastBoluses))
