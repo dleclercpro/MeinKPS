@@ -429,11 +429,14 @@ class Calculator(object):
             # No TB recommendation
             R = None
 
-        # Get last bolus time
-        lastBolusTime = self.bolus.getLastTime()
+        # Get last boluses
+        lastBoluses = Reporter.getRecent("treatments.json", ["Boluses"], 1)
 
         # Bolus snooze
-        if lastBolusTime is not None:
+        if lastBoluses is not None:
+
+            # Get last bolus time and format it to datetime object
+            lastBolusTime = lib.formatTime(max(lastBoluses))
 
             # Compute elapsed time since last bolus (h)
             d = (self.now - lastBolusTime).seconds / 3600.0

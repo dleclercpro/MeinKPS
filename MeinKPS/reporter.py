@@ -277,8 +277,11 @@ class Reporter:
         # If no possible reports found
         if not paths:
 
-            # Exit
-            sys.exit("No dated report found for '" + name + "'.")
+            # Give user info
+            print "No dated report found for '" + name + "'."
+
+            # No dates
+            dates = []
 
         # Initialize dates
         dates = []
@@ -1104,9 +1107,10 @@ def main():
     # Erase entries from test report
     #reporter.erase("test.json", now)
 
-    # Get most recent BG
+    # Get most recent data
     reporter.getRecent("BG.json", [], 3)
     reporter.getRecent("treatments.json", ["Temporary Basals"])
+    reporter.getRecent("treatments.json", ["Boluses"])
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")
