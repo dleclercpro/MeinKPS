@@ -289,6 +289,12 @@ class Calculator(object):
         # Fill insulin dict with recent boluses
         insulin["Boluses"] = Reporter.getRecent("treatments.json", ["Boluses"])
 
+        # Give user info
+        print "Exporting net insulin profile:"
+
+        # Show net insulin profile
+        lib.printJSON(insulin)
+
         # Export recent insulin treatments
         Reporter.export("treatments.json", insulin)
 
@@ -588,6 +594,9 @@ def main():
 
     # Run calculator
     calculator.run(now)
+
+    # Export net insulin profile
+    calculator.export()
 
 
 
