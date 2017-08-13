@@ -211,7 +211,7 @@ class Calculator(object):
 
 
 
-    def build(self, past, now, bolus = True):
+    def build(self, past, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -237,13 +237,7 @@ class Calculator(object):
         self.resume.build(past, now, self.TB.subtract(self.basal))
                       
         # Build net profile using suspend/resume and bolus profiles
-        self.net = self.resume.subtract(self.suspend)
-
-        # If bolus need to be considered
-        if bolus:
-
-            # Add bolus profile
-            self.net = self.net.add(self.bolus)
+        self.net = self.resume.subtract(self.suspend).add(self.bolus)
 
         # Give user info
         print "Net insulin profile:"
@@ -269,7 +263,7 @@ class Calculator(object):
         past = self.now - datetime.timedelta(hours = 24)
 
         # Build insulin profiles for last 24 hours
-        self.build(past, self.now, False)
+        self.build(past, self.now)
 
         # Count number of net insulin profile entries
         n = len(self.net.T)
