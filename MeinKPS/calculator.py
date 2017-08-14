@@ -261,14 +261,15 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Generate new insulin dict
-        insulin = {"Boluses": {},
-                   "Net Basals": {}}
+        # Generate new treatments dict
+        treatments = {"Boluses": {},
+                   "Net Basals": {},
+                   "IOB": {}}
 
         # Compute past start of insulin action
         past = self.now - datetime.timedelta(hours = 24)
 
-        # Build insulin profiles for last 24 hours
+        # Build net insulin profile for last 24 hours
         self.build(past, self.now, False)
 
         # Count number of net insulin profile entries
@@ -283,23 +284,23 @@ class Calculator(object):
             # Get and round net insulin
             y = round(self.net.y[i], 2)
 
-            # Fill insulin dict with net insulin rates
+            # Fill treatments dict with net basal rates
             insulin["Net Basals"][T] = y
 
-        # Fill insulin dict with recent boluses
-        insulin["Boluses"] = Reporter.getRecent("treatments.json", ["Boluses"])
+        # Fill treatments dict with recent boluses
+        treatments["Boluses"] = Reporter.getRecent("treatments.json", ["Boluses"])
 
-        # Give user info
-        print "Exporting net insulin profile:"
+        # Fill treatments dict with recent IOBs
+        treatments["IOB"] = Reporter.getRecent("treatments.json", ["IOB"])
 
-        # Show net insulin profile
-        lib.printJSON(insulin)
-
-        # Export recent insulin treatments
-        Reporter.export("treatments.json", insulin)
+        # Export recent treatments
+        Reporter.export("treatments.json", treatments)
 
         # Export recent BGs
         Reporter.export("BG.json", Reporter.getRecent("BG.json", []))
+
+        # Export pump details
+        Reporter.export("pump.json", Reporter.get("pump.json", []))
 
 
 
