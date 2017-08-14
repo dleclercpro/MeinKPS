@@ -285,7 +285,7 @@ class Calculator(object):
             y = round(self.net.y[i], 2)
 
             # Fill treatments dict with net basal rates
-            insulin["Net Basals"][T] = y
+            treatments["Net Basals"][T] = y
 
         # Fill treatments dict with recent boluses
         treatments["Boluses"] = Reporter.getRecent("treatments.json", ["Boluses"])
