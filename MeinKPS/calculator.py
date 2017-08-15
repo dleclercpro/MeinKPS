@@ -299,6 +299,9 @@ class Calculator(object):
         # Export recent BGs
         Reporter.export("BG.json", Reporter.getRecent("BG.json", []))
 
+        # Export recent history
+        Reporter.export("history.json", Reporter.getRecent("history.json", []))
+
         # Export pump details
         Reporter.export("pump.json", Reporter.get("pump.json", []))
 
