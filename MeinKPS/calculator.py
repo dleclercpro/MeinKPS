@@ -263,8 +263,8 @@ class Calculator(object):
 
         # Generate new treatments dict
         treatments = {"Boluses": {},
-                   "Net Basals": {},
-                   "IOB": {}}
+                      "Net Basals": {},
+                      "IOB": {}}
 
         # Compute past start of insulin action
         past = self.now - datetime.timedelta(hours = 24)
@@ -279,31 +279,36 @@ class Calculator(object):
         for i in range(n):
 
             # Get and format time
-            T = lib.formatTime(self.net.T[i])
+            t = lib.formatTime(self.net.T[i])
 
             # Get and round net insulin
             y = round(self.net.y[i], 2)
 
             # Fill treatments dict with net basal rates
-            treatments["Net Basals"][T] = y
+            treatments["Net Basals"][t] = y
 
         # Fill treatments dict with recent boluses
-        treatments["Boluses"] = Reporter.getRecent("treatments.json", ["Boluses"])
+        treatments["Boluses"] = Reporter.getRecent("treatments.json",
+                                                   ["Boluses"])
 
         # Fill treatments dict with recent IOBs
-        treatments["IOB"] = Reporter.getRecent("treatments.json", ["IOB"])
+        treatments["IOB"] = Reporter.getRecent("treatments.json",
+                                               ["IOB"])
 
         # Export recent treatments
         Reporter.export("treatments.json", treatments)
 
         # Export recent BGs
-        Reporter.export("BG.json", Reporter.getRecent("BG.json", []))
+        Reporter.export("BG.json",
+                        Reporter.getRecent("BG.json", []))
 
         # Export recent history
-        Reporter.export("history.json", Reporter.getRecent("history.json", []))
+        Reporter.export("history.json",
+                        Reporter.getRecent("history.json", []), 1)
 
         # Export pump details
-        Reporter.export("pump.json", Reporter.get("pump.json", []))
+        Reporter.export("pump.json",
+                        Reporter.get("pump.json", []))
 
 
 
