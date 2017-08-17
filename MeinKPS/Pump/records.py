@@ -211,7 +211,7 @@ class Record(object):
                 value = None
 
             # Print current record
-            print str(value) + " (" + str(t) + ")"
+            print str(value) + " (" + lib.formatTime(t) + ")"
 
 
 
