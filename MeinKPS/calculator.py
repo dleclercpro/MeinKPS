@@ -454,7 +454,7 @@ class Calculator(object):
             lastTime = lib.formatTime(max(lastCarbs))
 
             # Compute elapsed time since (h)
-            d = (self.now - lastTime).seconds / 3600.0
+            d = (self.now - lastTime).total_seconds / 3600.0
 
             # Define snooze duration (h)
             snooze = 0.5 * self.DIA
