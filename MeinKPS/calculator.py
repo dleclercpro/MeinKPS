@@ -444,25 +444,25 @@ class Calculator(object):
             # No TB recommendation
             R = None
 
-        # Get last boluses
-        lastBoluses = Reporter.getRecent("treatments.json", ["Boluses"], 1)
+        # Get last carbs
+        lastCarbs = Reporter.getRecent("treatments.json", ["Carbs"], 1)
 
-        # Bolus snooze
-        if lastBoluses:
+        # Snooze criteria (no high temping after eating)
+        if lastCarbs and dose > 0:
 
-            # Get last bolus time and format it to datetime object
-            lastBolusTime = lib.formatTime(max(lastBoluses))
+            # Get last meal time and format it to datetime object
+            lastTime = lib.formatTime(max(lastCarbs))
 
-            # Compute elapsed time since last bolus (h)
-            d = (self.now - lastBolusTime).seconds / 3600.0
+            # Compute elapsed time since (h)
+            d = (self.now - lastTime).seconds / 3600.0
 
-            # Define bolus snooze (h)
+            # Define snooze duration (h)
             snooze = 0.5 * self.DIA
 
-            # Snooze
+            # If snooze necessary
             if d < snooze:
 
-                # Compute remaining snooze (m)
+                # Compute remaining time (m)
                 T = int(round((snooze - d) * 60))
 
                 # Give user info
