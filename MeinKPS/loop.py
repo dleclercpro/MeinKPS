@@ -199,9 +199,6 @@ class Loop(object):
             # Enact TB
             self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
-        # Export preprocessed treatments
-        self.calc.export()
-
         # Stop pump
         self.pump.stop()
 
@@ -261,6 +258,9 @@ class Loop(object):
 
         # Do pump stuff
         self.doPump()
+
+        # Export preprocessed treatments
+        self.calc.export()
 
         # Upload stuff
         self.do(uploader.main, ["Status"], "Upload")
