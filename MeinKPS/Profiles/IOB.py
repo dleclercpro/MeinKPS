@@ -203,7 +203,8 @@ class FutureIOBProfile(base.FutureProfile):
             # Compute active insulin remaining for current step
             IOB += r * y[i]
 
-        print "IOB: " + str(IOB) + " U"
+        # Give user info
+        #print "IOB: " + str(IOB) + " U"
 
         # Return IOB
         return IOB
