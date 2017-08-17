@@ -304,7 +304,7 @@ class Calculator(object):
 
         # Export recent history
         Reporter.export("history.json",
-                        Reporter.getRecent("history.json", [], 1)
+                        Reporter.getRecent("history.json", [], 1))
 
         # Export pump details
         Reporter.export("pump.json",
