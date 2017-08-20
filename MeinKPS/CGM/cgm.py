@@ -367,10 +367,10 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.level = str(lib.unpack(command.response["Body"]))
+        self.level = lib.unpack(command.response["Body"])
 
         # Give user info
-        print "Battery level: " + self.level
+        print "Battery level: " + str(self.level)
 
         # Link to battery state command
         command = self.commands["ReadState"]
