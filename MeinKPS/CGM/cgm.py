@@ -367,7 +367,7 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.level = str(lib.unpack(command.response["Body"])) + "%"
+        self.level = str(lib.unpack(command.response["Body"]))
 
         # Give user info
         print "Battery level: " + self.level
