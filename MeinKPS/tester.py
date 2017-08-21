@@ -3,13 +3,13 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    decodePumpHistory
+    Title:    tester
 
     Author:   David Leclerc
 
-    Version:  0.2
+    Version:  0.1
 
-    Date:     15.02.2017
+    Date:     21.08.2017
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -24,6 +24,7 @@
 
 # USER LIBRARIES
 import lib
+from Pump import pump
 
 
 
@@ -69,3 +70,34 @@ def findRecords(history):
 
         except:
             pass
+
+
+
+def main():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Instanciate a pump for me
+    myPump = pump.Pump()
+
+    # Start dialogue with pump
+    myPump.start()
+
+    # Read pump history
+    myPump.history.read(2)
+
+    # Decode it
+    findRecords(myPump.history.pages)
+
+    # Stop dialogue with pump
+    myPump.stop()
+
+
+
+# Run this when script is called from terminal
+if __name__ == "__main__":
+    main()
