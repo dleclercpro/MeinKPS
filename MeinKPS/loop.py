@@ -24,6 +24,7 @@
 
 # LIBRARIES
 import datetime
+import sys
 
 
 
@@ -235,6 +236,9 @@ class Loop(object):
 
             # Show error
             print e
+
+            # Exit for testing purposes
+            sys.exit(True)
 
 
 

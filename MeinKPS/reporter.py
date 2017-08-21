@@ -526,22 +526,6 @@ class Reporter:
 
 
 
-    def increment(self, name, branch, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INCREMENT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get value
-        n = self.get(name, branch, key)
-
-        # Update value
-        self.add(name, branch, {key: n + 1}, True)
-
-
-
     def add(self, name, branch, entries, overwrite = False):
 
         """
@@ -640,6 +624,28 @@ class Reporter:
 
             # Return section
             return section
+
+
+
+    def increment(self, name, branch, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INCREMENT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Try reading value
+        n = self.get(name, branch, key)
+
+        # If non-existent
+        if n is None:
+
+            # Set to zero
+            n = 0
+
+        # Update value
+        self.add(name, branch, {key: n + 1}, True)
 
 
 
