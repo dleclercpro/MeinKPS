@@ -439,7 +439,8 @@ class BolusRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         Note: Bolus record's time corresponds to beginning of delivery!
-
+              Last byte in criteria corresponds to duration of bolus in
+              30m blocks (max 8h)?
         """
 
         # Define record characteristics
@@ -452,12 +453,11 @@ class BolusRecord(Record):
         maxBolus = 25
 
         # Define record's criteria
-        # TODO: do something with incomplete boluses?
         self.criteria = (lambda x: x[0] == self.code and
                                    x[1] <= (maxBolus / pump.bolus.stroke) and
                                    x[2] <= (maxBolus / pump.bolus.stroke) and
                                    x[1] >= x[2] and
-                                   x[3] == 0)
+                                   0 <= x[3] <= 16)
 
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
@@ -473,6 +473,10 @@ class BolusRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Head: [code, planned, given, duration]
+        Body: []
+        Date: [...]
         """
 
         # Decode record time
