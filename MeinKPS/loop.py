@@ -263,7 +263,7 @@ class Loop(object):
         self.doPump()
 
         # Export preprocessed treatments
-        self.calc.export()
+        self.calc.export(self.start)
 
         # Upload stuff
         self.do(uploader.main, ["Status"], "Upload")

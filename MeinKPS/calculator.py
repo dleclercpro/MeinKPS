@@ -253,7 +253,7 @@ class Calculator(object):
 
 
 
-    def export(self):
+    def export(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -261,50 +261,41 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Generate new treatments dict
-        treatments = {"Boluses": {},
-                      "Net Basals": {},
-                      "IOB": {}}
-
-        # Compute past start of insulin action
-        past = self.now - datetime.timedelta(hours = 24)
+        # Initialize net basals dict
+        netBasals = {}
 
         # Build net insulin profile for last 24 hours
-        self.build(past, self.now, False)
-
-        # Count number of net insulin profile entries
-        n = len(self.net.T)
+        self.build(now - datetime.timedelta(hours = 24), now, False)
 
         # Loop over net insulin profile
-        for i in range(n):
+        for t, y in zip(self.net.T, self.net.y):
 
-            # Get and format time
-            t = lib.formatTime(self.net.T[i])
-
-            # Get and round net insulin
-            y = round(self.net.y[i], 2)
-
-            # Fill treatments dict with net basal rates
-            treatments["Net Basals"][t] = y
-
-        # Fill treatments dict with recent boluses
-        treatments["Boluses"] = Reporter.getRecent("treatments.json",
-                                                   ["Boluses"])
-
-        # Fill treatments dict with recent IOBs
-        treatments["IOB"] = Reporter.getRecent("treatments.json",
-                                               ["IOB"])
+            # Fill net basals dict
+            netBasals[lib.formatTime(t)] = round(y, 2)
 
         # Export recent treatments
-        Reporter.export("treatments.json", treatments)
+        Reporter.export("treatments.json", {
+            "Net Basals": netBasals,
+            "Boluses": Reporter.getRecent("treatments.json", ["Boluses"]),
+            "IOB": Reporter.getRecent("treatments.json", ["IOB"])})
+
+        # Get recent sensor statuses
+        sensorStatuses = Reporter.getRecent("history.json",
+                                            ["CGM", "Sensor Statuses"])
+
+        # Get recent calibrations
+        calibrations = Reporter.getRecent("history.json",
+                                          ["CGM", "Calibrations"])
+
+        # Export recent history
+        Reporter.export("history.json",
+            lib.mergeNDicts(Reporter.getRecent("history.json", [], 1),
+                            {"CGM": {"Sensor Statuses": sensorStatuses}},
+                            {"CGM": {"Calibrations": calibrations}}))
 
         # Export recent BGs
         Reporter.export("BG.json",
                         Reporter.getRecent("BG.json", []))
-
-        # Export recent history
-        Reporter.export("history.json",
-                        Reporter.getRecent("history.json", [], 1))
 
         # Export pump details
         Reporter.export("pump.json",
@@ -602,10 +593,10 @@ def main():
     now = datetime.datetime.now() - datetime.timedelta(hours = 0)
 
     # Run calculator
-    calculator.run(now)
+    #calculator.run(now)
 
     # Export net insulin profile
-    calculator.export()
+    calculator.export(now)
 
 
 

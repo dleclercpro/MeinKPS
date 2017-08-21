@@ -1093,7 +1093,7 @@ def main():
     reporter = Reporter()
 
     # Get basal profile from pump report
-    lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
+    #lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
 
     # Get BGs of today
     #lib.printJSON(reporter.get("BG.json", [], None, now))
@@ -1108,9 +1108,11 @@ def main():
     #reporter.erase("test.json", now)
 
     # Get most recent data
-    reporter.getRecent("BG.json", [], 3)
-    reporter.getRecent("treatments.json", ["Temporary Basals"])
-    reporter.getRecent("treatments.json", ["Boluses"])
+    #reporter.getRecent("BG.json", [], 3)
+    #reporter.getRecent("treatments.json", ["Temporary Basals"])
+    #reporter.getRecent("treatments.json", ["Boluses"])
+    lib.mergeNDicts(reporter.getRecent("history.json", ["CGM", "Sensor Statuses"]),
+                    reporter.getRecent("history.json", ["CGM", "Calibrations"]))
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")

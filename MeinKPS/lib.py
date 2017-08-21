@@ -317,14 +317,42 @@ def mergeDict(base, new, n = 1):
     # On end
     if n == 1:
 
-        # Give user info
-        #print "New extended dictionary:"
-
-        # Show it
-        #lib.printJSON(base)
-
         # Return it
         return base
+
+
+
+def mergeNDicts(*args):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MERGENDICTS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Verify number of args
+    if len(args) < 2:
+
+        # Exit
+        sys.exit("Feed at least 2 dictionaries to merge.")
+
+    # Destructure dicts
+    base, args = args[0], args[1:]
+
+    # Loop on dicts
+    for new in args:
+
+        # Update base
+        base = mergeDict(base, new)
+
+    # Give user info
+    #print "New extended dictionary:"
+
+    # Show it
+    #printJSON(base)
+
+    # Return updated base
+    return base
 
 
 
