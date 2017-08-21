@@ -84,9 +84,6 @@ class Loop(object):
             # Read clock
             self.do(self.cgm.clock.read, ["CGM"], "Clock")
 
-            # Read battery
-            self.do(self.cgm.battery.read, ["CGM"], "Battery")
-
             # Read units
             self.do(self.cgm.units.read, ["CGM"], "Units")
 
@@ -102,14 +99,20 @@ class Loop(object):
             # Read BG
             self.do(self.cgm.dumpBG, ["CGM"], "BG")
 
+        # Otherwise
+        else:
+
+            # Read BGs
+            self.do(self.cgm.dumpNewBG, ["CGM"], "BG")
+
+        # Read battery
+        self.do(self.cgm.battery.read, ["CGM"], "Battery")
+
         # Read sensor events
         self.do(self.cgm.databases["Sensor"].read, ["CGM"], "Sensor")
 
         # Read calibrations
         self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
-
-        # Read BGs
-        self.do(self.cgm.dumpNewBG, ["CGM"], "BG")
 
 
 
