@@ -583,10 +583,11 @@ class Reporter:
             if self.addEntry(section, {key: value}, overwrite):
 
                 # If report was modified
-                report.modified = True
+                report.store()
+                #report.modified = True
 
         # Store modified reports
-        self.store()
+        #self.store()
 
 
 
@@ -826,6 +827,7 @@ class Report:
         Path(self.path).touch(self.name)
 
         # Rewrite report
+        print self.path + self.name
         with open(self.path + self.name, "w") as f:
 
             # Dump JSON
