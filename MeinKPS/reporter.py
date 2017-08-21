@@ -821,7 +821,6 @@ class Report:
 
         # Give user info
         print "Storing report: '" + self.name + "' (" + str(self.date) + ")"
-        self.show()
 
         # Make sure report exists
         Path(self.path).touch(self.name)
