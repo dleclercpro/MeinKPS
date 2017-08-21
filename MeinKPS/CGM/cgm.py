@@ -158,11 +158,11 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try reading battery
+        # Try reading time
         try:
 
-            # Read battery
-            self.battery.read()
+            # Read time
+            self.clock.read()
 
         # If failed, CGM is most probably in error/dead state
         except:

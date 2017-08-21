@@ -102,11 +102,14 @@ class Loop(object):
             # Read BG
             self.do(self.cgm.dumpBG, ["CGM"], "BG")
 
-        # Otherwise
-        else:
+        # Read sensor events
+        self.do(self.cgm.databases["Sensor"].read, ["CGM"], "Sensor")
 
-            # Read CGM
-            self.do(self.cgm.dumpNewBG, ["CGM"], "BG")
+        # Read calibrations
+        self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
+
+        # Read BGs
+        self.do(self.cgm.dumpNewBG, ["CGM"], "BG")
 
 
 
