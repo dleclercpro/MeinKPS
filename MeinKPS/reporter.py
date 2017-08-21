@@ -584,6 +584,8 @@ class Reporter:
 
                 # If report was modified
                 report.modified = True
+                print "New section:"
+                print section
 
         # Store modified reports
         self.store()
