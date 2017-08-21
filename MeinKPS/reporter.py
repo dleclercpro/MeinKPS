@@ -571,7 +571,7 @@ class Reporter:
                     date = key.date()
 
                     # Get report
-                    report, i = self.getReport(name, date)
+                    report = self.getReport(name, date)[0]
 
                     # Get section
                     section = self.getSection(report, branch, True)
@@ -584,10 +584,6 @@ class Reporter:
 
                 # If report was modified
                 report.modified = True
-                print "New:"
-                lib.printJSON(report)
-                print "Old:"
-                lib.printJSON(self.reports[i])
 
         # Store modified reports
         self.store()
@@ -825,6 +821,7 @@ class Report:
 
         # Give user info
         print "Storing report: '" + self.name + "' (" + str(self.date) + ")"
+        self.show()
 
         # Make sure report exists
         Path(self.path).touch(self.name)
