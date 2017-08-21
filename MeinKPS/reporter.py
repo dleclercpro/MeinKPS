@@ -205,7 +205,7 @@ class Reporter:
         """
 
         # Get report
-        report = self.getReport(name, date)
+        report = self.getReport(name, date)[0]
 
         # Erase report
         report.erase()
@@ -331,14 +331,17 @@ class Reporter:
         # Loop through reports
         for i in range(n):
 
+            # Get current report
+            report = self.reports[i]
+
             # Check if names match
-            if self.reports[i].name != name:
+            if report.name != name:
 
                 # Skip
                 continue
 
             # Check if dates match
-            if self.reports[i].date != date:
+            if report.date != date:
 
                 # Skip
                 continue
@@ -347,7 +350,7 @@ class Reporter:
             print "Report found."
 
             # Return report and corresponding index
-            return self.reports[i]
+            return (report, i)
 
         # Raise error
         raise errors.NoReport(name, date)
@@ -547,7 +550,7 @@ class Reporter:
             date = None
 
         # Get it
-        report = self.getReport(name, date)
+        report = self.getReport(name, date)[0]
 
         # Get section
         section = self.getSection(report, branch, True)
@@ -568,7 +571,7 @@ class Reporter:
                     date = key.date()
 
                     # Get report
-                    report = self.getReport(name, date)
+                    report, i = self.getReport(name, date)
 
                     # Get section
                     section = self.getSection(report, branch, True)
@@ -581,6 +584,10 @@ class Reporter:
 
                 # If report was modified
                 report.modified = True
+                print "New:"
+                lib.printJSON(report)
+                print "Old:"
+                lib.printJSON(self.reports[i])
 
         # Store modified reports
         self.store()
@@ -602,7 +609,7 @@ class Reporter:
             date = key.date()
 
         # Get it
-        report = self.getReport(name, date)
+        report = self.getReport(name, date)[0]
 
         # Get section
         section = self.getSection(report, branch)
@@ -673,7 +680,7 @@ class Reporter:
                 break
 
             # Get report
-            report = self.getReport(name, date)
+            report = self.getReport(name, date)[0]
 
             # Try getting section
             try:
