@@ -85,6 +85,16 @@ class FutureIOBProfile(base.FutureProfile):
         # Define timestep (h)
         self.dt = 5.0 / 60.0
 
+        # Define units
+        self.u = "U"
+
+        # Define type
+        self.type = "Dot"
+
+        # Define report info
+        self.report = "treatments.json"
+        self.branch = ["IOB"]
+
 
 
     def build(self, net, IDC):
