@@ -346,10 +346,10 @@ def mergeNDicts(*args):
         base = mergeDict(base, new)
 
     # Give user info
-    #print "New extended dictionary:"
+    print "New merged dictionary:"
 
     # Show it
-    #printJSON(base)
+    printJSON(base)
 
     # Return updated base
     return base

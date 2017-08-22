@@ -50,59 +50,12 @@ class Reporter:
         self.src = Path(os.path.dirname(os.path.realpath(__file__)) + os.sep +
                         "Reports")
 
-        # Define export path
-        self.exp = Path(self.src.str + "Export")
-
-        # Initialize reports
-        self.reports = []
+        # Initialize report
+        self.report = None
 
 
 
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Reset reports
-        self.reports = []
-
-
-
-    def new(self, name = None, path = None, date = None, json = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            NEW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Verify if report already exists
-        try:
-
-            # Try getting report (without loading it!)
-            self.getReport(name, date, False)
-
-            # Give user info
-            print "Report '" + name + "' (" + str(date) + ") already loaded."
-
-            # Skip
-            return False
-
-        # If it fails, then store it
-        except errors.NoReport:
-
-            # Generate new report
-            self.reports.append(Report(name, path, date, json))
-
-            # Success
-            return True
-
-
-
-    def load(self, name, dates = None, path = None):
+    def load(self, name, date = None, path = None, make = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,156 +63,32 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize number of reports to load
-        n = 0
-
-        # No path
+        # Default path
         if path is None:
 
             # Define source
             path = self.src.str
 
-        # No dates
-        if dates is None:
-
-            # Generate new report
-            if self.new(name, path):
-
-                # Update count
-                n += 1
-
         # Otherwise
-        else:
+        if date is not None:
 
-            # Make sure dates are given in list form
-            if type(dates) is not list:
+            # Format date
+            date = lib.formatDate(date)
 
-                # Convert type
-                dates = [dates]
+            # Update path to report
+            path = Path(path + date).str
 
-            # Format dates
-            dates = [lib.formatDate(d) for d in dates]
+        # If report can be generated
+        if make:
 
-            # Make sure dates are sorted out and only appear once
-            # This can deal with both list and dict types
-            dates = lib.uniqify(dates)
+            # Make sure report exists
+            Path(path).touch(name)
 
-            # Loop on dates
-            for d in dates:
+        # Generate new report
+        self.report = Report(name, path, date)
 
-                # Generate new report
-                if self.new(name, path + d + os.sep, d):
-
-                    # Update count
-                    n += 1
-
-        # Load report(s)
-        for i in range(n):
-
-            # Get current new report
-            report = self.reports[-(i + 1)]
-
-            # Load its JSON
-            report.load()
-
-
-
-    def unload(self, name, date = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UNLOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Verify if report already exists
-        try:
-
-            # Try loading report
-            report, i = self.getReport(name, date)
-
-            # Give user info
-            print ("Unloading report: " + report.name + " (" +
-                   str(report.date) + ")")
-
-            # Delete it using its index
-            del self.reports[i]
-
-            # Give user info
-            print "Report unloaded."
-
-        # If it fails, then store it
-        except errors.NoReport as e:
-
-            # Show error message
-            print e.message
-
-
-
-    def erase(self, name, date = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ERASE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get report
-        report = self.getReport(name, date)[0]
-
-        # Erase report
-        report.erase()
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Rewrite reports
-        for report in self.reports:
-
-            # If report was modified
-            if report.modified:
-
-                # Store it
-                report.store()
-
-
-
-    def export(self, name, json):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPORT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Generate temporary report
-        report = Report(name, self.exp.str, None, json)
-
-        # Store it
-        report.store()
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Loop on reports
-        for report in self.reports:
-
-            # Show report
-            report.show()
+        # Load its JSON
+        self.report.load()
 
 
 
@@ -297,67 +126,7 @@ class Reporter:
 
 
 
-    def getReport(self, name, date = None, load = True):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETREPORT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If loading necessary
-        if load:
-
-            # Give user info
-            print ("Getting report: '" + name + "' (" + lib.formatDate(date) +
-                   ")")
-
-            # Load report
-            self.load(name, date)
-
-        # If date
-        if date is not None:
-
-            # If date given as datetime object, format it
-            if (type(date) is datetime.datetime or
-                type(date) is datetime.date):
-
-                # Get and format date
-                date = lib.formatDate(date)
-
-        # Count loaded reports
-        n = len(self.reports)
-
-        # Loop through reports
-        for i in range(n):
-
-            # Get current report
-            report = self.reports[i]
-
-            # Check if names match
-            if report.name != name:
-
-                # Skip
-                continue
-
-            # Check if dates match
-            if report.date != date:
-
-                # Skip
-                continue
-
-            # Give user info
-            print "Report found."
-
-            # Return report and corresponding index
-            return (report, i)
-
-        # Raise error
-        raise errors.NoReport(name, date)
-
-
-
-    def getSection(self, report, branch, make = False):
+    def getSection(self, branch, make = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -365,18 +134,11 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Make sure section branch is of list type
-        if type(branch) is not list:
-
-            # Raise error
-            raise errors.BadPath
-
-        # Read section depth: if it is equal to 0, the following loop is
-        # skipped and the section corresponds to the whole report
+        # Read section depth
         d = len(branch)
 
         # First level section is whole report
-        section = report.json
+        section = self.report.json
 
         # Give user info
         print "Getting section: " + " > ".join(["."] + branch)
@@ -411,6 +173,9 @@ class Reporter:
         # Give user info
         print "Section found."
 
+        # Show section
+        lib.printJSON(section)
+
         # Return section
         return section
 
@@ -436,7 +201,10 @@ class Reporter:
             # Give user info
             print "Entry found."
 
-            # Return entry for external access
+            # Show value
+            lib.printJSON(value)
+
+            # Return it for external access
             return value
 
         # Otherwise
@@ -464,8 +232,8 @@ class Reporter:
         # Show entry
         lib.printJSON(entry)
 
-        # Decouple entry
-        (key, value) = entry.items()[0]
+        # Destructure entry
+        key, value = entry.items()[0]
 
         # Look if entry is already in report
         if key in section and not overwrite:
@@ -535,13 +303,13 @@ class Reporter:
         """
 
         # Get first value
-        first = min(entries)
+        zero = min(entries)
 
         # If entries are dated
-        if type(first) is datetime.datetime:
+        if type(zero) is datetime.datetime:
 
             # Initialize date
-            date = first
+            date = zero.date()
 
         # Otherwise
         else:
@@ -549,11 +317,11 @@ class Reporter:
             # Initialize date
             date = None
 
-        # Get it
-        report = self.getReport(name, date)[0]
+        # Load report
+        self.load(name, date)
 
         # Get section
-        section = self.getSection(report, branch, True)
+        section = self.getSection(branch, True)
 
         # Loop through entries
         for key in sorted(entries):
@@ -570,23 +338,23 @@ class Reporter:
                     # Update date
                     date = key.date()
 
-                    # Get report
-                    report = self.getReport(name, date)[0]
+                    # Store last loaded report
+                    self.report.store()
+
+                    # Load new report
+                    self.load(name, date)
 
                     # Get section
-                    section = self.getSection(report, branch, True)
+                    section = self.getSection(branch, True)
 
                 # Format key
                 key = lib.formatTime(key)
 
             # Add entry
-            if self.addEntry(section, {key: value}, overwrite):
+            self.addEntry(section, {key: value}, overwrite)
 
-                # If report was modified
-                report.modified = True
-
-        # Store modified reports
-        self.store()
+        # Store report
+        self.report.store()
 
 
 
@@ -598,26 +366,26 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # If key is dated
-        if type(key) is datetime.datetime:
-
-            # Get date
-            date = key.date()
-
-        # Get it
-        report = self.getReport(name, date)[0]
+        # Load report
+        self.load(name, date)
 
         # Get section
-        section = self.getSection(report, branch)
+        section = self.getSection(branch)
 
         # If key was provided
         if key is not None:
 
-            # Format key
-            key = lib.formatTime(key)
+            # If key is a date
+            if date is not None:
 
-            # Return corresponding value
-            return self.getEntry(section, key)
+                # Format key
+                key = lib.formatTime(key)
+
+            # Get corresponding value
+            entry = self.getEntry(section, key)
+
+            # Return it
+            return entry
 
         # Otherwise
         else:
@@ -675,20 +443,17 @@ class Reporter:
                 # Quit
                 break
 
-            # Get report
-            report = self.getReport(name, date)[0]
+            # Load report
+            self.load(name, date)
 
             # Try getting section
             try:
 
                 # Get section
-                section = self.getSection(report, branch)
+                section = self.getSection(branch)
 
                 # If section not empty
                 if section:
-
-                    # Give user info
-                    print "Merging '" + report.name + "' (" + report.date + ")"
 
                     # Merge entries
                     entries = lib.mergeDict(entries, section)
@@ -702,12 +467,6 @@ class Reporter:
                 # Show error message
                 print e.message
 
-        # Give user info
-        print "Merged entries for " + str(N) + " most recent report(s):"
-
-        # Show entries
-        lib.printJSON(entries)
-
         # Return entries
         return entries
 
@@ -715,7 +474,7 @@ class Reporter:
 
 class Report:
 
-    def __init__(self, name = None, path = None, date = None, json = None):
+    def __init__(self, name = None, path = None, date = None, json = {}):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -728,7 +487,6 @@ class Report:
         self.path = path
         self.date = date
         self.json = json
-        self.modified = False
 
 
 
@@ -760,10 +518,7 @@ class Report:
         print "Updating report: '" + self.name + "' (" + str(self.date) + ")"
 
         # Update JSON
-        self.json = json
-
-        # Store it
-        self.store()
+        self.json = lib.mergeNDicts(self.json, json)
 
 
 
@@ -797,14 +552,20 @@ class Report:
         # Give user info
         print "Loading report: '" + self.name + "' (" + str(self.date) + ")"
 
-        # Make sure report exists
-        Path(self.path).touch(self.name)
+        # Try opening report
+        try:
 
-        # Open report
-        with open(self.path + self.name, "r") as f:
+            # Open report
+            with open(self.path + self.name, "r") as f:
 
-            # Load JSON
-            self.json = json.load(f)
+                # Load JSON
+                self.json = json.load(f)
+
+        # In case of error
+        except:
+
+            # No report
+            raise errors.NoReport(self.name, self.date)
 
         # Give user info
         print "Report loaded."
@@ -822,9 +583,6 @@ class Report:
         # Give user info
         print "Storing report: '" + self.name + "' (" + str(self.date) + ")"
 
-        # Make sure report exists
-        Path(self.path).touch(self.name)
-
         # Rewrite report
         with open(self.path + self.name, "w") as f:
 
@@ -834,8 +592,27 @@ class Report:
                       separators = (",", ": "),
                       sort_keys = True)
 
-        # Reset modified boolean
-        self.modified = False
+
+
+    def export(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Store original path
+        original = self.path
+
+        # Replace it with export path
+        self.path = path
+
+        # Export report
+        self.store()
+
+        # Reset original path
+        self.path = original
 
 
 
@@ -851,8 +628,7 @@ class Report:
         lib.printJSON({"Name": self.name,
                        "Path": self.path,
                        "Date": self.date,
-                       "JSON": self.json,
-                       "Modified": self.modified})
+                       "JSON": self.json})
 
 
 
@@ -938,7 +714,8 @@ class Path:
         """
 
         # Merge path
-        return os.sep + os.sep.join(self.list)
+        #return os.sep + os.sep.join(self.list)
+        return os.sep.join(self.list)
 
 
 
@@ -1099,26 +876,21 @@ def main():
     reporter = Reporter()
 
     # Get basal profile from pump report
-    #lib.printJSON(reporter.get("pump.json", [], "Basal Profile (Standard)"))
+    #reporter.get("pump.json", [], "Basal Profile (Standard)")
 
     # Get BGs of today
-    #lib.printJSON(reporter.get("BG.json", [], None, now))
-
-    # Unload pump report
-    #reporter.unload("pump.json")
+    #reporter.get("BG.json", [], None, now)
 
     # Add entries to test report
     #reporter.add("test.json", ["D", "A"], {now: 0})
 
-    # Erase entries from test report
-    #reporter.erase("test.json", now)
-
     # Get most recent data
-    #reporter.getRecent("BG.json", [], 3)
+    reporter.getRecent("BG.json", [], 3)
     #reporter.getRecent("treatments.json", ["Temporary Basals"])
     #reporter.getRecent("treatments.json", ["Boluses"])
-    lib.mergeNDicts(reporter.getRecent("history.json", ["CGM", "Sensor Statuses"]),
-                    reporter.getRecent("history.json", ["CGM", "Calibrations"]))
+    #lib.mergeNDicts(
+    #    reporter.getRecent("history.json", ["CGM", "Sensor Statuses"]),
+    #    reporter.getRecent("history.json", ["CGM", "Calibrations"]))
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")
