@@ -801,7 +801,7 @@ class Path:
                     json.dump({}, f)
 
                 # Give permissions
-                os.chmod(path, 0775)
+                os.chmod(path, 0777)
 
 
 
