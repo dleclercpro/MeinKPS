@@ -32,8 +32,13 @@ import matplotlib.pyplot as plt
 
 # USER LIBRARIES
 import lib
-from reporter import *
+import reporter
 from Profiles import *
+
+
+
+# Define a reporter
+Reporter = reporter.Reporter()
 
 
 
@@ -96,9 +101,6 @@ class Calculator(object):
         self.max = {"Basal": None,
                     "Bolus": None}
 
-        # Give calculator a reporter
-        self.reporter = Reporter()
-
         # Give calculator a report
         self.report = "net.json"
 
@@ -141,21 +143,19 @@ class Calculator(object):
         """
 
         # Read DIA
-        self.DIA = self.reporter.get("pump.json", ["Settings"], "DIA")
+        self.DIA = Reporter.get("pump.json", ["Settings"], "DIA")
 
         # Give user info
         print "DIA: " + str(self.DIA) + " h"
 
         # Read max basal
-        self.max["Basal"] = self.reporter.get("pump.json",
-                                              ["Settings"], "Max Basal")
+        self.max["Basal"] = Reporter.get("pump.json", ["Settings"], "Max Basal")
 
         # Give user info
         print "Max basal: " + str(self.max["Basal"]) + " U/h"
 
         # Read max bolus
-        self.max["Bolus"] = self.reporter.get("pump.json",
-                                              ["Settings"], "Max Bolus")
+        self.max["Bolus"] = Reporter.get("pump.json", ["Settings"], "Max Bolus")
 
         # Give user info
         print "Max bolus: " + str(self.max["Bolus"]) + " U"
@@ -262,13 +262,13 @@ class Calculator(object):
         """
 
         # Define export path
-        path = Path(self.reporter.src.str + "Export").str
+        path = reporter.Path(Reporter.src.str + "Export").str
 
         # Initialize reports
-        reports = {"treatments": Report("treatments.json"),
-                   "history": Report("history.json"),
-                   "BG": Report("BG.json"),
-                   "pump": Report("pump.json")}
+        reports = {"treatments": reporter.Report("treatments.json"),
+                   "history": reporter.Report("history.json"),
+                   "BG": reporter.Report("BG.json"),
+                   "pump": reporter.Report("pump.json")}
 
         # Initialize net basals dict
         netBasals = {}
@@ -283,31 +283,29 @@ class Calculator(object):
             netBasals[lib.formatTime(t)] = round(y, 2)
 
         # Get recent sensor statuses
-        statuses = self.reporter.getRecent("history.json",
+        statuses = Reporter.getRecent("history.json",
             ["CGM", "Sensor Statuses"])
 
         # Get recent calibrations
-        calibrations = self.reporter.getRecent("history.json",
+        calibrations = Reporter.getRecent("history.json",
             ["CGM", "Calibrations"])
 
         # Fill treatments report
         reports["treatments"].update({
             "Net Basals": netBasals,
-            "Boluses": self.reporter.getRecent("treatments.json", ["Boluses"]),
-            "IOB": self.reporter.getRecent("treatments.json", ["IOB"])})
+            "Boluses": Reporter.getRecent("treatments.json", ["Boluses"]),
+            "IOB": Reporter.getRecent("treatments.json", ["IOB"])})
 
         # Fill history report
-        reports["history"].update(
-            self.reporter.getRecent("history.json", [], 1))
-        reports["history"].update({
-            "CGM": {"Sensor Statuses": statuses,
-                    "Calibrations": calibrations}})
+        reports["history"].update(Reporter.getRecent("history.json", [], 1))
+        reports["history"].update({"CGM": {"Sensor Statuses": statuses,
+                                           "Calibrations": calibrations}})
 
         # Fill BG report
-        reports["BG"].update(self.reporter.getRecent("BG.json", []))
+        reports["BG"].update(Reporter.getRecent("BG.json", []))
 
         # Fill pump report
-        reports["pump"].update(self.reporter.get("pump.json", []))
+        reports["pump"].update(Reporter.get("pump.json", []))
 
         # Loop over reports
         for report in reports.values():
@@ -450,7 +448,7 @@ class Calculator(object):
             R = None
 
         # Get last carbs
-        lastCarbs = self.reporter.getRecent("treatments.json", ["Carbs"], 1)
+        lastCarbs = Reporter.getRecent("treatments.json", ["Carbs"], 1)
 
         # Snooze criteria (no high temping after eating)
         if lastCarbs and dose > 0:
