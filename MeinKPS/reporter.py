@@ -53,46 +53,6 @@ class Reporter:
         # Define export path
         self.exp = Path(self.src.str + "Export")
 
-        # Initialize report
-        self.report = None
-
-
-
-    def load(self, name, date = None, path = None, make = True):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Default path
-        if path is None:
-
-            # Define source
-            path = self.src.str
-
-        # Otherwise
-        if date is not None:
-
-            # Format date
-            date = lib.formatDate(date)
-
-            # Update path to report
-            path = Path(path + date).str
-
-        # If report can be generated
-        if make:
-
-            # Make sure report exists
-            Path(path).touch(name)
-
-        # Generate new report
-        self.report = Report(name, path, date)
-
-        # Load its JSON
-        self.report.load()
-
 
 
     def getDates(self, name):
@@ -129,7 +89,47 @@ class Reporter:
 
 
 
-    def getSection(self, branch, make = False):
+    def getReport(self, name, date = None, path = None, touch = True):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETREPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Default path
+        if path is None:
+
+            # Define source
+            path = self.src.str
+
+        # Otherwise
+        if date is not None:
+
+            # Format date
+            date = lib.formatDate(date)
+
+            # Update path to report
+            path = Path(path + date).str
+
+        # If report can be generated in case it doesn't exist yet
+        if touch:
+
+            # Touch it
+            Path(path).touch(name)
+
+        # Generate new report
+        report = Report(name, path, date)
+
+        # Load its JSON
+        report.load()
+
+        # Return it
+        return report
+
+
+
+    def getSection(self, report, branch, make = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,7 +141,7 @@ class Reporter:
         d = len(branch)
 
         # First level section is whole report
-        section = self.report.json
+        section = report.json
 
         # Give user info
         print "Getting section: " + " > ".join(["."] + branch)
@@ -297,70 +297,6 @@ class Reporter:
 
 
 
-    def add(self, name, branch, entries, overwrite = False):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ADD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get first value
-        zero = min(entries)
-
-        # If entries are dated
-        if type(zero) is datetime.datetime:
-
-            # Initialize date
-            date = zero.date()
-
-        # Otherwise
-        else:
-
-            # Initialize date
-            date = None
-
-        # Load report
-        self.load(name, date)
-
-        # Get section
-        section = self.getSection(branch, True)
-
-        # Loop through entries
-        for key in sorted(entries):
-
-            # Get value
-            value = entries[key]
-
-            # If date
-            if date is not None:
-
-                # If date is different than previous one
-                if key.date() != date:
-
-                    # Update date
-                    date = key.date()
-
-                    # Store last loaded report
-                    self.report.store()
-
-                    # Load new report
-                    self.load(name, date)
-
-                    # Get section
-                    section = self.getSection(branch, True)
-
-                # Format key
-                key = lib.formatTime(key)
-
-            # Add entry
-            self.addEntry(section, {key: value}, overwrite)
-
-        # Store report
-        self.report.store()
-
-
-
     def get(self, name, branch, key = None, date = None):
 
         """
@@ -370,10 +306,10 @@ class Reporter:
         """
 
         # Load report
-        self.load(name, date)
+        report = self.getReport(name, date, None, False)
 
         # Get section
-        section = self.getSection(branch)
+        section = self.getSection(report, branch)
 
         # If key was provided
         if key is not None:
@@ -395,28 +331,6 @@ class Reporter:
 
             # Return section
             return section
-
-
-
-    def increment(self, name, branch, key):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INCREMENT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Try reading value
-        n = self.get(name, branch, key)
-
-        # If non-existent
-        if n is None:
-
-            # Set to zero
-            n = 0
-
-        # Update value
-        self.add(name, branch, {key: n + 1}, True)
 
 
 
@@ -446,20 +360,20 @@ class Reporter:
                 # Quit
                 break
 
-            # Load report
-            self.load(name, date)
-
             # Try getting section
             try:
 
+                # Load report
+                report = self.getReport(name, date, None, False)
+
                 # Get section
-                section = self.getSection(branch)
+                section = self.getSection(report, branch)
 
                 # If section not empty
                 if section:
 
                     # Merge entries
-                    entries = lib.mergeDict(entries, section)
+                    entries = lib.mergeNDicts(entries, section)
 
                     # Update number of reports merged
                     N += 1
@@ -472,6 +386,92 @@ class Reporter:
 
         # Return entries
         return entries
+
+
+
+    def add(self, name, branch, entries, overwrite = False):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ADD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get first value
+        zero = min(entries)
+
+        # If entries are dated
+        if type(zero) is datetime.datetime:
+
+            # Initialize date
+            date = zero.date()
+
+        # Otherwise
+        else:
+
+            # Initialize date
+            date = None
+
+        # Load report
+        report = self.getReport(name, date)
+
+        # Get section
+        section = self.getSection(report, branch, True)
+
+        # Loop through entries
+        for key in sorted(entries):
+
+            # Get value
+            value = entries[key]
+
+            # If date
+            if date is not None:
+
+                # If date is different than previous one
+                if key.date() != date:
+
+                    # Update date
+                    date = key.date()
+
+                    # Store last loaded report
+                    report.store()
+
+                    # Load new report
+                    report = self.getReport(name, date)
+
+                    # Get section
+                    section = self.getSection(report, branch, True)
+
+                # Format key
+                key = lib.formatTime(key)
+
+            # Add entry
+            self.addEntry(section, {key: value}, overwrite)
+
+        # Store report
+        report.store()
+
+
+
+    def increment(self, name, branch, key):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INCREMENT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Try reading value
+        n = self.get(name, branch, key)
+
+        # If non-existent
+        if n is None:
+
+            # Set to zero
+            n = 0
+
+        # Update value
+        self.add(name, branch, {key: n + 1}, True)
 
 
 
@@ -509,22 +509,6 @@ class Report:
 
 
 
-    def update(self, json):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UPDATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Updating report: '" + self.name + "' (" + str(self.date) + ")"
-
-        # Update JSON
-        self.json = lib.mergeNDicts(self.json, json)
-
-
-
     def erase(self):
 
         """
@@ -541,6 +525,22 @@ class Report:
 
         # Store it
         self.store()
+
+
+
+    def update(self, json):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UPDATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        print "Updating report: '" + self.name + "' (" + str(self.date) + ")"
+
+        # Update JSON
+        self.json = lib.mergeNDicts(self.json, json)
 
 
 
@@ -575,7 +575,7 @@ class Report:
 
 
 
-    def store(self):
+    def store(self, path = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -586,36 +586,20 @@ class Report:
         # Give user info
         print "Storing report: '" + self.name + "' (" + str(self.date) + ")"
 
+        # If no path given
+        if path is None:
+
+            # Use stored path
+            path = self.path
+
         # Rewrite report
-        with open(self.path + self.name, "w") as f:
+        with open(path + self.name, "w") as f:
 
             # Dump JSON
             json.dump(self.json, f,
                       indent = 4,
                       separators = (",", ": "),
                       sort_keys = True)
-
-
-
-    def export(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPORT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store original path
-        original = self.path
-
-        # Replace it with export path
-        self.path = path
-
-        # Export report
-        self.store()
-
-        # Reset original path
-        self.path = original
 
 
 
@@ -717,8 +701,8 @@ class Path:
         """
 
         # Merge path
-        return os.sep + os.sep.join(self.list)
-        #return os.sep.join(self.list)
+        #return os.sep + os.sep.join(self.list)
+        return os.sep.join(self.list)
 
 
 

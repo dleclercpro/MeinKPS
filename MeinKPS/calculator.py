@@ -253,68 +253,6 @@ class Calculator(object):
 
 
 
-    def export(self, now):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPORT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define export path
-        path = Reporter.exp.str
-
-        # Initialize reports
-        reports = {"treatments": reporter.Report("treatments.json"),
-                   "history": reporter.Report("history.json"),
-                   "BG": reporter.Report("BG.json"),
-                   "pump": reporter.Report("pump.json")}
-
-        # Initialize net basals dict
-        netBasals = {}
-
-        # Build net insulin profile for last 24 hours
-        self.build(now - datetime.timedelta(hours = 24), now, False)
-
-        # Loop over net insulin profile
-        for t, y in zip(self.net.T, self.net.y):
-
-            # Fill net basals dict
-            netBasals[lib.formatTime(t)] = round(y, 2)
-
-        # Get recent sensor statuses
-        statuses = Reporter.getRecent("history.json",
-            ["CGM", "Sensor Statuses"])
-
-        # Get recent calibrations
-        calibrations = Reporter.getRecent("history.json",
-            ["CGM", "Calibrations"])
-
-        # Fill treatments report
-        reports["treatments"].update({
-            "Net Basals": netBasals,
-            "Boluses": Reporter.getRecent("treatments.json", ["Boluses"]),
-            "IOB": Reporter.getRecent("treatments.json", ["IOB"])})
-
-        # Fill history report
-        reports["history"].update(Reporter.getRecent("history.json", [], 1))
-        reports["history"].update({"CGM": {"Sensor Statuses": statuses,
-                                           "Calibrations": calibrations}})
-
-        # Fill BG report
-        reports["BG"].update(Reporter.getRecent("BG.json", []))
-
-        # Fill pump report
-        reports["pump"].update(Reporter.get("pump.json", []))
-
-        # Loop over reports
-        for report in reports.values():
-
-            # Export it
-            report.export(path)
-
-
-
     def recommend(self):
 
         """
@@ -506,6 +444,65 @@ class Calculator(object):
             AUTOSENS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+
+
+    def export(self, now):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize reports
+        reports = {"treatments": reporter.Report("treatments.json"),
+                   "history": reporter.Report("history.json"),
+                   "BG": reporter.Report("BG.json"),
+                   "pump": reporter.Report("pump.json")}
+
+        # Initialize net basals dict
+        netBasals = {}
+
+        # Build net insulin profile for last 24 hours
+        self.build(now - datetime.timedelta(hours = 24), now, False)
+
+        # Loop over net insulin profile
+        for t, y in zip(self.net.T, self.net.y):
+
+            # Fill net basals dict
+            netBasals[lib.formatTime(t)] = round(y, 2)
+
+        # Get recent sensor statuses
+        statuses = Reporter.getRecent("history.json",
+            ["CGM", "Sensor Statuses"])
+
+        # Get recent calibrations
+        calibrations = Reporter.getRecent("history.json",
+            ["CGM", "Calibrations"])
+
+        # Fill treatments report
+        reports["treatments"].update({
+            "Net Basals": netBasals,
+            "Boluses": Reporter.getRecent("treatments.json", ["Boluses"]),
+            "IOB": Reporter.getRecent("treatments.json", ["IOB"])})
+
+        # Fill history report
+        reports["history"].update(Reporter.getRecent("history.json", [], 1))
+        reports["history"].update({"CGM": {"Sensor Statuses": statuses,
+                                           "Calibrations": calibrations}})
+
+        # Fill BG report
+        reports["BG"].update(Reporter.getRecent("BG.json", []))
+
+        # Fill pump report
+        reports["pump"].update(Reporter.get("pump.json", []))
+
+        # Loop over reports
+        for report in reports.values():
+
+            # Export it
+            report.store(Reporter.exp.str)
 
 
 
