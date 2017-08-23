@@ -51,7 +51,7 @@ class Reporter:
                         "Reports")
 
         # Define export path
-        self.exp = Path(Reporter.src.str + "Export")
+        self.exp = Path(self.src.str + "Export")
 
         # Initialize report
         self.report = None
