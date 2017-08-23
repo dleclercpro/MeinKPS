@@ -46,20 +46,3 @@ class BasalProfile(base.PastProfile):
         # Define report info
         self.report = "pump.json"
         self.branch = ["Basal Profile (" + profile + ")"]
-
-
-
-    def decouple(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start decoupling
-        super(BasalProfile, self).decouple()
-
-        # Get min/max factors
-        self.min = min(self.y)
-        self.max = max(self.y)

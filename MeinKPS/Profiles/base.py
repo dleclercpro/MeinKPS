@@ -24,6 +24,7 @@
 
 # LIBRARIES
 import numpy as np
+import copy
 import datetime
 
 
@@ -42,7 +43,7 @@ Reporter = reporter.Reporter()
 
 class Profile(object):
 
-    def __init__(self, start = None, end = None, norm = None):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,13 +70,13 @@ class Profile(object):
         self.u = None
 
         # Initialize profile start
-        self.start = start
+        self.start = None
 
         # Initialize profile end
-        self.end = end
+        self.end = None
 
         # Initialize time reference
-        self.norm = norm
+        self.norm = None
 
         # Initialize min/max values
         self.min = None
@@ -237,6 +238,10 @@ class Profile(object):
 
             # Map it
             self.map()
+
+        # Read min/max values
+        self.min = min(self.y)
+        self.max = max(self.y)
 
 
 
@@ -968,39 +973,42 @@ class Profile(object):
         # Verify validity of operation
         self.validate(operands)
 
-        # Generate new profile with same limits
-        new = Profile(self.start, self.end, self.norm)
+        # Copy profile on which operation is done
+        new = copy.deepcopy(self)
+
+        # Reset its components
+        new.reset()
 
         # Merge all steps
         new.T = lib.uniqify(self.T + lib.flatten([p.T for p in operands]))
 
-        # Get global number of steps
-        n = len(new.T)
-
         # Compute each step of new profile
-        for i in range(n):
+        for T in new.T:
 
             # Compute partial result with base profile
-            result = self.f(new.T[i])
+            result = self.f(T)
 
             # Look within each profile
             for p in operands:
 
                 # Compute partial result on current profile
-                result = operation(result, p.f(new.T[i]))
+                result = operation(result, p.f(T))
 
             # Store result for current step
             new.y.append(result)
 
-        # Normalize new profile
+        # Normalize it
         new.normalize()
+
+        # Derivate it
+        new.derivate()
 
         # Return new profile
         return new
 
 
 
-    def add(self, *kwds):
+    def add(self, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1015,11 +1023,11 @@ class Profile(object):
         print "Adding:"
 
         # Do operation
-        return self.operate(operation, list(kwds))
+        return self.operate(operation, list(args))
 
 
 
-    def subtract(self, *kwds):
+    def subtract(self, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1034,7 +1042,7 @@ class Profile(object):
         print "Subtracting:"
 
         # Do operation
-        return self.operate(operation, list(kwds))
+        return self.operate(operation, list(args))
 
 
 
