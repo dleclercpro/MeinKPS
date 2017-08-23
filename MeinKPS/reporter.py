@@ -597,19 +597,13 @@ class Report:
 
 
 
-    def export(self, path = None):
+    def export(self, path):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             EXPORT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # If no export path given
-        if path is None:
-
-            # Set it to default
-            path = self.exp.str
 
         # Store original path
         original = self.path
