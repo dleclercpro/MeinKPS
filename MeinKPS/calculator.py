@@ -261,9 +261,6 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define export path
-        path = reporter.Path(Reporter.src.str + "Export").str
-
         # Initialize reports
         reports = {"treatments": reporter.Report("treatments.json"),
                    "history": reporter.Report("history.json"),
@@ -311,7 +308,7 @@ class Calculator(object):
         for report in reports.values():
 
             # Export it
-            report.export(path)
+            report.export()
 
 
 

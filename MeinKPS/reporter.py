@@ -50,6 +50,9 @@ class Reporter:
         self.src = Path(os.path.dirname(os.path.realpath(__file__)) + os.sep +
                         "Reports")
 
+        # Define export path
+        self.exp = Path(Reporter.src.str + "Export")
+
         # Initialize report
         self.report = None
 
@@ -594,13 +597,19 @@ class Report:
 
 
 
-    def export(self, path):
+    def export(self, path = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             EXPORT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # If no export path given
+        if path is None:
+
+            # Set it to default
+            path = self.exp.str
 
         # Store original path
         original = self.path
