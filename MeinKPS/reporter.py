@@ -121,6 +121,12 @@ class Reporter:
         # Generate new report
         report = Report(name, path, date)
 
+        # Give user info
+        print "Report found."
+
+        # Show section
+        #lib.printJSON(report)
+
         # Load its JSON
         report.load()
 
@@ -177,7 +183,7 @@ class Reporter:
         print "Section found."
 
         # Show section
-        lib.printJSON(section)
+        #lib.printJSON(section)
 
         # Return section
         return section
@@ -205,7 +211,7 @@ class Reporter:
             print "Entry found."
 
             # Show value
-            lib.printJSON(value)
+            #lib.printJSON(value)
 
             # Return it for external access
             return value

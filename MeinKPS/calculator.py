@@ -77,7 +77,7 @@ class Calculator(object):
         self.resume = resume.ResumeProfile()
 
         # Initialize net insulin profile
-        self.net = None
+        self.net = net.NetProfile()
 
         # Give calculator an IOB profile
         self.IOB = IOB.FutureIOBProfile(IOB.PastIOBProfile())
@@ -100,9 +100,6 @@ class Calculator(object):
         # Initialize pump's max values
         self.max = {"Basal": None,
                     "Bolus": None}
-
-        # Give calculator a report
-        self.report = "net.json"
 
 
 
@@ -177,7 +174,8 @@ class Calculator(object):
         future = self.now + datetime.timedelta(hours = self.DIA)
 
         # Build net insulin profile
-        self.build(past, self.now)
+        self.net.build(past, self.now, self.basal, self.TB, self.suspend,
+                                       self.resume, self.bolus)
 
         # Define IDC
         #self.IDC = IDC.WalshIDC(self.DIA)
@@ -208,48 +206,6 @@ class Calculator(object):
 
         # Build future BG profile
         self.BG.build(self.IOB, self.ISF)
-
-
-
-    def build(self, past, now, bolus = True):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            BUILD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Build net insulin profile.
-        """
-
-        # Build basal profile
-        self.basal.build(past, now)
-
-        # Build TB profile
-        self.TB.build(past, now, self.basal)
-
-        # Build bolus profile
-        self.bolus.build(past, now)
-
-        # Build suspend profile
-        self.suspend.build(past, now, self.basal)
-
-        # Build resume profile
-        self.resume.build(past, now, self.TB.subtract(self.basal))
-                      
-        # Build net profile using suspend/resume and bolus profiles
-        self.net = self.resume.subtract(self.suspend)
-
-        # If bolus need to be considered
-        if bolus:
-
-            # Add bolus profile
-            self.net = self.net.add(self.bolus)
-
-        # Give user info
-        print "Net insulin profile:"
-
-        # Show net insulin profile
-        self.net.show()
 
 
 
@@ -461,11 +417,15 @@ class Calculator(object):
                    "BG": reporter.Report("BG.json"),
                    "pump": reporter.Report("pump.json")}
 
-        # Initialize net basals dict
-        netBasals = {}
+        # Define past time
+        past = now - datetime.timedelta(hours = 24)
 
         # Build net insulin profile for last 24 hours
-        self.build(now - datetime.timedelta(hours = 24), now, False)
+        self.net.build(past, now, self.basal, self.TB, self.suspend,
+                                                       self.resume)
+
+        # Initialize net basals dict
+        netBasals = {}
 
         # Loop over net insulin profile
         for t, y in zip(self.net.T, self.net.y):
