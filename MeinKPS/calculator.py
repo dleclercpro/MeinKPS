@@ -178,11 +178,10 @@ class Calculator(object):
                                        self.resume, self.bolus)
 
         # Define IDC
-        #self.IDC = IDC.WalshIDC(self.DIA)
         self.IDC = IDC.FiaspIDC(self.DIA)
-        
+        #self.IDC = IDC.WalshIDC(self.DIA)
+
         # Build past IOB profile
-        # FIXME: when no past data found
         self.IOB.past.build(past, self.now)
 
         # Build future IOB profile
@@ -191,21 +190,224 @@ class Calculator(object):
         # Build COB profile
         #self.COB.build(past, self.now)
 
-        # Build ISF profile (over the next DIA)
+        # Build future ISF profile
         self.ISF.build(self.now, future)
 
-        # Build CSF profile (over the next DIA)
-        #self.CSF.build(self.now, future)
+        # Build future CSF profile
+        self.CSF.build(self.now, future)
 
-        # Build BG targets profile (over the next DIA)
+        # Build future BG targets profile
         self.BGTargets.build(self.now, future)
 
         # Build past BG profile
-        # FIXME: when no past data found
         self.BG.past.build(past, self.now)
 
         # Build future BG profile
         self.BG.build(self.IOB, self.ISF)
+
+
+
+    def computeDose(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTEDOSE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Compute the necessary insulin amount at the current time  based on
+        latest BG input and future target, taking into account ISF step curve
+        over the next DIA hours (assuming natural decay of insulin).
+        """
+
+        # Give user info
+        print "Computing insulin dose..."
+
+        # Check for insufficient data
+        self.BG.past.verify(1)
+
+        # Get current data
+        BG = self.BG.past.y[-1]
+        ISF = self.ISF.y[0]
+        IOB = self.IOB.y[0]
+
+        # Compute target by the end of insulin action
+        targetBG = np.mean(self.BGTargets.y[-1])
+
+        # Compute eventual BG after complete IOB decay
+        naiveBG = self.BG.expect(self.DIA, self.IOB)
+
+        # Compute BG deviation based on CGM readings and expected BG due to IOB
+        # decay
+        [deltaBG, BGI, expectedBGI] = self.BG.analyze(self.IOB, self.ISF)
+
+        # Update eventual BG
+        eventualBG = naiveBG + deltaBG
+
+        # Compute BG difference with average target
+        dBG = targetBG - eventualBG
+
+        # Compute required dose
+        dose = self.BG.dose(dBG, self.ISF, self.IDC)
+
+        # Give user info
+        print "BG target: " + str(target) + " " + self.BG.u
+        print "Current BG: " + str(BG) + " " + self.BG.u
+        print "Current ISF: " + str(ISF) + " " + self.ISF.u
+        print "Current IOB: " + str(IOB) + " " + self.IOB.u
+        print "Naive eventual BG: " + str(naiveBG) + " " + self.BG.u
+        print "Eventual BG: " + str(eventualBG) + " " + self.BG.u
+        print "dBG: " + str(dBG) + " " + self.BG.u
+        print "Recommended dose: " + str(dose) + " " + "U"
+
+        # Return dose
+        return dose
+
+
+
+    def computeTB(self, dose):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTETB
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Compute TB to enact given a recommended insulin dose.
+        """
+
+        # Give user info
+        print "Computing TB to enact..."
+
+        # Get current data
+        basal = self.basal.y[-1]
+
+        # Define time to enact equivalent of dose (h)
+        T = 0.5
+
+        # Find required basal difference to enact over given time (round to
+        # pump's precision)
+        dB = dose / T
+
+        # Compute TB to enact 
+        TB = basal + dB
+
+        # Give user info
+        print "Current basal: " + str(basal) + " U/h"
+        print "Required basal difference: " + str(dB) + " U/h"
+        print "Temporary basal to enact: " + str(TB) + " U/h"
+        print "Enactment time: " + str(T) + " h"
+
+        # Convert enactment time to minutes
+        T *= 60
+
+        # Return TB recommendation
+        return [TB, "U/h", T]
+
+
+
+    def limitTB(self, TB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LIMITTB
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Limit too low/high TBs.
+        """
+
+        # Destructure TB
+        [rate, units, duration] = TB
+
+        # Negative TB rate
+        if rate < 0:
+
+            # Give user info
+            print ("External action required: negative basal required. " +
+                   "Eat something!")
+
+            # Stop insulin delivery
+            rate = 0
+
+        # Positive TB
+        elif rate > 0:
+
+            # Get basal info
+            basal = self.basal.y[-1]
+            maxDailyBasal = self.basal.max
+            maxBasal = self.max["Basal"]
+
+            # Define max basal rate allowed (U/h)
+            maxRate = min(4 * basal, 3 * maxDailyBasal, maxBasal)
+
+            # Give user info
+            print "Theoretical max basal: " + str(maxBasal) + " U/h"
+            print "4x current basal: " + str(4 * basal) + " U/h"
+            print "3x max daily basal: " + str(3 * maxDailyBasal) + " U/h"
+
+            # TB exceeds max
+            if rate > maxRate:
+
+                # Give user info
+                print ("External action required: maximal basal exceeded. " +
+                       "Enact dose manually!")
+
+                # Max it out
+                rate = maxRate
+
+        # No TB
+        else:
+
+            # Give user info
+            print ("No modification to insulin dosage necessary.")
+
+        # Return limited TB
+        return [rate, units, duration]
+
+
+
+    def snooze(self, TB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SNOOZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Snooze enactment of high TBs for a while after eating.
+        """
+
+        # Get last carbs
+        lastCarbs = Reporter.getRecent("treatments.json", ["Carbs"], 1)
+
+        # Destructure TB
+        [rate, units, duration] = TB
+
+        # Define snooze duration (h)
+        snooze = 0.5 * self.DIA
+
+        # Snooze criteria (no high temping after eating)
+        if lastCarbs and rate > 0:
+
+            # Get last meal time and format it to datetime object
+            lastTime = lib.formatTime(max(lastCarbs))
+
+            # Compute elapsed time since (h)
+            d = (self.now - lastTime).total_seconds() / 3600.0
+
+            # If snooze necessary
+            if d < snooze:
+
+                # Compute remaining time (m)
+                T = int(round((snooze - d) * 60))
+
+                # Give user info
+                print ("Bolus snooze (" + str(snooze) + " h). If no more " +
+                       "bolus is issued, looping will restart in " + str(T) +
+                       " m.")
+
+                # Snooze
+                return True
+
+        # Do not snooze
+        return False
 
 
 
@@ -224,172 +426,48 @@ class Calculator(object):
         # Give user info
         print "Recommending treatment..."
 
-        # Check for insufficient data
-        self.BG.past.verify(1)
+        # Compute target range extremities by the end of insulin action
+        minTargetBG = min(self.BGTargets.y[-1])
+        maxTargetBG = max(self.BGTargets.y[-1])
 
-        # Get current BG
-        BG = self.BG.past.y[-1]
+        # Compute recommended dose
+        dose = self.computeDose()
 
-        # Get current basal
-        basal = self.basal.y[-1]
+        # Compute corresponding TB
+        TB = self.computeTB(dose)
 
-        # Get current IOB
-        IOB = self.IOB.y[0]
+        # Limit it
+        TB = self.limitTB(TB)
 
-        # Get current ISF
-        ISF = self.ISF.y[0]
-
-        # Compute eventual BG after complete IOB decay
-        naiveBG = self.BG.expect(self.DIA, self.IOB)
-
-        # Compute BG deviation based on CGM readings and expected BG due to IOB
-        # decay
-        [deltaBG, BGI, expectedBGI] = self.BG.analyze(self.IOB, self.ISF)
-
-        # Update eventual BG
-        eventualBG = naiveBG + deltaBG
-
-        # Compute BG target
-        target = np.mean(self.BGTargets.y[-1])
-
-        # Compute BG difference with average target
-        dBG = target - eventualBG
-
-        # Compute required dose
-        dose = self.BG.dose(dBG, self.ISF, self.IDC)
-
-        # Give user info
-        print "BG target: " + str(target) + " " + self.BG.u
-        print "Current BG: " + str(BG) + " " + self.BG.u
-        print "Current ISF: " + str(ISF) + " " + self.BG.u + "/U"
-        print "Current IOB: " + str(round(IOB, 1)) + " U"
-        print "Naive eventual BG: " + str(round(naiveBG, 1)) + " " + self.BG.u
-        print "Eventual BG: " + str(round(eventualBG, 1)) + " " + self.BG.u
-        print "dBG: " + str(round(dBG, 1)) + " " + self.BG.u
-        print "Recommended dose: " + str(round(dose, 1)) + " U"
-
-        # Define time to enact equivalent of dose (m)
-        T = 0.5
-
-        # Give user info
-        print "Enactment time: " + str(T) + " h"
-
-        # Find required basal difference to enact over given time (round to
-        # pump's precision)
-        dB = round(dose / T, 2)
-
-        # Compute TB to enact 
-        TB = basal + dB
-
-        # Give user info
-        print "Current basal: " + str(basal) + " U/h"
-        print "Required basal difference: " + str(dB) + " U/h"
-        print "Temporary basal to enact: " + str(TB) + " U/h"
-
-        # Convert enactment time to minutes
-        T *= 60
-
-        # Define computed TB recommendation
-        R = [TB, "U/h", T]
-
-        # If less insulin is needed
-        if dose < 0:
-
-            # Define minimal basal allowed (U/h)
-            minTB = 0
-
-            # Is required TB allowed?
-            if TB < minTB:
-
-                # Give user info
-                print ("External action required: negative basal required. " +
-                       "Eat something!")
-
-                # Stop insulin delivery
-                R = [minTB, "U/h", T]
-
-        # If more insulin is needed
-        elif dose > 0:
-
-            # Find maximal basal allowed (U/h)
-            maxTB = min(self.max["Basal"],
-                        3 * self.basal.max,
-                        4 * basal)
-
-            # Give user info
-            print "Theoretical max basal: " + str(self.max["Basal"]) + " U/h"
-            print "3x max daily basal: " + str(3 * self.basal.max) + " U/h"
-            print "4x current basal: " + str(4 * basal) + " U/h"
-            print "Max basal selected: " + str(maxTB) + " U/h"
-
-            # Is required TB allowed?
-            if TB > maxTB:
-
-                # Give user info
-                print ("External action required: maximal basal exceeded. " +
-                       "Enact dose manually!")
-
-                # Max out TB
-                R = [maxTB, "U/h", T]
-
-        # No modification to insulin dosage necessary
-        else:
-
-            # Give user info
-            print ("No modification to insulin dosage necessary.")
+        # Snoozing of TB enactment required?
+        if self.snooze(TB):
 
             # No TB recommendation
-            R = None
-
-        # Get last carbs
-        lastCarbs = Reporter.getRecent("treatments.json", ["Carbs"], 1)
-
-        # Snooze criteria (no high temping after eating)
-        if lastCarbs and dose > 0:
-
-            # Get last meal time and format it to datetime object
-            lastTime = lib.formatTime(max(lastCarbs))
-
-            # Compute elapsed time since (h)
-            d = (self.now - lastTime).total_seconds() / 3600.0
-
-            # Define snooze duration (h)
-            snooze = 0.5 * self.DIA
-
-            # If snooze necessary
-            if d < snooze:
-
-                # Compute remaining time (m)
-                T = int(round((snooze - d) * 60))
-
-                # Give user info
-                print ("Bolus snooze (" + str(snooze) + " h). If no more " +
-                       "bolus is issued, looping will restart in " + str(T) +
-                       " m.")
-
-                # No TB recommendation
-                R = None
+            TB = None
 
         # Look for conflictual info
-        if (np.sign(BGI) == -1 and eventualBG > max(self.BGTargets.y[-1]) or
-            np.sign(BGI) == 1 and eventualBG < min(self.BGTargets.y[-1])):
+        if (np.sign(BGI) == -1 and eventualBG > maxTargetBG or
+            np.sign(BGI) == 1 and eventualBG < minTargetBG):
 
             # Give user info
             print ("Conflictual information: BG decreasing/rising although " +
                    "expected to land higher/lower than target range.")
 
             # No TB recommendation
-            #R = None
+            #TB = None
 
         # If recommendation was not canceled
-        if R is not None:
+        if TB is not None:
+
+            # Destructure TB
+            [rate, units, duration] = TB
 
             # Give user info
-            print ("Recommended TB: " + str(R[0]) + " " + R[1] + " (" +
-                   str(R[2]) + " m)")
+            print ("Recommended TB: " + str(rate) + " " + units + " (" +
+                                        str(duration) + " m)")
 
         # Return recommendation
-        return R
+        return TB
 
 
 
@@ -403,7 +481,7 @@ class Calculator(object):
 
 
 
-    def export(self, now):
+    def export(self, now, hours = 24):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -418,7 +496,7 @@ class Calculator(object):
                    "pump": reporter.Report("pump.json")}
 
         # Define past time
-        past = now - datetime.timedelta(hours = 24)
+        past = now - datetime.timedelta(hours = hours)
 
         # Build net insulin profile for last 24 hours
         self.net.build(past, now, self.basal, self.TB, self.suspend,
