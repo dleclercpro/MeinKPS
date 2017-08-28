@@ -231,7 +231,8 @@ class Calculator(object):
         IOB = self.IOB.y[0]
 
         # Compute target by the end of insulin action
-        targetBG = np.mean(self.BGTargets.y[-1])
+        targetRangeBG = self.BGTargets.y[-1]
+        targetBG = np.mean(targetRangeBG)
 
         # Compute eventual BG after complete IOB decay
         naiveBG = self.BG.expect(self.DIA, self.IOB)
@@ -258,6 +259,17 @@ class Calculator(object):
         print "Eventual BG: " + str(eventualBG) + " " + self.BG.u
         print "dBG: " + str(dBG) + " " + self.BG.u
         print "Recommended dose: " + str(dose) + " " + "U"
+
+        # Look for conflictual info
+        if (np.sign(BGI) == -1 and eventualBG > max(targetRangeBG) or
+            np.sign(BGI) == 1 and eventualBG < min(targetRangeBG)):
+
+            # Give user info
+            print ("Conflictual information: BG decreasing/rising although " +
+                   "expected to land higher/lower than target range.")
+
+            # No recommendation
+            #dose = 0
 
         # Return dose
         return dose
@@ -426,10 +438,6 @@ class Calculator(object):
         # Give user info
         print "Recommending treatment..."
 
-        # Compute target range extremities by the end of insulin action
-        minTargetBG = min(self.BGTargets.y[-1])
-        maxTargetBG = max(self.BGTargets.y[-1])
-
         # Compute recommended dose
         dose = self.computeDose()
 
@@ -444,17 +452,6 @@ class Calculator(object):
 
             # No TB recommendation
             TB = None
-
-        # Look for conflictual info
-        if (np.sign(BGI) == -1 and eventualBG > maxTargetBG or
-            np.sign(BGI) == 1 and eventualBG < minTargetBG):
-
-            # Give user info
-            print ("Conflictual information: BG decreasing/rising although " +
-                   "expected to land higher/lower than target range.")
-
-            # No TB recommendation
-            #TB = None
 
         # If recommendation was not canceled
         if TB is not None:
