@@ -53,6 +53,15 @@ class NetProfile(base.PastProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Give user info
+        print "Building..."
+
+        # Define start of profile
+        self.start = start
+
+        # Define end of profile
+        self.end = end
+
         # Build basal profile
         basal.build(start, end)
 
