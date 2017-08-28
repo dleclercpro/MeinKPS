@@ -250,7 +250,7 @@ class Calculator(object):
         dose = self.BG.dose(dBG, self.ISF, self.IDC)
 
         # Give user info
-        print "BG target: " + str(target) + " " + self.BG.u
+        print "BG target: " + str(targetBG) + " " + self.BG.u
         print "Current BG: " + str(BG) + " " + self.BG.u
         print "Current ISF: " + str(ISF) + " " + self.ISF.u
         print "Current IOB: " + str(IOB) + " " + self.IOB.u
