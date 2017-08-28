@@ -88,8 +88,13 @@ class NetProfile(base.PastProfile):
         resume.build(start, end, netBasal)
 
         # Build net insulin profile
-        self = resume.subtract(suspend)
+        net = resume.subtract(suspend)
 
+        # Assign components
+        self.T = net.T
+        self.t = net.t
+        self.y = net.y
+        
         # Give user info
         print "Net insulin profile:"
 
