@@ -634,7 +634,7 @@ def main():
     calculator = Calculator()
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(hours = 0)
+    now = datetime.datetime.now() - datetime.timedelta(hours = 6)
 
     # Run calculator
     #calculator.run(now)
