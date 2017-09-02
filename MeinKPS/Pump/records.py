@@ -457,7 +457,8 @@ class BolusRecord(Record):
                                    x[1] <= (maxBolus / pump.bolus.stroke) and
                                    x[2] <= (maxBolus / pump.bolus.stroke) and
                                    x[1] >= x[2] and
-                                   0 <= x[3] <= 16)
+                                   x[3] == 0)# and
+                                   #0 <= x[3] <= 16)
 
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
