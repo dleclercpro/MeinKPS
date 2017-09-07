@@ -340,7 +340,7 @@ class Reporter:
 
 
 
-    def getRecent(self, name, branch, n = 2):
+    def getRecent(self, name, branch, n = 2, strict = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -357,11 +357,20 @@ class Reporter:
         # Initialize number of reports merged
         N = 0
 
+        # If search is strict
+        if strict:
+
+            # Get today
+            today = datetime.date.today()
+
+            # Compute oldest day to look for
+            oldest = today - datetime.timedelta(days = n - 1)
+
         # Loop on dates, starting with the latest one
         for date in sorted(dates, reverse = True):
 
             # Check if enough recent reports were fetched
-            if N == n:
+            if N == n or strict and date < oldest:
 
                 # Quit
                 break
@@ -703,7 +712,7 @@ class Path:
             MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Note: The first slash might only work for Linux.
+        Note: first slash only works for Linux.
         """
 
         # Merge path
@@ -739,7 +748,7 @@ class Path:
         date.reverse()
 
         # Return datetime object
-        return datetime.datetime(*date)
+        return datetime.date(*date)
 
 
 

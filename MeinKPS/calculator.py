@@ -120,9 +120,6 @@ class Calculator(object):
         # Prepare components
         self.prepare()
 
-        # Show components
-        #self.show()
-
         # Run autosens
         #self.autosens()
 
@@ -476,6 +473,12 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get last 24 hours of BGs
+        BGs = Reporter.getRecent("BG.json", [], 2, True)
+
+        # Show them
+        lib.printJSON(BGs)
+
 
 
     def export(self, now, hours = 24):
@@ -634,13 +637,19 @@ def main():
     calculator = Calculator()
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(hours = 6)
+    now = datetime.datetime.now() - datetime.timedelta(days = 6)
 
     # Run calculator
     #calculator.run(now)
 
+    # Run autosens
+    calculator.autosens()
+
+    # Show components
+    #calculator.show()
+
     # Export net insulin profile
-    calculator.export(now)
+    #calculator.export(now)
 
 
 
