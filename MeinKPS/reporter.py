@@ -82,7 +82,7 @@ class Reporter:
         for p in paths:
 
             # Get date from path
-            dates.append(p.date())
+            dates.append(Path(p).date())
 
         # Return dates
         return dates
@@ -703,13 +703,12 @@ class Path:
             MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Note: first slash only works for Linux.
+        Note: The first slash might only work for Linux.
         """
 
         # Merge path
         #return os.sep + os.sep.join(self.list)
-        #return os.sep.join(self.list)
-        return os.path.join(self.list)
+        return os.sep.join(self.list)
 
 
 
@@ -753,7 +752,10 @@ class Path:
         """
 
         # Get current path
-        path = Path(self.list[:n]).str
+        path = Path(self.list[:n])
+
+        # Stringify it
+        path = path.str
 
         # Look for path
         if n <= self.depth:
@@ -833,7 +835,7 @@ class Path:
                 if f == file:
 
                     # Store path
-                    results.append(Path(os.getcwd()))
+                    results.append(os.getcwd())
 
             # If directory and a digit (because a date)
             elif os.path.isdir(f) and f.isdigit():
