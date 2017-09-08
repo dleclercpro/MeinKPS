@@ -162,33 +162,6 @@ def formatTime(t):
 
 
 
-def normalizeTime(t, T):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        NORMALIZETIME
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Compare time to reference
-    if t >= T:
-
-        # Compute positive time difference (s)
-        dt = (t - T).total_seconds()
-
-    else:
-
-        # Compute negative time difference (s)
-        dt = -(T - t).total_seconds()
-
-    # Convert time difference to hours
-    dt /= 3600.0
-
-    # Return time difference
-    return dt
-
-
-
 def formatDate(t):
 
     """
@@ -213,6 +186,33 @@ def formatDate(t):
 
     # Return formatted date
     return date
+
+
+
+def normalizeTime(t, T):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        NORMALIZETIME
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Compare time to reference
+    if t >= T:
+
+        # Compute positive time difference (s)
+        dt = (t - T).total_seconds()
+
+    else:
+
+        # Compute negative time difference (s)
+        dt = -(T - t).total_seconds()
+
+    # Convert time difference to hours
+    dt /= 3600.0
+
+    # Return time difference
+    return dt
 
 
 
@@ -259,11 +259,11 @@ def nMax(x, n = 1):
 
 
 
-def mergeDict(base, new, n = 1):
+def mergeDicts(base, new, n = 1):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MERGEDICT
+        MERGEDICTS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Note: dictionaries to merge must have same structure!
@@ -294,7 +294,7 @@ def mergeDict(base, new, n = 1):
                 base[key] = {}
 
             # Dive in
-            mergeDict(base[key], value, n + 1)
+            mergeDicts(base[key], value, n + 1)
 
         # Otherwise
         else:
@@ -343,7 +343,7 @@ def mergeNDicts(*args):
     for new in args:
 
         # Update base
-        base = mergeDict(base, new)
+        base = mergeDicts(base, new)
 
     # Give user info
     #print "New merged dictionary:"

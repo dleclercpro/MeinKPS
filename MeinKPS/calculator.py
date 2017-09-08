@@ -643,10 +643,13 @@ def main():
     now = datetime.datetime.now() - datetime.timedelta(days = 6)
 
     # Run calculator
-    #calculator.run(now)
+    calculator.run(now)
+
+    # Export results
+    #calculator.export(now)
 
     # Run autosens
-    calculator.autosens()
+    #calculator.autosens()
 
     # Show components
     #calculator.show()

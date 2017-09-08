@@ -82,14 +82,18 @@ class Profile(object):
         self.min = None
         self.max = None
 
-        # Initialize zero
+        # Initialize zero (default value)
         self.zero = None
 
         # Initialize data
-        self.data = None
+        self.data = {}
 
         # Define whether data is time mapped or not
         self.mapped = True
+
+        # Define whether data should strictly be loaded within given time range
+        # or try and find the latest available
+        self.strict = True
 
         # Initialize report info
         self.report = None
@@ -118,6 +122,9 @@ class Profile(object):
         self.t = []
         self.y = []
         self.dydt = []
+
+        # Reset loaded data
+        self.data = {}
 
 
 
@@ -153,11 +160,8 @@ class Profile(object):
         # Cut entries outside of time limits
         self.cut()
 
-        # If filling needed
-        if filler:
-
-            # Fill profile
-            self.fill(filler)
+        # Fill profile
+        self.fill(filler)
 
         # Smooth profile
         self.smooth()
@@ -180,26 +184,64 @@ class Profile(object):
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Load profile components from specified report.
+        Load profile components from specified report(s).
         """
 
         # Give user info
         print "Loading..."
 
-        # If dated
+        # Reset previously loaded components/data
+        self.reset()
+
+        # If time mapped
         if self.mapped:
 
-            # Define loading function
-            load = Reporter.getRecent
+            # Get start and end dates
+            [start, end] = [t.date() for t in [self.start, self.end]]
+
+            # Count number of days between them (including limits)
+            n = (end - start).days + 1
+
+            # If strictly looking for dates within range of profile
+            if self.strict:
+
+                # Define dates range
+                dates = range(-n, 1)
+
+                # Generate date range (adding one day to account for overlapping
+                # last entries)
+                dates = [end + datetime.timedelta(days = x) for x in dates]
+
+                # Get corresponding reports
+                for date in dates:
+
+                    # Try getting data
+                    try:
+
+                        # Get current data
+                        data = Reporter.get(self.report, self.branch, None,
+                                            date)
+
+                        # Load data
+                        self.data = lib.mergeNDicts(self.data, data)
+
+                    # Otherwise
+                    except:
+
+                        # Skip
+                        pass
+
+            # If looking for last stored data
+            else:
+
+                # Load data
+                self.data = Reporter.getRecent(self.report, self.branch)
 
         # Otherwise
         else:
 
-            # Define loading function
-            load = Reporter.get
-
-        # Load data
-        self.data = load(self.report, self.branch)
+            # Load data
+            self.data = Reporter.get(self.report, self.branch)
 
         # Give user info
         print "'" + self.__class__.__name__ + "' loaded."
@@ -219,24 +261,33 @@ class Profile(object):
         # Give user info
         print "Decoupling components..."
 
-        # Decouple components
-        for t in sorted(self.data):
+        # If data found
+        if self.data:
 
-            # Get time and convert it to datetime object if possible
-            self.T.append(lib.formatTime(t))
+            # Decouple components
+            for t in sorted(self.data):
 
-            # Get value
-            self.y.append(self.data[t])
+                # Get time and convert it to datetime object if possible
+                self.T.append(lib.formatTime(t))
 
-        # If time is not mapped
-        if not self.mapped and len(self.T):
+                # Get value
+                self.y.append(self.data[t])
 
-            # Map it
-            self.map()
+            # If time is not mapped
+            if not self.mapped:
 
-        # Read min/max values
-        self.min = min(self.y)
-        self.max = max(self.y)
+                # Map it
+                self.map()
+
+            # Read min/max values
+            self.min = min(self.y)
+            self.max = max(self.y)
+
+        # Otherwise
+        else:
+
+            # Give user info
+            print "No data found."
 
 
 
@@ -251,11 +302,25 @@ class Profile(object):
         # Give user info
         print "Mapping time..."
 
+        # Initialize profile components
+        T = []
+        y = []
+
+        # Get number of entries
+        n = len(self.T)
+
+        # Get number of days to map (including limits)
+        d = (self.end - self.start).days + 1
+
         # If future profile
         if self.norm == "Start":
 
             # Define now
             now = self.start
+
+            # Define days range (adding one to account for overlapping last
+            # entries)
+            days = range(-1, d)
 
         # If past profile
         elif self.norm == "End":
@@ -263,64 +328,24 @@ class Profile(object):
             # Define now
             now = self.end
 
-        # Initialize profile components
-        T = []
-        y = []
+            # Define days range (adding one to account for overlapping last
+            # entries)
+            days = range(-d, 1)
 
-        # Get number of days to map
-        d = (self.end - self.start).days
-
-        # Get number of entries
-        n = len(self.T)
+        # Compute days range as datetime objects
+        days = [now + datetime.timedelta(days = x) for x in days]
 
         # Loop on days
-        for i in range(d + 1):
+        for day in days:
 
             # Rebuild profile
-            for j in range(n):
-
-                # Get day
-                day = now - datetime.timedelta(days = d - i)
+            for i in range(n):
 
                 # Add time
-                T.append(datetime.datetime.combine(day, self.T[j]))
+                T.append(datetime.datetime.combine(day, self.T[i]))
 
                 # Add value
-                y.append(self.y[j])
-
-        # Update number of entries
-        n = len(T)
-
-        # Initialize current index (handle between 23:00 and 00:00 of
-        # following day)
-        index = n - 1
-
-        # Find current time
-        for i in range(n - 1):
-
-            # Current time criteria
-            if T[i] <= now < T[(i + 1)]:
-
-                # Store index
-                index = i
-
-                # Exit
-                break
-
-        # Update time
-        for i in range(n):
-
-            # Find times in future and bring them in the past
-            if self.norm == "End" and i > index:
-
-                # Update time
-                T[i] -= datetime.timedelta(days = d + 1)
-
-            # Find times in past and bring them in the future
-            elif self.norm == "Start" and i < index:
-
-                # Update time
-                T[i] += datetime.timedelta(days = d + 1)
+                y.append(self.y[i])
 
         # Zip and sort profile
         z = sorted(zip(T, y))
@@ -375,7 +400,7 @@ class Profile(object):
                 # If step is a canceling one
                 if d == datetime.timedelta(0):
 
-                    # Replace value with zero
+                    # Replace value with zero (default) value
                     y[-1] = self.zero
 
                 # Inject zero in profile
@@ -524,53 +549,56 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
-        print "Filling..."
+        # If filler given and step profile
+        if filler is not None and self.type == "Step":
 
-        # Initialize new profile components
-        T = []
-        y = []
+            # Give user info
+            print "Filling..."
 
-        # Get number of steps within profile
-        m = len(self.T)
+            # Initialize new profile components
+            T = []
+            y = []
 
-        # Get number of steps within filler
-        n = len(filler.T)
+            # Get number of steps within profile
+            m = len(self.T)
 
-        # Add end to time axis in order to correctly compute last dt (number of
-        # steps has to be computed before that!)
-        self.T.append(self.end)
+            # Get number of steps within filler
+            n = len(filler.T)
 
-        # Fill profile
-        for i in range(m):
+            # Add end to time axis in order to correctly compute last dt (number
+            # of steps has to be computed before that!)
+            self.T.append(self.end)
 
-            # Filling criteria
-            if self.y[i] is None:
+            # Fill profile
+            for i in range(m):
 
-                # Fill step
-                T.append(self.T[i])
-                y.append(filler.f(self.T[i]))
+                # Filling criteria
+                if self.y[i] is None:
 
-                # Look for additional steps to fill
-                for j in range(n):
+                    # Fill step
+                    T.append(self.T[i])
+                    y.append(filler.f(self.T[i]))
 
-                    # Filling criteria
-                    if (self.T[i] < filler.T[j] < self.T[i + 1]):
+                    # Look for additional steps to fill
+                    for j in range(n):
 
-                        # Add step
-                        T.append(filler.T[j])
-                        y.append(filler.y[j])
+                        # Filling criteria
+                        if (self.T[i] < filler.T[j] < self.T[i + 1]):
 
-            # Step exists in profile
-            else:
+                            # Add step
+                            T.append(filler.T[j])
+                            y.append(filler.y[j])
 
-                # Add step
-                T.append(self.T[i])
-                y.append(self.y[i])
+                # Step exists in profile
+                else:
 
-        # Update profile
-        self.T = T
-        self.y = y
+                    # Add step
+                    T.append(self.T[i])
+                    y.append(self.y[i])
+
+            # Update profile
+            self.T = T
+            self.y = y
 
 
 
