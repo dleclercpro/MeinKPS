@@ -29,7 +29,7 @@ import base
 
 class BasalProfile(base.PastProfile):
 
-    def __init__(self, profile):
+    def __init__(self, profile = "Standard"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,6 +42,9 @@ class BasalProfile(base.PastProfile):
 
         # Define units
         self.u = "U/h"
+
+        # Define whether data is time mapped or not
+        self.mapped = False
 
         # Define report info
         self.report = "pump.json"

@@ -62,7 +62,7 @@ class Calculator(object):
         self.IDC = None
 
         # Give calculator a basal profile
-        self.basal = basal.BasalProfile("Standard")
+        self.basal = basal.BasalProfile()
 
         # Give calculator a TB profile
         self.TB = TB.TBProfile()
@@ -474,10 +474,13 @@ class Calculator(object):
         """
 
         # Get last 24 hours of BGs
-        BGs = Reporter.getRecent("BG.json", [], 2, True)
+        BGs = Reporter.getRecent("BG.json", [], 7, True)
 
         # Show them
         lib.printJSON(BGs)
+
+        # Build BG profile for last 24 hours
+        BGProfile = 0
 
 
 

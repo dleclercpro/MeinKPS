@@ -60,9 +60,6 @@ class PastBGProfile(base.PastProfile):
         # Define type
         self.type = "Dot"
 
-        # Define dating
-        self.dated = True
-
         # Define report info
         self.report = "BG.json"
 

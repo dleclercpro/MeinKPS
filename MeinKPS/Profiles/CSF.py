@@ -46,6 +46,9 @@ class CSFProfile(base.FutureProfile):
         # Start initialization
         super(CSFProfile, self).__init__()
 
+        # Define whether data is time mapped or not
+        self.mapped = False
+
         # Define report info
         self.report = "pump.json"
         self.branch = ["CSF"]

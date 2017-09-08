@@ -46,6 +46,9 @@ class BGTargets(base.FutureProfile):
         # Start initialization
         super(BGTargets, self).__init__()
 
+        # Define whether data is time mapped or not
+        self.mapped = False
+
         # Define report info
         self.report = "pump.json"
         self.branch = ["BG Targets"]

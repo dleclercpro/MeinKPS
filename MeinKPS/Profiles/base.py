@@ -88,8 +88,8 @@ class Profile(object):
         # Initialize data
         self.data = None
 
-        # Initialize dating
-        self.dated = False
+        # Define whether data is time mapped or not
+        self.mapped = True
 
         # Initialize report info
         self.report = None
@@ -147,9 +147,6 @@ class Profile(object):
         # Decouple profile components
         self.decouple()
 
-        # Filter profile components
-        self.filter()
-
         # Inject zeros between profile steps
         self.inject()
 
@@ -190,7 +187,7 @@ class Profile(object):
         print "Loading..."
 
         # If dated
-        if self.dated:
+        if self.mapped:
 
             # Define loading function
             load = Reporter.getRecent
@@ -217,8 +214,6 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         Decouple profile components.
-
-        FIXME: does not work when no entry stored.
         """
 
         # Give user info
@@ -234,7 +229,7 @@ class Profile(object):
             self.y.append(self.data[t])
 
         # If time is not mapped
-        if len(self.T) and type(self.T[0]) is datetime.time:
+        if not self.mapped and len(self.T):
 
             # Map it
             self.map()
@@ -336,74 +331,6 @@ class Profile(object):
 
 
 
-    def filter(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILTER
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Filter profile entries only to keep the ones between previously defined
-        profile start and end. Keep last one before start of profile in case of
-        overlapping.
-        """
-
-        # Give user info
-        print "Filtering..."
-
-        # Initialize profile components
-        T = []
-        y = []
-        d = []
-
-        # Initialize index for last step
-        index = None
-
-        # Get number of entries
-        n = len(self.T)
-
-        # Keep entries within start and end (+1 in case of overlapping)
-        for i in range(n):
-
-            # Compare to time limits
-            if self.start <= self.T[i] <= self.end:
-
-                # Add entry
-                T.append(self.T[i])
-                y.append(self.y[i])
-
-                # If durations set
-                if self.d:
-
-                    # Add duration
-                    d.append(self.d[i])
-
-            # Check for last entry
-            elif self.T[i] < self.start:
-
-                # Store index
-                index = i
-
-        # If last step was found
-        if index is not None:
-
-            # Add last entry
-            T.insert(0, self.T[index])
-            y.insert(0, self.y[index])
-
-            # If durations set
-            if self.d:
-
-                # Add last entry's duration
-                d.insert(0, self.d[index])
-
-        # Update profile
-        self.T = T
-        self.y = y
-        self.d = d
-
-
-
     def inject(self):
 
         """
@@ -470,51 +397,6 @@ class Profile(object):
 
 
 
-    def pad(self, a, b, last):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Force specific profile limits.
-        """
-
-        # Only step profiles can be padded
-        if self.type == "Step":
-
-            # Give user info
-            print "Padding..."
-
-            # Start of profile
-            if len(self.T) == 0 or self.T[0] != a:
-
-                # Add time
-                self.T.insert(0, a)
-
-                # If precedent step was found
-                if last is not None:
-
-                    # Extend precedent step's value
-                    self.y.insert(0, last)
-
-                # Otherwise
-                else:
-
-                    # Add zero value
-                    self.y.insert(0, self.zero)
-
-            # End of profile
-            if self.T[-1] != b:
-
-                # Add time
-                self.T.append(b)
-
-                # Add rate
-                self.y.append(self.y[-1])
-
-
-
     def cut(self, a = None, b = None):
 
         """
@@ -531,11 +413,16 @@ class Profile(object):
         # Give user info
         print "Cutting..."
 
-        # If no limits given
-        if a is None and b is None:
+        # If no start given
+        if a is None:
 
-            # Set default limits
+            # Set default start limit
             a = self.start
+
+        # If no end given
+        if b is None:
+
+            # Set default end limit
             b = self.end
 
         # Verify limit types
@@ -555,7 +442,7 @@ class Profile(object):
         y = []
 
         # Initialize index of last step before profile
-        index = None
+        last = None
 
         # Get number of steps
         n = len(self.T)
@@ -575,20 +462,8 @@ class Profile(object):
             # Update last step
             elif self.T[i] < a:
 
-                # Store index
-                index = i
-
-        # If last step
-        if index is not None:
-
-            # Define it
-            last = self.y[index]
-
-        # Otherwise
-        else:
-
-            # Define it
-            last = None
+                # Store last value
+                last = self.y[i]
 
         # Update profile
         self.T = T
@@ -596,6 +471,48 @@ class Profile(object):
 
         # Ensure ends of step profile fit
         self.pad(a, b, last)
+
+
+
+    def pad(self, a, b, last):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Force specific profile limits.
+        """
+
+        # Only step profiles can be padded
+        if self.type == "Step":
+
+            # Give user info
+            print "Padding..."
+
+            # If no previous step was found
+            if last is None:
+
+                # Use profile zero (default) value
+                last = self.zero
+
+            # Start of profile
+            if len(self.T) == 0 or self.T[0] != a:
+
+                # Add time
+                self.T.insert(0, a)
+                
+                # Extend precedent step's value
+                self.y.insert(0, last)
+
+            # End of profile
+            if self.T[-1] != b:
+
+                # Add time
+                self.T.append(b)
+
+                # Add rate
+                self.y.append(self.y[-1])
 
 
 
@@ -905,11 +822,8 @@ class Profile(object):
                     # Store index
                     index = -1
 
-        # If index was found
-        if index is not None:
-
-            # Compute corresponding value
-            y = self.y[index]
+        # Compute corresponding value
+        y = self.y[index]
 
         # Give user info
         #print "f(" + str(t) + ") = " + str(y)
