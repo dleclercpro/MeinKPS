@@ -1,12 +1,12 @@
 {
     "CGM": {
-        "BG": 3204,
-        "Battery": 1821,
-        "Calibration": 1821,
+        "BG": 3205,
+        "Battery": 1822,
+        "Calibration": 1822,
         "Clock": 0,
         "Firmware": 0,
         "Language": 0,
-        "Sensor": 1821,
+        "Sensor": 1822,
         "Start": 0,
         "Stop": 0,
         "Transmitter": 0,
@@ -28,8 +28,8 @@
     },
     "Status": {
         "Duration": 54,
-        "N": 3294,
-        "Time": "2017.09.09 - 15:15:02",
+        "N": 3295,
+        "Time": "2017.09.09 - 15:18:03",
         "Upload": 2697
     }
 }
