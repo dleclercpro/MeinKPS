@@ -43,8 +43,12 @@ class ResumeProfile(base.PastProfile):
         # Define units
         self.u = "U/h"
 
-        # Define dating
-        self.dated = True
+        # Initialize zero (assume pump is not suspended in case no data is
+        # found)
+        self.zero = None
+
+        # Load latest data available
+        self.strict = False
 
         # Define report info
         self.report = "treatments.json"

@@ -303,98 +303,6 @@ class Reporter:
 
 
 
-    def get(self, name, branch, key = None, date = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Load report
-        report = self.getReport(name, date, None, False)
-
-        # Get section
-        section = self.getSection(report, branch)
-
-        # If key was provided
-        if key is not None:
-
-            # If key is a date
-            if date is not None:
-
-                # Format key
-                key = lib.formatTime(key)
-
-            # Get corresponding value
-            entry = self.getEntry(section, key)
-
-            # Return it
-            return entry
-
-        # Otherwise
-        else:
-
-            # Return section
-            return section
-
-
-
-    def getRecent(self, name, branch, n = 2):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETRECENT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get dates of existing corresponding reports
-        dates = self.getDates(name)
-
-        # Initialize dict for merged entries
-        entries = {}
-
-        # Initialize number of reports merged
-        N = 0
-
-        # Loop on dates, starting with the latest one
-        for date in sorted(dates, reverse = True):
-
-            # Check if enough recent reports were fetched
-            if N == n:
-
-                # Quit
-                break
-
-            # Try getting section
-            try:
-
-                # Load report
-                report = self.getReport(name, date, None, False)
-
-                # Get section
-                section = self.getSection(report, branch)
-
-                # If section not empty
-                if section:
-
-                    # Merge entries
-                    entries = lib.mergeNDicts(entries, section)
-
-                    # Update number of reports merged
-                    N += 1
-
-            # In case of failure
-            except Exception as e:
-
-                # Show error message
-                print e.message
-
-        # Return entries
-        return entries
-
-
-
     def add(self, name, branch, entries, overwrite = False):
 
         """
@@ -456,6 +364,110 @@ class Reporter:
 
         # Store report
         report.store()
+
+
+
+    def get(self, name, branch, key = None, date = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load report
+        report = self.getReport(name, date, None, False)
+
+        # Get section
+        section = self.getSection(report, branch)
+
+        # If key was provided
+        if key is not None:
+
+            # If key is a date
+            if date is not None:
+
+                # Format key
+                key = lib.formatTime(key)
+
+            # Get corresponding value
+            entry = self.getEntry(section, key)
+
+            # Return it
+            return entry
+
+        # Otherwise
+        else:
+
+            # Return section
+            return section
+
+
+
+    def getRecent(self, name, branch, n = 2, strict = False, today = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GETRECENT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize dict for merged entries
+        entries = {}
+
+        # Initialize number of reports merged
+        N = 0
+
+        # If no current time given
+        if today is None:
+
+            # Get current date - FIXME?
+            today = datetime.date.today()
+
+        # If search is strict
+        if strict:
+
+            # Compute oldest day to look for
+            oldest = today - datetime.timedelta(days = n - 1)
+
+        # Get dates of existing corresponding reports and exclude future ones
+        dates = [d for d in self.getDates(name) if d <= today]
+
+        # Loop on dates, starting with the latest one
+        for date in sorted(dates, reverse = True):
+
+            # Check if enough recent reports were fetched
+            if N == n or strict and date < oldest:
+
+                # Quit
+                break
+
+            # Try getting section
+            try:
+
+                # Load report
+                report = self.getReport(name, date, None, False)
+
+                # Get section
+                section = self.getSection(report, branch)
+
+                # If section not empty
+                if section:
+
+                    # Merge entries
+                    entries = lib.mergeNDicts(entries, section)
+
+                    # Update number of reports merged
+                    N += 1
+
+            # In case of failure
+            except Exception as e:
+
+                # Show error message
+                print e.message
+
+        # Return entries
+        return entries
 
 
 
@@ -703,7 +715,7 @@ class Path:
             MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        Note: The first slash might only work for Linux.
+        Note: first slash only works for Linux.
         """
 
         # Merge path
@@ -739,7 +751,7 @@ class Path:
         date.reverse()
 
         # Return datetime object
-        return datetime.datetime(*date)
+        return datetime.date(*date)
 
 
 

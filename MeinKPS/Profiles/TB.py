@@ -49,9 +49,6 @@ class TBProfile(base.PastProfile):
         # Renitialize units
         self.u = []
 
-        # Define dating
-        self.dated = True
-
         # Define report info
         self.report = "treatments.json"
         self.branch = ["Temporary Basals"]
@@ -84,23 +81,23 @@ class TBProfile(base.PastProfile):
             # Get rate
             self.y[i] = self.y[i][0]
 
+        # Verify units
+        self.verifyUnits()
 
 
-    def filter(self):
+
+    def verifyUnits(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILTER
+            VERIFYUNITS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Start filtering
-        super(TBProfile, self).filter()
 
         # Get number of steps
         n = len(self.T)
 
-        # Check for incorrect units
+        # Check for use of incorrect units within profile
         for i in range(n):
 
             # Units currently supported

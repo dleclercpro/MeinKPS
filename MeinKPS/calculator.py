@@ -62,7 +62,7 @@ class Calculator(object):
         self.IDC = None
 
         # Give calculator a basal profile
-        self.basal = basal.BasalProfile("Standard")
+        self.basal = basal.BasalProfile()
 
         # Give calculator a TB profile
         self.TB = TB.TBProfile()
@@ -119,9 +119,6 @@ class Calculator(object):
 
         # Prepare components
         self.prepare()
-
-        # Show components
-        #self.show()
 
         # Run autosens
         #self.autosens()
@@ -476,6 +473,15 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get last 24 hours of BGs
+        BGs = Reporter.getRecent("BG.json", [], 7, True)
+
+        # Show them
+        lib.printJSON(BGs)
+
+        # Build BG profile for last 24 hours
+        BGProfile = 0
+
 
 
     def export(self, now, hours = 24):
@@ -634,13 +640,22 @@ def main():
     calculator = Calculator()
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(hours = 6)
+    now = datetime.datetime.now() - datetime.timedelta(days = 6)
 
     # Run calculator
-    #calculator.run(now)
+    calculator.run(now)
+
+    # Export results
+    #calculator.export(now)
+
+    # Run autosens
+    #calculator.autosens()
+
+    # Show components
+    #calculator.show()
 
     # Export net insulin profile
-    calculator.export(now)
+    #calculator.export(now)
 
 
 
