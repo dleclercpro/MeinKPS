@@ -158,7 +158,7 @@ class Record(object):
             raise ValueError("Record cannot be in the future!")
 
         # Record cannot be more than a year in the past
-        elif (now - t).year >= 1:
+        elif (now - t).days >= 365:
             raise ValueError("Record and current year cannot be a year (or " +
                              "more) apart!")
 
