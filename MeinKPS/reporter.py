@@ -707,8 +707,8 @@ class Path:
         """
 
         # Merge path
-        #return os.sep + os.sep.join(self.list)
-        return os.sep.join(self.list)
+        return os.sep + os.sep.join(self.list)
+        #return os.sep.join(self.list)
 
 
 
@@ -752,10 +752,7 @@ class Path:
         """
 
         # Get current path
-        path = Path(self.list[:n])
-
-        # Stringify it
-        path = path.str
+        path = Path(self.list[:n]).str
 
         # Look for path
         if n <= self.depth:
@@ -879,9 +876,9 @@ def main():
 
     # Get most recent data
     json = reporter.getRecent(now, "BG.json", [], 3, True)
-    #reporter.getRecent(now, "treatments.json", ["Temporary Basals"])
-    #reporter.getRecent(now, "treatments.json", ["Boluses"])
-    #reporter.getRecent(now, "history.json", ["CGM", "Sensor Statuses"])
+    #json = reporter.getRecent(now, "treatments.json", ["Temporary Basals"])
+    #json = reporter.getRecent(now, "treatments.json", ["Boluses"])
+    #json = reporter.getRecent(now, "history.json", ["CGM", "Sensor Statuses"])
 
     # Print data
     lib.printJSON(json)
