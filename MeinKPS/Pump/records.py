@@ -151,13 +151,16 @@ class Record(object):
         t = lib.decodeTime(self.date)
 
         # Build datetime object
-        t = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5])
+        t = datetime.datetime(*t)
 
-        # Proof record year
-        if abs(t.year - now.year) > 1:
+        # Record cannot be in the future
+        if t > now:
+            raise ValueError("Record cannot be in the future!")
 
-            raise ValueError("Record and current year too far " +
-                             "apart!")
+        # Record cannot be more than a year in the past
+        elif (now - t).year >= 1:
+            raise ValueError("Record and current year cannot be a year (or " +
+                             "more) apart!")
 
         # Store time
         self.t.append(t)
