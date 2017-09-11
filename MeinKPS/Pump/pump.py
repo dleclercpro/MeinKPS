@@ -1092,6 +1092,12 @@ class History(object):
                 # Raise error
                 raise ValueError("Incorrect CRC for history page: " + str(i))
 
+            # If it fits
+            else:
+
+                # Give user info
+                print "Pump history page " + str(i) + " passed CRC check."
+
             # Extend known history of pump
             self.pages.extend(body)
 
