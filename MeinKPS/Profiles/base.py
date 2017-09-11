@@ -78,6 +78,9 @@ class Profile(object):
         # Initialize time reference
         self.norm = None
 
+        # Initialize necessary day range to compute profile
+        self.range = []
+
         # Initialize min/max values
         self.min = None
         self.max = None
@@ -139,14 +142,8 @@ class Profile(object):
         # Give user info
         print "Building..."
 
-        # Define start of profile
-        self.start = start
-
-        # Define end of profile
-        self.end = end
-
-        # Reset profile components
-        self.reset()
+        # Define time references
+        self.time(start, end)
 
         # Load profile components
         self.load()
@@ -177,6 +174,50 @@ class Profile(object):
 
 
 
+    def time(self, start, end):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            TIME
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        Define time references for profile.
+        """
+
+        # Define start of profile
+        self.start = start
+
+        # Define end of profile
+        self.end = end
+
+        # Get number of days to map (including limits)
+        n = (end - start).days + 1
+
+        # Define time reference if future profile
+        if self.norm == "Start":
+
+            # Define it
+            self.norm = start
+
+            # Define day range (adding one to account for overlapping last
+            # entries)
+            days = range(-1, n)
+
+        # Otherwise if past profile
+        elif self.norm == "End":
+
+            # Define it
+            self.norm = end
+
+            # Define day range (adding one to account for overlapping last
+            # entries)
+            days = range(-n, 1)
+
+        # Compute days range as datetime objects
+        self.range = [self.norm + datetime.timedelta(days = x) for x in days]
+
+
+
     def load(self):
 
         """
@@ -190,7 +231,7 @@ class Profile(object):
         # Give user info
         print "Loading..."
 
-        # Reset previously loaded components/data
+        # Reset previously loaded profile components
         self.reset()
 
         # If time mapped
@@ -235,7 +276,8 @@ class Profile(object):
             else:
 
                 # Load data
-                self.data = Reporter.getRecent(self.report, self.branch)
+                self.data = Reporter.getRecent(self.norm, self.report,
+                                                          self.branch)
 
         # Otherwise
         else:
@@ -309,34 +351,8 @@ class Profile(object):
         # Get number of entries
         n = len(self.T)
 
-        # Get number of days to map (including limits)
-        d = (self.end - self.start).days + 1
-
-        # If future profile
-        if self.norm == "Start":
-
-            # Define now
-            now = self.start
-
-            # Define days range (adding one to account for overlapping last
-            # entries)
-            days = range(-1, d)
-
-        # If past profile
-        elif self.norm == "End":
-
-            # Define now
-            now = self.end
-
-            # Define days range (adding one to account for overlapping last
-            # entries)
-            days = range(-d, 1)
-
-        # Compute days range as datetime objects
-        days = [now + datetime.timedelta(days = x) for x in days]
-
-        # Loop on days
-        for day in days:
+        # Loop on day range
+        for day in self.range:
 
             # Rebuild profile
             for i in range(n):
@@ -668,24 +684,17 @@ class Profile(object):
             # Verify if norm was left empty
             if T is None:
 
-                # Decide which reference time to use for normalization
-                if self.norm == "Start":
+                # Get time reference
+                T = self.norm
 
-                    # From start
-                    T = self.start
-
-                elif self.norm == "End":
-
-                    # From end
-                    T = self.end
-
-                else:
+                # If no time reference
+                if T is None:
 
                     # Exit
                     raise errors.NoNorm()
 
             # Before using given reference time, verify its type
-            elif type(T) is not datetime.datetime:
+            if type(T) is not datetime.datetime:
 
                 # Exit
                 raise errors.BadTypeNormalization()
@@ -1008,7 +1017,7 @@ class PastProfile(Profile):
 
 class FutureProfile(Profile):
 
-    def __init__(self, past = None):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1021,6 +1030,3 @@ class FutureProfile(Profile):
 
         # Define time reference
         self.norm = "Start"
-
-        # Link with past profile
-        self.past = past

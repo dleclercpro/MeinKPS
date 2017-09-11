@@ -172,23 +172,13 @@ class FutureBGProfile(base.FutureProfile):
         """
 
         # Start initialization
-        super(FutureBGProfile, self).__init__(past)
+        super(FutureBGProfile, self).__init__()
+
+        # Store past profile
+        self.past = past
 
         # Define type
         self.type = "Dot"
-
-
-
-    def link(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LINK
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Link units
-        self.u = self.past.u
 
 
 
@@ -206,14 +196,14 @@ class FutureBGProfile(base.FutureProfile):
         # Give user info
         print "Decaying BG..."
 
-        # Link with past profile
-        self.link()
-
         # Is there at least one recent BG?
         try:
 
             # Verify
             self.past.verify(1)
+
+            # Link units
+            self.u = self.past.u
 
         # It failed, so there isn't
         except Exception as e:
@@ -227,9 +217,8 @@ class FutureBGProfile(base.FutureProfile):
         # Reset previous BG predictions
         self.reset()
 
-        # Assign start/end limits using net insulin profile
-        self.start = IOB.start
-        self.end = IOB.end
+        # Define time references of profile
+        self.time(IOB.start, IOB.end)
 
         # Get number of ISF steps
         n = len(IOB.T) - 1

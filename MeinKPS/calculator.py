@@ -44,7 +44,7 @@ Reporter = reporter.Reporter()
 
 class Calculator(object):
 
-    def __init__(self):
+    def __init__(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,8 +52,8 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize current time
-        self.now = None
+        # Define current time
+        self.now = now
 
         # Initialize DIA
         self.DIA = None
@@ -103,16 +103,13 @@ class Calculator(object):
 
 
 
-    def run(self, now):
+    def run(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Store current time
-        self.now = now
 
         # Load components
         self.load()
@@ -384,7 +381,8 @@ class Calculator(object):
         """
 
         # Get last carbs
-        lastCarbs = Reporter.getRecent("treatments.json", ["Carbs"], 1)
+        lastCarbs = Reporter.getRecent(self.now, "treatments.json",
+                                                 ["Carbs"], 1)
 
         # Destructure TB
         [rate, units, duration] = TB
@@ -474,7 +472,7 @@ class Calculator(object):
         """
 
         # Get last 24 hours of BGs
-        BGs = Reporter.getRecent("BG.json", [], 7, True)
+        BGs = Reporter.getRecent(self.now, "BG.json", [], 7, True)
 
         # Show them
         lib.printJSON(BGs)
@@ -515,26 +513,38 @@ class Calculator(object):
             netBasals[lib.formatTime(t)] = round(y, 2)
 
         # Get recent sensor statuses
-        statuses = Reporter.getRecent("history.json",
-            ["CGM", "Sensor Statuses"])
+        statuses = Reporter.getRecent(self.now, "history.json",
+                                                ["CGM", "Sensor Statuses"])
 
         # Get recent calibrations
-        calibrations = Reporter.getRecent("history.json",
-            ["CGM", "Calibrations"])
+        calibrations = Reporter.getRecent(self.now, "history.json",
+                                                    ["CGM", "Calibrations"])
+
+        # Get recent boluses
+        boluses = Reporter.getRecent(self.now, "treatments.json", ["Boluses"])
+
+        # Get recent IOBs
+        IOBs = Reporter.getRecent(self.now, "treatments.json", ["IOB"])
 
         # Fill treatments report
         reports["treatments"].update({
             "Net Basals": netBasals,
-            "Boluses": Reporter.getRecent("treatments.json", ["Boluses"]),
-            "IOB": Reporter.getRecent("treatments.json", ["IOB"])})
+            "Boluses": boluses,
+            "IOB": IOBs})
+
+        # Ger recent history
+        history = Reporter.getRecent(self.now, "history.json", [], 1)
 
         # Fill history report
-        reports["history"].update(Reporter.getRecent("history.json", [], 1))
-        reports["history"].update({"CGM": {"Sensor Statuses": statuses,
-                                           "Calibrations": calibrations}})
+        reports["history"].update(lib.mergeNDicts(history,
+            {"CGM": {"Sensor Statuses": statuses,
+                     "Calibrations": calibrations}}))
+
+        # Get recent BGs
+        BGs = Reporter.getRecent(self.now, "BG.json", [])
 
         # Fill BG report
-        reports["BG"].update(Reporter.getRecent("BG.json", []))
+        reports["BG"].update(BGs)
 
         # Fill pump report
         reports["pump"].update(Reporter.get("pump.json", []))
@@ -636,14 +646,14 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Instanciate a calculator
-    calculator = Calculator()
-
     # Get current time
     now = datetime.datetime.now() - datetime.timedelta(days = 6)
 
+    # Instanciate a calculator
+    calculator = Calculator(now)
+
     # Run calculator
-    calculator.run(now)
+    calculator.run()
 
     # Export results
     #calculator.export(now)
@@ -652,7 +662,7 @@ def main():
     #calculator.autosens()
 
     # Show components
-    #calculator.show()
+    calculator.show()
 
     # Export net insulin profile
     #calculator.export(now)

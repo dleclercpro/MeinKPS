@@ -54,17 +54,17 @@ class Loop(object):
         """
 
         # Initialize start/end times
-        self.start = None
+        self.start = datetime.datetime.now()
         self.end = None
 
         # Give the loop a CGM
-        self.cgm = cgm.CGM()
+        self.cgm = cgm.CGM(self.start)
 
         # Give the loop a pump
-        self.pump = pump.Pump()
+        self.pump = pump.Pump(self.start)
 
         # Give the loop a calculator
-        self.calc = calculator.Calculator()
+        self.calc = calculator.Calculator(self.start)
 
         # Define report
         self.report = "loop.json"
@@ -249,9 +249,6 @@ class Loop(object):
             RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Define starting time
-        self.start = datetime.datetime.now()
 
         # Give user info
         print "Start: " + lib.formatTime(self.start)

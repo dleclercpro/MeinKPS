@@ -77,7 +77,10 @@ class FutureIOBProfile(base.FutureProfile):
         """
 
         # Start initialization
-        super(FutureIOBProfile, self).__init__(past)
+        super(FutureIOBProfile, self).__init__()
+
+        # Store past profile
+        self.past = past
 
         # Define timestep (h)
         self.dt = 5.0 / 60.0
@@ -108,9 +111,8 @@ class FutureIOBProfile(base.FutureProfile):
         # Reset previous IOB predictions
         self.reset()
 
-        # Assign start/end limits using net insulin profile
-        self.start = net.end
-        self.end = net.end + datetime.timedelta(hours = IDC.DIA)
+        # Define time references of profile
+        self.time(net.end, net.end + datetime.timedelta(hours = IDC.DIA))
 
         # Compute number of steps
         n = int(IDC.DIA / self.dt) + 1

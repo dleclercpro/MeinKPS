@@ -62,13 +62,16 @@ Reporter = reporter.Reporter()
 
 class Pump(object):
 
-    def __init__(self):
+    def __init__(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define current time
+        self.now = now
 
         # Give the pump a stick
         self.stick = stick.Stick()
@@ -1136,7 +1139,7 @@ class Bolus(object):
         # FIXME: deal with no last bolus
 
         # Get recent boluses
-        boluses = Reporter.getRecent("treatments.json", ["Boluses"])
+        boluses = Reporter.getRecent(self.now, "treatments.json", ["Boluses"])
 
         # Get latest bolus time
         t = max(boluses)
@@ -1462,8 +1465,11 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Get current time
+    now = datetime.datetime.now()
+
     # Instanciate a pump for me
-    pump = Pump()
+    pump = Pump(now)
 
     # Start dialogue with pump
     pump.start()

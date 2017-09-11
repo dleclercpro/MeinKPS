@@ -50,13 +50,16 @@ Reporter = reporter.Reporter()
 
 class CGM(object):
 
-    def __init__(self):
+    def __init__(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define current time
+        self.now = now
 
         # Define CGM characteristics
         self.vendor = 0x22a3

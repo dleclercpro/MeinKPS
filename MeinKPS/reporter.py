@@ -63,6 +63,9 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize dates
+        dates = []
+
         # Scan for all possible report paths
         paths = self.src.scan(name)
 
@@ -72,17 +75,11 @@ class Reporter:
             # Give user info
             print "No dated report found for '" + name + "'."
 
-            # No dates
-            dates = []
+        # Otherwise
+        else:
 
-        # Initialize dates
-        dates = []
-
-        # Loop on paths
-        for p in paths:
-
-            # Get date from path
-            dates.append(Path(p).date())
+            # Convert paths to dates
+            dates = [Path(p).date() for p in paths]
 
         # Return dates
         return dates
@@ -120,12 +117,6 @@ class Reporter:
 
         # Generate new report
         report = Report(name, path, date)
-
-        # Give user info
-        print "Report found."
-
-        # Show section
-        #lib.printJSON(report)
 
         # Load its JSON
         report.load()
@@ -404,7 +395,7 @@ class Reporter:
 
 
 
-    def getRecent(self, name, branch, n = 2, strict = False, today = None):
+    def getRecent(self, now, name, branch, n = 2, strict = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -412,17 +403,8 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize dict for merged entries
-        entries = {}
-
-        # Initialize number of reports merged
-        N = 0
-
-        # If no current time given
-        if today is None:
-
-            # Get current date - FIXME?
-            today = datetime.date.today()
+        # Get current date
+        today = now.date()
 
         # If search is strict
         if strict:
@@ -432,6 +414,12 @@ class Reporter:
 
         # Get dates of existing corresponding reports and exclude future ones
         dates = [d for d in self.getDates(name) if d <= today]
+
+        # Initialize dict for merged entries
+        entries = {}
+
+        # Initialize number of reports merged
+        N = 0
 
         # Loop on dates, starting with the latest one
         for date in sorted(dates, reverse = True):
@@ -666,18 +654,18 @@ class Path:
             self.list = path
 
         # Normalize path
-        self.norm()
+        self.normalize()
 
         # Compute path depth
         self.depth = len(self.list)
 
 
 
-    def norm(self):
+    def normalize(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            NORM
+            NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -719,8 +707,8 @@ class Path:
         """
 
         # Merge path
-        return os.sep + os.sep.join(self.list)
-        #return os.sep.join(self.list)
+        #return os.sep + os.sep.join(self.list)
+        return os.sep.join(self.list)
 
 
 
@@ -747,7 +735,7 @@ class Path:
             # Add date component
             date.append(int(file))
 
-        # Reverse date
+        # Reverse date to get format YYYY.MM.DD
         date.reverse()
 
         # Return datetime object
@@ -875,7 +863,7 @@ def main():
     """
 
     # Get current time
-    now = datetime.datetime.now()
+    now = datetime.datetime.now() - datetime.timedelta(days = 0)
 
     # Instanciate a reporter for me
     reporter = Reporter()
@@ -890,12 +878,13 @@ def main():
     #reporter.add("test.json", ["D", "A"], {now: 0})
 
     # Get most recent data
-    reporter.getRecent("BG.json", [], 3)
-    #reporter.getRecent("treatments.json", ["Temporary Basals"])
-    #reporter.getRecent("treatments.json", ["Boluses"])
-    #lib.mergeNDicts(
-    #    reporter.getRecent("history.json", ["CGM", "Sensor Statuses"]),
-    #    reporter.getRecent("history.json", ["CGM", "Calibrations"]))
+    json = reporter.getRecent(now, "BG.json", [], 3, True)
+    #reporter.getRecent(now, "treatments.json", ["Temporary Basals"])
+    #reporter.getRecent(now, "treatments.json", ["Boluses"])
+    #reporter.getRecent(now, "history.json", ["CGM", "Sensor Statuses"])
+
+    # Print data
+    lib.printJSON(json)
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")
