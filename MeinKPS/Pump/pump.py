@@ -1077,8 +1077,23 @@ class History(object):
             # Get page
             page = self.commands["Read"].response
 
+            # Parse page
+            body, CRC = page[:1022], page[1022:]
+
+            # Unpack CRC
+            CRC = lib.unpack(CRC, ">")
+
+            # Compute CRC
+            computedCRC = lib.computeCRC16(body)
+
+            # CRC check
+            if CRC != computedCRC:
+
+                # Raise error
+                raise ValueError("Incorrect CRC for history page: " + str(i))
+
             # Extend known history of pump
-            self.pages.extend(page)
+            self.pages.extend(body)
 
         # Give user info
         print ("Read " + str(n) + " page(s) [or " + str(len(self.pages)) +
