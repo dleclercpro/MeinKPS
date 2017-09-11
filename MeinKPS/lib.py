@@ -663,11 +663,11 @@ def computeCRC16(x):
                    28183, 32310, 20053, 24180, 11923, 16050, 3793, 7920]
 
     # Initialize CRC
-    CRC = 0
+    CRC = 65535
 
     # Look for CRC in table
     for i in range(len(x)):
-        CRC = ((CRC * 256) & 65280) ^ lookupTable[((CRC / 256) & 255) ^ x[i]]
+        CRC = (lookupTable[x[i] ^ CRC >> 8] ^ CRC << 8) & 65535
 
     # Return CRC
-    return CRC & 65535
+    return CRC
