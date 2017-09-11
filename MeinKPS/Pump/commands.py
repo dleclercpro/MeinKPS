@@ -1940,13 +1940,6 @@ class ReadPumpHistory(PumpCommand):
         # Do rest of command
         super(self.__class__, self).do()
 
-        # Link with pump history
-        records = self.pump.history.records
-
-        # Find records within page and decode them
-        for record in records:
-            records[record].find(self.data)
-
         # Return pump history page
         self.response = self.data
 

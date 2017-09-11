@@ -1087,6 +1087,13 @@ class History(object):
         # Print downloaded history pages
         print self.pages
 
+        # Give user info
+        print "Finding records..."
+
+        # Find records within page and decode them
+        for record in self.records.values():
+            record.find(self.pages)
+
 
 
     def update(self):
