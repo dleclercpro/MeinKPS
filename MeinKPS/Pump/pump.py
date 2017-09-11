@@ -1066,8 +1066,10 @@ class History(object):
             # Assign number of pages found
             n = self.n
 
-        # Download n most recent pages of pump history
-        for i in range(n):
+        # Download n most recent pages of pump history (reverse page numbers to
+        # ensure data is downloaded from oldest to most recent, without data
+        # corruption between pages)
+        for i in reversed(range(n)):
 
             # Do command
             self.commands["Read"].do(i)
@@ -1078,8 +1080,11 @@ class History(object):
             # Extend known history of pump
             self.pages.extend(page)
 
-        # Print collected history pages
-        print "Read " + str(n) + " page(s) [or " + str(len(page)) + " byte(s)]:"
+        # Give user info
+        print ("Read " + str(n) + " page(s) [or " + str(len(self.pages)) +
+               " byte(s)]:")
+
+        # Print downloaded history pages
         print self.pages
 
 
