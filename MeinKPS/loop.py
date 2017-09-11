@@ -191,7 +191,7 @@ class Loop(object):
         self.preparePump()
 
         # Run calculator and get recommendation
-        TB = self.calc.run(self.start)
+        TB = self.calc.run()
         # TB = [self.start.minute / 60.0, "U/h", 30]
 
         # If no TB is required
