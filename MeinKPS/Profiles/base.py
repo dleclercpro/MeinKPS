@@ -194,7 +194,7 @@ class Profile(object):
         n = (end - start).days + 1
 
         # Define time reference if future profile
-        if self.norm == "Start":
+        if issubclass(self.__class__, FutureProfile):
 
             # Define it
             self.norm = start
@@ -204,7 +204,7 @@ class Profile(object):
             days = range(-1, n)
 
         # Otherwise if past profile
-        elif self.norm == "End":
+        elif issubclass(self.__class__, PastProfile):
 
             # Define it
             self.norm = end

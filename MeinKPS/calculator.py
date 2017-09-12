@@ -499,18 +499,15 @@ class Calculator(object):
         # Define past time
         past = now - datetime.timedelta(hours = hours)
 
-        # Define new net insulin profile
-        netProfile = net.NetProfile()
-
         # Build net insulin profile for last 24 hours
-        netProfile.build(past, now, self.basal, self.TB, self.suspend,
-                                                         self.resume)
+        self.net.build(past, now, self.basal, self.TB, self.suspend,
+                                                       self.resume)
 
         # Initialize net basals dict
         netBasals = {}
 
         # Loop over net insulin profile
-        for t, y in zip(netProfile.T, netProfile.y):
+        for t, y in zip(self.net.T, self.net.y):
 
             # Fill net basals dict
             netBasals[lib.formatTime(t)] = round(y, 2)
