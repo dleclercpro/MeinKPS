@@ -499,9 +499,11 @@ class Calculator(object):
         # Define past time
         past = now - datetime.timedelta(hours = hours)
 
+        # Define new net insulin profile
+        net = net.NetProfile()
+
         # Build net insulin profile for last 24 hours
-        self.net.build(past, now, self.basal, self.TB, self.suspend,
-                                                       self.resume)
+        net.build(past, now, self.basal, self.TB, self.suspend, self.resume)
 
         # Initialize net basals dict
         netBasals = {}
