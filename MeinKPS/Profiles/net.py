@@ -56,11 +56,8 @@ class NetProfile(base.PastProfile):
         # Give user info
         print "Building..."
 
-        # Define start of profile
-        self.start = start
-
-        # Define end of profile
-        self.end = end
+        # Define time references of profile
+        self.time(start, end)
 
         # Build basal profile
         basal.build(start, end)
