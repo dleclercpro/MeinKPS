@@ -1084,7 +1084,7 @@ class History(object):
             CRC = lib.unpack(CRC, ">")
 
             # Compute CRC
-            computedCRC = lib.computeCRC16(body)
+            computedCRC = lib.newComputeCRC16(body)
 
             # CRC check
             if CRC != computedCRC:
