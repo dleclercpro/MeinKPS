@@ -28,19 +28,17 @@
 
 # LIBRARIES
 import os
-import sys
 import datetime
-import serial
 import usb
 
 
 
 # USER LIBRARIES
 import lib
+import errors
 import commands
 import databases
 import reporter
-import errors
 
 
 
