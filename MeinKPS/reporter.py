@@ -24,6 +24,8 @@
 
 # TO-DO'S
 # - Disconnect Pi safely (do not break JSON files)
+# - When adding an entry with the overwrite argument, only said entry can be
+#   overwritten and not the whole section (see BG Targets)?
 
 
 
