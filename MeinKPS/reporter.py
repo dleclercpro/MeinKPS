@@ -22,6 +22,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# TO-DO'S
+# - Disconnect Pi safely (do not break JSON files)
+
+
+
 # LIBRARIES
 import json
 import datetime
