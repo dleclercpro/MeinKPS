@@ -230,7 +230,7 @@ class Stick(object):
         if radio and len(bytes) == 1 and bytes[-1] in self.errors:
 
             # Raise error
-            raise errors.RadioError(self.errors[bytes[-1]])
+            raise errors.RadioFail(self.errors[bytes[-1]])
 
         # Return them
         return bytes
@@ -392,7 +392,7 @@ class Stick(object):
                     RSSIs[f].append(pkt.RSSI["dBm"])
 
                 # On invalid packet or radio error
-                except (errors.InvalidPacket, errors.RadioError):
+                except errors.RadioFail, errors.InvalidPacket:
 
                     # Add fake low RSSI reading
                     RSSIs[f].append(-99)
@@ -449,7 +449,7 @@ class Stick(object):
                 pkt.show()
 
             # Error
-            except errors.RadioError:
+            except errors.RadioFail:
 
                 # Ignore
                 pass

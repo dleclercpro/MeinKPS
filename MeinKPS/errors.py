@@ -85,7 +85,10 @@ class BaseError(Exception):
 class StickError(BaseError):
     pass
 
-class InvalidPacket(BaseError):
+class RadioError(StickError):
+    pass
+
+class InvalidPacket(RadioError):
     pass
 
 class PumpError(BaseError):
@@ -118,7 +121,7 @@ class NoStick(StickError):
 
 
 
-class RadioError(StickError):
+class RadioFail(RadioError):
 
     def prepare(self):
 
@@ -133,7 +136,7 @@ class RadioError(StickError):
 
 
 
-class UnsuccessfulRadioCommand(StickError):
+class UnsuccessfulRadioCommand(RadioError):
 
     def prepare(self):
 
@@ -148,7 +151,7 @@ class UnsuccessfulRadioCommand(StickError):
 
 
 
-class BadFrequencies(StickError):
+class BadFrequencies(RadioError):
 
     def prepare(self):
 
