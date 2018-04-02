@@ -396,6 +396,21 @@ class NoCGM(CGMError):
 
 
 
+class BadCRCCGM(CGMError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "Expected and computed header CRCs do not match."
+
+
+
 # Reporter errors
 class BadPath(ReporterError):
 

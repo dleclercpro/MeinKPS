@@ -22,11 +22,6 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# LIBRARIES
-import sys
-
-
-
 # USER LIBRARIES
 import lib
 import commands
@@ -199,6 +194,8 @@ class Database(object):
 
             # Extract defined records from data
             if self.record is not None:
+
+                # Find them
                 self.record.find(self.data)
 
 
@@ -222,9 +219,8 @@ class Database(object):
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
 
-            # Give user info
-            sys.exit("Expected and computed header CRCs do not match. " +
-                     "Exiting...")
+            # Error
+            raise errors.BadCRCCGM
 
 
 

@@ -22,11 +22,6 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# LIBRARIES
-import sys
-
-
-
 # USER LIBRARIES
 import lib
 import packets
@@ -131,8 +126,8 @@ class Command(object):
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
 
-            # Give user info
-            sys.exit("Expected and computed CRCs do not match. Exiting...")
+            # Error
+            raise errors.BadCRCCGM
 
 
 
