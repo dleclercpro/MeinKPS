@@ -381,26 +381,22 @@ class Battery(object):
         # Get current time
         self.t = datetime.datetime.now()
 
-        # Link to command
-        command = self.commands["ReadLevel"]
-
         # Execute command
-        command.execute()
+        self.commands["ReadLevel"].execute()
 
         # Assign response
-        self.level = lib.unpack(command.response["Payload"], "<")
+        self.level = lib.unpack(
+            self.commands["ReadLevel"].response["Payload"], "<")
 
         # Give user info
         print "Battery level: " + str(self.level)
 
-        # Link to battery state command
-        command = self.commands["ReadState"]
-
         # Execute command
-        command.execute()
+        self.commands["ReadState"].execute()
 
         # Assign response
-        self.state = self.states[lib.unpack(command.response["Payload"], "<")]
+        self.state = self.states[lib.unpack(
+            self.commands["ReadState"].response["Payload"], "<")]
 
         # Give user info
         print "Battery state: " + self.state
@@ -474,14 +470,12 @@ class Language(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link to command
-        command = self.command
-
         # Execute command
-        command.execute()
+        self.command.execute()
 
         # Assign response
-        self.value = self.values[lib.unpack(command.response["Payload"], "<")]
+        self.value = self.values[lib.unpack(
+            self.command.response["Payload"], "<")]
 
         # Give user info
         print "Language: " + self.value
@@ -546,15 +540,12 @@ class Clock(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link to command
-        command = self.commands["ReadSystemTime"]
-
         # Execute command
-        command.execute()
+        self.commands["ReadSystemTime"].execute()
 
         # Compute time delta since epoch
-        delta = datetime.timedelta(seconds =
-                                   lib.unpack(command.response["Payload"], "<"))
+        delta = datetime.timedelta(seconds = lib.unpack(
+            self.commands["ReadSystemTime"].response["Payload"], "<"))
 
         # Assign response
         self.systemTime = self.epoch + delta
@@ -562,14 +553,12 @@ class Clock(object):
         # Give user info
         print "System time: " + str(self.systemTime)
 
-        # Link to command
-        command = self.commands["ReadMode"]
-
         # Execute command
-        command.execute()
+        self.commands["ReadMode"].execute()
 
         # Assign response
-        self.mode = self.modes[lib.unpack(command.response["Payload"], "<")]
+        self.mode = self.modes[lib.unpack(
+            self.commands["ReadMode"].response["Payload"], "<")]
 
         # Give user info
         print "Clock mode: " + self.mode
@@ -627,14 +616,12 @@ class Units(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link to command
-        command = self.command
-
         # Execute command
-        command.execute()
+        self.command.execute()
 
         # Assign response
-        self.value = self.values[lib.unpack(command.response["Payload"], "<")]
+        self.value = self.values[lib.unpack(
+            self.command.response["Payload"], "<")]
 
         # Give user info
         print "Units: " + self.value
@@ -684,17 +671,11 @@ class Firmware(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link to command
-        command = self.commands["ReadHeader"]
+        # Execute command
+        self.commands["ReadHeader"].execute()
 
         # Execute command
-        command.execute()
-
-        # Link to command
-        command = self.commands["ReadSettings"]
-
-        # Execute command
-        command.execute()
+        self.commands["ReadSettings"].execute()
 
 
 
@@ -727,14 +708,11 @@ class Transmitter(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Link to command
-        command = self.command
-
         # Execute command
-        command.execute()
+        self.command.execute()
 
         # Assign response
-        self.id = lib.translate(command.response["Payload"])
+        self.id = lib.translate(self.command.response["Payload"])
 
         # Give user info
         print "Transmitter ID: " + str(self.id)
