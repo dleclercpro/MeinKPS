@@ -589,7 +589,7 @@ class ReadStickRadio(StickCommand):
                                               radio = True)[:-1]
 
         # If radio error
-        except errors.RadioFail:
+        except errors.RadioError:
 
             # Errors not tolerated
             if not self.tolerate:
@@ -835,7 +835,7 @@ class WriteReadStickRadio(StickCommand):
                                               radio = True)[:-1]
 
         # If radio error
-        except errors.RadioFail:
+        except errors.RadioError:
 
             # Errors not tolerated
             if not self.tolerate:
@@ -1233,7 +1233,7 @@ class PowerPump(PumpBigCommand, PumpSetCommand):
                 return
 
             # Except
-            except errors.RadioFail, errors.InvalidPacket:
+            except errors.RadioError, errors.InvalidPacket:
 
                 # Ignore
                 pass

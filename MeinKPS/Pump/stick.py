@@ -85,7 +85,8 @@ class Stick(object):
                          "Radio RX": commands.ReadStickRadio(self),
                          "Radio TX": commands.WriteStickRadio(self),
                          "Radio TX/RX": commands.WriteReadStickRadio(self),
-                         "LED": commands.FlashStickLED(self)}
+                         "LED": commands.FlashStickLED(self),
+                         "Pump Model RX": commands.ReadPumpModel(self)}
 
         # Define radio registers
         self.registers = ["SYNC1",
@@ -230,7 +231,7 @@ class Stick(object):
         if radio and len(bytes) == 1 and bytes[-1] in self.errors:
 
             # Raise error
-            raise errors.RadioFail(self.errors[bytes[-1]])
+            raise errors.RadioError(self.errors[bytes[-1]])
 
         # Return them
         return bytes
@@ -254,10 +255,7 @@ class Stick(object):
             bytes = [bytes]
 
         # Write bytes to EP OUT
-        for b in bytes:
-
-            # Write
-            self.EPs["OUT"].write(chr(b))
+        self.EPs["OUT"].write(bytearray(bytes))
 
 
 
@@ -296,11 +294,11 @@ class Stick(object):
 
 
 
-    def regionalize(self, F1, F2):
+    def localize(self, F1, F2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            REGIONALIZE
+            LOCALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Test if given frequency range fits within region frequencies
             definition.
@@ -345,6 +343,36 @@ class Stick(object):
 
 
 
+    def optimize(self, RSSIs):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            OPTIMIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Find out which frequency corresponds to best sample average RSSI.
+        """
+
+        # Destructure RSSIs
+        x, y = np.array(RSSIs.keys()), np.array(RSSIs.values())
+
+        # Get sorted indices
+        indices = x.argsort()
+
+        # Sort
+        x = x[indices]
+        y = y[indices]
+
+        # Get frequency with max signal power (5 dBm threshold)
+        f = lib.getMaxMiddle(x, y, 5)
+
+        # Info
+        print "Optimized frequency: " + str(f)
+
+        # Return best frequency
+        return f
+
+
+
     def scan(self, F1 = None, F2 = None, n = 15, sample = 5):
 
         """
@@ -356,7 +384,7 @@ class Stick(object):
         """
 
         # Test frequency range
-        F1, F2 = self.regionalize(F1, F2)
+        F1, F2 = self.localize(F1, F2)
 
         # Initialize RSSI readings
         RSSIs = {}
@@ -373,9 +401,6 @@ class Stick(object):
             # Tune frequency
             self.tune(f)
 
-            # Get pump model command
-            cmd = commands.ReadPumpModel(self)
-
             # Sample
             for i in range(sample):
 
@@ -383,16 +408,16 @@ class Stick(object):
                 try:
 
                     # Run pump command
-                    cmd.run()
+                    self.commands["Pump Model RX"].run()
 
                     # Get last packet
-                    pkt = cmd.packets["RX"][-1]
+                    pkt = self.commands["Pump Model RX"].packets["RX"][-1]
 
                     # Get RSSI reading and add it
                     RSSIs[f].append(pkt.RSSI["dBm"])
 
                 # On invalid packet or radio error
-                except errors.RadioFail, errors.InvalidPacket:
+                except errors.RadioError, errors.InvalidPacket:
 
                     # Add fake low RSSI reading
                     RSSIs[f].append(-99)
@@ -403,24 +428,8 @@ class Stick(object):
         # Show readings
         lib.printJSON(RSSIs)
 
-        # Destructure RSSIs
-        x, y = np.array(RSSIs.keys()), np.array(RSSIs.values())
-
-        # Get sorted indices
-        indices = x.argsort()
-
-        # Sort
-        x = x[indices]
-        y = y[indices]
-
-        # Get frequency with max signal power (5 dBm threshold)
-        f = lib.getMaxMiddle(x, y, 5)
-
-        # Info
-        print "Best frequency: " + str(f)
-
-        # Return best frequency
-        return f
+        # Optimize frequency and return it
+        return self.optimize(RSSIs)
 
 
 
@@ -449,7 +458,7 @@ class Stick(object):
                 pkt.show()
 
             # Error
-            except errors.RadioFail:
+            except errors.RadioError:
 
                 # Ignore
                 pass
