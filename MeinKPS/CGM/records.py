@@ -113,7 +113,7 @@ class Record(object):
         """
 
         # Decode and compute CRCs
-        expectedCRC = lib.unpack(self.bytes[-1][-2:])
+        expectedCRC = lib.unpack(self.bytes[-1][-2:], "<")
         computedCRC = lib.computeCRC16(self.bytes[-1][:-2])
 
         # Give user info
@@ -137,8 +137,9 @@ class Record(object):
         """
 
         # Decode local time
-        t = (datetime.timedelta(seconds = lib.unpack(self.bytes[-1][4:8])) +
-             self.cgm.clock.epoch)
+        t = (datetime.timedelta(seconds =
+                                lib.unpack(self.bytes[-1][4:8], "<")) +
+                                self.cgm.clock.epoch)
 
         # Store it
         self.t.append(t)
@@ -230,7 +231,7 @@ class BGRecord(Record):
         super(self.__class__, self).decode()
 
         # Decode BG
-        BG = lib.unpack(self.bytes[-1][8:10]) & 1023
+        BG = lib.unpack(self.bytes[-1][8:10], "<") & 1023
 
         # Decode trend
         trend = self.trends[self.bytes[-1][10] & 15]
@@ -413,7 +414,7 @@ class CalibrationRecord(Record):
         super(self.__class__, self).decode()
 
         # Decode BG
-        BG = round(lib.unpack(self.bytes[-1][8:10]) / 18.0, 1)
+        BG = round(lib.unpack(self.bytes[-1][8:10], "<") / 18.0, 1)
 
         # Store it
         self.values.append(BG)

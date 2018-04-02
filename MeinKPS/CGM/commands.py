@@ -22,6 +22,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# LIBRARIES
+import sys
+
+
+
 # USER LIBRARIES
 import lib
 import packets
@@ -77,24 +82,27 @@ class Command(object):
         # Send packet
         self.cgm.write(self.packet.bytes)
 
-        # First read
-        self.response["Head"] = self.cgm.read(4)
+        # Get response
+        response = self.cgm.read()
+
+        # Parse it
+        self.response["Head"] = response[0:4]
 
         # Compute number of bytes received
-        nBytesReceived = lib.unpack(self.response["Head"][1:3])
+        nBytesReceived = lib.unpack(response[1:3], "<")
 
         # Minimum number of bytes received: 6
         if nBytesReceived > 6:
             nBytesReceived -= 6
 
         # Second read
-        self.response["Body"] = self.cgm.read(nBytesReceived)
+        self.response["Body"] = response[4:4 + nBytesReceived]
 
         # Try and find XML structure in response
         print "XML: " + str(lib.XMLify(self.response["Body"]))
 
         # Third read
-        self.response["CRC"] = self.cgm.read(2)
+        self.response["CRC"] = response[-2:]
 
         # Verify response
         self.verify()
@@ -110,7 +118,7 @@ class Command(object):
         """
 
         # Get and compute response CRCs
-        expectedCRC = lib.unpack(self.response["CRC"])
+        expectedCRC = lib.unpack(self.response["CRC"], "<")
         computedCRC = lib.computeCRC16(self.response["Head"] +
                                        self.response["Body"])
 

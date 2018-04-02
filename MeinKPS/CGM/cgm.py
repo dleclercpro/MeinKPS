@@ -31,6 +31,7 @@ import os
 import sys
 import datetime
 import serial
+import usb
 
 
 
@@ -48,9 +49,13 @@ Reporter = reporter.Reporter()
 
 
 
+# CONSTANTS
+SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
+
 class CGM(object):
 
-    def __init__(self, now):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,18 +63,19 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define current time
-        self.now = now
-
         # Define CGM characteristics
-        self.vendor = 0x22a3
+        self.vendor = 0x22A3
         self.product = 0x0047
 
-        # Define source path
-        self.src = os.path.dirname(os.path.realpath(__file__)) + os.sep
+        # Give CGM a USB interface
+        self.usb = None
 
-        # Give CGM a handle
-        self.handle = serial.Serial()
+        # Initialize USB configuration
+        self.config = None
+
+        # Initialize data endpoints
+        self.EPs = {"OUT": None,
+                    "IN": None}
 
         # Give CGM a battery
         self.battery = Battery(self)
@@ -102,85 +108,6 @@ class CGM(object):
 
 
 
-    def connect(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CONNECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Plug CGM
-        os.system("sudo sh " + self.src + "plug.sh")
-
-        # Try opening port and define a handle
-        try:
-
-            # Define handle
-            self.handle.port = "/dev/ttyUSB.cgm"
-            self.handle.baudrate = 115200
-
-            # Open handle
-            self.handle.open()
-
-        # Otherwise
-        except serial.SerialException as e:
-
-            # If CGM is missing
-            if e.errno == 2:
-
-                # Raise error
-                raise errors.NoCGM
-
-            # Otherwise
-            else:
-
-                # Everything should be fine
-                pass
-
-
-
-    def disconnect(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DISCONNECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Close handle
-        self.handle.close()
-
-
-
-    def ping(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PING
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Try reading time
-        try:
-
-            # Read time
-            self.clock.read()
-
-        # If failed, CGM is most probably in error/dead state
-        except:
-
-            # Give user info
-            print "CGM seems to be dead. Resetting it..."
-
-            # Power-cycle USB ports
-            os.system("sudo sh " + self.src + "../reset.sh")
-
-            # Reconnect
-            self.connect()
-
-
-
     def start(self):
 
         """
@@ -189,11 +116,14 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Connect CGM
-        self.connect()
+        # Find CGM
+        self.find()
 
-        # Ping CGM
-        self.ping()
+        # Disconnect from it
+        self.disconnect()
+
+        # Connect to it
+        self.connect()
 
 
 
@@ -205,8 +135,71 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Disconnect CGM
+        # Disconnect from CGM
         self.disconnect()
+
+
+
+    def find(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FIND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Find CGM
+        self.usb = usb.core.find(idVendor = self.vendor,
+                                 idProduct = self.product)
+
+        # No CGM found
+        if self.usb is None:
+
+            # Raise error
+            raise IOError("No CGM found. Are you sure it's plugged in?")
+
+        # Otherwise
+        else:
+
+            # Show it
+            print "CGM found."
+
+
+
+    def connect(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CONNECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Configure the USB interface and assign EPs.
+        """
+
+        # Set configuration
+        self.usb.set_configuration()
+
+        # Get configuration
+        self.config = self.usb.get_active_configuration()
+
+        # Get EPs
+        self.EPs["OUT"] = lib.getEP(self.config, "OUT", 1)
+        self.EPs["IN"] = lib.getEP(self.config, "IN", 1)
+
+
+
+    def disconnect(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DISCONNECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # If kernel still active
+        if self.usb.is_kernel_driver_active(0):
+
+            # Disconnect
+            self.usb.detach_kernel_driver(0)
 
 
 
@@ -222,11 +215,11 @@ class CGM(object):
         print "Sending packet: " + str(bytes)
 
         # Send packet
-        self.handle.write(bytearray(bytes))
+        self.EPs["OUT"].write(bytearray(bytes))
 
 
 
-    def read(self, n):
+    def read(self, n = 64):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -235,10 +228,10 @@ class CGM(object):
         """
 
         # Read raw bytes
-        rawBytes = self.handle.read(n)
+        raw = self.EPs["IN"].read(n)
 
         # Convert raw bytes
-        bytes = [ord(x) for x in rawBytes]
+        bytes = list(raw)
 
         # Give user info
         print "Received bytes: " + str(bytes)
@@ -275,17 +268,17 @@ class CGM(object):
         self.transmitter.read()
 
         # Read databases
-        self.databases["Manufacture"].read()
-        self.databases["Firmware"].read()
-        self.databases["PC"].read()
-        self.databases["Sensor"].read()
-        self.databases["Receiver"].read()
-        self.databases["Calibration"].read()
-        self.databases["Events"].read()
-        self.databases["Settings"].read()
+        #self.databases["Manufacture"].read()
+        #self.databases["Firmware"].read()
+        #self.databases["PC"].read()
+        #self.databases["Sensor"].read()
+        #self.databases["Receiver"].read()
+        #self.databases["Calibration"].read()
+        #self.databases["Events"].read()
+        #self.databases["Settings"].read()
 
         # Read BGs
-        self.databases["BG"].read()
+        #self.databases["BG"].read()
 
 
 
@@ -370,7 +363,7 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.level = lib.unpack(command.response["Body"])
+        self.level = lib.unpack(command.response["Body"], "<")
 
         # Give user info
         print "Battery level: " + str(self.level)
@@ -382,7 +375,7 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.state = self.states[lib.unpack(command.response["Body"])]
+        self.state = self.states[lib.unpack(command.response["Body"], "<")]
 
         # Give user info
         print "Battery state: " + self.state
@@ -463,7 +456,7 @@ class Language(object):
         command.execute()
 
         # Assign response
-        self.value = self.values[lib.unpack(command.response["Body"])]
+        self.value = self.values[lib.unpack(command.response["Body"], "<")]
 
         # Give user info
         print "Language: " + self.value
@@ -535,7 +528,8 @@ class Clock(object):
         command.execute()
 
         # Compute time delta since epoch
-        delta = datetime.timedelta(seconds = lib.unpack(command.response["Body"]))
+        delta = datetime.timedelta(seconds =
+                                   lib.unpack(command.response["Body"], "<"))
 
         # Assign response
         self.systemTime = self.epoch + delta
@@ -550,7 +544,7 @@ class Clock(object):
         command.execute()
 
         # Assign response
-        self.mode = self.modes[lib.unpack(command.response["Body"])]
+        self.mode = self.modes[lib.unpack(command.response["Body"], "<")]
 
         # Give user info
         print "Clock mode: " + self.mode
@@ -615,7 +609,7 @@ class Units(object):
         command.execute()
 
         # Assign response
-        self.value = self.values[lib.unpack(command.response["Body"])]
+        self.value = self.values[lib.unpack(command.response["Body"], "<")]
 
         # Give user info
         print "Units: " + self.value

@@ -26,4 +26,4 @@ sudo modprobe -r usbserial
 echo "Plugging CGM..."
 
 # Plug CGM
-sudo modprobe usbserial vendor=0x22a3 product=0x0047
+sudo modprobe usbserial vendor=0x22A3 product=0x0047
