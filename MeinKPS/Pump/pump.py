@@ -25,18 +25,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# TODO: - Test with alarm set on pump
-#       - Test with pump reservoir empty or almost empty
-#       - Deal with timezones, DST, year switch
-#       - Run series of tests overnight
+# TODO: - Deal with timezones, DST, year switch
 #       - No point in reissuing same TB
 #       - Decode square/dual boluses
-#       - Add "change battery" suggestion
-#       - Reduce session time if looping every 5 minutes
-#       - What if session of commands is longer than pump's remaining RF
-#         communication time? Detect long session time and compare it with 
-#         remaining one?
-#       - Bolus need to be checked after being enacted!
+#       - Bolus needs to be checked after being enacted!
 
 
 
@@ -47,11 +39,11 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import errors
 import commands
 import stick
 import records
 import reporter
-import errors
 
 
 
@@ -62,16 +54,13 @@ Reporter = reporter.Reporter()
 
 class Pump(object):
 
-    def __init__(self, now):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Define current time
-        self.now = now
 
         # Give the pump a stick
         self.stick = stick.Stick()
@@ -88,14 +77,14 @@ class Pump(object):
         # Give the pump a firmware instance
         self.firmware = Firmware(self)
 
-        # Give the pump an instance for its buttons
-        self.buttons = Buttons(self)
-
         # Give the pump a battery instance
         self.battery = Battery(self)
 
         # Give the pump a reservoir instance
         self.reservoir = Reservoir(self)
+
+        # Give the pump an instance for its buttons
+        self.buttons = Buttons(self)
 
         # Give the pump a status instance
         self.status = Status(self)
@@ -117,20 +106,20 @@ class Pump(object):
         # Give the pump a CSF instance
         self.CSF = CSF(self)
 
-        # Give the pump a basal profile instance
-        self.basal = Basal(self)
-
         # Give the pump a daily totals instance
         self.dailyTotals = DailyTotals(self)
 
         # Give the pump a history instance
         self.history = History(self)
 
-        # Give the pump a bolus instance
-        self.bolus = Bolus(self)
+        # Give the pump a basal profile instance
+        self.basal = Basal(self)
 
         # Give the pump a TB instance
         self.TB = TB(self)
+
+        # Give the pump a bolus instance
+        self.bolus = Bolus(self)
 
 
 
@@ -1171,8 +1160,11 @@ class Bolus(object):
 
         # FIXME: deal with no last bolus
 
+        # Get current time
+        now = datetime.datetime.now()
+
         # Get recent boluses
-        boluses = Reporter.getRecent(self.now, "treatments.json", ["Boluses"])
+        boluses = Reporter.getRecent(now, "treatments.json", ["Boluses"])
 
         # Get latest bolus time
         t = max(boluses)

@@ -58,10 +58,10 @@ class Loop(object):
         self.end = None
 
         # Give the loop a CGM
-        self.cgm = cgm.CGM(self.start)
+        self.cgm = cgm.CGM()
 
         # Give the loop a pump
-        self.pump = pump.Pump(self.start)
+        self.pump = pump.Pump()
 
         # Give the loop a calculator
         self.calc = calculator.Calculator(self.start)
