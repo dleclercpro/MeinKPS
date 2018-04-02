@@ -8,45 +8,39 @@
 
     Author:   David Leclerc
 
-    Version:  0.4
+    Version:  0.1
 
-    Date:     01.06.2016
+    Date:     27.03.2018
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
 
-    Overview: This is a script that allows to retrieve informations from a
-              MiniMed insulin pump, using the CareLink USB stick of Medtronic.
-              It is based on the PySerial library and is a work of
-              reverse-engineering the USB communication protocols of said USB
-              stick.
+    Overview: This script defines a Stick object, which can be used to
+              communicate with a Medtronic MiniMed insulin pump, using a Texas
+              Instruments CC1111 USB radio stick. It is based on the PyUSB
+              library as well as the reverse-engineering of the Carelink USB
+              stick from Medtronic.
 
-    Notes:    It is important to not interact with the pump while this script
-              communicates with it, otherwise some commands could not be
-              actually performed!
+    Notes:    ...
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# TODO
-#   - Monitor ACK, CRC, SEQ, and NAK bytes
-
-
-
 # LIBRARIES
-import os
-import datetime
-import serial
+import numpy as np
+import usb
 
 
 
 # USER LIBRARIES
 import lib
 import errors
+import packets
 import commands
 
 
 
+# CLASSES
 class Stick(object):
 
     def __init__(self):
@@ -55,357 +49,410 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Initialize stick properties.
         """
 
-        # Define stick characteristics
-        self.vendor = 0x0a21
-        self.product = 0x8001
+        # Define USB IDs
+        self.vendor = 0x0451
+        self.product = 0x16A7
 
-        # Define source path
-        self.src = os.path.dirname(os.path.realpath(__file__)) + os.sep
+        # Initialize USB handle
+        self.usb = None
 
-        # Define times
-        self.timeout = 0.1
-        self.emptyTime = 0.5
+        # Initialize configuration
+        self.config = None
 
-        # Initialize stick's USB port
-        self.port = None
+        # Initialize data endpoints
+        self.EPs = {"OUT": None,
+                    "IN": None}
 
-        # Give the stick a handle
-        self.handle = serial.Serial()
+        # Define frequencies (MHz)
+        self.freq = {"Reference": 24.0,
+                     "Regions": {"NA": {"Default": 916.680,
+                                        "Range": [916.600, 916.750]},
+                                 "WW": {"Default": 868.330,
+                                        "Range": [868.150, 868.750]}}}
 
-        # Give the stick infos
-        self.infos = Infos(self)
+        # Define radio errors
+        self.errors = {0xAA: "Timeout",
+                       0xBB: "No data"}
 
-        # Give the stick a signal
-        self.signal = Signal(self)
+        # Define commands
+        self.commands = {"Name RX": commands.ReadStickName(self),
+                         "Author RX": commands.ReadStickAuthor(self),
+                         "Radio Register RX": commands.ReadStickRadioRegister(self),
+                         "Radio Register TX": commands.WriteStickRadioRegister(self),
+                         "Radio RX": commands.ReadStickRadio(self),
+                         "Radio TX": commands.WriteStickRadio(self),
+                         "Radio TX/RX": commands.WriteReadStickRadio(self),
+                         "LED": commands.FlashStickLED(self)}
 
-        # Give the stick a USB and a radio interface
-        self.interfaces = {"USB": USB(self),
-                           "Radio": Radio(self)}
-
-
-
-    def connect(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CONNECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Plug stick
-        os.system("sudo sh " + self.src + "plug.sh")
-
-        # Try opening port and define a handle
-        try:
-
-            # Define handle
-            self.handle.port = "/dev/ttyUSB.stick"
-            self.handle.rtscts = True
-            self.handle.dsrdtr = True
-            self.handle.timeout = self.timeout
-
-            # Open handle
-            self.handle.open()
-
-        # Otherwise
-        except serial.SerialException as e:
-
-            # If stick is missing
-            if e.errno == 2:
-
-                # Raise error
-                raise errors.NoStick
-
-            # Otherwise
-            else:
-
-                # Everything should be fine
-                pass
-
-
-
-    def disconnect(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DISCONNECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Close serial port
-        self.handle.close()
+        # Define radio registers
+        self.registers = ["SYNC1",
+                          "SYNC0",
+                          "PKTLEN",
+                          "PKTCTRL1",
+                          "PKTCTRL0",
+                          "ADDR",
+                          "FSCTRL1",
+                          "FSCTRL0",
+                          "MDMCFG4",
+                          "MDMCFG3",
+                          "MDMCFG2",
+                          "MDMCFG1",
+                          "MDMCFG0",
+                          "DEVIATN",
+                          "MCSM2",
+                          "MCSM1",
+                          "MCSM0",
+                          "BSCFG",
+                          "FOCCFG",
+                          "FREND1",
+                          "FREND0",
+                          "FSCAL3",
+                          "FSCAL2",
+                          "FSCAL1",
+                          "FSCAL0",
+                          "TEST1",
+                          "TEST0",
+                          "PA_TABLE1",
+                          "PA_TABLE0",
+                          "AGCCTRL2",
+                          "AGCCTRL1",
+                          "AGCCTRL0",
+                          "FREQ2",
+                          "FREQ1",
+                          "FREQ0",
+                          "CHANNR"]
 
 
 
-    def ping(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PING
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Try reading infos
-        try:
-
-            # Read infos
-            self.infos.read()
-
-        # If failed, stick is most probably in error/dead state
-        except:
-
-            # Give user info
-            print "Stick seems to be dead. Resetting it..."
-
-            # Power-cycle USB ports
-            os.system("sudo sh " + self.src + "../reset.sh")
-
-            # Reconnect
-            self.connect()
-
-
-
-    def start(self):
+    def start(self, scan = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             START
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Starting procedure for stick.
         """
 
-        # Connect stick
-        self.connect()
+        # Find it
+        self.find()
 
-        # Ping stick
-        self.ping()
+        # Configure it
+        self.configure()
 
-        # Read infos
-        self.infos.read()
+        # If scanning wanted
+        if scan:
 
-        # Read signal strength
-        self.signal.read()
-
-        # Read USB state
-        self.interfaces["USB"].read()
-
-        # Read radio state
-        self.interfaces["Radio"].read()
+            # Tune radio to best frequency
+            self.tune(self.scan())
 
 
 
-    def stop(self):
+    def find(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STOP
+            FIND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Find the stick on the USB bus and link it.
         """
 
-        # Disconnect stick
-        self.disconnect()
+        # Find stick
+        self.usb = usb.core.find(idVendor = self.vendor,
+                                 idProduct = self.product)
+
+        # No stick found
+        if self.usb is None:
+
+            # Raise error
+            raise IOError("No stick found. Are you sure it's plugged in?")
+
+        # Otherwise
+        else:
+
+            # Show stick
+            print "Stick found."
 
 
 
-    def write(self, bytes):
+    def configure(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CONFIGURE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Configure the stick and assign EPs.
+        """
+
+        # Set configuration
+        self.usb.set_configuration()
+
+        # Get configuration
+        self.config = self.usb.get_active_configuration()
+
+        # Get EPs
+        self.EPs["OUT"] = lib.getEP(self.config, "OUT")
+        self.EPs["IN"] = lib.getEP(self.config, "IN")
+
+
+
+    def read(self, n = 64, timeout = 1000, radio = False):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Read from EP IN until it says it is done transmitting data using a
+            zero byte. Timeout must be given in ms.
+        """
+
+        # Initialize bytes
+        bytes = []
+
+        # Read bytes
+        while True:
+
+            # Read, decode, and append new bytes
+            bytes += self.EPs["IN"].read(n, timeout = timeout)
+
+            # Exit condition
+            if bytes[-1] == 0:
+
+                # Remove end byte
+                bytes.pop(-1)
+
+                # Exit
+                break
+
+        # If bytes coming from radio are an error code
+        if radio and len(bytes) == 1 and bytes[-1] in self.errors:
+
+            # Raise error
+            raise errors.RadioError(self.errors[bytes[-1]])
+
+        # Return them
+        return bytes
+
+
+
+    def write(self, bytes = 0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             WRITE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Write single byte to EP OUT. Tells the stick it is done writing when
+            not inputed a byte.
         """
 
-        # Write bytes
-        self.handle.write(bytearray(bytes))
+        # List
+        if type(bytes) is not list:
+
+            # Convert to list
+            bytes = [bytes]
+
+        # Write bytes to EP OUT
+        for b in bytes:
+
+            # Write
+            self.EPs["OUT"].write(chr(b))
 
 
 
-    def read(self, n):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read raw bytes
-        rawResponse = self.handle.read(n)
-
-        # Convert raw bytes
-        response = [ord(x) for x in rawResponse]
-
-        # Return response
-        return response
-
-
-
-class Infos(object):
-
-    def __init__(self, stick):
+    def tune(self, f):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            TUNE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Tune radio to given frequency in MHz.
         """
 
-        # Initialize infos
-        self.values = None
+        # Info
+        print "Tuning radio to: " + str(f) + " MHz"
 
-        # Link with its respective command
-        self.command = commands.ReadStickInfos(stick)
+        # Convert frequency to corresponding value (according to datasheet)
+        f = int(round(f * (2 ** 16) / self.freq["Reference"]))
 
+        # Convert to set of 3 bytes
+        bytes = [lib.getByte(f, x) for x in [2, 1, 0]]
 
+        # Update registers
+        for reg, byte in zip(["FREQ2", "FREQ1", "FREQ0"], bytes):
 
-    def read(self):
+            # Write to register
+            self.commands["Radio Register TX"].run(reg, byte)
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+            # If mismatch
+            if self.commands["Radio Register RX"].run(reg) != byte:
 
-        # Do command
-        self.command.do()
+                # Raise error
+                raise IOError("Register not updated correctly.")
 
-        # Get command response
-        self.values = self.command.response
-
-        # Give user info
-        print "Stick infos:"
-
-        # Print infos
-        lib.printJSON(self.values)
+        # Info
+        print "Radio tuned."
 
 
 
-class Signal(object):
-
-    def __init__(self, stick):
+    def regionalize(self, F1, F2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            REGIONALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Test if given frequency range fits within region frequencies
+            definition.
         """
 
-        # Initialize signal strength
-        self.value = 0
+        # No frequencies given
+        if F1 is None and F2 is None:
 
-        # Define minimum strength threshold
-        self.threshold = 150
+            # Default region: NA
+            region = "NA"
 
-        # Link with its respective command
-        self.command = commands.ReadStickSignalStrength(stick)
+            # Assign frequencies
+            [F1, F2] = self.freq["Regions"][region]["Range"]
 
+        # Otherwise, test them
+        else:
 
+            # Go through locales
+            for region, freq in self.freq["Regions"].iteritems():
 
-    def read(self):
+                # Check for correct frequencies
+                if (F1 >= min(freq["Range"]) and
+                    F2 <= max(freq["Range"])):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+                    # Exit
+                    break
 
-        # Initialize reading signal strength attempt variable
-        n = 0
+                # Reset region
+                region = None
 
-        # Loop until signal found is sufficiently strong
-        while self.value < self.threshold:
+            # Bad frequencies
+            if region is None:
 
-            # Update attempt variable
-            n += 1
+                # Raise error
+                raise errors.BadFrequencies()
 
-            # Keep track of attempts reading signal strength
-            print "Looking for sufficient signal strength: " + str(n) + "/-"
+        # Info
+        print "Scanning for a " + region + " pump..."
 
-            # Do command
-            self.command.do()
-
-            # Get command response
-            self.value = self.command.response
-
-            # Print signal strength
-            print "Signal strength found: " + str(self.value)
-            print "Expected minimal signal strength: " + str(self.threshold)
+        # Return frequencies
+        return F1, F2
 
 
 
-class Interface(object):
-
-    def __init__(self):
+    def scan(self, F1 = None, F2 = None, n = 15, sample = 5):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            SCAN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Scan the air for frequency with best signal strength (best sample
+            average RSSI) to tune radio in order to communicate with pump.
         """
 
-        # Initialize states
-        self.values = None
+        # Test frequency range
+        F1, F2 = self.regionalize(F1, F2)
 
-        # Initialize command
-        self.command = None
+        # Initialize RSSI readings
+        RSSIs = {}
+
+        # Go through frequency range
+        for f in np.linspace(F1, F2, n, True):
+
+            # Round frequency
+            f = round(f, 3)
+
+            # Initialize RSSI value
+            RSSIs[f] = []
+
+            # Tune frequency
+            self.tune(f)
+
+            # Get pump model command
+            cmd = commands.ReadPumpModel(self)
+
+            # Sample
+            for i in range(sample):
+
+                # Try
+                try:
+
+                    # Run pump command
+                    cmd.run()
+
+                    # Get last packet
+                    pkt = cmd.packets["RX"][-1]
+
+                    # Get RSSI reading and add it
+                    RSSIs[f].append(pkt.RSSI["dBm"])
+
+                # On invalid packet or radio error
+                except (errors.InvalidPacket, errors.RadioError):
+
+                    # Add fake low RSSI reading
+                    RSSIs[f].append(-99)
+
+            # Average readings
+            RSSIs[f] = np.mean(RSSIs[f])
+
+        # Show readings
+        lib.printJSON(RSSIs)
+
+        # Destructure RSSIs
+        x, y = np.array(RSSIs.keys()), np.array(RSSIs.values())
+
+        # Get sorted indices
+        indices = x.argsort()
+
+        # Sort
+        x = x[indices]
+        y = y[indices]
+
+        # Get frequency with max signal power (5 dBm threshold)
+        f = lib.getMaxMiddle(x, y, 5)
+
+        # Info
+        print "Best frequency: " + str(f)
+
+        # Return best frequency
+        return f
 
 
 
-    def read(self):
+    def listen(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
+            LISTEN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Listen to incoming packets on radio.
         """
 
-        # Do command
-        self.command.do()
+        # Read from radio indefinitely
+        while True:
 
-        # Get command response
-        self.values = self.command.response
+            # Try reading
+            try:
 
-        # Give user info
-        print self.__class__.__name__ + " state:"
+                # Get data
+                data = self.commands["Radio RX"].run()
 
-        # Print current stick states
-        lib.printJSON(self.values)
+                # Turn it into a pump packet
+                pkt = packets.FromPumpPacket(data)
 
+                # Show it
+                pkt.show()
 
+            # Error
+            except errors.RadioError:
 
-class USB(Interface):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize interface
-        super(self.__class__, self).__init__()
-
-        # Link with its respective command
-        self.command = commands.ReadStickUSBState(stick)
-
-
-
-class Radio(Interface):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize interface
-        super(self.__class__, self).__init__()
-
-        # Link with its respective command
-        self.command = commands.ReadStickRadioState(stick)
+                # Ignore
+                pass
 
 
 
@@ -417,14 +464,14 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Instanciate a stick for me
+    # Instanciate a stick
     stick = Stick()
 
-    # Start stick
+    # Start it
     stick.start()
 
-    # Stop stick
-    stick.stop()
+    # Listen to radio
+    stick.listen()
 
 
 

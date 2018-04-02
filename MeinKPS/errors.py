@@ -40,6 +40,9 @@ class BaseError(Exception):
         # Store arguments
         self.args = args[0]
 
+        # Make sure arguments are strings
+        self.args = [str(x) for x in self.args]
+
         # Prepare error
         self.prepare()
 
@@ -82,6 +85,9 @@ class BaseError(Exception):
 class StickError(BaseError):
     pass
 
+class InvalidPacket(BaseError):
+    pass
+
 class PumpError(BaseError):
     pass
 
@@ -112,7 +118,7 @@ class NoStick(StickError):
 
 
 
-class MaxRead(StickError):
+class RadioError(StickError):
 
     def prepare(self):
 
@@ -123,29 +129,11 @@ class MaxRead(StickError):
         """
 
         # Define error info
-        self.info = ("Maximal number of reading attempts reached (" +
-                     str(self.args[0]) + "). Trying to reset stick...")
+        self.info = self.args[0]
 
 
 
-class MaxPoll(StickError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Maximal number of polling attempts reached (" +
-                     str(self.args[0]) + "). Is battery too low? Is pump " +
-                     "still within range?")
-
-
-
-class MaxDownload(StickError):
+class UnsuccessfulRadioCommand(StickError):
 
     def prepare(self):
 
@@ -156,27 +144,11 @@ class MaxDownload(StickError):
         """
 
         # Define error info
-        self.info = ("Maximal number of download attempts reached (" +
-                     str(self.args[0]) + ").")
+        self.info = "Radio command was unsuccessful."
 
 
 
-class BadCommunications(StickError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Bad communications with pump.")
-
-
-
-class BadNExpectedBytes(StickError):
+class BadFrequencies(StickError):
 
     def prepare(self):
 
@@ -187,11 +159,12 @@ class BadNExpectedBytes(StickError):
         """
 
         # Define error info
-        self.info = ("Bad number of expected bytes.")
+        self.info = ("Bad frequencies to scan over.")
 
 
 
-class NBytesMismatch(StickError):
+# Packets errors
+class UnmatchedBits(InvalidPacket):
 
     def prepare(self):
 
@@ -202,12 +175,92 @@ class NBytesMismatch(StickError):
         """
 
         # Define error info
-        self.info = ("Expected " + str(self.args[0]) + " bytes." +
-                     "Received " + str(self.args[1]) + " bytes.")
+        self.info = ("Unmatched bits before end-of-packet (corrupted " +
+                     "packet): " + self.args[0])
+
+
+
+class NotEnoughBytes(InvalidPacket):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Not enough bytes received. Expecting " + self.args[0] +
+                     ", received " + self.args[1] + ".")
+
+
+
+class MissingBits(InvalidPacket):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Impossible to encode number of bytes which isn't a " +
+                     "multiple of 8: " + self.args[0])
+
+
+
+class BadEnding(InvalidPacket):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Last bits do not correspond to expectation (0101): " +
+                     self.args[0])
+
+
+
+class BadCRC(InvalidPacket):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Bad CRC (corrupted packet): expected " + self.args[0] +
+                     ", got " + self.args[1])
 
 
 
 # Pump errors
+class NoPump(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("No pump detected. Are you sure it's nearby and " +
+                     "battery level is not too low?")
+
+
+
 class NoHistory(PumpError):
 
     def prepare(self):
@@ -250,7 +303,7 @@ class TBBadRate(PumpError):
         """
 
         # Define error info
-        self.info = ("New TB rate (" + str(self.args[0]["Rate"]) + " " +
+        self.info = ("New TB rate (" + self.args[0]["Rate"] + " " +
                      self.args[0]["Units"] + ") must be within theoretical " +
                      "limits of [0, 35] U/h or [0, 200] %.")
 
@@ -267,7 +320,7 @@ class TBBadDuration(PumpError):
         """
 
         # Define error info
-        self.info = ("New TB duration (" + str(self.args[0]["Duration"]) + " " +
+        self.info = ("New TB duration (" + self.args[0]["Duration"] + " " +
                      "m) is incorrect. The latter must be a multiple of 30.")
 
 
@@ -300,8 +353,7 @@ class BolusBadAmount(PumpError):
 
         # Define error info
         self.info = ("Last bolus amount does not match with bolus to deliver " +
-                     "(" + str(self.args[0]) + " U vs " + str(self.args[1]) +
-                     " U).")
+                     "(" + self.args[0] + " U vs " + self.args[1] + " U).")
 
 
 
@@ -425,7 +477,7 @@ class NoReport(ReporterError):
         """
 
         # Define error info
-        self.info = ("Report '" + self.args[0] + "' (" + str(self.args[1]) +
+        self.info = ("Report '" + self.args[0] + "' (" + self.args[1] +
                      ") not loaded.")
 
 
@@ -458,7 +510,7 @@ class BadDIA(ProfileError):
         """
 
         # Define error info
-        self.info = ("No IDC found for DIA = " + str(self.args[0]) + " h.")
+        self.info = ("No IDC found for DIA = " + self.args[0] + " h.")
 
 
 
@@ -473,8 +525,8 @@ class ProfileEndsTypeMismatch(ProfileError):
         """
 
         # Define error info
-        self.info = ("Type of profile ends (" + str(self.args[0]) + " vs " +
-                     str(self.args[1]) + ") do not match.")
+        self.info = ("Type of profile ends (" + self.args[0] + " vs " +
+                     self.args[1] + ") do not match.")
 
 
 

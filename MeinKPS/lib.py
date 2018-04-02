@@ -865,7 +865,7 @@ def newComputeCRC16(x):
 
 
 
-    def getEP(configuration, direction, interface = 0, setting = 0):
+def getEP(configuration, direction, interface = 0, setting = 0):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
