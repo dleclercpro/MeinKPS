@@ -1081,7 +1081,7 @@ class History(object):
             body, CRC = page[:1022], page[1022:]
 
             # Unpack CRC
-            CRC = lib.unpack(CRC, ">")
+            CRC = lib.unpack(CRC)
 
             # Compute CRC
             computedCRC = lib.newComputeCRC16(body)

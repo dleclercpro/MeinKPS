@@ -2097,8 +2097,7 @@ class SetPumpTB(PumpCommand):
             # Define packet parameters
             self.packet.parameters = ([0] * 2 +
                                       lib.pack(round(TB["Rate"] /
-                                                     self.pump.TB.stroke),
-                                               ">"))[-2:]
+                                                     self.pump.TB.stroke)))[-2:]
 
         # If percentage TB
         elif TB["Units"] == "%":

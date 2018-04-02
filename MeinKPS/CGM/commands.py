@@ -81,7 +81,7 @@ class Command(object):
         self.response["Head"] = self.cgm.read(4)
 
         # Compute number of bytes received
-        nBytesReceived = lib.unpack(self.response["Head"][1:3])
+        nBytesReceived = lib.unpack(self.response["Head"][1:3], "<")
 
         # Minimum number of bytes received: 6
         if nBytesReceived > 6:
@@ -110,7 +110,7 @@ class Command(object):
         """
 
         # Get and compute response CRCs
-        expectedCRC = lib.unpack(self.response["CRC"])
+        expectedCRC = lib.unpack(self.response["CRC"], "<")
         computedCRC = lib.computeCRC16(self.response["Head"] +
                                        self.response["Body"])
 
