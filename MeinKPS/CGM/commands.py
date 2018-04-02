@@ -73,7 +73,7 @@ class Command(object):
 
         # Reset response
         self.response = {"Head": None,
-                         "Body": None,
+                         "Payload": None,
                          "CRC": None}
 
         # Prepare packet
@@ -82,27 +82,29 @@ class Command(object):
         # Send packet
         self.cgm.write(self.packet.bytes)
 
-        # Get response
-        response = self.cgm.read()
+        # Get data
+        data = self.cgm.read()
 
-        # Parse it
-        self.response["Head"] = response[0:4]
+        # Compute size of packet to receive
+        size = lib.unpack(data[1:3], "<")
 
-        # Compute number of bytes received
-        nBytesReceived = lib.unpack(response[1:3], "<")
+        # Until whole data collected
+        while len(data) != size:
 
-        # Minimum number of bytes received: 6
-        if nBytesReceived > 6:
-            nBytesReceived -= 6
+            # Read more data
+            data.extend(self.cgm.read())
 
-        # Second read
-        self.response["Body"] = response[4:4 + nBytesReceived]
+        # Head
+        self.response["Head"] = data[0:4]
+
+        # Payload
+        self.response["Payload"] = data[4:(size - 2)]
+
+        # CRC
+        self.response["CRC"] = data[-2:]
 
         # Try and find XML structure in response
-        print "XML: " + str(lib.XMLify(self.response["Body"]))
-
-        # Third read
-        self.response["CRC"] = response[-2:]
+        print "XML: " + str(lib.XMLify(self.response["Payload"]))
 
         # Verify response
         self.verify()
@@ -120,7 +122,7 @@ class Command(object):
         # Get and compute response CRCs
         expectedCRC = lib.unpack(self.response["CRC"], "<")
         computedCRC = lib.computeCRC16(self.response["Head"] +
-                                       self.response["Body"])
+                                       self.response["Payload"])
 
         # Give user info
         print "Expected CRC: " + str(expectedCRC)

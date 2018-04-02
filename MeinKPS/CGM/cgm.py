@@ -44,13 +44,14 @@ import errors
 
 
 
+# CONSTANTS
+SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
+
+
 # Define a reporter
 Reporter = reporter.Reporter()
 
-
-
-# CONSTANTS
-SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
 
 class CGM(object):
@@ -116,14 +117,17 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Find CGM
+        # Plug CGM
+        #self.connect()
+
+        # Find it
         self.find()
 
-        # Disconnect from it
+        # Make sure kernel is not still active
         self.disconnect()
 
-        # Connect to it
-        self.connect()
+        # Configure it and get EPs
+        self.configure()
 
 
 
@@ -140,12 +144,51 @@ class CGM(object):
 
 
 
+    def connect(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CONNECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Plug CGM
+        os.system("sudo sh " + SRC + "plug.sh")
+
+
+
+    def disconnect(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DISCONNECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        print "Resetting..."
+
+        # Reset USB interface
+        self.usb.reset()
+
+        # If kernel still active
+        if self.usb.is_kernel_driver_active(0):
+
+            # Info
+            print "Detaching kernel..."
+
+            # Disconnect
+            self.usb.detach_kernel_driver(0)
+
+
+
     def find(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             FIND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Find and get USB interface of CGM.
         """
 
         # Find CGM
@@ -156,7 +199,7 @@ class CGM(object):
         if self.usb is None:
 
             # Raise error
-            raise IOError("No CGM found. Are you sure it's plugged in?")
+            raise errors.NoCGM
 
         # Otherwise
         else:
@@ -166,11 +209,11 @@ class CGM(object):
 
 
 
-    def connect(self):
+    def configure(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CONNECT
+            CONFIGURE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Configure the USB interface and assign EPs.
         """
@@ -184,22 +227,6 @@ class CGM(object):
         # Get EPs
         self.EPs["OUT"] = lib.getEP(self.config, "OUT", 1)
         self.EPs["IN"] = lib.getEP(self.config, "IN", 1)
-
-
-
-    def disconnect(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DISCONNECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If kernel still active
-        if self.usb.is_kernel_driver_active(0):
-
-            # Disconnect
-            self.usb.detach_kernel_driver(0)
 
 
 
@@ -268,17 +295,17 @@ class CGM(object):
         self.transmitter.read()
 
         # Read databases
-        #self.databases["Manufacture"].read()
-        #self.databases["Firmware"].read()
-        #self.databases["PC"].read()
-        #self.databases["Sensor"].read()
-        #self.databases["Receiver"].read()
-        #self.databases["Calibration"].read()
-        #self.databases["Events"].read()
-        #self.databases["Settings"].read()
+        self.databases["Manufacture"].read()
+        self.databases["Firmware"].read()
+        self.databases["PC"].read()
+        self.databases["Sensor"].read()
+        self.databases["Receiver"].read()
+        self.databases["Calibration"].read()
+        self.databases["Events"].read()
+        self.databases["Settings"].read()
 
         # Read BGs
-        #self.databases["BG"].read()
+        self.databases["BG"].read()
 
 
 
@@ -363,7 +390,7 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.level = lib.unpack(command.response["Body"], "<")
+        self.level = lib.unpack(command.response["Payload"], "<")
 
         # Give user info
         print "Battery level: " + str(self.level)
@@ -375,7 +402,7 @@ class Battery(object):
         command.execute()
 
         # Assign response
-        self.state = self.states[lib.unpack(command.response["Body"], "<")]
+        self.state = self.states[lib.unpack(command.response["Payload"], "<")]
 
         # Give user info
         print "Battery state: " + self.state
@@ -456,7 +483,7 @@ class Language(object):
         command.execute()
 
         # Assign response
-        self.value = self.values[lib.unpack(command.response["Body"], "<")]
+        self.value = self.values[lib.unpack(command.response["Payload"], "<")]
 
         # Give user info
         print "Language: " + self.value
@@ -529,7 +556,7 @@ class Clock(object):
 
         # Compute time delta since epoch
         delta = datetime.timedelta(seconds =
-                                   lib.unpack(command.response["Body"], "<"))
+                                   lib.unpack(command.response["Payload"], "<"))
 
         # Assign response
         self.systemTime = self.epoch + delta
@@ -544,7 +571,7 @@ class Clock(object):
         command.execute()
 
         # Assign response
-        self.mode = self.modes[lib.unpack(command.response["Body"], "<")]
+        self.mode = self.modes[lib.unpack(command.response["Payload"], "<")]
 
         # Give user info
         print "Clock mode: " + self.mode
@@ -609,7 +636,7 @@ class Units(object):
         command.execute()
 
         # Assign response
-        self.value = self.values[lib.unpack(command.response["Body"], "<")]
+        self.value = self.values[lib.unpack(command.response["Payload"], "<")]
 
         # Give user info
         print "Units: " + self.value
@@ -709,7 +736,7 @@ class Transmitter(object):
         command.execute()
 
         # Assign response
-        self.id = lib.translate(command.response["Body"])
+        self.id = lib.translate(command.response["Payload"])
 
         # Give user info
         print "Transmitter ID: " + str(self.id)
@@ -728,7 +755,8 @@ class Transmitter(object):
         """
 
         # Give user info
-        print "Storing current transmitter ID to report: '" + self.report + "'..."
+        print ("Storing current transmitter ID to report: '" + self.report +
+               "'...")
 
         # Add entry
         Reporter.add(self.report, [], {"Transmitter ID": self.id}, True)

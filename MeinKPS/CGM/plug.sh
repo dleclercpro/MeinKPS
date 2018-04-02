@@ -19,7 +19,7 @@
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Unplugging usb-serial devices
+# Unplugging USB serial devices
 sudo modprobe -r usbserial
 
 # Give user info

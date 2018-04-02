@@ -95,8 +95,8 @@ class Database(object):
         command.execute()
 
         # Decode it
-        self.range.append(lib.unpack(command.response["Body"][0:4], "<"))
-        self.range.append(lib.unpack(command.response["Body"][4:8], "<"))
+        self.range.append(lib.unpack(command.response["Payload"][0:4], "<"))
+        self.range.append(lib.unpack(command.response["Payload"][4:8], "<"))
 
         # Deal with empty database
         if self.range == self.emptyRange:
@@ -192,7 +192,7 @@ class Database(object):
                 command.execute()
 
                 # Parse page
-                self.parse(command.response["Body"])
+                self.parse(command.response["Payload"])
 
                 # Verify page
                 self.verify()
