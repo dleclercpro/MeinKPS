@@ -836,10 +836,11 @@ def computeCRC16(x):
     for i in range(len(x)):
 
         # Compute it
-        CRC = ((CRC * 256) & 65280) ^ CRC16_TABLE[((CRC / 256) & 255) ^ x[i]]
+        CRC = ((CRC * 256) & (0xFF << 8)) ^ CRC16_TABLE[((CRC / 256) & 0xFF) ^
+                                                        x[i]]
 
     # Return CRC
-    return CRC & 65535
+    return CRC & 0xFFFF
 
 
 
@@ -852,13 +853,13 @@ def newComputeCRC16(x):
     """
 
     # Initialize CRC
-    CRC = 65535
+    CRC = 0xFFFF
 
     # Look for CRC in table
     for i in range(len(x)):
 
         # Compute it
-        CRC = (CRC16_TABLE[x[i] ^ CRC >> 8] ^ CRC << 8) & 65535
+        CRC = (CRC16_TABLE[x[i] ^ CRC >> 8] ^ CRC << 8) & 0xFFFF
 
     # Return CRC
     return CRC
