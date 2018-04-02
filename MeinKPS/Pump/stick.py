@@ -56,10 +56,10 @@ class Stick(object):
         self.vendor = 0x0451
         self.product = 0x16A7
 
-        # Initialize USB handle
+        # Initialize USB interface
         self.usb = None
 
-        # Initialize configuration
+        # Initialize USB configuration
         self.config = None
 
         # Initialize data endpoints
@@ -172,7 +172,7 @@ class Stick(object):
         # Otherwise
         else:
 
-            # Show stick
+            # Show it
             print "Stick found."
 
 
@@ -183,7 +183,7 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             CONFIGURE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Configure the stick and assign EPs.
+            Configure the USB interface and assign EPs.
         """
 
         # Set configuration

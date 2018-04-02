@@ -547,7 +547,7 @@ class ReadStickRadio(StickCommand):
 
         # Store timeout values
         self.timeout = {"Stick": timeout + 500,
-                        "Radio": lib.pack(timeout, 4)}
+                        "Radio": lib.pack(timeout, n = 4)}
 
         # Store error tolerance
         self.tolerate = tolerate
@@ -657,7 +657,7 @@ class WriteStickRadio(StickCommand):
         self.repeat = repeat
 
         # Store repeat delay
-        self.delay = lib.pack(delay, 4)
+        self.delay = lib.pack(delay, n = 4)
 
 
 
@@ -768,14 +768,14 @@ class WriteReadStickRadio(StickCommand):
         self.repeat = repeat
 
         # Store write repeat delay
-        self.delay = lib.pack(delay, 4)
+        self.delay = lib.pack(delay, n = 4)
 
         # Store retry count
         self.retry = retry
 
         # Store timeout values
         self.timeout = {"Stick": (retry + 1) * timeout + 500,
-                        "Radio": lib.pack(timeout, 4)}
+                        "Radio": lib.pack(timeout, n = 4)}
 
         # Store error tolerance
         self.tolerate = tolerate
@@ -2985,7 +2985,8 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         self.parameters = ["03"] + 64 * ["00"]
 
         # Define rate
-        self.parameters[1:3] = ["{0:02X}".format(x) for x in lib.pack(rate, 2)]
+        self.parameters[1:3] = ["{0:02X}".format(x) for x
+                                                    in lib.pack(rate, n = 2)]
 
         # Define duration
         self.parameters[3] = "{0:02X}".format(duration)
