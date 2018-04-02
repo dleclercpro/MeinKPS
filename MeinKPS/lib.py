@@ -672,6 +672,8 @@ def computeCRC16(x):
     # Return CRC
     return CRC & 65535
 
+
+
 def newComputeCRC16(x):
 
     """
