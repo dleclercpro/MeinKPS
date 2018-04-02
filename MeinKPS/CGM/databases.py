@@ -99,6 +99,7 @@ class Database(object):
             # Give user info
             print "Database empty."
 
+            # Exit
             return False
 
         else:
@@ -106,6 +107,7 @@ class Database(object):
             # Give user info
             print "Database range: " + str(self.range)
 
+            # Exit
             return True
 
 
