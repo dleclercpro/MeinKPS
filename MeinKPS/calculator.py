@@ -172,8 +172,8 @@ class Calculator(object):
                                        self.resume, self.bolus)
 
         # Define IDC
-        self.IDC = IDC.FiaspIDC(self.DIA)
-        #self.IDC = IDC.WalshIDC(self.DIA)
+        #self.IDC = IDC.FiaspIDC(self.DIA)
+        self.IDC = IDC.WalshIDC(self.DIA)
 
         # Build past IOB profile
         self.IOB.past.build(past, self.now)
