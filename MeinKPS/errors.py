@@ -191,8 +191,8 @@ class NotEnoughBytes(InvalidPacket):
         """
 
         # Define error info
-        self.info = ("Not enough bytes received. Expecting " + self.args[0] +
-                     ", received " + self.args[1] + ".")
+        self.info = ("Not enough bytes received. Expected: " + self.args[0] +
+                     ". Received: " + self.args[1] + ".")
 
 
 
@@ -239,8 +239,8 @@ class BadCRC(InvalidPacket):
         """
 
         # Define error info
-        self.info = ("Bad CRC (corrupted packet): expected " + self.args[0] +
-                     ", got " + self.args[1])
+        self.info = ("Bad CRC (corrupted packet). Expected: " + self.args[0] +
+                     ". Computed: " + self.args[1] + ".")
 
 
 

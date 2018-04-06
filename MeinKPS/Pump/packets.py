@@ -293,14 +293,11 @@ class Packet(object):
                     # Raise error
                     raise errors.UnmatchedBits(word)
 
-                # If last bits
-                else:
+                # If last bits do not fit
+                elif word != "0101":
 
-                    # If they do not fit
-                    if word != "0101":
-
-                        # Raise error
-                        raise errors.BadEnding(word)
+                    # Raise error
+                    raise errors.BadEnding(word)
 
         # Split string in groups of 2 characters
         self.bytes["Decoded"]["Hex"] = lib.split(string, 2)

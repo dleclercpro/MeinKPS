@@ -85,8 +85,7 @@ class Stick(object):
                          "Radio RX": commands.ReadStickRadio(self),
                          "Radio TX": commands.WriteStickRadio(self),
                          "Radio TX/RX": commands.WriteReadStickRadio(self),
-                         "LED": commands.FlashStickLED(self),
-                         "Pump Model RX": commands.ReadPumpModel(self)}
+                         "LED": commands.FlashStickLED(self)}
 
         # Define radio registers
         self.registers = ["SYNC1",
@@ -128,7 +127,7 @@ class Stick(object):
 
 
 
-    def start(self, scan = True):
+    def start(self, pump = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,10 +143,23 @@ class Stick(object):
         self.configure()
 
         # If scanning wanted
-        if scan:
+        if pump is not None:
 
             # Tune radio to best frequency
-            self.tune(self.scan())
+            self.tune(self.scan(pump))
+
+
+
+    def stop(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STOP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Ignore
+        pass
 
 
 
@@ -373,7 +385,7 @@ class Stick(object):
 
 
 
-    def scan(self, F1 = None, F2 = None, n = 15, sample = 5):
+    def scan(self, pump, F1 = None, F2 = None, n = 15, sample = 5):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -408,16 +420,16 @@ class Stick(object):
                 try:
 
                     # Run pump command
-                    self.commands["Pump Model RX"].run()
+                    pump.model.read()
 
                     # Get last packet
-                    pkt = self.commands["Pump Model RX"].packets["RX"][-1]
+                    pkt = pump.model.command.packets["RX"][-1]
 
                     # Get RSSI reading and add it
                     RSSIs[f].append(pkt.RSSI["dBm"])
 
                 # On invalid packet or radio error
-                except errors.RadioError, errors.InvalidPacket:
+                except (errors.RadioError, errors.InvalidPacket):
 
                     # Add fake low RSSI reading
                     RSSIs[f].append(-99)
