@@ -1146,8 +1146,17 @@ class TB(PumpComponent):
             # Raise error
             raise errors.TBBadDuration(TB)
 
-        # Verify pump status
-        self.pump.status.verify()
+        # Try
+        try:
+
+            # Verify pump status
+            self.pump.status.verify()
+
+        # Except
+        except errors.StatusBolusing:
+
+            # Bolusing does not matter when setting TB
+            pass
 
         # Verify pump settings
         self.pump.settings.verify(TB = TB)
@@ -1156,7 +1165,7 @@ class TB(PumpComponent):
         self.read()
 
         # Look if a TB is already set
-        if (self.value["Duration"] != 0 and self.value["Units"] == "%" or
+        if (self.value["Units"] == "%" and self.value["Duration"] != 0 or
             self.value["Units"] != TB["Units"]):
 
             # Info
@@ -1350,7 +1359,7 @@ def main():
     #pump.TB.read()
 
     # Send TB to pump
-    #pump.TB.set(0.3, "U/h", 30)
+    #pump.TB.set(0.5, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)
