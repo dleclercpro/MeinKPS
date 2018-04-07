@@ -158,8 +158,8 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
-        pass
+        # Reset USB interface
+        self.usb.reset()
 
 
 
