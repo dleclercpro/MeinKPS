@@ -37,6 +37,11 @@ from Profiles import *
 
 
 
+# CONSTANTS
+BG_HYPO_LIMIT = 4.2
+
+
+
 # Define a reporter
 Reporter = reporter.Reporter()
 
@@ -289,9 +294,18 @@ class Calculator(object):
         # Define time to enact equivalent of dose (h)
         T = 0.5
 
-        # Find required basal difference to enact over given time (round to
-        # pump's precision)
-        dB = dose / T
+        # When too close to hypo
+        if self.BG.past.y[-1] < BG_HYPO_LIMIT:
+
+            # Stop insulin delivery
+            dB = -basal
+
+        # Otherwise
+        else:
+
+            # Find required basal difference to enact over given time (round to
+            # pump's precision)
+            dB = dose / T
 
         # Compute TB to enact 
         TB = basal + dB
