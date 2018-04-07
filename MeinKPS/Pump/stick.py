@@ -162,8 +162,8 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Reset USB interface
-        self.usb.reset()
+        # Ignore
+        pass
 
 
 
@@ -202,6 +202,9 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Configure the USB interface and assign EPs.
         """
+
+        # Reset USB interface
+        self.usb.reset()
 
         # Set configuration
         self.usb.set_configuration()
