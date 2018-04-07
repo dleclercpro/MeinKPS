@@ -2899,6 +2899,9 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         # Define prelude command
         self.commands["Prelude"] = SetPumpAbsoluteTBPrelude(pump)
 
+        # Define report
+        self.report = "treatments.json"
+
         # Initialize rate
         self.rate = None
 
@@ -3005,6 +3008,9 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
 
         # Define prelude command
         self.commands["Prelude"] = SetPumpPercentageTBPrelude(pump)
+
+        # Define report
+        self.report = "treatments.json"
 
         # Initialize rate
         self.rate = None
