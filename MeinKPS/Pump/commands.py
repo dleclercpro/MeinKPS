@@ -2919,7 +2919,7 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         """
 
         # Encode effective rate
-        rate = round(rate / 0.025)
+        rate = int(round(rate / 0.025))
 
         # Store effective rate
         self.rate = round(rate * 0.025, 2)
@@ -2928,7 +2928,7 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         self.duration = duration
 
         # Encode duration (divide by time block)
-        duration /= 30.0
+        duration = int(duration / 30.0)
 
         # Test rate
         lib.checkIntWithinRange(rate, [0, 1400], "Invalid TB rate.")
@@ -3026,7 +3026,7 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
         """
 
         # Encode effective rate
-        rate = round(rate)
+        rate = int(round(rate))
 
         # Store rate
         self.rate = rate
@@ -3035,7 +3035,7 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
         self.duration = duration
 
         # Encode duration (divide by time block)
-        duration /= 30.0
+        duration = int(duration / 30.0)
 
         # Test rate
         lib.checkIntWithinRange(rate, [0, 200], "Invalid TB rate.")
