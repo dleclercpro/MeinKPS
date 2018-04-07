@@ -136,14 +136,14 @@ class Loop(object):
 
             # Read BG
             self.do(self.devices["CGM"].dumpBG,
-                ["CGM"], "BG", 8)
+                ["CGM"], "BG")
 
         # Otherwise
         else:
 
             # Read BGs
-            self.do(self.devices["CGM"].dumpNewBG,
-                ["CGM"], "BG")
+            self.do(self.devices["CGM"].dumpBG,
+                ["CGM"], "BG", 8)
 
         # Read battery
         self.do(self.devices["CGM"].battery.read,
