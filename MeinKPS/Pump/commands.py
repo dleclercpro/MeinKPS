@@ -213,6 +213,27 @@ class StickCommand(Command):
 
 
 
+class ReadStickName(StickCommand):
+
+    def __init__(self, stick):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(ReadStickName, self).__init__(stick)
+
+        # Define code
+        self.code = 0
+
+        # Define report
+        self.report = "stick.json"
+
+
+
     def send(self):
 
         """
@@ -236,27 +257,6 @@ class StickCommand(Command):
 
         # Get data
         self.data["RX"] = self.stick.read()
-
-
-
-class ReadStickName(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(ReadStickName, self).__init__(stick)
-
-        # Define code
-        self.code = 0
-
-        # Define report
-        self.report = "stick.json"
 
 
 
@@ -294,6 +294,32 @@ class ReadStickAuthor(StickCommand):
 
         # Define report
         self.report = "stick.json"
+
+
+
+    def send(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Send command code
+        self.stick.write(self.code)
+
+
+
+    def receive(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RECEIVE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get data
+        self.data["RX"] = self.stick.read()
 
 
 
@@ -366,22 +392,6 @@ class ReadStickRadioRegister(StickCommand):
 
 
 
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decode data
-        self.response = self.data["RX"][0]
-
-        # Info
-        print self.register + ": " + str(self.response)
-
-
-
     def send(self):
 
         """
@@ -395,6 +405,35 @@ class ReadStickRadioRegister(StickCommand):
 
         # Send register address
         self.stick.write(self.address)
+
+
+
+    def receive(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RECEIVE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get data
+        self.data["RX"] = self.stick.read()
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Decode data
+        self.response = self.data["RX"][0]
+
+        # Info
+        print self.register + ": " + str(self.response)
 
 
 
@@ -473,19 +512,6 @@ class WriteStickRadioRegister(StickCommand):
 
         # Send value
         self.stick.write(self.value)
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Ignore
-        pass
 
 
 
@@ -678,19 +704,6 @@ class WriteStickRadio(StickCommand):
 
 
 
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Ignore
-        pass
-
-
-
 class WriteReadStickRadio(StickCommand):
 
     def __init__(self, stick):
@@ -852,6 +865,19 @@ class FlashStickLED(StickCommand):
 
         # Define code
         self.code = 30
+
+
+
+    def send(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Send command code
+        self.stick.write(self.code)
 
 
 
