@@ -29,7 +29,7 @@
 # LIBRARIES
 import os
 import datetime
-import usb
+import usb.core
 
 
 

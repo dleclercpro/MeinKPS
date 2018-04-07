@@ -28,7 +28,7 @@
 
 # LIBRARIES
 import numpy as np
-import usb
+import usb.core
 
 
 

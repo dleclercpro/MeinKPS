@@ -25,7 +25,7 @@
 
 # LIBRARIES
 import os
-import usb
+import usb.util
 import copy
 import json
 import datetime
