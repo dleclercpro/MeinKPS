@@ -67,7 +67,7 @@ class Record(object):
 
 
 
-    def find(self, page):
+    def find(self, pages):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,14 +75,17 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Search page for specified record
-        for i in range(len(page)):
+        # Initialize index
+        i = 0
+
+        # Search pages for specified record
+        while i < len(pages):
 
             # Try and find record
             try:
 
                 # Define new possible record
-                self.bytes = page[i:i + self.size]
+                self.bytes = pages[i:i + self.size]
 
                 # Test criteria
                 if self.criteria(self.bytes):
@@ -93,9 +96,17 @@ class Record(object):
                     # Decode record
                     self.decode()
 
+                    # Remove record from history pages
+                    del pages[i:i + self.size]
+
             # If not matching, move to next one
             except:
+
+                # Skip
                 pass
+
+            # Increment index
+            i += 1
 
         # Verify necessity of storing
         if self.t:
@@ -105,6 +116,9 @@ class Record(object):
 
             # Store records
             self.store()
+
+        # Return updated pages (without found records)
+        return pages
 
 
 
@@ -155,10 +169,14 @@ class Record(object):
 
         # Record cannot be in the future
         if t > now:
+
+            # Error
             raise ValueError("Record cannot be in the future!")
 
         # Record cannot be more than a year in the past
         elif (now - t).days >= 365:
+
+            # Error
             raise ValueError("Record and current year cannot be a year (or " +
                              "more) apart!")
 
@@ -201,16 +219,24 @@ class Record(object):
 
             # Get current time
             try:
+
+                # Store it
                 t = self.t[i]
 
             except:
+
+                # Store it
                 t = None
 
             # Get current value
             try:
+
+                # Store it
                 value = self.values[i]
 
             except:
+
+                # Store it
                 value = None
 
             # Print current record
@@ -586,45 +612,68 @@ class CarbsRecord(Record):
         # defined dictionary
         [BGU, CU, largerBG, largerC] = indicators[self.body[1]]
 
-        # Define rounding multiplicator for BGs and Cs
+        # Define rounding multiplicator
+        # BGs
+        # mmol/L
         if BGU == "mmol/L":
+
+            # Store it
             mBGU = 1.0
 
+        # mg/dL
         elif BGU == "mg/dL":
+
+            # Store it
             mBGU = 0
 
+        # Carbs
+        # exchange
         if CU == "exchange":
+
+            # Store it
             mCU = 1.0
 
+        # g
         elif CU == "g":
+
+            # Store it
             mCU = 0
 
         # Define number of bytes to add for larger BGs and Cs
+        # Larger BG
         if largerBG:
             
             # Extra number of bytes depends on BG units
             if BGU == "mmol/L":
+
+                # Store it
                 mBG = 256
 
             elif BGU == "mg/dL":
+
+                # Store it
                 mBG = 512
 
+        # Smaller BG
         else:
+
+            # Store it
             mBG = 0
 
+        # Larger carbs
         if largerC:
+
+            # Store it
             mC = 256
 
+        # Smaller carbs
         else:
+
+            # Store it
             mC = 0
 
         # Decode record
         C = (self.body[0] + mC) / 10 ** mCU
-
-        # Not really necessary, but those are correct
-        BG = (self.head[1] + mBG) / 10 ** mBGU
-        BGTargets = [self.body[4] / 10 ** mBGU, self.body[12] / 10 ** mBGU]
-        CSF = self.body[2] / 10 ** mCU
 
         # Store carbs
         self.values.append([C, CU])
