@@ -149,6 +149,9 @@ class Stick(object):
             # Tune radio to best frequency
             self.tune(self.scan(pump))
 
+        # Flash it when ready
+        self.flash()
+
 
 
     def stop(self):
