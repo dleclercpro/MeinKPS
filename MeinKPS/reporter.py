@@ -309,6 +309,15 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # No entries
+        if len(entries) == 0:
+
+            # Info
+            print "No entries to add."
+
+            # Exit
+            return
+
         # Get first value
         zero = min(entries)
 
@@ -715,7 +724,6 @@ class Path:
 
         # Merge path
         return os.sep + os.sep.join(self.list)
-        #return os.sep.join(self.list)
 
 
 

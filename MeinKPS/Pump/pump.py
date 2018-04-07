@@ -789,51 +789,6 @@ class CSF(PumpComponent):
 
 
 
-class Basal(PumpComponent):
-
-    def __init__(self, pump):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize basal component
-        super(Basal, self).__init__(pump)
-
-        # Define command
-        self.command = commands.ReadPumpBasalProfileStandard(pump)
-
-        # Initialize basal characteristics
-        self.stroke = 0.025 # Pump basal stroke rate (U/h)
-        self.timeBlock = 30 # Time block (m) used by pump for basal durations
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get number of rates read
-        n = len(self.value["Times"])
-
-        # Info
-        print "Found " + str(n) + " rates for bolus profile 'Standard':"
-
-        # Print rates
-        for i in range(n):
-
-            # Format info
-            print (self.value["Times"][i] + " - " +
-                   str(self.value["Rates"][i]) + " U/h")
-
-
-
 class DailyTotals(PumpComponent):
 
     def __init__(self, pump):
@@ -999,7 +954,7 @@ class History(PumpComponent):
 
 
 
-class Bolus(PumpComponent):
+class Basal(PumpComponent):
 
     def __init__(self, pump):
 
@@ -1009,61 +964,75 @@ class Bolus(PumpComponent):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize bolus component
-        super(Bolus, self).__init__(pump)
+        # Initialize basal component
+        super(Basal, self).__init__(pump)
 
-        # Define name
-        self.name = "Last bolus (U)"
+        # Define command
+        self.commands = {
+            "Standard": commands.ReadPumpBasalProfileStandard(pump),
+            "A": commands.ReadPumpBasalProfileA(pump),
+            "B": commands.ReadPumpBasalProfileB(pump)}
 
-        # Instanciate corresponding command
-        self.command = commands.DeliverPumpBolus(pump)
-
-        # Initialize bolus characteristics
-        self.stroke = 0.1  # Pump bolus stroke (U)
-        self.rate   = 40.0 # Bolus delivery rate (s/U)
-        self.sleep  = 5    # Time (s) to wait after bolus delivery
-
+        # Initialize basal characteristics
+        self.stroke = 0.025 # Pump basal stroke rate (U/h)
+        self.time = 30 # Time block (m) used by pump for basal durations
 
 
-    def read(self):
+
+    def read(self, profile):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             READ
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FIXME: deal with no last bolus
         """
 
-        # Get current time
-        now = datetime.datetime.now()
+        # Store profile
+        self.profile = profile
 
-        # Get recent boluses
-        boluses = Reporter.getRecent(now, "treatments.json", ["Boluses"])
+        # Select profile
+        # Standard
+        if profile == "Standard":
 
-        # Get latest bolus time
-        t = max(boluses)
+            # Get basal
+            self.value = self.commands["Standard"].run()
 
-        # Get last bolus
-        self.value = boluses[t]
+        elif profile == "A":
+
+            # Get basal
+            self.value = self.commands["A"].run()
+
+        elif profile == "B":
+
+            # Get basal
+            self.value = self.commands["B"].run()
+
+        # Show it
+        self.show()
 
 
 
-    def deliver(self, bolus):
+    def show(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DELIVER
+            SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Verify pump status
-        self.pump.status.verify()
+        # Get number of rates read
+        n = len(self.value["Times"])
 
-        # Verify pump settings
-        self.pump.settings.verify(bolus = bolus)
+        # Info
+        print ("Found " + str(n) + " rates for bolus profile '" + self.profile +
+               "':")
 
-        # Run command
-        self.command.run(bolus)
+        # Print rates
+        for i in range(n):
+
+            # Format info
+            print (self.value["Times"][i] + " - " +
+                   str(self.value["Rates"][i]) + " U/h")
 
 
 
@@ -1279,6 +1248,74 @@ class TB(PumpComponent):
 
 
 
+class Bolus(PumpComponent):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize bolus component
+        super(Bolus, self).__init__(pump)
+
+        # Define name
+        self.name = "Last bolus (U)"
+
+        # Instanciate corresponding command
+        self.command = commands.DeliverPumpBolus(pump)
+
+        # Initialize bolus characteristics
+        self.stroke = 0.1  # Pump bolus stroke (U)
+        self.rate   = 40.0 # Bolus delivery rate (s/U)
+        self.sleep  = 5    # Time (s) to wait after bolus delivery
+
+
+
+    def read(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FIXME: deal with no last bolus
+        """
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Get recent boluses
+        boluses = Reporter.getRecent(now, "treatments.json", ["Boluses"])
+
+        # Get latest bolus time
+        t = max(boluses)
+
+        # Get last bolus
+        self.value = boluses[t]
+
+
+
+    def deliver(self, bolus):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DELIVER
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Verify pump status
+        self.pump.status.verify()
+
+        # Verify pump settings
+        self.pump.settings.verify(bolus = bolus)
+
+        # Run command
+        self.command.run(bolus)
+
+
+
 def main():
 
     """
@@ -1344,7 +1381,9 @@ def main():
     #pump.CSF.read()
 
     # Read basal profile stored in pump
-    #pump.basal.read()
+    #pump.basal.read("Standard")
+    #pump.basal.read("A")
+    #pump.basal.read("B")
 
     # Read daily totals on pump
     #pump.dailyTotals.read()

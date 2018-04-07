@@ -1838,7 +1838,7 @@ class ReadPumpBGTargets(PumpGetCommand):
             i *= length
 
             # Decode time (m)
-            t = payload[i + 1] * self.pump.basal.timeBlock
+            t = payload[i + 1] * self.pump.basal.time
 
             # Convert it to hours and minutes
             t = "{0:02}".format(t / 60) + ":" + "{0:02}".format(t % 60)
@@ -1871,7 +1871,7 @@ class ReadPumpBGTargets(PumpGetCommand):
         response = dict(zip(self.response["Times"], self.response["Targets"]))
 
         # Store targets
-        Reporter.add(self.report, ["BG Targets"], response, True)
+        Reporter.add(self.report, [], {"BG Targets": response}, True)
 
 
 
@@ -1935,7 +1935,7 @@ class ReadPumpFactors(PumpGetCommand):
             i *= length
 
             # Decode time (m)
-            t = payload[i + 1] % 64 * self.pump.basal.timeBlock
+            t = payload[i + 1] % 64 * self.pump.basal.time
 
             # Convert it to hours and minutes
             t = "{0:02}".format(t / 60) + ":" + "{0:02}".format(t % 60)
@@ -2017,7 +2017,7 @@ class ReadPumpISF(ReadPumpFactors):
         response = dict(zip(self.response["Times"], self.response["Factors"]))
 
         # Store factors
-        Reporter.add(self.report, ["ISF"], response, True)
+        Reporter.add(self.report, [], {"ISF": response}, True)
 
 
 
@@ -2080,7 +2080,7 @@ class ReadPumpCSF(ReadPumpFactors):
         response = dict(zip(self.response["Times"], self.response["Factors"]))
 
         # Store factors
-        Reporter.add(self.report, ["CSF"], response, True)
+        Reporter.add(self.report, [], {"CSF": response}, True)
 
         # Update units for carbs (without insulin units)
         # g/U
@@ -2170,7 +2170,7 @@ class ReadPumpBasalProfile(PumpBigCommand, PumpGetBigCommand):
                 break
 
             # Decode time (m)
-            t = entry[2] * self.pump.basal.timeBlock
+            t = entry[2] * self.pump.basal.time
 
             # Convert it to hours and minutes
             t = "{0:02}".format(t / 60) + ":" + "{0:02}".format(t % 60)
@@ -2205,8 +2205,8 @@ class ReadPumpBasalProfile(PumpBigCommand, PumpGetBigCommand):
         response = dict(zip(self.response["Times"], self.response["Rates"]))
 
         # Store basal
-        Reporter.add(self.report, ["Basal Profile (" + self.name + ")"],
-                                  response, True)
+        Reporter.add(self.report, [], {"Basal Profile (" + self.name + ")":
+                                       response}, True)
 
 
 
@@ -2252,20 +2252,6 @@ class ReadPumpBasalProfileA(ReadPumpBasalProfile):
 
 
 
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: no storing for basal profile A, since never used.
-        """
-
-        # Ignore
-        pass
-
-
-
 class ReadPumpBasalProfileB(ReadPumpBasalProfile):
 
     def __init__(self, pump):
@@ -2284,20 +2270,6 @@ class ReadPumpBasalProfileB(ReadPumpBasalProfile):
 
         # Define profile name
         self.name = "B"
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: no storing for basal profile B, since never used.
-        """
-
-        # Ignore
-        pass
 
 
 
