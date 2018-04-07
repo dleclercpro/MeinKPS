@@ -50,7 +50,7 @@ Reporter = reporter.Reporter()
 
 class CGM(object):
 
-    def __init__(self, now):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,11 +58,8 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define current time
-        self.now = now
-
         # Define CGM characteristics
-        self.vendor = 0x22a3
+        self.vendor = 0x22A3
         self.product = 0x0047
 
         # Define source path
