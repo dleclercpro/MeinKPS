@@ -27,5 +27,5 @@ import base
 
 
 
-class COBProfile(base.Profile):
+class COB(base.Profile):
     pass

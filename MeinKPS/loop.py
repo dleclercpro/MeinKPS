@@ -31,6 +31,7 @@ import sys
 # USER LIBRARIES
 import lib
 import reporter
+import exporter
 import uploader
 import calculator
 from CGM import cgm
@@ -62,7 +63,7 @@ class Loop(object):
                         "Pump": pump.Pump()}
 
         # Give the loop a calculator
-        self.calc = calculator.Calculator(self.start)
+        self.calc = calculator.Calculator()
 
         # Define report
         self.report = "loop.json"
@@ -213,7 +214,7 @@ class Loop(object):
             ["Pump"], "History")
 
         # Run calculator and get recommendation
-        TB = self.calc.run()
+        TB = self.calc.run(self.start)
 
         # Fake TB
         # TB = [self.start.minute / 60.0, "U/h", 30]
@@ -250,7 +251,7 @@ class Loop(object):
         """
 
         # Export preprocessed treatments
-        self.calc.export(self.start)
+        self.do(exporter.run, ["Status"], "Export", self.start)
 
 
 
@@ -263,7 +264,7 @@ class Loop(object):
         """
 
         # Upload stuff
-        self.do(uploader.main, ["Status"], "Upload")
+        self.do(uploader.run, ["Status"], "Upload")
 
 
 

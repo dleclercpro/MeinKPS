@@ -37,19 +37,19 @@ from Profiles import *
 
 
 
-# CONSTANTS
-BG_HYPO_LIMIT = 4.2
-
-
-
 # Define a reporter
 Reporter = reporter.Reporter()
 
 
 
+# CONSTANTS
+BG_HYPO_LIMIT = 4.2
+
+
+
 class Calculator(object):
 
-    def __init__(self, now):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,8 +57,8 @@ class Calculator(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define current time
-        self.now = now
+        # Initialize current time
+        self.now = None
 
         # Initialize DIA
         self.DIA = None
@@ -67,40 +67,40 @@ class Calculator(object):
         self.IDC = None
 
         # Give calculator a basal profile
-        self.basal = basal.BasalProfile()
+        self.basal = basal.Basal()
 
         # Give calculator a TB profile
-        self.TB = TB.TBProfile()
+        self.TB = TB.TB()
 
         # Give calculator a bolus profile
-        self.bolus = bolus.BolusProfile()
+        self.bolus = bolus.Bolus()
 
         # Give calculator a suspend profile
-        self.suspend = suspend.SuspendProfile()
+        self.suspend = suspend.Suspend()
 
         # Give calculator a resume profile
-        self.resume = resume.ResumeProfile()
+        self.resume = resume.Resume()
 
         # Initialize net insulin profile
-        self.net = net.NetProfile()
+        self.net = net.Net()
 
         # Give calculator an IOB profile
-        self.IOB = IOB.FutureIOBProfile(IOB.PastIOBProfile())
+        self.IOB = IOB.FutureIOB(IOB.PastIOB())
 
         # Give calculator a COB profile
-        self.COB = COB.COBProfile()
+        self.COB = COB.COB()
 
         # Give calculator an ISF profile
-        self.ISF = ISF.ISFProfile()
+        self.ISF = ISF.ISF()
 
         # Give calculator a CSF profile
-        self.CSF = CSF.CSFProfile()
+        self.CSF = CSF.CSF()
 
         # Give calculator a BG targets profile
         self.BGTargets = BGTargets.BGTargets()
 
         # Give calculator a BG profile
-        self.BG = BG.FutureBGProfile(BG.PastBGProfile())
+        self.BG = BG.FutureBG(BG.PastBG())
 
         # Initialize pump's max values
         self.max = {"Basal": None,
@@ -108,13 +108,16 @@ class Calculator(object):
 
 
 
-    def run(self):
+    def run(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define current time
+        self.now = now
 
         # Load components
         self.load()
@@ -177,8 +180,8 @@ class Calculator(object):
                                        self.resume, self.bolus)
 
         # Define IDC
-        #self.IDC = IDC.FiaspIDC(self.DIA)
         self.IDC = IDC.WalshIDC(self.DIA)
+        #self.IDC = IDC.FiaspIDC(self.DIA)
 
         # Build past IOB profile
         self.IOB.past.build(past, self.now)
@@ -496,81 +499,6 @@ class Calculator(object):
 
 
 
-    def export(self, now, hours = 24):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPORT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize reports
-        reports = {"treatments": reporter.Report("treatments.json"),
-                   "history": reporter.Report("history.json"),
-                   "BG": reporter.Report("BG.json"),
-                   "pump": reporter.Report("pump.json")}
-
-        # Define past time
-        past = now - datetime.timedelta(hours = hours)
-
-        # Build net insulin profile for last 24 hours
-        self.net.build(past, now, self.basal, self.TB, self.suspend,
-                                                       self.resume)
-
-        # Initialize net basals dict
-        netBasals = {}
-
-        # Loop over net insulin profile
-        for t, y in zip(self.net.T, self.net.y):
-
-            # Fill net basals dict
-            netBasals[lib.formatTime(t)] = round(y, 2)
-
-        # Get recent sensor statuses
-        statuses = Reporter.getRecent(self.now, "history.json",
-                                                ["CGM", "Sensor Statuses"])
-
-        # Get recent calibrations
-        calibrations = Reporter.getRecent(self.now, "history.json",
-                                                    ["CGM", "Calibrations"])
-
-        # Get recent boluses
-        boluses = Reporter.getRecent(self.now, "treatments.json", ["Boluses"])
-
-        # Get recent IOBs
-        IOBs = Reporter.getRecent(self.now, "treatments.json", ["IOB"])
-
-        # Fill treatments report
-        reports["treatments"].update({
-            "Net Basals": netBasals,
-            "Boluses": boluses,
-            "IOB": IOBs})
-
-        # Ger recent history
-        history = Reporter.getRecent(self.now, "history.json", [], 1)
-
-        # Fill history report
-        reports["history"].update(lib.mergeNDicts(history,
-            {"CGM": {"Sensor Statuses": statuses,
-                     "Calibrations": calibrations}}))
-
-        # Get recent BGs
-        BGs = Reporter.getRecent(self.now, "BG.json", [])
-
-        # Fill BG report
-        reports["BG"].update(BGs)
-
-        # Fill pump report
-        reports["pump"].update(Reporter.get("pump.json", []))
-
-        # Loop over reports
-        for report in reports.values():
-
-            # Export it
-            report.store(Reporter.exp.str)
-
-
-
     def show(self):
 
         """
@@ -664,22 +592,16 @@ def main():
     now = datetime.datetime.now() - datetime.timedelta(days = 6)
 
     # Instanciate a calculator
-    calculator = Calculator(now)
+    calculator = Calculator()
 
     # Run calculator
-    calculator.run()
-
-    # Export results
-    #calculator.export(now)
+    calculator.run(now)
 
     # Run autosens
     #calculator.autosens()
 
     # Show components
     calculator.show()
-
-    # Export net insulin profile
-    #calculator.export(now)
 
 
 

@@ -27,7 +27,7 @@ import base
 
 
 
-class ResumeProfile(base.PastProfile):
+class Resume(base.PastProfile):
 
     def __init__(self):
 
@@ -38,7 +38,7 @@ class ResumeProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(ResumeProfile, self).__init__()
+        super(Resume, self).__init__()
 
         # Define units
         self.u = "U/h"
@@ -65,7 +65,7 @@ class ResumeProfile(base.PastProfile):
         """
 
         # Start decoupling
-        super(ResumeProfile, self).decouple()
+        super(Resume, self).decouple()
 
         # Get number of steps
         n = len(self.T)

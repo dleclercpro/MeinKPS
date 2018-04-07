@@ -27,7 +27,7 @@ import base
 
 
 
-class NetProfile(base.PastProfile):
+class Net(base.PastProfile):
 
     def __init__(self):
 
@@ -38,7 +38,7 @@ class NetProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(NetProfile, self).__init__()
+        super(Net, self).__init__()
 
         # Define units
         self.u = "U/h"

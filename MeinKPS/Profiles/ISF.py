@@ -33,7 +33,7 @@ Reporter = reporter.Reporter()
 
 
 
-class ISFProfile(base.FutureProfile):
+class ISF(base.FutureProfile):
 
     def __init__(self):
 
@@ -44,7 +44,7 @@ class ISFProfile(base.FutureProfile):
         """
 
         # Start initialization
-        super(ISFProfile, self).__init__()
+        super(ISF, self).__init__()
 
         # Define whether data is time mapped or not
         self.mapped = False
@@ -67,4 +67,4 @@ class ISFProfile(base.FutureProfile):
         self.u = Reporter.get(self.report, ["Units"], "BG") + "/U"
 
         # Load rest
-        super(ISFProfile, self).load()
+        super(ISF, self).load()

@@ -33,7 +33,7 @@ import base
 
 
 
-class TBProfile(base.PastProfile):
+class TB(base.PastProfile):
 
     def __init__(self):
 
@@ -44,7 +44,7 @@ class TBProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(TBProfile, self).__init__()
+        super(TB, self).__init__()
 
         # Renitialize units
         self.u = []
@@ -64,7 +64,7 @@ class TBProfile(base.PastProfile):
         """
 
         # Start decoupling
-        super(TBProfile, self).decouple()
+        super(TB, self).decouple()
 
         # Get number of steps
         n = len(self.T)

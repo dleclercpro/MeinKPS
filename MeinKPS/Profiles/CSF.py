@@ -33,7 +33,7 @@ Reporter = reporter.Reporter()
 
 
 
-class CSFProfile(base.FutureProfile):
+class CSF(base.FutureProfile):
 
     def __init__(self):
 
@@ -44,7 +44,7 @@ class CSFProfile(base.FutureProfile):
         """
 
         # Start initialization
-        super(CSFProfile, self).__init__()
+        super(CSF, self).__init__()
 
         # Define whether data is time mapped or not
         self.mapped = False
@@ -79,4 +79,4 @@ class CSFProfile(base.FutureProfile):
             self.u = "U/" + self.u
 
         # Load rest
-        super(CSFProfile, self).load()
+        super(CSF, self).load()

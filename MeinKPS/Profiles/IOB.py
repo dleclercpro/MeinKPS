@@ -41,7 +41,7 @@ Reporter = reporter.Reporter()
 
 
 
-class PastIOBProfile(base.PastProfile):
+class PastIOB(base.PastProfile):
 
     def __init__(self):
 
@@ -52,7 +52,7 @@ class PastIOBProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(PastIOBProfile, self).__init__()
+        super(PastIOB, self).__init__()
 
         # Define units
         self.u = "U"
@@ -66,7 +66,7 @@ class PastIOBProfile(base.PastProfile):
 
 
 
-class FutureIOBProfile(base.FutureProfile):
+class FutureIOB(base.FutureProfile):
 
     def __init__(self, past):
 
@@ -77,7 +77,7 @@ class FutureIOBProfile(base.FutureProfile):
         """
 
         # Start initialization
-        super(FutureIOBProfile, self).__init__()
+        super(FutureIOB, self).__init__()
 
         # Store past profile
         self.past = past

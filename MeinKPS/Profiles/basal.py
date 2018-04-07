@@ -27,7 +27,7 @@ import base
 
 
 
-class BasalProfile(base.PastProfile):
+class Basal(base.PastProfile):
 
     def __init__(self, profile = "Standard"):
 
@@ -38,7 +38,7 @@ class BasalProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(BasalProfile, self).__init__()
+        super(Basal, self).__init__()
 
         # Define units
         self.u = "U/h"

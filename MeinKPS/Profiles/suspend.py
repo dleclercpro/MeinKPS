@@ -27,7 +27,7 @@ import base
 
 
 
-class SuspendProfile(base.PastProfile):
+class Suspend(base.PastProfile):
 
     def __init__(self):
 
@@ -38,7 +38,7 @@ class SuspendProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(SuspendProfile, self).__init__()
+        super(Suspend, self).__init__()
 
         # Define units
         self.u = "U/h"
@@ -65,7 +65,7 @@ class SuspendProfile(base.PastProfile):
         """
 
         # Start decoupling
-        super(SuspendProfile, self).decouple()
+        super(Suspend, self).decouple()
 
         # Get number of steps
         n = len(self.T)

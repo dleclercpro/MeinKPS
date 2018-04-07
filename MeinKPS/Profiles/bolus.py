@@ -33,7 +33,7 @@ import base
 
 
 
-class BolusProfile(base.PastProfile):
+class Bolus(base.PastProfile):
 
     def __init__(self):
 
@@ -44,7 +44,7 @@ class BolusProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(BolusProfile, self).__init__()
+        super(Bolus, self).__init__()
 
         # Define units
         self.u = "U/h"
@@ -70,7 +70,7 @@ class BolusProfile(base.PastProfile):
         """
 
         # Start decoupling
-        super(BolusProfile, self).decouple()
+        super(Bolus, self).decouple()
 
         # Get number of steps
         n = len(self.T)

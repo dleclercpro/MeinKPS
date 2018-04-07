@@ -41,7 +41,7 @@ Reporter = reporter.Reporter()
 
 
 
-class PastBGProfile(base.PastProfile):
+class PastBG(base.PastProfile):
 
     def __init__(self):
 
@@ -52,7 +52,7 @@ class PastBGProfile(base.PastProfile):
         """
 
         # Start initialization
-        super(PastBGProfile, self).__init__()
+        super(PastBG, self).__init__()
 
         # Initialize number of valid recent BGs
         self.n = 0
@@ -77,7 +77,7 @@ class PastBGProfile(base.PastProfile):
         self.u = Reporter.get("pump.json", ["Units"], "BG")
 
         # Load rest
-        super(PastBGProfile, self).load()
+        super(PastBG, self).load()
 
 
 
@@ -161,7 +161,7 @@ class PastBGProfile(base.PastProfile):
 
 
 
-class FutureBGProfile(base.FutureProfile):
+class FutureBG(base.FutureProfile):
 
     def __init__(self, past):
 
@@ -172,7 +172,7 @@ class FutureBGProfile(base.FutureProfile):
         """
 
         # Start initialization
-        super(FutureBGProfile, self).__init__()
+        super(FutureBG, self).__init__()
 
         # Store past profile
         self.past = past
@@ -431,7 +431,7 @@ def main():
     """
 
     # Instanciate a BG profile
-    BG = FutureBGProfile(PastBGProfile())
+    BG = FutureBG(PastBG())
 
     # Load past
     BG.past.load()
