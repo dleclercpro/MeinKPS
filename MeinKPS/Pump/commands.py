@@ -2787,6 +2787,9 @@ class DeliverPumpBolus(PumpBigCommand, PumpSetCommand):
         # Test bolus
         lib.checkIntWithinRange(bolus, [0, 250], "Invalid bolus.")
 
+        # Convert bolus to integer
+        bolus = int(bolus)
+
         # Define number of bytes to read from payload
         self.parameters = ["01"] + 64 * ["00"]
 
@@ -2899,18 +2902,6 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         # Define prelude command
         self.commands["Prelude"] = SetPumpAbsoluteTBPrelude(pump)
 
-        # Define report
-        self.report = "treatments.json"
-
-        # Initialize rate
-        self.rate = None
-
-        # Define units
-        self.units = "U/h"
-
-        # Initialize duration
-        self.duration = None
-
 
 
     def encode(self, rate = 0, duration = 0):
@@ -2921,14 +2912,8 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Encode effective rate
+        # Encode rate (divide by pump stroke)
         rate = int(round(rate / 0.025))
-
-        # Store effective rate
-        self.rate = round(rate * 0.025, 2)
-
-        # Store duration
-        self.duration = duration
 
         # Encode duration (divide by time block)
         duration = int(duration / 30.0)
@@ -2948,27 +2933,6 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
 
         # Define duration
         self.parameters[3] = "{0:02X}".format(duration)
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Adding absolute TB to '" + self.report + "'..."
-
-        # Get current time
-        now = lib.formatTime(datetime.datetime.now())
-
-        # Store TB units
-        Reporter.add(self.report, ["Temporary Basals"], {now: [self.rate,
-                                                               self.units,
-                                                               self.duration]})
 
 
 
@@ -3009,18 +2973,6 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
         # Define prelude command
         self.commands["Prelude"] = SetPumpPercentageTBPrelude(pump)
 
-        # Define report
-        self.report = "treatments.json"
-
-        # Initialize rate
-        self.rate = None
-
-        # Define units
-        self.units = "%"
-
-        # Initialize duration
-        self.duration = None
-
 
 
     def encode(self, rate = 0, duration = 0):
@@ -3031,14 +2983,8 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Encode effective rate
+        # Encode rate
         rate = int(round(rate))
-
-        # Store rate
-        self.rate = rate
-
-        # Store duration
-        self.duration = duration
 
         # Encode duration (divide by time block)
         duration = int(duration / 30.0)
@@ -3057,27 +3003,6 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
 
         # Define duration
         self.parameters[2] = "{0:02X}".format(duration)
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        print "Adding percentage TB to '" + self.report + "'..."
-
-        # Get current time
-        now = lib.formatTime(datetime.datetime.now())
-
-        # Store TB units
-        Reporter.add(self.report, ["Temporary Basals"], {now: [self.rate,
-                                                               self.units,
-                                                               self.duration]})
 
 
 

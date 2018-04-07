@@ -1198,7 +1198,7 @@ class TB(PumpComponent):
             self.commands["Set Percentage"].run(rate, duration)
 
         # Update reports by reading last page(s) of pump history
-        #self.pump.history.update()
+        self.pump.history.update()
 
         # Info
         print "Verifying if new TB was correctly enacted..."
@@ -1318,6 +1318,9 @@ class Bolus(PumpComponent):
 
         # Run command
         self.command.run(bolus)
+
+        # Update reports by reading last page(s) of pump history
+        self.pump.history.update()
 
 
 
