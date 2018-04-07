@@ -24,6 +24,8 @@
 
 # TO-DO'S
 # - Disconnect Pi safely (do not break JSON files)
+# - When adding an entry with the overwrite argument, only said entry can be
+#   overwritten and not the whole section (see BG Targets)?
 
 
 
@@ -306,6 +308,15 @@ class Reporter:
             ADD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # No entries
+        if len(entries) == 0:
+
+            # Info
+            print "No entries to add."
+
+            # Exit
+            return
 
         # Get first value
         zero = min(entries)
@@ -713,7 +724,6 @@ class Path:
 
         # Merge path
         return os.sep + os.sep.join(self.list)
-        #return os.sep.join(self.list)
 
 
 

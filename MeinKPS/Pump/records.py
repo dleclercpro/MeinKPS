@@ -390,8 +390,8 @@ class TBRecord(Record):
         if self.body[0] >= 0 and self.body[0] < 8:
 
             # Decode rate
-            rate = round((lib.unpack([self.head[1], self.body[0]]) *
-                          self.pump.TB.stroke), 2)
+            rate = round((lib.unpack([self.head[1], self.body[0]], "<") *
+                          self.pump.basal.stroke), 2)
 
             # Decode units
             units = "U/h"
@@ -405,7 +405,7 @@ class TBRecord(Record):
             units = "%"
 
         # Decode TB duration
-        duration = self.body[2] * self.pump.TB.timeBlock
+        duration = self.body[2] * self.pump.basal.time
 
         # Build TB vector
         TB = [rate, units, duration]

@@ -415,7 +415,7 @@ class Battery(object):
         """
 
         # Give user info
-        print "Storing BG units to report: '" + self.report + "'..."
+        print "Storing battery level to report: '" + self.report + "'..."
 
         # Add entry
         Reporter.add(self.report, ["CGM", "Battery Levels"],
@@ -731,8 +731,7 @@ class Transmitter(object):
         """
 
         # Give user info
-        print ("Storing current transmitter ID to report: '" + self.report +
-               "'...")
+        print "Storing transmitter ID to report: '" + self.report + "'..."
 
         # Add entry
         Reporter.add(self.report, [], {"Transmitter ID": self.id}, True)
