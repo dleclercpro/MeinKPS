@@ -29,6 +29,7 @@
 # LIBRARIES
 import numpy as np
 import usb
+import os
 import time
 
 
@@ -38,6 +39,11 @@ import lib
 import errors
 import packets
 import commands
+
+
+
+# CONSTANTS
+SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep + ".." + os.sep
 
 
 
@@ -136,6 +142,9 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Starting procedure for stick.
         """
+
+        # Reset USB ports
+        os.system("sudo sh " + SRC + "reset.sh")
 
         # Find it
         self.find()
