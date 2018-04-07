@@ -99,7 +99,7 @@ class Command(object):
         self.response["CRC"] = data[-2:]
 
         # Try and find XML structure in response
-        print "XML: " + str(lib.XMLify(self.response["Payload"]))
+        #print "XML: " + str(lib.XMLify(self.response["Payload"]))
 
         # Verify response
         self.verify()
