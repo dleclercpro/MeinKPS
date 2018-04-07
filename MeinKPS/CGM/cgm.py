@@ -313,26 +313,12 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DUMPBG
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            To dump about 24 h of CGM readings: 8 pages (38 records per page,
+            separated by 5 m intervals)
         """
 
         # Read BGs
         self.databases["BG"].read(n)
-
-
-
-    def dumpNewBG(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DUMPNEWBG
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Dump about 24 h of CGM readings (38 records per page separated by 5 m
-        intervals)
-        """
-
-        # Read BGs
-        self.dumpBG(8)
 
 
 

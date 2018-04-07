@@ -54,160 +54,18 @@ class Loop(object):
         """
 
         # Initialize start/end times
-        self.start = datetime.datetime.now()
+        self.start = None
         self.end = None
 
-        # Give the loop a CGM
-        self.cgm = cgm.CGM()
-
-        # Give the loop a pump
-        self.pump = pump.Pump()
+        # Give the loop devices
+        self.devices = {"CGM": cgm.CGM(),
+                        "Pump": pump.Pump()}
 
         # Give the loop a calculator
         self.calc = calculator.Calculator(self.start)
 
         # Define report
         self.report = "loop.json"
-
-
-
-    def prepareCGM(self, quick = True):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARECGM
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If not a quick run
-        if not quick:
-
-            # Read clock
-            self.do(self.cgm.clock.read, ["CGM"], "Clock")
-
-            # Read units
-            self.do(self.cgm.units.read, ["CGM"], "Units")
-
-            # Read language
-            self.do(self.cgm.language.read, ["CGM"], "Language")
-
-            # Read firmware
-            self.do(self.cgm.firmware.read, ["CGM"], "Firmware")
-
-            # Read transmitter
-            self.do(self.cgm.transmitter.read, ["CGM"], "Transmitter")
-
-            # Read BG
-            self.do(self.cgm.dumpBG, ["CGM"], "BG")
-
-        # Otherwise
-        else:
-
-            # Read BGs
-            self.do(self.cgm.dumpNewBG, ["CGM"], "BG")
-
-        # Read battery
-        self.do(self.cgm.battery.read, ["CGM"], "Battery")
-
-        # Read sensor events
-        self.do(self.cgm.databases["Sensor"].read, ["CGM"], "Sensor")
-
-        # Read calibrations
-        self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
-
-
-
-    def doCGM(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOCGM
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start CGM
-        self.cgm.start()
-
-        # Prepare CGM
-        self.prepareCGM()
-
-        # Stop CGM
-        self.cgm.stop()
-
-
-
-    def preparePump(self, quick = True):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPAREPUMP
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If not a quick run
-        if not quick:
-
-            # Read time
-            self.do(self.pump.time.read, ["Pump"], "Time")
-
-            # Read model
-            self.do(self.pump.model.read, ["Pump"], "Model")
-
-        # Read battery level
-        self.do(self.pump.battery.read, ["Pump"], "Battery")
-
-        # Read remaining amount of insulin
-        self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
-
-        # Read ISF
-        self.do(self.pump.ISF.read, ["Pump"], "ISF")
-
-        # Read CSF
-        self.do(self.pump.CSF.read, ["Pump"], "CSF")
-
-        # Read BG targets
-        self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
-
-        # Read basal
-        self.do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
-
-        # Read latest history
-        self.do(self.pump.history.update, ["Pump"], "History")
-
-
-
-    def doPump(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOPUMP
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start pump
-        self.pump.start()
-
-        # Prepare pump
-        self.preparePump()
-
-        # Run calculator and get recommendation
-        TB = self.calc.run()
-        # TB = [self.start.minute / 60.0, "U/h", 30]
-
-        # If no TB is required
-        if TB is None:
-
-            # Cancel TB
-            self.do(self.pump.TB.cancel, ["Pump"], "TB")
-
-        # Otherwise, enact recommendation
-        else:
-
-            # Enact TB
-            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
-
-        # Stop pump
-        self.pump.stop()
 
 
 
@@ -237,8 +95,175 @@ class Loop(object):
             # Show error
             print e
 
-            # Exit for testing purposes
+            # Exit
             sys.exit(True)
+
+
+
+    def cgm(self, quick = True):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CGM
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start CGM
+        self.devices["CGM"].start()
+
+        # If not a quick run
+        if not quick:
+
+            # Read clock
+            self.do(self.devices["CGM"].clock.read,
+                ["CGM"], "Clock")
+
+            # Read units
+            self.do(self.devices["CGM"].units.read,
+                ["CGM"], "Units")
+
+            # Read language
+            self.do(self.devices["CGM"].language.read,
+                ["CGM"], "Language")
+
+            # Read firmware
+            self.do(self.devices["CGM"].firmware.read,
+                ["CGM"], "Firmware")
+
+            # Read transmitter
+            self.do(self.devices["CGM"].transmitter.read,
+                ["CGM"], "Transmitter")
+
+            # Read BG
+            self.do(self.devices["CGM"].dumpBG,
+                ["CGM"], "BG", 8)
+
+        # Otherwise
+        else:
+
+            # Read BGs
+            self.do(self.devices["CGM"].dumpNewBG,
+                ["CGM"], "BG")
+
+        # Read battery
+        self.do(self.devices["CGM"].battery.read,
+            ["CGM"], "Battery")
+
+        # Read sensor events
+        self.do(self.devices["CGM"].databases["Sensor"].read,
+            ["CGM"], "Sensor")
+
+        # Read calibrations
+        self.do(self.devices["CGM"].databases["Calibration"].read,
+            ["CGM"], "Calibration")
+
+        # Stop CGM
+        self.devices["CGM"].stop()
+
+
+
+    def pump(self, quick = True):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PUMP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start pump
+        self.devices["Pump"].start()
+
+        # If not a quick run
+        if not quick:
+
+            # Read time
+            self.do(self.devices["Pump"].time.read,
+                ["Pump"], "Time")
+
+            # Read model
+            self.do(self.devices["Pump"].model.read,
+                ["Pump"], "Model")
+
+        # Read battery level
+        self.do(self.devices["Pump"].battery.read,
+            ["Pump"], "Battery")
+
+        # Read remaining amount of insulin
+        self.do(self.devices["Pump"].reservoir.read,
+            ["Pump"], "Reservoir")
+
+        # Read ISF
+        self.do(self.devices["Pump"].ISF.read,
+            ["Pump"], "ISF")
+
+        # Read CSF
+        self.do(self.devices["Pump"].CSF.read,
+            ["Pump"], "CSF")
+
+        # Read BG targets
+        self.do(self.devices["Pump"].BGTargets.read,
+            ["Pump"], "BG Targets")
+
+        # Read basal
+        self.do(self.devices["Pump"].basal.read,
+            ["Pump"], "Basal", "Standard")
+
+        # Update history
+        self.do(self.devices["Pump"].history.update,
+            ["Pump"], "History")
+
+        # Run calculator and get recommendation
+        TB = self.calc.run()
+
+        # Fake TB
+        # TB = [self.start.minute / 60.0, "U/h", 30]
+
+        # If no TB is required
+        if TB is None:
+
+            # Cancel TB
+            self.do(self.devices["Pump"].TB.cancel,
+                ["Pump"], "TB")
+
+        # Otherwise, enact recommendation
+        else:
+
+            # Enact TB
+            self.do(self.devices["Pump"].TB.set,
+                ["Pump"], "TB", *TB)
+
+        # Re-update history
+        self.do(self.devices["Pump"].history.update,
+            ["Pump"], "History")
+
+        # Stop pump
+        self.devices["Pump"].stop()
+
+
+
+    def export(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXPORT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Export preprocessed treatments
+        self.calc.export(self.start)
+
+
+
+    def upload(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UPLOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Upload stuff
+        self.do(uploader.main, ["Status"], "Upload")
 
 
 
@@ -249,6 +274,9 @@ class Loop(object):
             RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define starting time
+        self.start = datetime.datetime.now()
 
         # Give user info
         print "Start: " + lib.formatTime(self.start)
@@ -261,28 +289,28 @@ class Loop(object):
         Reporter.increment(self.report, ["Status"], "N")
 
         # Do CGM stuff
-        self.doCGM()
+        self.cgm()
 
         # Do pump stuff
-        self.doPump()
+        self.pump()
 
-        # Export preprocessed treatments
-        self.calc.export(self.start)
+        # Export recent treatments
+        self.export()
 
-        # Upload stuff
-        self.do(uploader.main, ["Status"], "Upload")
+        # Upload them
+        self.upload()
 
         # Define ending time
         self.end = datetime.datetime.now()
+
+        # Give user info
+        print "End: " + lib.formatTime(self.end)
 
         # Get duration of loop
         d = self.end - self.start
 
         # Update loop infos
         Reporter.add(self.report, ["Status"], {"Duration": d.seconds}, True)
-
-        # Give user info
-        print "End: " + lib.formatTime(self.end)
 
 
 
