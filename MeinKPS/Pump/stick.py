@@ -29,6 +29,7 @@
 # LIBRARIES
 import numpy as np
 import usb
+import time
 
 
 
@@ -474,6 +475,26 @@ class Stick(object):
 
                 # Ignore
                 pass
+
+
+
+    def flash(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FLASH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Flash LED.
+        """
+
+        # Switch LED
+        self.commands["LED"].run()
+
+        # Wait
+        time.sleep(1)
+
+        # Re-switch LED
+        self.commands["LED"].run()
 
 
 
