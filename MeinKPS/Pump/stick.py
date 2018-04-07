@@ -67,11 +67,11 @@ class Stick(object):
                     "IN": None}
 
         # Define frequencies (MHz)
-        self.freq = {"Reference": 24.0,
-                     "Regions": {"NA": {"Default": 916.680,
-                                        "Range": [916.600, 916.750]},
-                                 "WW": {"Default": 868.330,
-                                        "Range": [868.150, 868.750]}}}
+        self.f = {"Reference": 24.0,
+                  "Regions": {"NA": {"Default": 916.680,
+                                     "Range": [916.500, 916.800]},
+                              "WW": {"Default": 868.330,
+                                     "Range": [868.150, 868.750]}}}
 
         # Define radio errors
         self.errors = {0xAA: "Timeout",
@@ -284,7 +284,7 @@ class Stick(object):
         print "Tuning radio to: " + str(f) + " MHz"
 
         # Convert frequency to corresponding value (according to datasheet)
-        f = int(round(f * (2 ** 16) / self.freq["Reference"]))
+        f = int(round(f * (2 ** 16) / self.f["Reference"]))
 
         # Convert to set of 3 bytes
         bytes = [lib.getByte(f, x) for x in [2, 1, 0]]
@@ -323,13 +323,13 @@ class Stick(object):
             region = "NA"
 
             # Assign frequencies
-            [F1, F2] = self.freq["Regions"][region]["Range"]
+            [F1, F2] = self.f["Regions"][region]["Range"]
 
         # Otherwise, test them
         else:
 
             # Go through locales
-            for region, freq in self.freq["Regions"].iteritems():
+            for region, freq in self.f["Regions"].iteritems():
 
                 # Check for correct frequencies
                 if (F1 >= min(freq["Range"]) and

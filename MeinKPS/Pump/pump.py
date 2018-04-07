@@ -267,7 +267,7 @@ class Power(PumpComponent):
 
         # Time buffer added to delta in order to eliminate dead calls at the end
         # of an RF session with the pump
-        delta += datetime.timedelta(minutes = 5)
+        delta += datetime.timedelta(minutes = 2)
 
         # Power up pump if necessary
         if delta > session:
@@ -815,6 +815,8 @@ class History(PumpComponent):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            HOTFIX: suspend/resume records last to avoid corrupted detection of
+                    bolus records
         """
 
         # Initialize history component
@@ -823,19 +825,19 @@ class History(PumpComponent):
         # Initialize history size
         self.size = None
 
-        # Initialize pump history pages
+        # Initialize history pages
         self.pages = None
 
-        # Instanciate corresponding command
+        # Define commands
         self.commands = {"Measure": commands.ReadPumpHistorySize(pump),
                          "Read": commands.ReadPumpHistoryPage(pump)}
 
-        # Link with all possible records
-        self.records = {"Suspend": records.SuspendRecord(pump),
-                        "Resume": records.ResumeRecord(pump),
-                        "TB": records.TBRecord(pump),
-                        "Bolus": records.BolusRecord(pump),
-                        "Carbs": records.CarbsRecord(pump)}
+        # Define possible records
+        self.records = [records.TBRecord(pump),
+                        records.BolusRecord(pump),
+                        records.CarbsRecord(pump),
+                        records.SuspendRecord(pump),
+                        records.ResumeRecord(pump)]
 
 
 
@@ -921,11 +923,14 @@ class History(PumpComponent):
         # Info
         print "Finding records..."
 
-        # Go through records
-        for record in self.records.values():
+        # Initialize pages
+        pages = self.pages
 
-            # Find record within page and decode it
-            record.find(self.pages)
+        # Go through records
+        for record in self.records:
+
+            # Find record within pages, decode it, and store remaining data
+            pages = record.find(pages)
 
 
 
