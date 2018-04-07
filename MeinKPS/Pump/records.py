@@ -386,8 +386,10 @@ class TBRecord(Record):
 
         # Define record's criteria
         self.criteria = (lambda x: x[0] == self.code and
-                                  (x[1] >= (minTB["U/h"] / pump.TB.stroke) and
-                                   x[1] <= (maxTB["U/h"] / pump.TB.stroke) and
+                                  (x[1] >= (minTB["U/h"] /
+                                            pump.basal.stroke) and
+                                   x[1] <= (maxTB["U/h"] /
+                                            pump.basal.stroke) and
                                    x[7] >= 0 and x[7] < 8 or
                                    x[1] >= minTB["%"] and
                                    x[1] <= maxTB["%"] and
