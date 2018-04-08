@@ -232,8 +232,9 @@ class Loop(object):
         if TB is None:
 
             # Cancel TB
-            self.do(self.devices["Pump"].TB.cancel,
-                ["Pump"], "TB")
+            pass
+            #self.do(self.devices["Pump"].TB.cancel,
+            #    ["Pump"], "TB")
 
         # Otherwise, enact recommendation
         else:

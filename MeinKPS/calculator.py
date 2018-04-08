@@ -408,7 +408,7 @@ class Calculator(object):
         snooze = 0.5 * self.DIA
 
         # Snooze criteria (no high temping after eating)
-        if lastCarbs and rate > 0:
+        if lastCarbs:
 
             # Get last meal time and format it to datetime object
             lastTime = lib.formatTime(max(lastCarbs))
@@ -589,7 +589,7 @@ def main():
     """
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(days = 6)
+    now = datetime.datetime.now() - datetime.timedelta(days = 0)
 
     # Instanciate a calculator
     calculator = Calculator()
@@ -601,7 +601,7 @@ def main():
     #calculator.autosens()
 
     # Show components
-    calculator.show()
+    #calculator.show()
 
 
 
