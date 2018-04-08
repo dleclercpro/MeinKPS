@@ -38,91 +38,107 @@ Reporter = reporter.Reporter()
 
 
 
-def upload(ftp, path, ext = None):
+# CLASSES
+class Uploader(object):
 
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        UPLOAD
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
+    def __init__(self):
 
-    # Get all files from path
-    files = os.listdir(path)
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-    # Get inside path
-    os.chdir(path)
+        # Ignore
+        pass
 
-    # Upload files
-    for f in files:
 
-        # If file
-        if os.path.isfile(f):
 
-            # Verify extension
-            if "." + ext != os.path.splitext(f)[1]:
+    def upload(self, ftp, path, ext = None):
 
-                # Skip file
-                continue
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UPLOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-            # Give user info
-            print "Uploading: '" + os.getcwd() + "/" + f + "'"
+        # Get all files from path
+        files = os.listdir(path)
 
-            # Open file
-            F = open(f, "r")
+        # Get inside path
+        os.chdir(path)
 
-            # Upload file
-            ftp.storlines("STOR " + f, F)
+        # Upload files
+        for f in files:
 
-            # Close file
-            F.close()
+            # If file
+            if os.path.isfile(f):
 
-        # If directory
-        elif os.path.isdir(f):
+                # Verify extension
+                if "." + ext != os.path.splitext(f)[1]:
 
-            # If directory does not exist
-            if f not in ftp.nlst():
+                    # Skip file
+                    continue
 
                 # Give user info
-                print "Making directory: '" + f + "'"
+                print "Uploading: '" + os.getcwd() + "/" + f + "'"
 
-                # Make directory
-                ftp.mkd(f)
+                # Open file
+                F = open(f, "r")
 
-            # Move in directory
-            ftp.cwd(f)
+                # Upload file
+                ftp.storlines("STOR " + f, F)
 
-            # Upload files in directory
-            upload(ftp, f, ext)
+                # Close file
+                F.close()
 
-    # Get back to original directory on server
-    ftp.cwd("..")
+            # If directory
+            elif os.path.isdir(f):
 
-    # Locally as well
-    os.chdir("..")
+                # If directory does not exist
+                if f not in ftp.nlst():
+
+                    # Give user info
+                    print "Making directory: '" + f + "'"
+
+                    # Make directory
+                    ftp.mkd(f)
+
+                # Move in directory
+                ftp.cwd(f)
+
+                # Upload files in directory
+                self.upload(ftp, f, ext)
+
+        # Get back to original directory on server
+        ftp.cwd("..")
+
+        # Locally as well
+        os.chdir("..")
 
 
 
-def run():
+    def run(self):
 
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        RUN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RUN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-    # Instanciate an FTP object
-    ftp = ftplib.FTP(Reporter.get("FTP.json", [], "Host"),
-                     Reporter.get("FTP.json", [], "User"),
-                     Reporter.get("FTP.json", [], "Password"))
+        # Instanciate an FTP object
+        ftp = ftplib.FTP(Reporter.get("FTP.json", [], "Host"),
+                         Reporter.get("FTP.json", [], "User"),
+                         Reporter.get("FTP.json", [], "Password"))
 
-    # Move to directory
-    ftp.cwd(Reporter.get("FTP.json", [], "Path"))
+        # Move to directory
+        ftp.cwd(Reporter.get("FTP.json", [], "Path"))
 
-    # Define file paths
-    path = Reporter.exp.str
+        # Define file paths
+        path = Reporter.exp.str
 
-    # Upload files within path
-    upload(ftp, path, "json")
+        # Upload files within path
+        self.upload(ftp, path, "json")
 
 
 

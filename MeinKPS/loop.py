@@ -39,8 +39,10 @@ from Pump import pump
 
 
 
-# Define a reporter
+# Define a reporter, an exporter, and an uploader
 Reporter = reporter.Reporter()
+Exporter = exporter.Exporter()
+Uploader = uploader.Uploader()
 
 
 
@@ -251,7 +253,7 @@ class Loop(object):
         """
 
         # Export preprocessed treatments
-        self.do(exporter.run, ["Status"], "Export", self.start)
+        self.do(Exporter.run, ["Status"], "Export", self.start)
 
 
 
@@ -264,7 +266,7 @@ class Loop(object):
         """
 
         # Upload stuff
-        self.do(uploader.run, ["Status"], "Upload")
+        self.do(Uploader.run, ["Status"], "Upload")
 
 
 
