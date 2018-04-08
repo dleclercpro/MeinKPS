@@ -943,6 +943,9 @@ class PumpCommand(Command):
         # Generate packet to send to pump
         pkt = self.toPumpPacket(self.code, self.parameters)
 
+        # Show it
+        pkt.show()
+
         # Store it
         self.packets["TX"].append(pkt)
 
