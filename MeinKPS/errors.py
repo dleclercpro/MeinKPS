@@ -164,6 +164,21 @@ class BadFrequencies(StickError):
 
 
 # Packets errors
+class UnknownPacket(InvalidPacket):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "Unknown packet."
+
+
+
 class UnmatchedBits(InvalidPacket):
 
     def prepare(self):

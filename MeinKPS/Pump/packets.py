@@ -58,17 +58,134 @@ class Packet(object):
         # Initialize characteristics
         self.type = None
         self.recipient = None
+        self.payload = []
+        self.CRC = None
+
+
+
+class ToPacket(Packet):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize packet
+        super(ToPacket, self).__init__()
+
+        # Define packet type
+        self.type = "TX"
+
+
+
+class FromPacket(Packet):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize packet
+        super(FromPacket, self).__init__()
+
+        # Define packet type
+        self.type = "RX"
+
+
+
+    def rssi(self, offset = 73):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RSSI
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Convert hexadecimal RSSI reading to dBm.
+        """
+
+        # Get RSSI
+        RSSI = self.RSSI["Hex"]
+
+        # Info
+        print "RSSI (Byte): " + str(RSSI)
+
+        # Bigger than
+        if RSSI >= 128:
+
+            # Value
+            RSSI = (RSSI - 256) / 2.0
+
+        # Otherwise
+        else:
+
+            # Value
+            RSSI = RSSI / 2.0
+
+        # Remove offset
+        RSSI -= offset
+
+        # Round value
+        RSSI = round(RSSI)
+
+        # Reassign it
+        self.RSSI["dBm"] = RSSI
+
+        # Info
+        print "RSSI (dBm): " + str(RSSI)
+
+
+
+    def parse(self, bytes):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PARSE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Parse incoming packet.
+        """
+
+        # Get packet index
+        self.index = bytes[0]
+
+        # Info
+        print "#: " + str(self.index)
+
+        # Get RSSI reading
+        self.RSSI = {"Hex": bytes[1], "dBm": None}
+
+        # Compute RSSI
+        self.rssi()
+
+
+
+class PumpPacket(Packet):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize packet
+        super(PumpPacket, self).__init__()
+
+        # Initialize characteristics
         self.serial = []
         self.code = None
         self.size = None
         self.part = None
-        self.payload = []
-        self.CRC = None
 
         # Initialize minimum size
         self.min = None
 
-        # Initialize various formats
+        # Initialize bytes in their various formats
         self.bytes = {"Encoded": [],
                       "Decoded": {"Hex": [],
                                   "Chr": [],
@@ -362,35 +479,9 @@ class Packet(object):
 
 
 
-    def crc(self):
+class DecodedPumpPacket(PumpPacket):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CRC
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Verify if computed CRC8 matches with the one received.
-        """
-
-        # Last byte should be CRC
-        CRC = self.bytes["Decoded"]["Int"][-1]
-
-        # Compute expected CRC using the rest
-        expectedCRC = lib.computeCRC8(self.bytes["Decoded"]["Int"][:-1])
-
-        # Verify CRC
-        if CRC != expectedCRC:
-
-            # Raise error
-            raise errors.BadCRC(expectedCRC, CRC)
-
-        # Return
-        return True
-
-
-
-class DecodedPacket(Packet):
-
-    def __init__(self, bytes = None):
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -398,23 +489,20 @@ class DecodedPacket(Packet):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize command
-        super(DecodedPacket, self).__init__()
+        # Initialize packet
+        super(DecodedPumpPacket, self).__init__()
 
-        # Given bytes?
-        if bytes is not None:
+        # Store bytes
+        self.bytes["Decoded"]["Hex"] = bytes
 
-            # Store bytes
-            self.bytes["Decoded"]["Hex"] = bytes
-
-            # Encode them
-            self.encode()
+        # Encode them
+        self.encode()
 
 
 
-class EncodedPacket(Packet):
+class EncodedPumpPacket(PumpPacket):
 
-    def __init__(self, bytes = None):
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -422,21 +510,18 @@ class EncodedPacket(Packet):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize command
-        super(EncodedPacket, self).__init__()
+        # Initialize packet
+        super(EncodedPumpPacket, self).__init__()
 
-        # Given bytes?
-        if bytes is not None:
+        # Store bytes
+        self.bytes["Encoded"] = bytes
 
-            # Store bytes
-            self.bytes["Encoded"] = bytes
-
-            # Decode them
-            self.decode()
+        # Decode them
+        self.decode()
 
 
 
-class ToPumpPacket(DecodedPacket):
+class ToPumpPacket(ToPacket, PumpPacket):
 
     def __init__(self, code, payload):
 
@@ -446,11 +531,8 @@ class ToPumpPacket(DecodedPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize command
+        # Initialize packet
         super(ToPumpPacket, self).__init__()
-
-        # Define packet type
-        self.type = "TX"
 
         # Define pump as packet recipient
         self.recipient = "A7"
@@ -469,11 +551,11 @@ class ToPumpPacket(DecodedPacket):
 
 
 
-    def computeCRC(self, bytes):
+    def crc(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTECRC
+            CRC
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Compute CRC of partial packet.
         """
@@ -523,7 +605,7 @@ class ToPumpPacket(DecodedPacket):
         bytes.extend(self.payload)
 
         # Compute CRC
-        self.computeCRC(bytes)
+        self.crc(bytes)
 
         # Add it
         bytes.append(self.CRC)
@@ -534,12 +616,9 @@ class ToPumpPacket(DecodedPacket):
         # Encode them
         self.encode()
 
-        # Show assembled packet
-        #self.show()
 
 
-
-class FromPumpPacket(EncodedPacket):
+class FromPumpPacket(FromPacket, PumpPacket):
 
     def __init__(self, bytes):
 
@@ -549,67 +628,14 @@ class FromPumpPacket(EncodedPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize command
+        # Initialize packet
         super(FromPumpPacket, self).__init__()
-
-        # Define packet type
-        self.type = "RX"
 
         # Define minimum number of bytes per packet
         self.min = 7
 
         # Parse decoded bytes
         self.parse(bytes)
-
-        # Extract payload
-        self.extract()
-
-        # Check CRC
-        if self.crc():
-
-            # Store it
-            self.CRC = self.bytes["Decoded"]["Hex"][-1]
-
-
-
-    def rssi(self, offset = 73):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RSSI
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Convert hexadecimal RSSI reading to dBm.
-        """
-
-        # Get RSSI
-        RSSI = self.RSSI["Hex"]
-
-        # Info
-        print "RSSI (Byte): " + str(RSSI)
-
-        # Bigger than
-        if RSSI >= 128:
-
-            # Value
-            RSSI = (RSSI - 256) / 2.0
-
-        # Otherwise
-        else:
-
-            # Value
-            RSSI = RSSI / 2.0
-
-        # Remove offset
-        RSSI -= offset
-
-        # Round value
-        RSSI = round(RSSI)
-
-        # Reassign it
-        self.RSSI["dBm"] = RSSI
-
-        # Info
-        print "RSSI (dBm): " + str(RSSI)
 
 
 
@@ -632,6 +658,32 @@ class FromPumpPacket(EncodedPacket):
 
 
 
+    def crc(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CRC
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Verify if computed CRC8 matches with the one received.
+        """
+
+        # Last byte should be CRC
+        computedCRC = self.bytes["Decoded"]["Int"][-1]
+
+        # Compute expected CRC using the rest
+        expectedCRC = lib.computeCRC8(self.bytes["Decoded"]["Int"][:-1])
+
+        # Verify CRC
+        if computedCRC != expectedCRC:
+
+            # Raise error
+            raise errors.BadCRC(expectedCRC, computedCRC)
+
+        # Return
+        return True
+
+
+
     def parse(self, bytes):
 
         """
@@ -641,19 +693,10 @@ class FromPumpPacket(EncodedPacket):
             Parse packet coming in from pump.
         """
 
-        # Get packet index
-        self.index = bytes[0]
+        # Initialize parsing
+        super(FromPumpPacket, self).parse(bytes[:2])
 
-        # Info
-        print "#: " + str(self.index)
-
-        # Get RSSI reading
-        self.RSSI = {"Hex": bytes[1], "dBm": None}
-
-        # Compute RSSI
-        self.rssi()
-
-        # Assign bytes
+        # Assign encoded bytes
         self.bytes["Encoded"] = bytes[2:]
 
         # Decode them
@@ -671,6 +714,12 @@ class FromPumpPacket(EncodedPacket):
         # Get recipient
         self.recipient = self.bytes["Decoded"]["Hex"][0]
 
+        # Packet not from pump
+        if self.recipient != "A7":
+
+            # Raise error
+            raise errors.UnknownPacket
+
         # Get serial
         self.serial = self.bytes["Decoded"]["Hex"][1:4]
 
@@ -679,6 +728,15 @@ class FromPumpPacket(EncodedPacket):
 
         # Get payload size
         self.size = self.bytes["Decoded"]["Int"][5]
+
+        # Extract payload
+        self.extract()
+
+        # Check CRC
+        if self.crc():
+
+            # Store it
+            self.CRC = self.bytes["Decoded"]["Hex"][-1]
 
 
 
@@ -705,19 +763,6 @@ class FromPumpBigPacket(FromPumpPacket):
 
 
 class FromPumpACKPacket(FromPumpPacket):
-
-    def __init__(self, bytes):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(FromPumpACKPacket, self).__init__(bytes)
-
-
 
     def extract(self):
 
