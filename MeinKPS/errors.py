@@ -277,6 +277,22 @@ class NoHistory(PumpError):
 
 
 
+class HistoryPageBadCRC(PumpError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Bad history page CRC. Expected: " + self.args[0] + ". " +
+                     "Computed: " + self.args[1] + ".")
+
+
+
 class TBFail(PumpError):
 
     def prepare(self):

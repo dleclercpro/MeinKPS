@@ -2487,7 +2487,7 @@ class ReadPumpHistoryPage(PumpBigCommand, PumpGetBigCommand):
         self.commands["Prelude"] = ReadPumpHistoryPagePrelude(pump)
 
         # Define postlude command repeat count
-        self.repeat["Postlude"] = 14
+        self.repeat["Postlude"] = 15
 
 
 
@@ -2510,6 +2510,28 @@ class ReadPumpHistoryPage(PumpBigCommand, PumpGetBigCommand):
 
 
 
+    def crc(self, payload):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CRC
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get expected CRC
+        expectedCRC = lib.unpack(payload[-2:])
+
+        # Compute CRC
+        computedCRC = lib.newComputeCRC16(payload[:-2])
+
+        # Compare CRCs
+        if computedCRC != expectedCRC:
+
+            # Raise error
+            raise errors.HistoryPageBadCRC(expectedCRC, computedCRC)
+
+
+
     def decode(self):
 
         """
@@ -2521,8 +2543,11 @@ class ReadPumpHistoryPage(PumpBigCommand, PumpGetBigCommand):
         # Initialize decoding and get payload
         [payload, size] = super(ReadPumpHistoryPage, self).decode()
 
+        # Test history page CRC
+        self.crc(payload)
+
         # Set response to payload
-        self.response = payload
+        self.response = payload[:-2]
 
 
 
