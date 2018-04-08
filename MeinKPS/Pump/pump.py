@@ -1120,17 +1120,8 @@ class TB(PumpComponent):
             # Raise error
             raise errors.TBBadDuration(TB)
 
-        # Try
-        try:
-
-            # Verify pump status
-            self.pump.status.verify()
-
-        # Except
-        except errors.StatusBolusing:
-
-            # Bolusing does not matter when setting TB
-            pass
+        # Verify pump status
+        self.pump.status.verify()
 
         # Verify pump settings
         self.pump.settings.verify(TB = TB)
