@@ -46,6 +46,11 @@ Uploader = uploader.Uploader()
 
 
 
+# CONSTANTS
+SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
+
+
 class Loop(object):
 
     def __init__(self):
@@ -290,6 +295,12 @@ class Loop(object):
 
         # Update loop iterations
         Reporter.increment(self.report, ["Status"], "N")
+
+        # Reset USB ports
+        os.system("sudo sh " + SRC + "reset.sh")
+
+        # Wait until stick is back
+        time.sleep(2)
 
         # Do CGM stuff
         self.cgm()

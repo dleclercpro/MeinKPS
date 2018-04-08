@@ -42,11 +42,6 @@ import commands
 
 
 
-# CONSTANTS
-SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep + ".." + os.sep
-
-
-
 # CLASSES
 class Stick(object):
 
@@ -142,12 +137,6 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Starting procedure for stick.
         """
-
-        # Reset USB ports
-        os.system("sudo sh " + SRC + "reset.sh")
-
-        # Wait until stick is back
-        time.sleep(2)
 
         # Find it
         self.find()
