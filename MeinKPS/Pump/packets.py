@@ -637,6 +637,9 @@ class FromPumpPacket(FromPacket, PumpPacket):
         # Parse decoded bytes
         self.parse(bytes)
 
+        # Extract payload
+        self.extract()
+
 
 
     def extract(self):
@@ -679,8 +682,8 @@ class FromPumpPacket(FromPacket, PumpPacket):
             # Raise error
             raise errors.BadCRC(expectedCRC, computedCRC)
 
-        # Return
-        return True
+        # Return CRC
+        return computedCRC
 
 
 
@@ -729,14 +732,8 @@ class FromPumpPacket(FromPacket, PumpPacket):
         # Get payload size
         self.size = self.bytes["Decoded"]["Int"][5]
 
-        # Extract payload
-        self.extract()
-
-        # Check CRC
-        if self.crc():
-
-            # Store it
-            self.CRC = self.bytes["Decoded"]["Hex"][-1]
+        # Check and get CRC
+        self.CRC = self.crc()
 
 
 
