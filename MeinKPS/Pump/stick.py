@@ -146,6 +146,9 @@ class Stick(object):
         # Reset USB ports
         os.system("sudo sh " + SRC + "reset.sh")
 
+        # Wait until stick is back
+        time.sleep(2)
+
         # Find it
         self.find()
 
