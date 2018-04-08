@@ -176,6 +176,20 @@ class Stick(object):
 
 
 
+    def ping(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PING
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Ping stick to see if ready to receive commands.
+        """
+
+        # Ignore
+        pass
+
+
+
     def find(self):
 
         """

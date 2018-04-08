@@ -1276,7 +1276,7 @@ class PowerPump(PumpBigCommand, PumpSetCommand):
         """
 
         # Test RF session length
-        lib.checkIntWithinRange(t, [0, 30], "Invalid RF session length.")
+        lib.withinRangeInt(t, [0, 30], "Invalid RF session length.")
 
         # Define number of bytes to read from payload
         self.parameters = ["02"] + 64 * ["00"]
@@ -2500,7 +2500,7 @@ class ReadPumpHistoryPage(PumpBigCommand, PumpGetBigCommand):
         """
 
         # Test page number
-        lib.checkIntWithinRange(page, [0, 35], "Invalid history page number.")
+        lib.withinRangeInt(page, [0, 35], "Invalid history page number.")
 
         # Define number of bytes to read from payload
         self.parameters = ["01"] + 64 * ["00"]
@@ -2782,13 +2782,10 @@ class DeliverPumpBolus(PumpBigCommand, PumpSetCommand):
         """
 
         # Encode bolus
-        bolus *= 10.0
+        bolus = int(bolus * 10)
 
         # Test bolus
-        lib.checkIntWithinRange(bolus, [0, 250], "Invalid bolus.")
-
-        # Convert bolus to integer
-        bolus = int(bolus)
+        lib.withinRangeInt(bolus, [0, 250], "Invalid bolus.")
 
         # Define number of bytes to read from payload
         self.parameters = ["01"] + 64 * ["00"]
@@ -2913,16 +2910,16 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         """
 
         # Encode rate (divide by pump stroke)
-        rate = int(round(rate / 0.025))
+        rate = int(rate / self.pump.basal.stroke)
 
         # Encode duration (divide by time block)
-        duration = int(duration / 30.0)
+        duration = int(duration / self.pump.basal.time)
 
         # Test rate
-        lib.checkIntWithinRange(rate, [0, 1400], "Invalid TB rate.")
+        lib.withinRangeInt(rate, [0, 1400], "Invalid TB rate.")
 
         # Test duration
-        lib.checkIntWithinRange(duration, [0, 48], "Invalid TB duration.")
+        lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
 
         # Define number of bytes to read from payload
         self.parameters = ["03"] + 64 * ["00"]
@@ -2984,16 +2981,16 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
         """
 
         # Encode rate
-        rate = int(round(rate))
+        rate = int(rate)
 
         # Encode duration (divide by time block)
-        duration = int(duration / 30.0)
+        duration = int(duration / self.pump.basal.time)
 
         # Test rate
-        lib.checkIntWithinRange(rate, [0, 200], "Invalid TB rate.")
+        lib.withinRangeInt(rate, [0, 200], "Invalid TB rate.")
 
         # Test duration
-        lib.checkIntWithinRange(duration, [0, 48], "Invalid TB duration.")
+        lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
 
         # Define number of bytes to read from payload
         self.parameters = ["02"] + 64 * ["00"]

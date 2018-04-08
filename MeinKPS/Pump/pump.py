@@ -1159,6 +1159,49 @@ class TB(PumpComponent):
 
 
 
+    def adjust(self, TB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ADJUST
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        print "Adjusting TB:"
+
+        # Show TB
+        self.show(TB)
+
+        # Round rate
+        # U/h
+        if TB["Units"] == "U/h":
+
+            # Do it
+            TB["Rate"] = round(round(TB["Rate"] / self.pump.basal.stroke) *
+                                                  self.pump.basal.stroke, 2)
+
+        # %
+        elif TB["Units"] == "%":
+
+            # Do it
+            TB["Rate"] = round(TB["Rate"])
+
+        # Round duration
+        TB["Duration"] = (round(TB["Duration"] / self.pump.basal.time) *
+                                                 self.pump.basal.time)
+
+        # Info
+        print "To:"
+
+        # Show adjust TB
+        self.show(TB)
+
+        # Return adjusted TB
+        return TB
+
+
+
     def set(self, rate, units, duration, cancel = False):
 
         """
@@ -1175,11 +1218,14 @@ class TB(PumpComponent):
         # Not a cancel TB
         if not cancel:
 
+            # Adjust TB to fit commands
+            TB = self.adjust(TB)
+
             # Verify if TB can be set on pump
             self.verify(TB)
 
         # Info
-        print "Enacting new TB:"
+        print "Enacting TB:"
 
         # Show TB
         self.show(TB)
@@ -1198,7 +1244,7 @@ class TB(PumpComponent):
             self.commands["Set Percentage"].run(rate, duration)
 
         # Info
-        print "Verifying if new TB was correctly enacted..."
+        print "Verifying if TB was correctly enacted..."
 
         # Verify that the TB was correctly issued by reading current TB on
         # pump
@@ -1208,7 +1254,7 @@ class TB(PumpComponent):
         if TB == self.value:
 
             # Info
-            print "New TB correctly enacted."
+            print "TB correctly enacted."
 
         # Otherwise
         else:
@@ -1333,19 +1379,19 @@ def main():
     pump.start()
 
     # Read pump time
-    #pump.time.read()
+    pump.time.read()
 
     # Read pump model
-    #pump.model.read()
+    pump.model.read()
 
     # Read pump firmware version
-    #pump.firmware.read()
+    pump.firmware.read()
 
     # Read pump battery level
-    #pump.battery.read()
+    pump.battery.read()
 
     # Read remaining amount of insulin in pump
-    #pump.reservoir.read()
+    pump.reservoir.read()
 
     # Push button on pump
     #pump.buttons.push("EASY")
@@ -1391,7 +1437,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    pump.history.read(2)
+    #pump.history.read(2)
 
     # Send bolus to pump
     #pump.bolus.deliver(0.2)

@@ -781,18 +781,18 @@ def split(x, n):
 
 
 
-def checkIntWithinRange(byte, byteRange, error):
+def withinRangeInt(x, r, error):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        CHECKINTWITHINRANGE
+        WITHINRANGEINT
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Test a byte to see if it is an integer and fits within given range.
+        Test a value to see if it is an integer and fits within given range.
         If not, raise input/output error.
     """
 
-    # Test byte
-    if not (int(byte) == byte and min(byteRange) <= byte <= max(byteRange)):
+    # Test value
+    if not (int(x) == x and min(r) <= x <= max(r)):
 
         # Raise error
         raise IOError(error)
