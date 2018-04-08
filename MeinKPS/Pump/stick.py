@@ -29,7 +29,6 @@
 # LIBRARIES
 import numpy as np
 import usb
-import os
 import time
 
 
