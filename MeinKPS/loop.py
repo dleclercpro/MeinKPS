@@ -301,8 +301,8 @@ class Loop(object):
         # Reset USB ports
         os.system("sudo sh " + SRC + "reset.sh")
 
-        # Wait until stick is back
-        time.sleep(2)
+        # Wait until devices are back
+        time.sleep(5)
 
         # Do CGM stuff
         self.cgm()
