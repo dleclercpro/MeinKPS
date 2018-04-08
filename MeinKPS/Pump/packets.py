@@ -561,7 +561,7 @@ class ToPumpPacket(ToPacket, PumpPacket):
         """
 
         # Initialize pre-packet
-        pkt = Packet()
+        pkt = PumpPacket()
 
         # Define its bytes
         pkt.bytes["Decoded"]["Hex"] = bytes
