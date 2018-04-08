@@ -1109,7 +1109,7 @@ class PumpBigCommand(PumpCommand):
 
         # Define pre- and postlude commands
         self.commands = {"Prelude": None,
-                         "Postlude": ReadPumpMore(pump)}
+                         "Postlude": PumpACK(pump)}
 
 
 
@@ -2551,7 +2551,7 @@ class ReadPumpHistoryPage(PumpBigCommand, PumpGetBigCommand):
 
 
 
-class ReadPumpMore(PumpGetBigCommand):
+class PumpACK(PumpGetBigCommand):
 
     def __init__(self, pump):
 
@@ -2562,7 +2562,7 @@ class ReadPumpMore(PumpGetBigCommand):
         """
 
         # Initialize command
-        super(ReadPumpMore, self).__init__(pump)
+        super(PumpACK, self).__init__(pump)
 
         # Define code
         self.code = "06"
