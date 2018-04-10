@@ -62,7 +62,7 @@ class Pump(object):
         """
 
         # Give the pump a stick
-        self.stick = stick.Stick()
+        self.stick = stick.Stick(self)
 
         # Give the pump a power instance
         self.power = Power(self)
@@ -135,9 +135,6 @@ class Pump(object):
 
         # Start stick
         self.stick.start()
-
-        # Tune radio to best frequency
-        self.stick.tune(self.stick.scan(self))
 
         # Power pump's radio transmitter if necessary
         self.power.verify()

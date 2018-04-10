@@ -57,7 +57,7 @@ Reporter = reporter.Reporter()
 # CLASSES
 class Stick(object):
 
-    def __init__(self):
+    def __init__(self, pump = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,7 +82,7 @@ class Stick(object):
 
         # Define frequencies (MHz)
         self.f = {"Reference": 24.0,
-                  "Regions": {"NA": {"Default": 916.680,
+                  "Regions": {"NA": {"Default": 916.665,
                                      "Range": [916.500, 916.800]},
                               "WW": {"Default": 868.330,
                                      "Range": [868.150, 868.750]}}}
@@ -143,6 +143,9 @@ class Stick(object):
         # Define report
         self.report = "stick.json"
 
+        # Initialize pump
+        self.pump = pump
+
 
 
     def start(self, ping = True):
@@ -165,6 +168,18 @@ class Stick(object):
 
             # Ping it
             self.ping()
+
+        # If pump given
+        if self.pump is not None:
+
+            # Check if frequency optimizing necessary
+            self.check()
+
+        # Otherwise
+        else:
+
+            # Tune to NA default frequency
+            self.tune(self.f["Regions"]["NA"]["Default"])
 
 
 
@@ -263,7 +278,7 @@ class Stick(object):
             # Wait until devices are back
             time.sleep(5)
 
-            # Restart stick (without ping)
+            # Restart stick
             self.start(False)
 
 
@@ -435,14 +450,34 @@ class Stick(object):
         f = lib.getMaxMiddle(x, y, 5)
 
         # Info
-        print "Optimized frequency: " + str(f)
+        print "Optimized frequency (MHz): " + str(f)
 
         # Return best frequency
         return f
 
 
 
-    def scan(self, pump, F1 = None, F2 = None, n = 15, sample = 5):
+    def store(self, f):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Store optimized frequency.
+        """
+
+        # Give user info
+        print "Adding pump's last optimized frequency to '" + self.report + "'..."
+
+        # Get current formatted time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.add(self.report, [], {"Frequency (MHz)": [f, now]}, True)
+
+
+
+    def scan(self, pump, F1 = None, F2 = None, n = 25, sample = 5):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -500,17 +535,49 @@ class Stick(object):
         # Optimize frequency
         f = self.optimize(RSSIs)
 
-        # Give user info
-        print "Adding pump's last optimized frequency to '" + self.report + "'..."
+        # Store it
+        self.store(f)
 
-        # Get current formatted time
-        now = lib.formatTime(datetime.datetime.now())
-
-        # Add entry
-        Reporter.add(self.report, [], {"Optimized Frequency (MHz)": f}, True)
-
-        # Return optimized frequency
+        # Return it
         return f
+
+
+
+    def check(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CHECK
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Check if frequency optimizing required.
+        """
+
+        # Get last frequency optimization
+        entry = Reporter.get(self.report, [], "Frequency (MHz)")
+
+        # Frequency found
+        if entry is not None:
+
+            # Destructure frequency entry
+            [f, t] = entry
+
+            # Convert time to datetime object
+            t = lib.formatTime(t)
+
+            # Get current formatted time
+            now = datetime.datetime.now()
+
+        # If no optimized frequency stored or stick not tuned today
+        if entry is None or now.day != t.day:
+
+            # Scan for best frequency and tune radio to it
+            self.tune(self.scan(self.pump))
+
+        # Otherwise
+        else:
+
+            # Tune radio
+            self.stick.tune(f)
 
 
 
