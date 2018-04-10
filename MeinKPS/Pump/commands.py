@@ -1003,8 +1003,45 @@ class PumpGetCommand(PumpCommand):
         # Initialize command
         super(PumpGetCommand, self).__init__(pump)
 
+        # Define number of times command can be tried
+        self.repeat = 5
+
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpPacket
+
+
+
+    def execute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXECUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Try command
+        for i in range(self.repeat):
+
+            # Try
+            try:
+
+                # Info
+                print "Trying: " + str(i + 1) + "/" + str(self.repeat)
+
+                # Execute command
+                super(PumpGetCommand, self).execute()
+
+                # Exit
+                return
+
+            # Radio error
+            except (errors.RadioError, errors.InvalidPacket):
+
+                # Ignore
+                pass
+
+        # Raise error
+        raise errors.UnsuccessfulRadioCommand
 
 
 
@@ -1146,10 +1183,11 @@ class PumpBigCommand(PumpCommand):
         """
 
         # Run NAK command given number of times
-        for i in range(1, self.repeat["NAK"] + 1):
+        for i in range(self.repeat["NAK"]):
 
             # Info
-            print "Retrying (NAK): " + str(i) + "/" + str(self.repeat["NAK"])
+            print ("Retrying (NAK): " + str(i + 1) + "/" +
+                                        str(self.repeat["NAK"]))
 
             # Try
             try:
@@ -1161,22 +1199,16 @@ class PumpBigCommand(PumpCommand):
                 self.packets["RX"].append(self.cmds["NAK"].packets["RX"][-1])
 
                 # Exit
-                break
+                return
 
             # Radio error
             except (errors.RadioError, errors.InvalidPacket):
 
-                # If retrying allowed
-                if i < self.repeat["NAK"]:
+                # Ignore
+                pass
 
-                    # Ignore
-                    pass
-
-                # Otherwise
-                else:
-
-                    # Raise error
-                    raise errors.UnsuccessfulRadioCommand
+        # Raise error
+        raise errors.UnsuccessfulRadioCommand
 
 
 
