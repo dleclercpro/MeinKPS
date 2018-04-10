@@ -759,7 +759,7 @@ class FromPumpBigPacket(FromPumpPacket):
 
 
 
-class FromPumpACKPacket(FromPumpPacket):
+class FromPumpStatusPacket(FromPumpPacket):
 
     def extract(self):
 

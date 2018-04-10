@@ -16,8 +16,8 @@
               (http://www.gnu.org/licenses/gpl.html)
 
     Overview: This is a script that contains various commands to control a
-    		  Medtronic MiniMed insulin pump over radio frequencies using the
-    		  Texas Instruments CC1111 USB radio stick.
+              Medtronic MiniMed insulin pump over radio frequencies using the
+              Texas Instruments CC1111 USB radio stick.
 
     Notes:    ...
 
@@ -596,12 +596,9 @@ class ReadStickRadio(StickCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try
-        try:
-
-            # Get data (remove EOP byte)
-            self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
-                                              radio = True)[:-1]
+        # Get data (remove EOP byte)
+        self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
+                                          radio = True)[:-1]
 
 
 
@@ -814,12 +811,9 @@ class WriteReadStickRadio(StickCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try
-        try:
-
-            # Get data (remove EOP byte)
-            self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
-                                              radio = True)[:-1]
+        # Get data (remove EOP byte)
+        self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
+                                          radio = True)[:-1]
 
 
 
@@ -876,7 +870,7 @@ class PumpCommand(Command):
         # Get its stick instance
         self.stick = pump.stick
 
-        # Define radio RX timeout
+        # Define radio timeout
         self.timeout = 500
 
         # Define function to generate send packet
@@ -967,7 +961,7 @@ class PumpSetCommand(PumpCommand):
         super(PumpSetCommand, self).__init__(pump)
 
         # Define function to generate receive packet
-        self.fromPumpPacket = packets.FromPumpACKPacket
+        self.fromPumpPacket = packets.FromPumpStatusPacket
 
 
 
@@ -1028,51 +1022,6 @@ class PumpGetCommand(PumpCommand):
         # Return payload in integer format for further decoding as well as its
         # size
         return [lib.dehexify(pkt.payload), pkt.size]
-
-
-
-class PumpGetBigCommand(PumpCommand):
-
-    def __init__(self, pump):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: This class only works when instanciated alongside of
-                  PumpBigCommand.
-        """
-
-        # Initialize command
-        super(PumpGetBigCommand, self).__init__(pump)
-
-        # Define number of NAK retries
-        self.repeat["NAK"] = 10
-
-        # Define radio RX timeout
-        self.timeout = 150
-
-        # Define function to generate receive packet
-        self.fromPumpPacket = packets.FromPumpBigPacket
-
-
-
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get last packets (without prelude)
-        pkts = self.packets["RX"][self.repeat["Init"]:]
-
-        # Flatten payloads to one larger one
-        payload = lib.dehexify(lib.flatten([pkt.payload for pkt in pkts]))
-
-        # Return it for further decoding as well as its size
-        return [payload, len(payload)]
 
 
 
@@ -1265,6 +1214,53 @@ class PumpBigCommand(PumpCommand):
 
 
 
+class PumpGetBigCommand(PumpBigCommand):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(PumpGetBigCommand, self).__init__(pump)
+
+        # Define radio timeout
+        self.timeout = 150
+
+        # Overwrite ACK and NAK timeout
+        self.cmds["ACK"].timeout = self.timeout
+        self.cmds["NAK"].timeout = self.timeout
+
+        # Define number of NAK retries
+        self.repeat["NAK"] = 10
+
+        # Define function to generate receive packet
+        self.fromPumpPacket = packets.FromPumpBigPacket
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get last packets (without prelude)
+        pkts = self.packets["RX"][self.repeat["Init"]:]
+
+        # Flatten payloads to one larger one
+        payload = lib.dehexify(lib.flatten([pkt.payload for pkt in pkts]))
+
+        # Return it for further decoding as well as its size
+        return [payload, len(payload)]
+
+
+
 class PumpACK(PumpCommand):
 
     def __init__(self, pump):
@@ -1348,7 +1344,7 @@ class PowerPump(PumpSetCommand, PumpBigCommand):
         self.cmds["Init"] = PowerPumpInit(pump)
 
         # Define prelude command repeat counts
-        self.repeat["Init"] = 100
+        self.repeat["Init"] = 50
 
 
 
@@ -2242,7 +2238,7 @@ class ReadPumpCSF(ReadPumpFactors):
 
 
 
-class ReadPumpBasalProfile(PumpGetBigCommand, PumpBigCommand):
+class ReadPumpBasalProfile(PumpGetBigCommand):
 
     def __init__(self, pump):
 
@@ -2583,7 +2579,7 @@ class ReadPumpHistoryPageInit(PumpSetCommand):
 
 
 
-class ReadPumpHistoryPage(PumpGetBigCommand, PumpBigCommand):
+class ReadPumpHistoryPage(PumpGetBigCommand):
 
     def __init__(self, pump):
 
