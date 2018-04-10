@@ -544,15 +544,15 @@ class ReadStickRadio(StickCommand):
         # Initialize resetting
         super(ReadStickRadio, self).reset()
 
+        # Reset timeout values
+        self.timeout = None
+
         # Reset channel
         self.channel = None
 
-        # Reset timeout values
-        self.timeout = None        
 
 
-
-    def encode(self, channel = 0, timeout = 150):
+    def encode(self, timeout = 150, channel = 0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -560,12 +560,12 @@ class ReadStickRadio(StickCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Store channel
-        self.channel = channel
-
         # Store timeout values
         self.timeout = {"Stick": timeout + 250,
                         "Radio": lib.pack(timeout, n = 4)}
+
+        # Store channel
+        self.channel = channel
 
 
 
@@ -721,6 +721,9 @@ class WriteReadStickRadio(StickCommand):
         # Initialize resetting
         super(WriteReadStickRadio, self).reset()
 
+        # Reset timeout values
+        self.timeout = None
+
         # Reset channel values
         self.channel = None
 
@@ -733,13 +736,10 @@ class WriteReadStickRadio(StickCommand):
         # Reset retry count
         self.retry = None
 
-        # Reset timeout values
-        self.timeout = None
 
 
-
-    def encode(self, data, channelTX = 0, channelRX = 0, repeat = 1, delay = 0,
-                     retry = 1, timeout = 150):
+    def encode(self, data, timeout = 150, channelTX = 0, channelRX = 0,
+                           repeat = 1, delay = 0, retry = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -749,6 +749,10 @@ class WriteReadStickRadio(StickCommand):
 
         # Store data
         self.data["TX"] = data
+
+        # Store timeout values
+        self.timeout = {"Stick": (retry + 1) * timeout + 250,
+                        "Radio": lib.pack(timeout, n = 4)}
 
         # Store channel values
         self.channel = {"TX": channelTX,
@@ -762,10 +766,6 @@ class WriteReadStickRadio(StickCommand):
 
         # Store retry count
         self.retry = retry
-
-        # Store timeout values
-        self.timeout = {"Stick": (retry + 1) * timeout + 250,
-                        "Radio": lib.pack(timeout, n = 4)}
 
 
 
@@ -876,11 +876,11 @@ class PumpCommand(Command):
         # Get its stick instance
         self.stick = pump.stick
 
+        # Define radio RX timeout
+        self.timeout = 500
+
         # Define function to generate send packet
         self.toPumpPacket = packets.ToPumpPacket
-
-        # Define radio timeout
-        self.timeout = 500
 
 
 
@@ -926,7 +926,8 @@ class PumpCommand(Command):
         self.packets["TX"].append(pkt)
 
         # Send encoded packet
-        self.stick.commands["Radio TX/RX"].run(pkt.bytes["Encoded"])
+        self.stick.commands["Radio TX/RX"].run(pkt.bytes["Encoded"],
+                                               self.timeout)
 
 
 
@@ -1047,6 +1048,9 @@ class PumpGetBigCommand(PumpCommand):
 
         # Define number of NAK retries
         self.repeat["NAK"] = 10
+
+        # Define radio RX timeout
+        self.timeout = 150
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpBigPacket
