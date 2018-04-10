@@ -27,9 +27,11 @@
 """
 
 # LIBRARIES
-import numpy as np
 import usb
+import os
 import time
+import datetime
+import numpy as np
 
 
 
@@ -38,6 +40,17 @@ import lib
 import errors
 import packets
 import commands
+import reporter
+
+
+
+# CONSTANTS
+SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
+
+
+
+# Define a reporter
+Reporter = reporter.Reporter()
 
 
 
@@ -76,7 +89,8 @@ class Stick(object):
 
         # Define radio errors
         self.errors = {0xAA: "Timeout",
-                       0xBB: "No data"}
+                       0xBB: "No data",
+                       0xCC: "Interrupted"}
 
         # Define commands
         self.commands = {"Name RX": commands.ReadStickName(self),
@@ -86,7 +100,7 @@ class Stick(object):
                          "Radio RX": commands.ReadStickRadio(self),
                          "Radio TX": commands.WriteStickRadio(self),
                          "Radio TX/RX": commands.WriteReadStickRadio(self),
-                         "LED": commands.FlashStickLED(self)}
+                         "LED": commands.SwitchStickLED(self)}
 
         # Define radio registers
         self.registers = ["SYNC1",
@@ -126,9 +140,12 @@ class Stick(object):
                           "FREQ0",
                           "CHANNR"]
 
+        # Define report
+        self.report = "stick.json"
 
 
-    def start(self, pump = None):
+
+    def start(self, ping = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -143,14 +160,11 @@ class Stick(object):
         # Configure it
         self.configure()
 
-        # If scanning wanted
-        if pump is not None:
+        # If ping required
+        if ping:
 
-            # Tune radio to best frequency
-            self.tune(self.scan(pump))
-
-        # Flash it when ready
-        self.flash()
+            # Ping it
+            self.ping()
 
 
 
@@ -160,20 +174,6 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             STOP
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Ignore
-        pass
-
-
-
-    def ping(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PING
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Ping stick to see if ready to receive commands.
         """
 
         # Ignore
@@ -232,6 +232,63 @@ class Stick(object):
 
 
 
+    def ping(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PING
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Ping stick to see if ready to receive commands.
+        """
+
+        # Try getting stick name
+        try:
+
+            # Do it
+            self.commands["Name RX"].run()
+
+        # Radio error
+        except errors.RadioError:
+
+            # Retry (last try should have brought the radio out of the reading
+            # loop)
+            self.commands["Name RX"].run()
+
+        # Otherwise
+        except:
+
+            # Reset USB ports
+            os.system("sudo sh " + SRC + "../reset.sh")
+
+            # Wait until devices are back
+            time.sleep(5)
+
+            # Restart stick (without ping)
+            self.start(False)
+
+
+
+    def write(self, bytes = 0):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            WRITE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Write single byte to EP OUT. Tells the stick it is done writing when
+            not inputed a byte.
+        """
+
+        # List
+        if type(bytes) is not list:
+
+            # Convert to list
+            bytes = [bytes]
+
+        # Write bytes to EP OUT
+        self.EPs["OUT"].write(bytearray(bytes))
+
+
+
     def read(self, n = 64, timeout = 1000, radio = False):
 
         """
@@ -268,27 +325,6 @@ class Stick(object):
 
         # Return them
         return bytes
-
-
-
-    def write(self, bytes = 0):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            WRITE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Write single byte to EP OUT. Tells the stick it is done writing when
-            not inputed a byte.
-        """
-
-        # List
-        if type(bytes) is not list:
-
-            # Convert to list
-            bytes = [bytes]
-
-        # Write bytes to EP OUT
-        self.EPs["OUT"].write(bytearray(bytes))
 
 
 
@@ -461,8 +497,20 @@ class Stick(object):
         # Show readings
         lib.printJSON(RSSIs)
 
-        # Optimize frequency and return it
-        return self.optimize(RSSIs)
+        # Optimize frequency
+        f = self.optimize(RSSIs)
+
+        # Give user info
+        print "Adding pump's last optimized frequency to '" + self.report + "'..."
+
+        # Get current formatted time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.add(self.report, [], {"Optimized Frequency (MHz)": f}, True)
+
+        # Return optimized frequency
+        return f
 
 
 

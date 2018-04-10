@@ -25,7 +25,6 @@
 # LIBRARIES
 import datetime
 import time
-import os
 import sys
 
 
@@ -45,11 +44,6 @@ from Pump import pump
 Reporter = reporter.Reporter()
 Exporter = exporter.Exporter()
 Uploader = uploader.Uploader()
-
-
-
-# CONSTANTS
-SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
 
 
@@ -298,12 +292,6 @@ class Loop(object):
 
         # Update loop iterations
         Reporter.increment(self.report, ["Status"], "N")
-
-        # Reset USB ports
-        #os.system("sudo sh " + SRC + "reset.sh")
-
-        # Wait until devices are back
-        #time.sleep(5)
 
         # Do CGM stuff
         self.cgm()

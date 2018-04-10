@@ -22,14 +22,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# TODO: - reading BGs gets slow with time?
-
-
-
 # LIBRARIES
-import os
-import datetime
 import usb
+import os
+import time
+import datetime
 
 
 
@@ -107,7 +104,7 @@ class CGM(object):
 
 
 
-    def start(self):
+    def start(self, ping = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,17 +112,20 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Plug CGM
-        #self.connect()
-
         # Find it
         self.find()
 
         # Make sure kernel is not still active
-        self.disconnect()
+        self.reset()
 
         # Configure it and get EPs
         self.configure()
+
+        # If ping required
+        if ping:
+
+            # Ping it
+            self.ping()
 
 
 
@@ -137,29 +137,16 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Disconnect from CGM
-        self.disconnect()
+        # Reset CGM
+        self.reset()
 
 
 
-    def connect(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CONNECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Plug CGM
-        os.system("sudo sh " + SRC + "plug.sh")
-
-
-
-    def disconnect(self):
+    def reset(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DISCONNECT
+            RESET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -225,6 +212,35 @@ class CGM(object):
         # Get EPs
         self.EPs["OUT"] = lib.getEP(self.config, "OUT", 1)
         self.EPs["IN"] = lib.getEP(self.config, "IN", 1)
+
+
+
+    def ping(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PING
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Ping CGM to see if ready to receive commands.
+        """
+
+        # Try reading clock
+        try:
+
+            # Do it
+            self.clock.read()
+
+        # Otherwise
+        except:
+
+            # Reset USB ports
+            os.system("sudo sh " + SRC + "../reset.sh")
+
+            # Wait until devices are back
+            time.sleep(5)
+
+            # Restart CGM (without ping)
+            self.start(False)
 
 
 

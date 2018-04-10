@@ -133,8 +133,11 @@ class Pump(object):
         # Info
         print "Starting pump..."
 
-        # Start stick (tune it by giving it access to read model command)
-        self.stick.start(self)
+        # Start stick
+        self.stick.start()
+
+        # Tune radio to best frequency
+        self.stick.tune(self.stick.scan(self))
 
         # Power pump's radio transmitter if necessary
         self.power.verify()

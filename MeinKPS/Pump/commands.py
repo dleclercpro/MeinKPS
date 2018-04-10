@@ -552,7 +552,7 @@ class ReadStickRadio(StickCommand):
 
 
 
-    def encode(self, channel = 0, timeout = 500, tolerate = False):
+    def encode(self, channel = 0, timeout = 150, tolerate = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -564,7 +564,7 @@ class ReadStickRadio(StickCommand):
         self.channel = channel
 
         # Store timeout values
-        self.timeout = {"Stick": timeout + 500,
+        self.timeout = {"Stick": timeout + 250,
                         "Radio": lib.pack(timeout, n = 4)}
 
         # Store error tolerance
@@ -754,7 +754,7 @@ class WriteReadStickRadio(StickCommand):
 
 
     def encode(self, data, channelTX = 0, channelRX = 0, repeat = 1, delay = 0,
-                     retry = 1, timeout = 500, tolerate = False):
+                     retry = 1, timeout = 150, tolerate = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -779,7 +779,7 @@ class WriteReadStickRadio(StickCommand):
         self.retry = retry
 
         # Store timeout values
-        self.timeout = {"Stick": (retry + 1) * timeout + 500,
+        self.timeout = {"Stick": (retry + 1) * timeout + 250,
                         "Radio": lib.pack(timeout, n = 4)}
 
         # Store error tolerance
@@ -850,7 +850,7 @@ class WriteReadStickRadio(StickCommand):
 
 
 
-class FlashStickLED(StickCommand):
+class SwitchStickLED(StickCommand):
 
     def __init__(self, stick):
 
@@ -861,7 +861,7 @@ class FlashStickLED(StickCommand):
         """
 
         # Initialize command
-        super(FlashStickLED, self).__init__(stick)
+        super(SwitchStickLED, self).__init__(stick)
 
         # Define code
         self.code = 30
@@ -1009,10 +1009,10 @@ class PumpSetCommand(PumpCommand):
         pkt = self.packets["RX"][-1]
 
         # Define command ACK
-        ack = [pkt.code] + pkt.payload
+        ack = ["06", "00"]
 
         # Unsuccessful
-        if ack != ["06", "00"]:
+        if [pkt.code] + pkt.payload != ack:
 
             # Raise error
             raise errors.UnsuccessfulRadioCommand
@@ -1070,7 +1070,7 @@ class PumpGetBigCommand(PumpCommand):
         super(PumpGetBigCommand, self).__init__(pump)
 
         # Define number of NAK retries
-        self.repeat["NAK"] = 5
+        self.repeat["NAK"] = 10
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpBigPacket
@@ -1161,7 +1161,7 @@ class PumpBigCommand(PumpCommand):
                 self.packets["RX"].append(self.cmds["ACK"].packets["RX"][-1])
 
             # Radio error
-            except (errors.RadioError, errors.InvalidPacket) as e:
+            except (errors.RadioError, errors.InvalidPacket):
 
                 # NAK
                 if self.repeat["NAK"]:
@@ -1172,8 +1172,8 @@ class PumpBigCommand(PumpCommand):
                 # Otherwise
                 else:
 
-                    # Rethrow error
-                    raise e
+                    # Re-throw error
+                    raise
 
 
 
@@ -1192,7 +1192,7 @@ class PumpBigCommand(PumpCommand):
             super(PumpBigCommand, self).execute()
 
         # Radio error
-        except (errors.RadioError, errors.InvalidPacket) as e:
+        except (errors.RadioError, errors.InvalidPacket):
 
             # NAK
             if self.repeat["NAK"]:
@@ -1203,8 +1203,8 @@ class PumpBigCommand(PumpCommand):
             # Otherwise
             else:
 
-                # Rethrow error
-                raise e
+                # Re-throw error
+                raise
 
 
 
@@ -1368,7 +1368,7 @@ class PowerPump(PumpSetCommand, PumpBigCommand):
         self.cmds["Init"] = PowerPumpInit(pump)
 
         # Define prelude command repeat counts
-        self.repeat["Init"] = 50
+        self.repeat["Init"] = 100
 
 
 
