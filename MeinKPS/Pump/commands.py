@@ -552,7 +552,7 @@ class ReadStickRadio(StickCommand):
 
 
 
-    def encode(self, channel = 0, timeout = 150, tolerate = False):
+    def encode(self, channel = 0, timeout = 150):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -566,9 +566,6 @@ class ReadStickRadio(StickCommand):
         # Store timeout values
         self.timeout = {"Stick": timeout + 250,
                         "Radio": lib.pack(timeout, n = 4)}
-
-        # Store error tolerance
-        self.tolerate = tolerate
 
 
 
@@ -605,15 +602,6 @@ class ReadStickRadio(StickCommand):
             # Get data (remove EOP byte)
             self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
                                               radio = True)[:-1]
-
-        # If radio error
-        except errors.RadioError:
-
-            # Errors not tolerated
-            if not self.tolerate:
-
-                # Stop
-                raise
 
 
 
@@ -748,13 +736,10 @@ class WriteReadStickRadio(StickCommand):
         # Reset timeout values
         self.timeout = None
 
-        # Reset error tolerance
-        self.tolerate = None
-
 
 
     def encode(self, data, channelTX = 0, channelRX = 0, repeat = 1, delay = 0,
-                     retry = 1, timeout = 150, tolerate = False):
+                     retry = 1, timeout = 150):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -781,9 +766,6 @@ class WriteReadStickRadio(StickCommand):
         # Store timeout values
         self.timeout = {"Stick": (retry + 1) * timeout + 250,
                         "Radio": lib.pack(timeout, n = 4)}
-
-        # Store error tolerance
-        self.tolerate = tolerate
 
 
 
@@ -838,15 +820,6 @@ class WriteReadStickRadio(StickCommand):
             # Get data (remove EOP byte)
             self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
                                               radio = True)[:-1]
-
-        # If radio error
-        except errors.RadioError:
-
-            # Errors not tolerated
-            if not self.tolerate:
-
-                # Stop
-                raise
 
 
 
@@ -905,6 +878,9 @@ class PumpCommand(Command):
 
         # Define function to generate send packet
         self.toPumpPacket = packets.ToPumpPacket
+
+        # Define radio timeout
+        self.timeout = 500
 
 
 
