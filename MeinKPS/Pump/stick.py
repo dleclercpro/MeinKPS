@@ -577,7 +577,7 @@ class Stick(object):
         else:
 
             # Tune radio
-            self.stick.tune(f)
+            self.tune(f)
 
 
 
