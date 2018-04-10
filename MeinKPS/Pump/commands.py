@@ -1069,6 +1069,9 @@ class PumpGetBigCommand(PumpCommand):
         # Initialize command
         super(PumpGetBigCommand, self).__init__(pump)
 
+        # Define number of NAK retries
+        self.repeat["NAK"] = 5
+
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpBigPacket
 
@@ -1112,9 +1115,9 @@ class PumpBigCommand(PumpCommand):
                        "NAK": 0}
 
         # Define commands
-        self.commands = {"Init": None,
-                         "ACK": PumpACK(pump),
-                         "NAK": PumpNAK(pump)}
+        self.cmds = {"Init": None,
+                     "ACK": PumpACK(pump),
+                     "NAK": PumpNAK(pump)}
 
 
 
@@ -1130,10 +1133,10 @@ class PumpBigCommand(PumpCommand):
         for i in range(self.repeat["Init"]):
 
             # Do it
-            self.commands["Init"].run()
+            self.cmds["Init"].run()
 
             # Store response packet
-            self.packets["RX"].append(self.commands["Init"].packets["RX"][-1])
+            self.packets["RX"].append(self.cmds["Init"].packets["RX"][-1])
 
 
 
@@ -1148,11 +1151,103 @@ class PumpBigCommand(PumpCommand):
         # Run postlude command given number of times
         for i in range(self.repeat["ACK"]):
 
-            # Do it
-            self.commands["ACK"].run()
+            # Try
+            try:
 
-            # Store response packet
-            self.packets["RX"].append(self.commands["ACK"].packets["RX"][-1])
+                # Do it
+                self.cmds["ACK"].run()
+
+                # Store response packet
+                self.packets["RX"].append(self.cmds["ACK"].packets["RX"][-1])
+
+            # Radio error
+            except (errors.RadioError, errors.InvalidPacket) as e:
+
+                # NAK
+                if self.repeat["NAK"]:
+
+                    # Retry
+                    self.retry()
+
+                # Otherwise
+                else:
+
+                    # Rethrow error
+                    raise e
+
+
+
+    def execute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXECUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Try
+        try:
+
+            # Execute command core
+            super(PumpBigCommand, self).execute()
+
+        # Radio error
+        except (errors.RadioError, errors.InvalidPacket) as e:
+
+            # NAK
+            if self.repeat["NAK"]:
+
+                # Retry
+                self.retry()
+
+            # Otherwise
+            else:
+
+                # Rethrow error
+                raise e
+
+
+
+    def retry(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RETRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Run NAK command given number of times
+        for i in range(1, self.repeat["NAK"] + 1):
+
+            # Info
+            print "Retrying (NAK): " + str(i) + "/" + str(self.repeat["NAK"])
+
+            # Try
+            try:
+
+                # Do it
+                self.cmds["NAK"].run()
+
+                # Store response packet
+                self.packets["RX"].append(self.cmds["NAK"].packets["RX"][-1])
+
+                # Exit
+                break
+
+            # Radio error
+            except (errors.RadioError, errors.InvalidPacket):
+
+                # If retrying allowed
+                if i < self.repeat["NAK"]:
+
+                    # Ignore
+                    pass
+
+                # Otherwise
+                else:
+
+                    # Raise error
+                    raise errors.UnsuccessfulRadioCommand
 
 
 
@@ -1250,7 +1345,7 @@ class PowerPumpInit(PumpSetCommand):
 
 
 
-class PowerPump(PumpBigCommand, PumpSetCommand):
+class PowerPump(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -1270,7 +1365,7 @@ class PowerPump(PumpBigCommand, PumpSetCommand):
         self.report = "pump.json"
 
         # Define prelude command
-        self.commands["Init"] = PowerPumpInit(pump)
+        self.cmds["Init"] = PowerPumpInit(pump)
 
         # Define prelude command repeat counts
         self.repeat["Init"] = 50
@@ -1292,7 +1387,7 @@ class PowerPump(PumpBigCommand, PumpSetCommand):
             try:
 
                 # Execute
-                self.commands["Init"].run()
+                self.cmds["Init"].run()
 
                 # Exit
                 return
@@ -2167,7 +2262,7 @@ class ReadPumpCSF(ReadPumpFactors):
 
 
 
-class ReadPumpBasalProfile(PumpBigCommand, PumpGetBigCommand):
+class ReadPumpBasalProfile(PumpGetBigCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2508,7 +2603,7 @@ class ReadPumpHistoryPageInit(PumpSetCommand):
 
 
 
-class ReadPumpHistoryPage(PumpBigCommand, PumpGetBigCommand):
+class ReadPumpHistoryPage(PumpGetBigCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2525,7 +2620,7 @@ class ReadPumpHistoryPage(PumpBigCommand, PumpGetBigCommand):
         self.code = "80"
 
         # Define prelude command
-        self.commands["Init"] = ReadPumpHistoryPageInit(pump)
+        self.cmds["Init"] = ReadPumpHistoryPageInit(pump)
 
         # Define postlude command repeat count
         self.repeat["ACK"] = 15
@@ -2610,7 +2705,7 @@ class PushPumpButtonInit(PumpSetCommand):
 
 
 
-class PushPumpButton(PumpBigCommand, PumpSetCommand):
+class PushPumpButton(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2627,7 +2722,7 @@ class PushPumpButton(PumpBigCommand, PumpSetCommand):
         self.code = "5B"
 
         # Define prelude command
-        self.commands["Init"] = PushPumpButtonInit(pump)
+        self.cmds["Init"] = PushPumpButtonInit(pump)
 
 
 
@@ -2677,7 +2772,7 @@ class ResumePumpInit(PumpSetCommand):
 
 
 
-class ResumePump(PumpBigCommand, PumpSetCommand):
+class ResumePump(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2694,7 +2789,7 @@ class ResumePump(PumpBigCommand, PumpSetCommand):
         self.code = "4D"
 
         # Define prelude command
-        self.commands["Init"] = ResumePumpInit(pump)
+        self.cmds["Init"] = ResumePumpInit(pump)
 
 
 
@@ -2732,7 +2827,7 @@ class SuspendPumpInit(PumpSetCommand):
 
 
 
-class SuspendPump(PumpBigCommand, PumpSetCommand):
+class SuspendPump(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2749,7 +2844,7 @@ class SuspendPump(PumpBigCommand, PumpSetCommand):
         self.code = "4D"
 
         # Define prelude command
-        self.commands["Init"] = SuspendPumpInit(pump)
+        self.cmds["Init"] = SuspendPumpInit(pump)
 
 
 
@@ -2787,7 +2882,7 @@ class DeliverPumpBolusInit(PumpSetCommand):
 
 
 
-class DeliverPumpBolus(PumpBigCommand, PumpSetCommand):
+class DeliverPumpBolus(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2804,7 +2899,7 @@ class DeliverPumpBolus(PumpBigCommand, PumpSetCommand):
         self.code = "42"
 
         # Define prelude command
-        self.commands["Init"] = DeliverPumpBolusInit(pump)
+        self.cmds["Init"] = DeliverPumpBolusInit(pump)
 
 
 
@@ -2848,7 +2943,7 @@ class SetPumpTBUnitsInit(PumpSetCommand):
 
 
 
-class SetPumpTBUnits(PumpBigCommand, PumpSetCommand):
+class SetPumpTBUnits(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2865,7 +2960,7 @@ class SetPumpTBUnits(PumpBigCommand, PumpSetCommand):
         self.code = "68"
 
         # Define prelude command
-        self.commands["Init"] = SetPumpTBUnitsInit(pump)
+        self.cmds["Init"] = SetPumpTBUnitsInit(pump)
 
 
 
@@ -2915,7 +3010,7 @@ class SetPumpAbsoluteTBInit(PumpSetCommand):
 
 
 
-class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
+class SetPumpAbsoluteTB(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -2932,7 +3027,7 @@ class SetPumpAbsoluteTB(PumpBigCommand, PumpSetCommand):
         self.code = "4C"
 
         # Define prelude command
-        self.commands["Init"] = SetPumpAbsoluteTBInit(pump)
+        self.cmds["Init"] = SetPumpAbsoluteTBInit(pump)
 
 
 
@@ -2986,7 +3081,7 @@ class SetPumpPercentageTBInit(PumpSetCommand):
 
 
 
-class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
+class SetPumpPercentageTB(PumpSetCommand, PumpBigCommand):
 
     def __init__(self, pump):
 
@@ -3003,7 +3098,7 @@ class SetPumpPercentageTB(PumpBigCommand, PumpSetCommand):
         self.code = "69"
 
         # Define prelude command
-        self.commands["Init"] = SetPumpPercentageTBInit(pump)
+        self.cmds["Init"] = SetPumpPercentageTBInit(pump)
 
 
 

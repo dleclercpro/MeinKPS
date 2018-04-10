@@ -1370,19 +1370,19 @@ def main():
     pump.start()
 
     # Read pump time
-    pump.time.read()
+    #pump.time.read()
 
     # Read pump model
-    pump.model.read()
+    #pump.model.read()
 
     # Read pump firmware version
-    pump.firmware.read()
+    #pump.firmware.read()
 
     # Read pump battery level
-    pump.battery.read()
+    #pump.battery.read()
 
     # Read remaining amount of insulin in pump
-    pump.reservoir.read()
+    #pump.reservoir.read()
 
     # Push button on pump
     #pump.buttons.push("EASY")
@@ -1428,7 +1428,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    pump.history.read(2)
+    pump.history.read(36)
 
     # Send bolus to pump
     #pump.bolus.deliver(0.2)

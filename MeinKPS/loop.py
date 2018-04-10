@@ -300,10 +300,10 @@ class Loop(object):
         Reporter.increment(self.report, ["Status"], "N")
 
         # Reset USB ports
-        os.system("sudo sh " + SRC + "reset.sh")
+        #os.system("sudo sh " + SRC + "reset.sh")
 
         # Wait until devices are back
-        time.sleep(5)
+        #time.sleep(5)
 
         # Do CGM stuff
         self.cgm()

@@ -601,7 +601,7 @@ def main():
     #calculator.autosens()
 
     # Show components
-    #calculator.show()
+    calculator.show()
 
 
 
