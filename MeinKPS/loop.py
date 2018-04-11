@@ -46,23 +46,6 @@ Uploader = uploader.Uploader()
 
 
 
-# FUNCTIONS
-def do(task, path, key, *args):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        DO
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Do task
-    task(*args)
-
-    # Update loop log
-    Reporter.increment("loop.json", path, key)
-
-
-
 # CLASSES
 class Loop(object):
 
@@ -85,6 +68,25 @@ class Loop(object):
         # Give the loop a calculator
         self.calc = calculator.Calculator()
 
+        # Define report
+        self.report = "loop.json"
+
+
+
+    def do(self, task, path, key, *args):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Do task
+        task(*args)
+
+        # Update loop log
+        Reporter.increment(self.report, path, key)
+
 
 
     def doCGM(self):
@@ -99,16 +101,16 @@ class Loop(object):
         self.cgm.start()
 
         # Read BGs (last 24 hours)
-        do(self.cgm.dumpBG, ["CGM"], "BG", 8)
+        self.do(self.cgm.dumpBG, ["CGM"], "BG", 8)
 
         # Read battery
-        do(self.cgm.battery.read, ["CGM"], "Battery")
+        self.do(self.cgm.battery.read, ["CGM"], "Battery")
 
         # Read sensor events
-        do(self.cgm.databases["Sensor"].read, ["CGM"], "Sensor")
+        self.do(self.cgm.databases["Sensor"].read, ["CGM"], "Sensor")
 
         # Read calibrations
-        do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
+        self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
 
         # Stop CGM
         self.cgm.stop()
@@ -127,25 +129,25 @@ class Loop(object):
         self.pump.start()
 
         # Read battery level
-        do(self.pump.battery.read, ["Pump"], "Battery")
+        self.do(self.pump.battery.read, ["Pump"], "Battery")
 
         # Read remaining amount of insulin
-        do(self.pump.reservoir.read, ["Pump"], "Reservoir")
+        self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
 
         # Read ISF
-        do(self.pump.ISF.read, ["Pump"], "ISF")
+        self.do(self.pump.ISF.read, ["Pump"], "ISF")
 
         # Read CSF
-        do(self.pump.CSF.read, ["Pump"], "CSF")
+        self.do(self.pump.CSF.read, ["Pump"], "CSF")
 
         # Read BG targets
-        do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
+        self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
 
         # Read basal
-        do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
+        self.do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
 
         # Update history
-        do(self.pump.history.update, ["Pump"], "History")
+        self.do(self.pump.history.update, ["Pump"], "History")
 
         # Run calculator and get recommendation
         TB = self.calc.run(self.start)
@@ -160,16 +162,16 @@ class Loop(object):
             if self.pump.TB.value["Duration"] != 0:
 
                 # Cancel it
-                do(self.pump.TB.cancel, ["Pump"], "TB")
+                self.do(self.pump.TB.cancel, ["Pump"], "TB")
 
         # Otherwise, enact recommendation
         else:
 
             # Enact TB
-            do(self.pump.TB.set, ["Pump"], "TB", *TB)
+            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
         # Re-update history
-        do(self.pump.history.update, ["Pump"], "History")
+        self.do(self.pump.history.update, ["Pump"], "History")
 
         # Stop pump
         self.pump.stop()
@@ -185,7 +187,7 @@ class Loop(object):
         """
 
         # Export preprocessed treatments
-        do(Exporter.run, ["Status"], "Export", self.start)
+        self.do(Exporter.run, ["Status"], "Export", self.start)
 
 
 
@@ -198,7 +200,7 @@ class Loop(object):
         """
 
         # Upload stuff
-        do(Uploader.run, ["Status"], "Upload")
+        self.do(Uploader.run, ["Status"], "Upload")
 
 
 
