@@ -552,7 +552,7 @@ class ReadStickRadio(StickCommand):
 
 
 
-    def encode(self, timeout = 150, channel = 0):
+    def encode(self, timeout = 500, channel = 0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -561,7 +561,7 @@ class ReadStickRadio(StickCommand):
         """
 
         # Store timeout values
-        self.timeout = {"Stick": timeout + 250,
+        self.timeout = {"Stick": timeout + 500,
                         "Radio": lib.pack(timeout, n = 4)}
 
         # Store channel
@@ -631,18 +631,18 @@ class WriteStickRadio(StickCommand):
         # Initialize resetting
         super(WriteStickRadio, self).reset()
 
-        # Reset channel
-        self.channel = None
-
         # Reset repeat count
         self.repeat = None
 
         # Reset repeat delay
         self.delay = None
 
+        # Reset channel
+        self.channel = None
 
 
-    def encode(self, data, channel = 0, repeat = 0, delay = 0):
+
+    def encode(self, data, repeat = 0, delay = 0, channel = 0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -653,14 +653,14 @@ class WriteStickRadio(StickCommand):
         # Store data
         self.data["TX"] = data
 
-        # Store channel
-        self.channel = channel
-
         # Store repeat count
         self.repeat = repeat
 
         # Store repeat delay
         self.delay = lib.pack(delay, n = 4)
+
+        # Store channel
+        self.channel = channel
 
 
 
@@ -721,8 +721,8 @@ class WriteReadStickRadio(StickCommand):
         # Reset timeout values
         self.timeout = None
 
-        # Reset channel values
-        self.channel = None
+        # Reset retry count
+        self.retry = None
 
         # Reset write repeat count
         self.repeat = None
@@ -730,13 +730,13 @@ class WriteReadStickRadio(StickCommand):
         # Reset write repeat delay
         self.delay = None
 
-        # Reset retry count
-        self.retry = None
+        # Reset channel values
+        self.channel = None
 
 
 
-    def encode(self, data, timeout = 150, channelTX = 0, channelRX = 0,
-                           repeat = 1, delay = 0, retry = 1):
+    def encode(self, data, timeout = 500, retry = 3, repeat = 1, delay = 0,
+                           channelTX = 0, channelRX = 0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -748,12 +748,11 @@ class WriteReadStickRadio(StickCommand):
         self.data["TX"] = data
 
         # Store timeout values
-        self.timeout = {"Stick": (retry + 1) * timeout + 250,
+        self.timeout = {"Stick": (retry + 1) * timeout + 500,
                         "Radio": lib.pack(timeout, n = 4)}
 
-        # Store channel values
-        self.channel = {"TX": channelTX,
-                        "RX": channelRX}
+        # Store retry count
+        self.retry = retry
 
         # Store write repeat count
         self.repeat = repeat
@@ -761,8 +760,9 @@ class WriteReadStickRadio(StickCommand):
         # Store write repeat delay
         self.delay = lib.pack(delay, n = 4)
 
-        # Store retry count
-        self.retry = retry
+        # Store channel values
+        self.channel = {"TX": channelTX,
+                        "RX": channelRX}
 
 
 
@@ -872,6 +872,9 @@ class PumpCommand(Command):
 
         # Define radio timeout
         self.timeout = 500
+
+        # Define retry count
+        self.retry = 1
 
         # Define function to generate send packet
         self.toPumpPacket = packets.ToPumpPacket
@@ -1003,45 +1006,8 @@ class PumpGetCommand(PumpCommand):
         # Initialize command
         super(PumpGetCommand, self).__init__(pump)
 
-        # Define number of times command can be tried
-        self.repeat = 5
-
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpPacket
-
-
-
-    def execute(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXECUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Try command
-        for i in range(self.repeat):
-
-            # Try
-            try:
-
-                # Info
-                print "Trying: " + str(i + 1) + "/" + str(self.repeat)
-
-                # Execute command
-                super(PumpGetCommand, self).execute()
-
-                # Exit
-                return
-
-            # Radio error
-            except (errors.RadioError, errors.InvalidPacket):
-
-                # Ignore
-                pass
-
-        # Raise error
-        raise errors.UnsuccessfulRadioCommand
 
 
 
