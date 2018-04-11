@@ -59,7 +59,7 @@ def do(task, path, key, *args):
     task(*args)
 
     # Update loop log
-    Reporter.increment(self.report, path, key)
+    Reporter.increment("loop.json", path, key)
 
 
 
@@ -84,9 +84,6 @@ class Loop(object):
 
         # Give the loop a calculator
         self.calc = calculator.Calculator()
-
-        # Define report
-        self.report = "loop.json"
 
 
 
