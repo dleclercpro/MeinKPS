@@ -189,6 +189,9 @@ class Loop(object):
         # Export preprocessed treatments
         self.do(Exporter.run, ["Status"], "Export", self.start)
 
+        # Upload them
+        self.upload()
+
 
 
     def upload(self):
@@ -225,17 +228,41 @@ class Loop(object):
         # Update loop iterations
         Reporter.increment(self.report, ["Status"], "N")
 
-        # Do CGM stuff
-        self.doCGM()
+        # Try CGM stuff
+        try:
 
-        # Do pump stuff
-        self.doPump()
+            # Do it
+            self.doCGM()
 
-        # Export recent treatments
-        self.export()
+        # Error
+        except:
 
-        # Upload them
-        self.upload()
+            # Ignore
+            pass
+
+        # Try pump stuff
+        try:
+
+            # Do it
+            self.doPump()
+
+        # Error
+        except:
+
+            # Ignore
+            pass
+
+        # Try exporting recent treatments
+        try:
+
+            # Do it
+            self.export()
+
+        # Error
+        except:
+
+            # Ignore
+            pass
 
         # Define ending time
         self.end = datetime.datetime.now()
