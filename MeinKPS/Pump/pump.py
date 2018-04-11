@@ -1063,8 +1063,8 @@ class TB(PumpComponent):
         # Get current TB
         self.value = self.commands["Read"].run()
 
-	# Info
-	print "Current TB:"
+    	# Info
+    	print "Current TB:"
 
         # Show it
         self.show()
