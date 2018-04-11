@@ -980,7 +980,7 @@ class Basal(PumpComponent):
 
         # Initialize basal characteristics
         self.stroke = 0.025 # Pump basal stroke rate (U/h)
-        self.time = 30 # Time block (m) used by pump for basal durations
+        self.time = 30      # Time block (m) used by pump for basal durations
 
 
 
@@ -1072,6 +1072,9 @@ class TB(PumpComponent):
         # Get current TB
         self.value = self.commands["Read"].run()
 
+	# Info
+	print "Current TB:"
+
         # Show it
         self.show()
 
@@ -1159,7 +1162,7 @@ class TB(PumpComponent):
         """
 
         # Info
-        print "Adjusting TB:"
+        print "Adjusting TB from:"
 
         # Show TB
         self.show(TB)
@@ -1428,7 +1431,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    pump.history.read(36)
+    #pump.history.read(36)
 
     # Send bolus to pump
     #pump.bolus.deliver(0.2)
@@ -1437,7 +1440,7 @@ def main():
     #pump.TB.read()
 
     # Send TB to pump
-    #pump.TB.set(0.5, "U/h", 30)
+    pump.TB.set(2.35, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)
