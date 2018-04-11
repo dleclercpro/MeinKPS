@@ -561,7 +561,7 @@ class ReadStickRadio(StickCommand):
         """
 
         # Store timeout values
-        self.timeout = {"Stick": timeout + 250,
+        self.timeout = {"Stick": timeout + 500,
                         "Radio": lib.pack(timeout, n = 4)}
 
         # Store channel
@@ -748,7 +748,7 @@ class WriteReadStickRadio(StickCommand):
         self.data["TX"] = data
 
         # Store timeout values
-        self.timeout = {"Stick": (retry + 1) * timeout + 250,
+        self.timeout = {"Stick": (retry + 1) * timeout + 500,
                         "Radio": lib.pack(timeout, n = 4)}
 
         # Store retry count
