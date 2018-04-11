@@ -3014,10 +3014,10 @@ class SetPumpAbsoluteTB(PumpSetCommand, PumpBigCommand):
         """
 
         # Encode rate (divide by pump stroke)
-        rate = int(rate / self.pump.basal.stroke)
+        rate = int(round(rate / self.pump.basal.stroke))
 
         # Encode duration (divide by time block)
-        duration = int(duration / self.pump.basal.time)
+        duration = int(round(duration / self.pump.basal.time))
 
         # Test rate
         lib.withinRangeInt(rate, [0, 1400], "Invalid TB rate.")
@@ -3085,10 +3085,10 @@ class SetPumpPercentageTB(PumpSetCommand, PumpBigCommand):
         """
 
         # Encode rate
-        rate = int(rate)
+        rate = int(round(rate))
 
         # Encode duration (divide by time block)
-        duration = int(duration / self.pump.basal.time)
+        duration = int(round(duration / self.pump.basal.time))
 
         # Test rate
         lib.withinRangeInt(rate, [0, 200], "Invalid TB rate.")

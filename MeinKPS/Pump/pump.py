@@ -1226,16 +1226,16 @@ class TB(PumpComponent):
 
         # Choose command depending on units
         # U/h
-        if units == "U/h":
+        if TB["Units"] == "U/h":
 
             # Run command
-            self.commands["Set Absolute"].run(rate, duration)
+            self.commands["Set Absolute"].run(TB["Rate"], TB["Duration"])
 
         # %
-        elif units == "%":
+        elif TB["Units"] == "%":
 
             # Run command
-            self.commands["Set Percentage"].run(rate, duration)
+            self.commands["Set Percentage"].run(TB["Rate"], TB["Duration"])
 
         # Info
         print "Verifying if TB was correctly enacted..."
