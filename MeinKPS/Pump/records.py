@@ -99,14 +99,17 @@ class Record(object):
                     # Remove record from history pages
                     del pages[i:i + self.size]
 
+	        # No match
+		else:
+
+		    # Raise error
+		    raise errors.InvalidRecord
+
             # If not matching, move to next one
             except:
 
-                # Skip
-                pass
-
-            # Increment index
-            i += 1
+	        # Increment index
+                i += 1
 
         # Verify necessity of storing
         if self.t:

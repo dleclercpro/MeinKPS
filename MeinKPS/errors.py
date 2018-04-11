@@ -85,7 +85,7 @@ class BaseError(Exception):
 class StickError(BaseError):
     pass
 
-class InvalidPacket(BaseError):
+class InvalidPacket(StickError):
     pass
 
 class PumpError(BaseError):
@@ -305,6 +305,21 @@ class HistoryPageBadCRC(PumpError):
         # Define error info
         self.info = ("Bad history page CRC. Expected: " + self.args[0] + ". " +
                      "Computed: " + self.args[1] + ".")
+
+
+
+class InvalidRecord(PumpError):
+
+    def prepare(self):
+
+	"""
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	    PREPARE
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	"""
+
+	# Define error info
+	self.info = "Invalid pump history record."
 
 
 

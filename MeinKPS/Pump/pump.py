@@ -945,17 +945,8 @@ class History(PumpComponent):
         # Read number of pages
         self.measure()
 
-        # If only one page
-        if self.size == 1:
-
-            # Read it
-            self.read(1)
-
-        # Otherwise
-        else:
-
-            # Read last two
-            self.read(2)
+        # Read max 2 pages
+        self.read(min(self.size, 2))
 
 
 
@@ -1431,7 +1422,7 @@ def main():
     #pump.dailyTotals.read()
 
     # Read pump history
-    #pump.history.read(36)
+    pump.history.read(2)
 
     # Send bolus to pump
     #pump.bolus.deliver(0.2)
@@ -1440,7 +1431,7 @@ def main():
     #pump.TB.read()
 
     # Send TB to pump
-    pump.TB.set(2.35, "U/h", 30)
+    #pump.TB.set(2.35, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)
