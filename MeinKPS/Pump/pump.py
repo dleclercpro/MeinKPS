@@ -39,10 +39,10 @@ import datetime
 # USER LIBRARIES
 import lib
 import errors
-import commands
-import stick
-import records
 import reporter
+import commands
+import records
+from Stick import stick
 
 
 
@@ -53,7 +53,7 @@ Reporter = reporter.Reporter()
 
 class Pump(object):
 
-    def __init__(self):
+    def __init__(self, stick):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,7 +62,7 @@ class Pump(object):
         """
 
         # Give the pump a stick
-        self.stick = stick.Stick(self)
+        self.stick = stick
 
         # Give the pump a power instance
         self.power = Power(self)
@@ -228,7 +228,7 @@ class Power(PumpComponent):
         self.session = 10
 
         # Instanciate corresponding command
-        self.command = commands.PowerPump(pump)
+        self.command = commands.Power(pump)
 
 
 
@@ -300,7 +300,7 @@ class Time(PumpComponent):
         super(Time, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpTime(pump)
+        self.command = commands.ReadTime(pump)
 
 
 
@@ -318,7 +318,7 @@ class Model(PumpComponent):
         super(Model, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpModel(pump)
+        self.command = commands.ReadModel(pump)
 
 
 
@@ -336,7 +336,7 @@ class Firmware(PumpComponent):
         super(Firmware, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpFirmware(pump)
+        self.command = commands.ReadFirmware(pump)
 
 
 
@@ -354,7 +354,7 @@ class Buttons(PumpComponent):
         self.name = "Last button pushed"
 
         # Define command
-        self.command = commands.PushPumpButton(pump)
+        self.command = commands.PushButton(pump)
 
 
 
@@ -406,7 +406,7 @@ class Battery(PumpComponent):
         self.name = "Battery level (V)"
 
         # Define command
-        self.command = commands.ReadPumpBattery(pump)
+        self.command = commands.ReadBattery(pump)
 
 
 
@@ -427,7 +427,7 @@ class Reservoir(PumpComponent):
         self.name = "Reservoir level (U)"
 
         # Define command
-        self.command = commands.ReadPumpReservoir(pump)
+        self.command = commands.ReadReservoir(pump)
 
 
 
@@ -445,9 +445,9 @@ class Status(PumpComponent):
         super(Status, self).__init__(pump)
 
         # Instanciate corresponding commands
-        self.commands = {"Read": commands.ReadPumpStatus(pump),
-                         "Suspend": commands.SuspendPump(pump),
-                         "Resume": commands.ResumePump(pump)}
+        self.commands = {"Read": commands.ReadStatus(pump),
+                         "Suspend": commands.Suspend(pump),
+                         "Resume": commands.Resume(pump)}
 
 
 
@@ -544,7 +544,7 @@ class Settings(PumpComponent):
         self.name = "Pump settings"
 
         # Define command
-        self.command = commands.ReadPumpSettings(pump)
+        self.command = commands.ReadSettings(pump)
 
 
 
@@ -591,7 +591,7 @@ class BGUnits(PumpComponent):
         super(BGUnits, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpBGUnits(pump)
+        self.command = commands.ReadBGUnits(pump)
 
 
 
@@ -609,7 +609,7 @@ class CarbsUnits(PumpComponent):
         super(CarbsUnits, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpCarbsUnits(pump)
+        self.command = commands.ReadCarbsUnits(pump)
 
 
 
@@ -627,7 +627,7 @@ class TBUnits(PumpComponent):
         super(TBUnits, self).__init__(pump)
 
         # Define command
-        self.command = commands.SetPumpTBUnits(pump)
+        self.command = commands.SetTBUnits(pump)
 
 
 
@@ -677,7 +677,7 @@ class BGTargets(PumpComponent):
         super(BGTargets, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpBGTargets(pump)
+        self.command = commands.ReadBGTargets(pump)
 
 
 
@@ -719,7 +719,7 @@ class ISF(PumpComponent):
         super(ISF, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpISF(pump)
+        self.command = commands.ReadISF(pump)
 
 
 
@@ -761,7 +761,7 @@ class CSF(PumpComponent):
         super(CSF, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpCSF(pump)
+        self.command = commands.ReadCSF(pump)
 
 
 
@@ -803,7 +803,7 @@ class DailyTotals(PumpComponent):
         super(DailyTotals, self).__init__(pump)
 
         # Define command
-        self.command = commands.ReadPumpDailyTotals(pump)
+        self.command = commands.ReadDailyTotals(pump)
 
 
 
@@ -822,9 +822,9 @@ class Basal(PumpComponent):
 
         # Define command
         self.commands = {
-            "Standard": commands.ReadPumpBasalProfileStandard(pump),
-            "A": commands.ReadPumpBasalProfileA(pump),
-            "B": commands.ReadPumpBasalProfileB(pump)}
+            "Standard": commands.ReadBasalProfileStandard(pump),
+            "A": commands.ReadBasalProfileA(pump),
+            "B": commands.ReadBasalProfileB(pump)}
 
         # Initialize basal characteristics
         self.stroke = 0.025 # Pump basal stroke rate (U/h)
@@ -903,9 +903,9 @@ class TB(PumpComponent):
         super(TB, self).__init__(pump)
 
         # Instanciate corresponding command
-        self.commands = {"Read": commands.ReadPumpTB(pump),
-                         "Set Absolute": commands.SetPumpAbsoluteTB(pump),
-                         "Set Percentage": commands.SetPumpPercentageTB(pump)}
+        self.commands = {"Read": commands.ReadTB(pump),
+                         "Set Absolute": commands.SetAbsoluteTB(pump),
+                         "Set Percentage": commands.SetPercentageTB(pump)}
 
 
 
@@ -1155,7 +1155,7 @@ class Bolus(PumpComponent):
         self.name = "Last bolus (U)"
 
         # Instanciate corresponding command
-        self.command = commands.DeliverPumpBolus(pump)
+        self.command = commands.DeliverBolus(pump)
 
         # Initialize bolus characteristics
         self.stroke = 0.1  # Pump bolus stroke (U)
@@ -1228,8 +1228,8 @@ class History(PumpComponent):
         self.pages = None
 
         # Define commands
-        self.commands = {"Measure": commands.ReadPumpHistorySize(pump),
-                         "Read": commands.ReadPumpHistoryPage(pump)}
+        self.commands = {"Measure": commands.ReadHistorySize(pump),
+                         "Read": commands.ReadHistoryPage(pump)}
 
         # Define possible records
         self.records = [records.TBRecord(pump),
@@ -1358,25 +1358,25 @@ def main():
     """
 
     # Instanciate a pump for me
-    pump = Pump()
+    pump = Pump(stick.Stick())
 
     # Start dialogue with pump
     pump.start()
 
     # Read pump time
-    #pump.time.read()
+    pump.time.read()
 
     # Read pump model
-    #pump.model.read()
+    pump.model.read()
 
     # Read pump firmware version
-    #pump.firmware.read()
+    pump.firmware.read()
 
     # Read pump battery level
-    #pump.battery.read()
+    pump.battery.read()
 
     # Read remaining amount of insulin in pump
-    #pump.reservoir.read()
+    pump.reservoir.read()
 
     # Push button on pump
     #pump.buttons.push("EASY")
@@ -1386,40 +1386,40 @@ def main():
     #pump.buttons.push("DOWN")
 
     # Read pump status
-    #pump.status.read()
+    pump.status.read()
     #pump.status.verify()
     #pump.status.suspend()
     #pump.status.resume()
 
     # Read pump settings
-    #pump.settings.read()
+    pump.settings.read()
     #pump.settings.verify()
 
     # Read units set in pump
-    #pump.units["BG"].read()
-    #pump.units["Carbs"].read()
-    #pump.units["TB"].read()
+    pump.units["BG"].read()
+    pump.units["Carbs"].read()
+    pump.units["TB"].read()
 
     # Set TB units
     #pump.units["TB"].set("U/h")
     #pump.units["TB"].set("%")
 
     # Read BG targets stored in pump
-    #pump.BGTargets.read()
+    pump.BGTargets.read()
 
     # Read insulin sensitivity factors stored in pump
-    #pump.ISF.read()
+    pump.ISF.read()
 
     # Read carb sensitivity factors stored in pump
-    #pump.CSF.read()
+    pump.CSF.read()
 
     # Read basal profile stored in pump
-    #pump.basal.read("Standard")
-    #pump.basal.read("A")
-    #pump.basal.read("B")
+    pump.basal.read("Standard")
+    pump.basal.read("A")
+    pump.basal.read("B")
 
     # Read daily totals on pump
-    #pump.dailyTotals.read()
+    pump.dailyTotals.read()
 
     # Read pump history
     pump.history.read(2)

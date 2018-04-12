@@ -35,6 +35,7 @@ import exporter
 import uploader
 import calculator
 from CGM import cgm
+from Stick import stick
 from Pump import pump
 
 
@@ -63,7 +64,7 @@ class Loop(object):
 
         # Give the loop devices
         self.cgm = cgm.CGM()
-        self.pump = pump.Pump()
+        self.pump = pump.Pump(stick.Stick())
 
         # Give the loop a calculator
         self.calc = calculator.Calculator()

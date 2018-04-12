@@ -32,8 +32,8 @@ import datetime
 # USER LIBRARIES
 import lib
 import errors
-import packets
 import reporter
+import packets
 
 
 
@@ -45,7 +45,7 @@ Reporter = reporter.Reporter()
 # CLASSES
 class Command(object):
 
-    def __init__(self):
+    def __init__(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,11 +53,20 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Store pump instance
+        self.pump = pump
+
         # Initialize code
         self.code = None
 
         # Initialize report
         self.report = None
+
+        # Define radio timeout
+        self.timeout = 250
+
+        # Define function to generate send packet
+        self.toPumpPacket = packets.ToPumpPacket
 
         # Initialize resettable command characteristics
         self.reset()
@@ -76,8 +85,15 @@ class Command(object):
         self.response = None
 
         # Reset data
-        self.data = {"TX": None,
-                     "RX": None}
+        self.data = {"TX": [],
+                     "RX": []}
+
+        # Reset packets
+        self.packets = {"TX": [],
+                        "RX": []}
+
+        # Reset parameters
+        self.parameters = ["00"]
 
 
 
@@ -102,8 +118,18 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
-        pass
+        # Generate packet to send to pump
+        pkt = self.toPumpPacket(self.code, self.parameters)
+
+        # Show it
+        #pkt.show()
+
+        # Store it
+        self.packets["TX"].append(pkt)
+
+        # Send encoded packet
+        self.pump.stick.commands["Radio TX/RX"].run(pkt.bytes["Encoded"],
+                                                    self.timeout)
 
 
 
@@ -115,8 +141,18 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
-        pass
+        # Store data
+        self.data["RX"].append(self.pump.stick.commands["Radio TX/RX"]
+                                              .data["RX"])
+
+        # Parse data into packet
+        pkt = self.fromPumpPacket(self.data["RX"][-1])
+
+        # Show it
+        pkt.show()
+
+        # Store it
+        self.packets["RX"].append(pkt)
 
 
 
@@ -192,715 +228,7 @@ class Command(object):
 
 
 
-
-
-
-class StickCommand(Command):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(StickCommand, self).__init__()
-
-        # Store stick instance
-        self.stick = stick
-
-
-
-class ReadStickName(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(ReadStickName, self).__init__(stick)
-
-        # Define code
-        self.code = 0
-
-        # Define report
-        self.report = "stick.json"
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get data
-        self.data["RX"] = self.stick.read()
-
-
-
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decode data
-        self.response = "".join(lib.charify(self.data["RX"]))
-
-        # Info
-        print "Stick name: " + self.response
-
-
-
-class ReadStickAuthor(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(ReadStickAuthor, self).__init__(stick)
-
-        # Define code
-        self.code = 1
-
-        # Define report
-        self.report = "stick.json"
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get data
-        self.data["RX"] = self.stick.read()
-
-
-
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decode data
-        self.response = "".join(lib.charify(self.data["RX"]))
-
-        # Info
-        print "Stick author: " + self.response
-
-
-
-class ReadStickRadioRegister(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(ReadStickRadioRegister, self).__init__(stick)
-
-        # Define code
-        self.code = 10
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(ReadStickRadioRegister, self).reset()
-
-        # Reset register
-        self.register = None
-
-        # Reset register address
-        self.address = None
-
-
-
-    def encode(self, register):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ENCODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store register
-        self.register = register
-
-        # Get register address
-        self.address = self.stick.registers.index(register)
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-        # Send register address
-        self.stick.write(self.address)
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get data
-        self.data["RX"] = self.stick.read()
-
-
-
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Decode data
-        self.response = self.data["RX"][0]
-
-        # Info
-        print self.register + ": " + str(self.response)
-
-
-
-class WriteStickRadioRegister(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(WriteStickRadioRegister, self).__init__(stick)
-
-        # Define code
-        self.code = 11
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(WriteStickRadioRegister, self).reset()
-
-        # Reset register
-        self.register = None
-
-        # Reset register address
-        self.address = None
-
-        # Reset register value
-        self.value = None
-
-
-
-    def encode(self, register, value):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ENCODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store register
-        self.register = register
-
-        # Get register address
-        self.address = self.stick.registers.index(register)
-
-        # Store register value
-        self.value = value
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-        # Send register address
-        self.stick.write(self.address)
-
-        # Send value
-        self.stick.write(self.value)
-
-
-
-class ReadStickRadio(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(ReadStickRadio, self).__init__(stick)
-
-        # Define code
-        self.code = 20
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(ReadStickRadio, self).reset()
-
-        # Reset timeout values
-        self.timeout = None
-
-        # Reset channel
-        self.channel = None
-
-
-
-    def encode(self, timeout = 250, channel = 0):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ENCODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store timeout values
-        self.timeout = {"Stick": timeout + 500,
-                        "Radio": lib.pack(timeout, n = 4)}
-
-        # Store channel
-        self.channel = channel
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-        # Send channel
-        self.stick.write(self.channel)
-
-        # Send radio timeout
-        self.stick.write(self.timeout["Radio"])
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get data (remove EOP byte)
-        self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
-                                          radio = True)[:-1]
-
-
-
-class WriteStickRadio(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(WriteStickRadio, self).__init__(stick)
-
-        # Define code
-        self.code = 21
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(WriteStickRadio, self).reset()
-
-        # Reset repeat count
-        self.repeat = None
-
-        # Reset repeat delay
-        self.delay = None
-
-        # Reset channel
-        self.channel = None
-
-
-
-    def encode(self, data, repeat = 0, delay = 0, channel = 0):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ENCODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store data
-        self.data["TX"] = data
-
-        # Store repeat count
-        self.repeat = repeat
-
-        # Store repeat delay
-        self.delay = lib.pack(delay, n = 4)
-
-        # Store channel
-        self.channel = channel
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-        # Send channel
-        self.stick.write(self.channel)
-
-        # Send delay
-        self.stick.write(self.delay)
-
-        # Send data
-        self.stick.write(self.data["TX"])
-
-        # Send last byte
-        self.stick.write(0)
-
-
-
-class WriteReadStickRadio(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(WriteReadStickRadio, self).__init__(stick)
-
-        # Define code
-        self.code = 22
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(WriteReadStickRadio, self).reset()
-
-        # Reset timeout values
-        self.timeout = None
-
-        # Reset retry count
-        self.retry = None
-
-        # Reset write repeat count
-        self.repeat = None
-
-        # Reset write repeat delay
-        self.delay = None
-
-        # Reset channel values
-        self.channel = None
-
-
-
-    def encode(self, data, timeout = 250, retry = 3, repeat = 1, delay = 0,
-                           channelTX = 0, channelRX = 0):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ENCODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store data
-        self.data["TX"] = data
-
-        # Store timeout values
-        self.timeout = {"Stick": (retry + 1) * timeout + 500,
-                        "Radio": lib.pack(timeout, n = 4)}
-
-        # Store retry count
-        self.retry = retry
-
-        # Store write repeat count
-        self.repeat = repeat
-
-        # Store write repeat delay
-        self.delay = lib.pack(delay, n = 4)
-
-        # Store channel values
-        self.channel = {"TX": channelTX,
-                        "RX": channelRX}
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-        # Send write channel
-        self.stick.write(self.channel["TX"])
-
-        # Send repeat count
-        self.stick.write(self.repeat)
-
-        # Send send repeat delay
-        self.stick.write(self.delay)
-
-        # Send read channel
-        self.stick.write(self.channel["RX"])
-
-        # Send radio timeout
-        self.stick.write(self.timeout["Radio"])
-
-        # Send retry count
-        self.stick.write(self.retry)
-
-        # Send packet
-        self.stick.write(self.data["TX"])
-
-        # Send last byte
-        self.stick.write(0)
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get data (remove EOP byte)
-        self.data["RX"] = self.stick.read(timeout = self.timeout["Stick"],
-                                          radio = True)[:-1]
-
-
-
-class ToggleStickLED(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(ToggleStickLED, self).__init__(stick)
-
-        # Define code
-        self.code = 30
-
-
-
-class TurnOnStickLED(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(TurnOnStickLED, self).__init__(stick)
-
-        # Define code
-        self.code = 31
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-
-
-class TurnOffStickLED(StickCommand):
-
-    def __init__(self, stick):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(TurnOffStickLED, self).__init__(stick)
-
-        # Define code
-        self.code = 32
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command code
-        self.stick.write(self.code)
-
-
-
-
-
-
-class PumpCommand(Command):
+class SetCommand(Command):
 
     def __init__(self, pump):
 
@@ -911,103 +239,7 @@ class PumpCommand(Command):
         """
 
         # Initialize command
-        super(PumpCommand, self).__init__()
-
-        # Store pump instance
-        self.pump = pump
-
-        # Get its stick instance
-        self.stick = pump.stick
-
-        # Define radio timeout
-        self.timeout = 250
-
-        # Define function to generate send packet
-        self.toPumpPacket = packets.ToPumpPacket
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(PumpCommand, self).reset()
-
-        # Reset data
-        self.data = {"TX": [],
-                     "RX": []}
-
-        # Reset packets
-        self.packets = {"TX": [],
-                        "RX": []}
-
-        # Reset parameters
-        self.parameters = ["00"]
-
-
-
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Generate packet to send to pump
-        pkt = self.toPumpPacket(self.code, self.parameters)
-
-        # Show it
-        #pkt.show()
-
-        # Store it
-        self.packets["TX"].append(pkt)
-
-        # Send encoded packet
-        self.stick.commands["Radio TX/RX"].run(pkt.bytes["Encoded"],
-                                               self.timeout)
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store data
-        self.data["RX"].append(self.stick.commands["Radio TX/RX"].data["RX"])
-
-        # Parse data into packet
-        pkt = self.fromPumpPacket(self.data["RX"][-1])
-
-        # Show it
-        pkt.show()
-
-        # Store it
-        self.packets["RX"].append(pkt)
-
-
-
-class PumpSetCommand(PumpCommand):
-
-    def __init__(self, pump):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(PumpSetCommand, self).__init__(pump)
+        super(SetCommand, self).__init__(pump)
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpStatusPacket
@@ -1023,7 +255,7 @@ class PumpSetCommand(PumpCommand):
         """
 
         # Initialize decoding
-        super(PumpSetCommand, self).decode()
+        super(SetCommand, self).decode()
 
         # Get last packet
         pkt = self.packets["RX"][-1]
@@ -1039,7 +271,7 @@ class PumpSetCommand(PumpCommand):
 
 
 
-class PumpGetCommand(PumpCommand):
+class GetCommand(Command):
 
     def __init__(self, pump):
 
@@ -1050,7 +282,7 @@ class PumpGetCommand(PumpCommand):
         """
 
         # Initialize command
-        super(PumpGetCommand, self).__init__(pump)
+        super(GetCommand, self).__init__(pump)
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpPacket
@@ -1068,13 +300,12 @@ class PumpGetCommand(PumpCommand):
         # Get last packet
         pkt = self.packets["RX"][-1]
 
-        # Return payload in integer format for further decoding as well as its
-        # size
+        # Return payload in integer format for further decoding and its size
         return [lib.dehexify(pkt.payload), pkt.size]
 
 
 
-class PumpBigCommand(PumpCommand):
+class BigCommand(Command):
 
     def __init__(self, pump):
 
@@ -1085,7 +316,7 @@ class PumpBigCommand(PumpCommand):
         """
 
         # Initialize command
-        super(PumpBigCommand, self).__init__(pump)
+        super(BigCommand, self).__init__(pump)
 
         # Define number of times commands need to be executed
         self.repeat = {"Init": 1,
@@ -1093,9 +324,9 @@ class PumpBigCommand(PumpCommand):
                        "NAK": 0}
 
         # Define commands
-        self.cmds = {"Init": None,
-                     "ACK": PumpACK(pump),
-                     "NAK": PumpNAK(pump)}
+        self.commands = {"Init": None,
+                         "ACK": ACK(pump),
+                         "NAK": NAK(pump)}
 
 
 
@@ -1111,10 +342,10 @@ class PumpBigCommand(PumpCommand):
         for i in range(self.repeat["Init"]):
 
             # Do it
-            self.cmds["Init"].run()
+            self.commands["Init"].run()
 
             # Store response packet
-            self.packets["RX"].append(self.cmds["Init"].packets["RX"][-1])
+            self.packets["RX"].append(self.commands["Init"].packets["RX"][-1])
 
 
 
@@ -1133,10 +364,11 @@ class PumpBigCommand(PumpCommand):
             try:
 
                 # Do it
-                self.cmds["ACK"].run()
+                self.commands["ACK"].run()
 
                 # Store response packet
-                self.packets["RX"].append(self.cmds["ACK"].packets["RX"][-1])
+                self.packets["RX"].append(self.commands["ACK"]
+                                              .packets["RX"][-1])
 
             # Radio error
             except (errors.RadioError, errors.InvalidPacket):
@@ -1167,7 +399,7 @@ class PumpBigCommand(PumpCommand):
         try:
 
             # Execute command core
-            super(PumpBigCommand, self).execute()
+            super(BigCommand, self).execute()
 
         # Radio error
         except (errors.RadioError, errors.InvalidPacket):
@@ -1205,10 +437,11 @@ class PumpBigCommand(PumpCommand):
             try:
 
                 # Do it
-                self.cmds["NAK"].run()
+                self.commands["NAK"].run()
 
                 # Store response packet
-                self.packets["RX"].append(self.cmds["NAK"].packets["RX"][-1])
+                self.packets["RX"].append(self.commands["NAK"]
+                                              .packets["RX"][-1])
 
                 # Exit
                 return
@@ -1258,7 +491,7 @@ class PumpBigCommand(PumpCommand):
 
 
 
-class PumpGetBigCommand(PumpBigCommand):
+class GetBigCommand(BigCommand):
 
     def __init__(self, pump):
 
@@ -1269,17 +502,17 @@ class PumpGetBigCommand(PumpBigCommand):
         """
 
         # Initialize command
-        super(PumpGetBigCommand, self).__init__(pump)
+        super(GetBigCommand, self).__init__(pump)
+
+        # Define number of NAK retries
+        self.repeat["NAK"] = 10
 
         # Define radio timeout
         self.timeout = 150
 
         # Overwrite ACK and NAK timeout
-        self.cmds["ACK"].timeout = self.timeout
-        self.cmds["NAK"].timeout = self.timeout
-
-        # Define number of NAK retries
-        self.repeat["NAK"] = 10
+        self.commands["ACK"].timeout = self.timeout
+        self.commands["NAK"].timeout = self.timeout
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpBigPacket
@@ -1305,7 +538,7 @@ class PumpGetBigCommand(PumpBigCommand):
 
 
 
-class PumpACK(PumpCommand):
+class ACK(Command):
 
     def __init__(self, pump):
 
@@ -1316,7 +549,7 @@ class PumpACK(PumpCommand):
         """
 
         # Initialize command
-        super(PumpACK, self).__init__(pump)
+        super(ACK, self).__init__(pump)
 
         # Define code
         self.code = "06"
@@ -1326,7 +559,7 @@ class PumpACK(PumpCommand):
 
 
 
-class PumpNAK(PumpCommand):
+class NAK(Command):
 
     def __init__(self, pump):
 
@@ -1337,7 +570,7 @@ class PumpNAK(PumpCommand):
         """
 
         # Initialize command
-        super(PumpNAK, self).__init__(pump)
+        super(NAK, self).__init__(pump)
 
         # Define code
         self.code = "15"
@@ -1347,7 +580,7 @@ class PumpNAK(PumpCommand):
 
 
 
-class PowerPumpInit(PumpSetCommand):
+class PowerInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -1358,14 +591,14 @@ class PowerPumpInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(PowerPumpInit, self).__init__(pump)
+        super(PowerInit, self).__init__(pump)
 
         # Define code
         self.code = "5D"
 
 
 
-class PowerPump(PumpSetCommand, PumpBigCommand):
+class Power(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -1376,7 +609,7 @@ class PowerPump(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(PowerPump, self).__init__(pump)
+        super(Power, self).__init__(pump)
 
         # Define code
         self.code = "5D"
@@ -1385,7 +618,7 @@ class PowerPump(PumpSetCommand, PumpBigCommand):
         self.report = "pump.json"
 
         # Define prelude command
-        self.cmds["Init"] = PowerPumpInit(pump)
+        self.commands["Init"] = PowerInit(pump)
 
         # Define prelude command repeat counts
         self.repeat["Init"] = 50
@@ -1407,7 +640,7 @@ class PowerPump(PumpSetCommand, PumpBigCommand):
             try:
 
                 # Execute
-                self.cmds["Init"].run()
+                self.commands["Init"].run()
 
                 # Exit
                 return
@@ -1464,7 +697,7 @@ class PowerPump(PumpSetCommand, PumpBigCommand):
 
 
 
-class ReadPumpTime(PumpGetCommand):
+class ReadTime(GetCommand):
 
     def __init__(self, pump):
 
@@ -1475,7 +708,7 @@ class ReadPumpTime(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpTime, self).__init__(pump)
+        super(ReadTime, self).__init__(pump)
 
         # Define code
         self.code = "70"
@@ -1491,7 +724,7 @@ class ReadPumpTime(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpTime, self).decode()
+        [payload, size] = super(ReadTime, self).decode()
 
         # Destructure
         [h, m, s, Y1, Y2, M, D] = payload[0:7]
@@ -1504,7 +737,7 @@ class ReadPumpTime(PumpGetCommand):
 
 
 
-class ReadPumpModel(PumpGetCommand):
+class ReadModel(GetCommand):
 
     def __init__(self, pump):
 
@@ -1515,7 +748,7 @@ class ReadPumpModel(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpModel, self).__init__(pump)
+        super(ReadModel, self).__init__(pump)
 
         # Define code
         self.code = "8D"
@@ -1534,7 +767,7 @@ class ReadPumpModel(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpModel, self).decode()
+        [payload, size] = super(ReadModel, self).decode()
 
         # Convert payload to char format
         payload = lib.charify(payload)
@@ -1561,7 +794,7 @@ class ReadPumpModel(PumpGetCommand):
 
 
 
-class ReadPumpFirmware(PumpGetCommand):
+class ReadFirmware(GetCommand):
 
     def __init__(self, pump):
 
@@ -1572,7 +805,7 @@ class ReadPumpFirmware(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpFirmware, self).__init__(pump)
+        super(ReadFirmware, self).__init__(pump)
 
         # Define code
         self.code = "74"
@@ -1591,7 +824,7 @@ class ReadPumpFirmware(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpFirmware, self).decode()
+        [payload, size] = super(ReadFirmware, self).decode()
 
         # Convert payload to char format
         payload = lib.charify(payload)
@@ -1618,7 +851,7 @@ class ReadPumpFirmware(PumpGetCommand):
 
 
 
-class ReadPumpBattery(PumpGetCommand):
+class ReadBattery(GetCommand):
 
     def __init__(self, pump):
 
@@ -1629,7 +862,7 @@ class ReadPumpBattery(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpBattery, self).__init__(pump)
+        super(ReadBattery, self).__init__(pump)
 
         # Define code
         self.code = "72"
@@ -1648,7 +881,7 @@ class ReadPumpBattery(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpBattery, self).decode()
+        [payload, size] = super(ReadBattery, self).decode()
 
         # Decode
         self.response = round(lib.unpack(payload[1:3]) / 100.0, 2)
@@ -1675,7 +908,7 @@ class ReadPumpBattery(PumpGetCommand):
 
 
 
-class ReadPumpReservoir(PumpGetCommand):
+class ReadReservoir(GetCommand):
 
     def __init__(self, pump):
 
@@ -1686,7 +919,7 @@ class ReadPumpReservoir(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpReservoir, self).__init__(pump)
+        super(ReadReservoir, self).__init__(pump)
 
         # Define code
         self.code = "73"
@@ -1705,7 +938,7 @@ class ReadPumpReservoir(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpReservoir, self).decode()
+        [payload, size] = super(ReadReservoir, self).decode()
 
         # Decode
         self.response = round(lib.unpack(payload[0:2]) * self.pump.bolus.stroke,
@@ -1733,7 +966,7 @@ class ReadPumpReservoir(PumpGetCommand):
 
 
 
-class ReadPumpStatus(PumpGetCommand):
+class ReadStatus(GetCommand):
 
     def __init__(self, pump):
 
@@ -1744,7 +977,7 @@ class ReadPumpStatus(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpStatus, self).__init__(pump)
+        super(ReadStatus, self).__init__(pump)
 
         # Define code
         self.code = "CE"
@@ -1760,7 +993,7 @@ class ReadPumpStatus(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpStatus, self).decode()
+        [payload, size] = super(ReadStatus, self).decode()
 
         # Decode
         self.response = {"Normal": payload[0] == 3,
@@ -1769,7 +1002,7 @@ class ReadPumpStatus(PumpGetCommand):
 
 
 
-class ReadPumpSettings(PumpGetCommand):
+class ReadSettings(GetCommand):
 
     def __init__(self, pump):
 
@@ -1780,7 +1013,7 @@ class ReadPumpSettings(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpSettings, self).__init__(pump)
+        super(ReadSettings, self).__init__(pump)
 
         # Define code
         self.code = "C0"
@@ -1799,7 +1032,7 @@ class ReadPumpSettings(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpSettings, self).decode()
+        [payload, size] = super(ReadSettings, self).decode()
 
         # Decode
         self.response = {"DIA": payload[17],
@@ -1825,7 +1058,7 @@ class ReadPumpSettings(PumpGetCommand):
 
 
 
-class ReadPumpBGUnits(PumpGetCommand):
+class ReadBGUnits(GetCommand):
 
     def __init__(self, pump):
 
@@ -1836,7 +1069,7 @@ class ReadPumpBGUnits(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpBGUnits, self).__init__(pump)
+        super(ReadBGUnits, self).__init__(pump)
 
         # Define code
         self.code = "89"
@@ -1855,7 +1088,7 @@ class ReadPumpBGUnits(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpBGUnits, self).decode()
+        [payload, size] = super(ReadBGUnits, self).decode()
 
         # Decode
         # mg/dL
@@ -1888,7 +1121,7 @@ class ReadPumpBGUnits(PumpGetCommand):
 
 
 
-class ReadPumpCarbsUnits(PumpGetCommand):
+class ReadCarbsUnits(GetCommand):
 
     def __init__(self, pump):
 
@@ -1899,7 +1132,7 @@ class ReadPumpCarbsUnits(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpCarbsUnits, self).__init__(pump)
+        super(ReadCarbsUnits, self).__init__(pump)
 
         # Define code
         self.code = "88"
@@ -1918,7 +1151,7 @@ class ReadPumpCarbsUnits(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpCarbsUnits, self).decode()
+        [payload, size] = super(ReadCarbsUnits, self).decode()
 
         # Decode
         # mg/dL
@@ -1951,7 +1184,7 @@ class ReadPumpCarbsUnits(PumpGetCommand):
 
 
 
-class ReadPumpBGTargets(PumpGetCommand):
+class ReadBGTargets(GetCommand):
 
     def __init__(self, pump):
 
@@ -1962,7 +1195,7 @@ class ReadPumpBGTargets(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpBGTargets, self).__init__(pump)
+        super(ReadBGTargets, self).__init__(pump)
 
         # Define code
         self.code = "9F"
@@ -1981,7 +1214,7 @@ class ReadPumpBGTargets(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpBGTargets, self).decode()
+        [payload, size] = super(ReadBGTargets, self).decode()
 
         # Initialize response
         self.response = {"Times": [],
@@ -2057,7 +1290,7 @@ class ReadPumpBGTargets(PumpGetCommand):
 
 
 
-class ReadPumpFactors(PumpGetCommand):
+class ReadFactors(GetCommand):
 
     def __init__(self, pump):
 
@@ -2068,7 +1301,7 @@ class ReadPumpFactors(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpFactors, self).__init__(pump)
+        super(ReadFactors, self).__init__(pump)
 
         # Define report
         self.report = "pump.json"
@@ -2084,7 +1317,7 @@ class ReadPumpFactors(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpFactors, self).decode()
+        [payload, size] = super(ReadFactors, self).decode()
 
         # Initialize response
         self.response = {"Times": [],
@@ -2136,7 +1369,7 @@ class ReadPumpFactors(PumpGetCommand):
 
 
 
-class ReadPumpISF(ReadPumpFactors):
+class ReadISF(ReadFactors):
 
     def __init__(self, pump):
 
@@ -2147,7 +1380,7 @@ class ReadPumpISF(ReadPumpFactors):
         """
 
         # Initialize command
-        super(ReadPumpISF, self).__init__(pump)
+        super(ReadISF, self).__init__(pump)
 
         # Define code
         self.code = "8B"
@@ -2163,7 +1396,7 @@ class ReadPumpISF(ReadPumpFactors):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpISF, self).decode()
+        [payload, size] = super(ReadISF, self).decode()
 
         # Decode units
         # mg/dL
@@ -2203,7 +1436,7 @@ class ReadPumpISF(ReadPumpFactors):
 
 
 
-class ReadPumpCSF(ReadPumpFactors):
+class ReadCSF(ReadFactors):
 
     def __init__(self, pump):
 
@@ -2214,7 +1447,7 @@ class ReadPumpCSF(ReadPumpFactors):
         """
 
         # Initialize command
-        super(ReadPumpCSF, self).__init__(pump)
+        super(ReadCSF, self).__init__(pump)
 
         # Define code
         self.code = "8A"
@@ -2230,7 +1463,7 @@ class ReadPumpCSF(ReadPumpFactors):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpCSF, self).decode()
+        [payload, size] = super(ReadCSF, self).decode()
 
         # Decode units
         # mg/dL
@@ -2282,7 +1515,7 @@ class ReadPumpCSF(ReadPumpFactors):
 
 
 
-class ReadPumpBasalProfile(PumpGetBigCommand):
+class ReadBasalProfile(GetBigCommand):
 
     def __init__(self, pump):
 
@@ -2293,7 +1526,7 @@ class ReadPumpBasalProfile(PumpGetBigCommand):
         """
 
         # Initialize command
-        super(ReadPumpBasalProfile, self).__init__(pump)
+        super(ReadBasalProfile, self).__init__(pump)
 
         # Define report
         self.report = "pump.json"
@@ -2316,7 +1549,7 @@ class ReadPumpBasalProfile(PumpGetBigCommand):
         """
 
         # Initialize decoding and get whole payload
-        [payload, size] = super(ReadPumpBasalProfile, self).decode()
+        [payload, size] = super(ReadBasalProfile, self).decode()
 
         # Initialize response
         self.response = {"Times": [],
@@ -2392,7 +1625,7 @@ class ReadPumpBasalProfile(PumpGetBigCommand):
 
 
 
-class ReadPumpBasalProfileStandard(ReadPumpBasalProfile):
+class ReadBasalProfileStandard(ReadBasalProfile):
 
     def __init__(self, pump):
 
@@ -2403,7 +1636,7 @@ class ReadPumpBasalProfileStandard(ReadPumpBasalProfile):
         """
 
         # Initialize command
-        super(ReadPumpBasalProfileStandard, self).__init__(pump)
+        super(ReadBasalProfileStandard, self).__init__(pump)
 
         # Define code
         self.code = "92"
@@ -2413,7 +1646,7 @@ class ReadPumpBasalProfileStandard(ReadPumpBasalProfile):
 
 
 
-class ReadPumpBasalProfileA(ReadPumpBasalProfile):
+class ReadBasalProfileA(ReadBasalProfile):
 
     def __init__(self, pump):
 
@@ -2424,7 +1657,7 @@ class ReadPumpBasalProfileA(ReadPumpBasalProfile):
         """
 
         # Initialize command
-        super(ReadPumpBasalProfileA, self).__init__(pump)
+        super(ReadBasalProfileA, self).__init__(pump)
 
         # Define code
         self.code = "93"
@@ -2434,7 +1667,7 @@ class ReadPumpBasalProfileA(ReadPumpBasalProfile):
 
 
 
-class ReadPumpBasalProfileB(ReadPumpBasalProfile):
+class ReadBasalProfileB(ReadBasalProfile):
 
     def __init__(self, pump):
 
@@ -2445,7 +1678,7 @@ class ReadPumpBasalProfileB(ReadPumpBasalProfile):
         """
 
         # Initialize command
-        super(ReadPumpBasalProfileB, self).__init__(pump)
+        super(ReadBasalProfileB, self).__init__(pump)
 
         # Define code
         self.code = "94"
@@ -2455,7 +1688,7 @@ class ReadPumpBasalProfileB(ReadPumpBasalProfile):
 
 
 
-class ReadPumpDailyTotals(PumpGetCommand):
+class ReadDailyTotals(GetCommand):
 
     def __init__(self, pump):
 
@@ -2466,7 +1699,7 @@ class ReadPumpDailyTotals(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpDailyTotals, self).__init__(pump)
+        super(ReadDailyTotals, self).__init__(pump)
 
         # Define code
         self.code = "79"
@@ -2482,7 +1715,7 @@ class ReadPumpDailyTotals(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpDailyTotals, self).decode()
+        [payload, size] = super(ReadDailyTotals, self).decode()
 
         # Decode
         self.response = {"Today": round(lib.unpack(payload[0:2]) *
@@ -2492,7 +1725,7 @@ class ReadPumpDailyTotals(PumpGetCommand):
 
 
 
-class ReadPumpTB(PumpGetCommand):
+class ReadTB(GetCommand):
 
     def __init__(self, pump):
 
@@ -2503,7 +1736,7 @@ class ReadPumpTB(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpTB, self).__init__(pump)
+        super(ReadTB, self).__init__(pump)
 
         # Define code
         self.code = "98"
@@ -2522,7 +1755,7 @@ class ReadPumpTB(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpTB, self).decode()
+        [payload, size] = super(ReadTB, self).decode()
 
         # Initialize response
         self.response = {"Rate": None,
@@ -2571,7 +1804,7 @@ class ReadPumpTB(PumpGetCommand):
 
 
 
-class ReadPumpHistorySize(PumpGetCommand):
+class ReadHistorySize(GetCommand):
 
     def __init__(self, pump):
 
@@ -2582,7 +1815,7 @@ class ReadPumpHistorySize(PumpGetCommand):
         """
 
         # Initialize command
-        super(ReadPumpHistorySize, self).__init__(pump)
+        super(ReadHistorySize, self).__init__(pump)
 
         # Define code
         self.code = "9D"
@@ -2598,14 +1831,14 @@ class ReadPumpHistorySize(PumpGetCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpHistorySize, self).decode()
+        [payload, size] = super(ReadHistorySize, self).decode()
 
         # Decode (max 36 pages)
         self.response = min(payload[3] + 1, 36)
 
 
 
-class ReadPumpHistoryPageInit(PumpSetCommand):
+class ReadHistoryPageInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -2616,14 +1849,14 @@ class ReadPumpHistoryPageInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(ReadPumpHistoryPageInit, self).__init__(pump)
+        super(ReadHistoryPageInit, self).__init__(pump)
 
         # Define code
         self.code = "80"
 
 
 
-class ReadPumpHistoryPage(PumpGetBigCommand):
+class ReadHistoryPage(GetBigCommand):
 
     def __init__(self, pump):
 
@@ -2634,13 +1867,13 @@ class ReadPumpHistoryPage(PumpGetBigCommand):
         """
 
         # Initialize command
-        super(ReadPumpHistoryPage, self).__init__(pump)
+        super(ReadHistoryPage, self).__init__(pump)
 
         # Define code
         self.code = "80"
 
         # Define prelude command
-        self.cmds["Init"] = ReadPumpHistoryPageInit(pump)
+        self.commands["Init"] = ReadHistoryPageInit(pump)
 
         # Define postlude command repeat count
         self.repeat["ACK"] = 15
@@ -2697,7 +1930,7 @@ class ReadPumpHistoryPage(PumpGetBigCommand):
         """
 
         # Initialize decoding and get payload
-        [payload, size] = super(ReadPumpHistoryPage, self).decode()
+        [payload, size] = super(ReadHistoryPage, self).decode()
 
         # Test history page CRC
         self.crc(payload)
@@ -2707,7 +1940,7 @@ class ReadPumpHistoryPage(PumpGetBigCommand):
 
 
 
-class PushPumpButtonInit(PumpSetCommand):
+class PushButtonInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -2718,14 +1951,14 @@ class PushPumpButtonInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(PushPumpButtonInit, self).__init__(pump)
+        super(PushButtonInit, self).__init__(pump)
 
         # Define code
         self.code = "5B"
 
 
 
-class PushPumpButton(PumpSetCommand, PumpBigCommand):
+class PushButton(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -2736,13 +1969,13 @@ class PushPumpButton(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(PushPumpButton, self).__init__(pump)
+        super(PushButton, self).__init__(pump)
 
         # Define code
         self.code = "5B"
 
         # Define prelude command
-        self.cmds["Init"] = PushPumpButtonInit(pump)
+        self.commands["Init"] = PushButtonInit(pump)
 
 
 
@@ -2774,7 +2007,7 @@ class PushPumpButton(PumpSetCommand, PumpBigCommand):
 
 
 
-class ResumePumpInit(PumpSetCommand):
+class ResumeInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -2785,14 +2018,14 @@ class ResumePumpInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(ResumePumpInit, self).__init__(pump)
+        super(ResumeInit, self).__init__(pump)
 
         # Define code
         self.code = "4D"
 
 
 
-class ResumePump(PumpSetCommand, PumpBigCommand):
+class Resume(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -2803,13 +2036,13 @@ class ResumePump(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(ResumePump, self).__init__(pump)
+        super(Resume, self).__init__(pump)
 
         # Define code
         self.code = "4D"
 
         # Define prelude command
-        self.cmds["Init"] = ResumePumpInit(pump)
+        self.commands["Init"] = ResumeInit(pump)
 
 
 
@@ -2829,7 +2062,7 @@ class ResumePump(PumpSetCommand, PumpBigCommand):
 
 
 
-class SuspendPumpInit(PumpSetCommand):
+class SuspendInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -2840,14 +2073,14 @@ class SuspendPumpInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(SuspendPumpInit, self).__init__(pump)
+        super(SuspendInit, self).__init__(pump)
 
         # Define code
         self.code = "4D"
 
 
 
-class SuspendPump(PumpSetCommand, PumpBigCommand):
+class Suspend(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -2858,13 +2091,13 @@ class SuspendPump(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(SuspendPump, self).__init__(pump)
+        super(Suspend, self).__init__(pump)
 
         # Define code
         self.code = "4D"
 
         # Define prelude command
-        self.cmds["Init"] = SuspendPumpInit(pump)
+        self.commands["Init"] = SuspendInit(pump)
 
 
 
@@ -2884,7 +2117,7 @@ class SuspendPump(PumpSetCommand, PumpBigCommand):
 
 
 
-class DeliverPumpBolusInit(PumpSetCommand):
+class DeliverBolusInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -2895,14 +2128,14 @@ class DeliverPumpBolusInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(DeliverPumpBolusInit, self).__init__(pump)
+        super(DeliverBolusInit, self).__init__(pump)
 
         # Define code
         self.code = "42"
 
 
 
-class DeliverPumpBolus(PumpSetCommand, PumpBigCommand):
+class DeliverBolus(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -2913,13 +2146,13 @@ class DeliverPumpBolus(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(DeliverPumpBolus, self).__init__(pump)
+        super(DeliverBolus, self).__init__(pump)
 
         # Define code
         self.code = "42"
 
         # Define prelude command
-        self.cmds["Init"] = DeliverPumpBolusInit(pump)
+        self.commands["Init"] = DeliverBolusInit(pump)
 
 
 
@@ -2945,7 +2178,7 @@ class DeliverPumpBolus(PumpSetCommand, PumpBigCommand):
 
 
 
-class SetPumpTBUnitsInit(PumpSetCommand):
+class SetTBUnitsInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -2956,14 +2189,14 @@ class SetPumpTBUnitsInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(SetPumpTBUnitsInit, self).__init__(pump)
+        super(SetTBUnitsInit, self).__init__(pump)
 
         # Define code
         self.code = "68"
 
 
 
-class SetPumpTBUnits(PumpSetCommand, PumpBigCommand):
+class SetTBUnits(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -2974,13 +2207,13 @@ class SetPumpTBUnits(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(SetPumpTBUnits, self).__init__(pump)
+        super(SetTBUnits, self).__init__(pump)
 
         # Define code
         self.code = "68"
 
         # Define prelude command
-        self.cmds["Init"] = SetPumpTBUnitsInit(pump)
+        self.commands["Init"] = SetTBUnitsInit(pump)
 
 
 
@@ -3012,7 +2245,7 @@ class SetPumpTBUnits(PumpSetCommand, PumpBigCommand):
 
 
 
-class SetPumpAbsoluteTBInit(PumpSetCommand):
+class SetAbsoluteTBInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -3023,14 +2256,14 @@ class SetPumpAbsoluteTBInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(SetPumpAbsoluteTBInit, self).__init__(pump)
+        super(SetAbsoluteTBInit, self).__init__(pump)
 
         # Define code
         self.code = "4C"
 
 
 
-class SetPumpAbsoluteTB(PumpSetCommand, PumpBigCommand):
+class SetAbsoluteTB(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -3041,13 +2274,13 @@ class SetPumpAbsoluteTB(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(SetPumpAbsoluteTB, self).__init__(pump)
+        super(SetAbsoluteTB, self).__init__(pump)
 
         # Define code
         self.code = "4C"
 
         # Define prelude command
-        self.cmds["Init"] = SetPumpAbsoluteTBInit(pump)
+        self.commands["Init"] = SetAbsoluteTBInit(pump)
 
 
 
@@ -3083,7 +2316,7 @@ class SetPumpAbsoluteTB(PumpSetCommand, PumpBigCommand):
 
 
 
-class SetPumpPercentageTBInit(PumpSetCommand):
+class SetPercentageTBInit(SetCommand):
 
     def __init__(self, pump):
 
@@ -3094,14 +2327,14 @@ class SetPumpPercentageTBInit(PumpSetCommand):
         """
 
         # Initialize command
-        super(SetPumpPercentageTBInit, self).__init__(pump)
+        super(SetPercentageTBInit, self).__init__(pump)
 
         # Define code
         self.code = "69"
 
 
 
-class SetPumpPercentageTB(PumpSetCommand, PumpBigCommand):
+class SetPercentageTB(SetCommand, BigCommand):
 
     def __init__(self, pump):
 
@@ -3112,13 +2345,13 @@ class SetPumpPercentageTB(PumpSetCommand, PumpBigCommand):
         """
 
         # Initialize command
-        super(SetPumpPercentageTB, self).__init__(pump)
+        super(SetPercentageTB, self).__init__(pump)
 
         # Define code
         self.code = "69"
 
         # Define prelude command
-        self.cmds["Init"] = SetPumpPercentageTBInit(pump)
+        self.commands["Init"] = SetPercentageTBInit(pump)
 
 
 
