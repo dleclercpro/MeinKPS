@@ -90,6 +90,68 @@ class Loop(object):
 
 
 
+    def start(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            START
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define starting time
+        self.start = datetime.datetime.now()
+
+        # Give user info
+        print "Start: " + lib.formatTime(self.start)
+
+        # Start CGM
+        self.cgm.start()
+
+        # Start pump
+        self.pump.start()
+
+        # LED on
+        self.pump.stick.commands["LED On"].run()
+
+        # Update last loop time
+        Reporter.add(self.report, ["Status"],
+                     {"Time": lib.formatTime(self.start)}, True)
+
+        # Update loop iterations
+        Reporter.increment(self.report, ["Status"], "N")
+
+
+
+    def stop(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STOP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # LED off
+        self.pump.stick.commands["LED Off"].run()
+
+        # Stop pump
+        self.pump.stop()
+
+        # Stop CGM
+        self.cgm.stop()
+
+        # Define ending time
+        self.end = datetime.datetime.now()
+
+        # Give user info
+        print "End: " + lib.formatTime(self.end)
+
+        # Update loop infos
+        Reporter.add(self.report, ["Status"],
+                                  {"Duration": (self.end - self.start).seconds},
+                                  True)
+
+
+
     def doCGM(self):
 
         """
@@ -97,9 +159,6 @@ class Loop(object):
             DOCGM
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Start CGM
-        self.cgm.start()
 
         # Read BGs (last 24 hours)
         self.do(self.cgm.dumpBG, ["CGM"], "BG", 8)
@@ -113,9 +172,6 @@ class Loop(object):
         # Read calibrations
         self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
 
-        # Stop CGM
-        self.cgm.stop()
-
 
 
     def doPump(self):
@@ -125,9 +181,6 @@ class Loop(object):
             DOPUMP
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Start pump
-        self.pump.start()
 
         # Read battery level
         self.do(self.pump.battery.read, ["Pump"], "Battery")
@@ -180,9 +233,6 @@ class Loop(object):
         # Acknowledge TB was done
         self.do(lib.NOP, ["Pump"], "TB")
 
-        # Stop pump
-        self.pump.stop()
-
 
 
     def export(self):
@@ -222,21 +272,8 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # LED on
-        self.pump.stick.commands["LED On"].run()
-
-        # Define starting time
-        self.start = datetime.datetime.now()
-
-        # Give user info
-        print "Start: " + lib.formatTime(self.start)
-
-        # Update last loop time
-        Reporter.add(self.report, ["Status"],
-                     {"Time": lib.formatTime(self.start)}, True)
-
-        # Update loop iterations
-        Reporter.increment(self.report, ["Status"], "N")
+        # Start
+        self.start()
 
         # Try CGM stuff
         try:
@@ -274,19 +311,8 @@ class Loop(object):
             # Ignore
             pass
 
-        # Define ending time
-        self.end = datetime.datetime.now()
-
-        # Give user info
-        print "End: " + lib.formatTime(self.end)
-
-        # Update loop infos
-        Reporter.add(self.report, ["Status"],
-                                  {"Duration": (self.end - self.start).seconds},
-                                  True)
-
-        # LED off
-        self.pump.stick.commands["LED Off"].run()
+        # Stop
+        self.stop()
 
 
 
