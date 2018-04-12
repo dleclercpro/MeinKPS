@@ -873,9 +873,6 @@ class PumpCommand(Command):
         # Define radio timeout
         self.timeout = 250
 
-        # Define retry count
-        self.retry = 1
-
         # Define function to generate send packet
         self.toPumpPacket = packets.ToPumpPacket
 
