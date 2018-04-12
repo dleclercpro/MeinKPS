@@ -162,13 +162,16 @@ class Loop(object):
             if self.pump.TB.value["Duration"] != 0:
 
                 # Cancel it
-                self.do(self.pump.TB.cancel, ["Pump"], "TB")
+                self.pump.TB.cancel()
 
         # Otherwise, enact recommendation
         else:
 
             # Enact TB
-            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
+            self.pump.TB.set(*TB)
+
+        # Acknowledge TB was done
+        self.do(lib.NOP, ["Pump"], "TB")
 
         # Re-update history
         self.do(self.pump.history.update, ["Pump"], "History")

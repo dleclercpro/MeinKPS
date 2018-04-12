@@ -899,3 +899,17 @@ def getEP(configuration, direction, interface = 0, setting = 0):
     return usb.util.find_descriptor(configuration[(interface, setting)],
         custom_match = lambda e:
             usb.util.endpoint_direction(e.bEndpointAddress) == direction)
+
+
+
+def NOP():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        NOP
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Do nothing.
+    """
+
+    # Exit
+    return
