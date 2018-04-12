@@ -473,7 +473,7 @@ class Stick(object):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.add(self.report, [], {"Frequency (MHz)": [f, now]}, True)
+        Reporter.add(self.report, [], {"Frequency": [f, now]}, True)
 
 
 
@@ -553,7 +553,7 @@ class Stick(object):
         """
 
         # Get last frequency optimization
-        entry = Reporter.get(self.report, [], "Frequency (MHz)")
+        entry = Reporter.get(self.report, [], "Frequency")
 
         # Frequency found
         if entry is not None:
