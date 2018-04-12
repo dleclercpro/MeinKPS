@@ -446,8 +446,8 @@ class Stick(object):
         x = x[indices]
         y = y[indices]
 
-        # Get frequency with max signal power (5 dBm threshold)
-        f = lib.getMaxMiddle(x, y, 5)
+        # Get frequency with max signal power (5 dBm threshold, 3 digits)
+        f = round(lib.getMaxMiddle(x, y, 5), 3)
 
         # Info
         print "Optimized frequency (MHz): " + str(f)
