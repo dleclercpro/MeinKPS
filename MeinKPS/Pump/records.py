@@ -383,20 +383,16 @@ class TBRecord(Record):
                       "Date": 5,
                       "Body": 8}
 
-        # Define theoretical max basal
-        minTB = {"U/h": 0, "%": 0}
-        maxTB = {"U/h": 35, "%": 200}
+        # Define theoretical max basal in bytes
+        minTB = {"U/h": 0 / pump.basal.stroke, "%": 0}
+        maxTB = {"U/h": 35 / pump.basal.stroke, "%": 200}
 
         # Define record's criteria
         self.criteria = (lambda x: x[0] == self.code and
-                                  (x[1] >= (minTB["U/h"] /
-                                            pump.basal.stroke) and
-                                   x[1] <= (maxTB["U/h"] /
-                                            pump.basal.stroke) and
-                                   x[7] >= 0 and x[7] < 8 or
-                                   x[1] >= minTB["%"] and
-                                   x[1] <= maxTB["%"] and
-                                   x[7] == 8))
+                                   minTB["U/h"] <= x[1] <= maxTB["U/h"] and
+                                   0 <= x[7] < 8 or
+                                   minTB["%"] <= x[1] <= maxTB["%"] and
+                                   x[7] == 8)
 
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
@@ -483,16 +479,15 @@ class BolusRecord(Record):
                       "Date": 5,
                       "Body": 0}
 
-        # Define theoretical max bolus
-        maxBolus = 25
+        # Define theoretical max bolus in bytes
+        maxBolus = 25 / pump.bolus.stroke
 
         # Define record's criteria
         self.criteria = (lambda x: x[0] == self.code and
-                                   x[1] <= (maxBolus / pump.bolus.stroke) and
-                                   x[2] <= (maxBolus / pump.bolus.stroke) and
+                                   0 <= x[1] <= maxBolus and
+                                   0 <= x[2] <= maxBolus and
                                    x[1] >= x[2] and
-                                   x[3] == 0)# and
-                                   #0 <= x[3] <= 16)
+                                   x[3] == 0)
 
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)
