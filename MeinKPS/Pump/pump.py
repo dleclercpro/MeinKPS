@@ -108,9 +108,6 @@ class Pump(object):
         # Give the pump a daily totals instance
         self.dailyTotals = DailyTotals(self)
 
-        # Give the pump a history instance
-        self.history = History(self)
-
         # Give the pump a basal profile instance
         self.basal = Basal(self)
 
@@ -119,6 +116,9 @@ class Pump(object):
 
         # Give the pump a bolus instance
         self.bolus = Bolus(self)
+
+        # Give the pump a history instance
+        self.history = History(self)
 
 
 
@@ -807,149 +807,6 @@ class DailyTotals(PumpComponent):
 
 
 
-class History(PumpComponent):
-
-    def __init__(self, pump):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            HOTFIX: suspend/resume records last to avoid corrupted detection of
-                    bolus records
-        """
-
-        # Initialize history component
-        super(History, self).__init__(pump)
-
-        # Initialize history size
-        self.size = None
-
-        # Initialize history pages
-        self.pages = None
-
-        # Define commands
-        self.commands = {"Measure": commands.ReadPumpHistorySize(pump),
-                         "Read": commands.ReadPumpHistoryPage(pump)}
-
-        # Define possible records
-        self.records = [records.TBRecord(pump),
-                        records.BolusRecord(pump),
-                        records.CarbsRecord(pump),
-                        records.SuspendRecord(pump),
-                        records.ResumeRecord(pump)]
-
-
-
-    def measure(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MEASURE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get history size
-        self.size = self.commands["Measure"].run()
-
-        # Info
-        print "Found " + str(self.size) + " pump history pages."
-
-
-
-    def read(self, n = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Reset pages
-        self.pages = []
-
-        # If no number of pages to read was specified, read all of them
-        if n is None:
-
-            # Find number of existing history pages
-            self.measure()
-
-            # Assign number of pages found
-            n = self.size
-
-        # Download n most recent pages of pump history (reverse page numbers to
-        # ensure data is downloaded from oldest to most recent, without data
-        # corruption between pages)
-        for i in reversed(range(n)):
-
-            # Get page
-            page = self.commands["Read"].run(i)
-
-            # Extend known history of pump if page passes CRC check
-            self.pages.extend(page)
-
-        # Show pages
-        self.show()
-
-        # Decode them
-        self.decode()
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Info
-        print ("Read page(s) [" + str(len(self.pages)) + " byte(s)]:")
-
-        # Print downloaded history pages
-        print self.pages
-
-
-
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Info
-        print "Finding records..."
-
-        # Initialize pages
-        pages = self.pages
-
-        # Go through records
-        for record in self.records:
-
-            # Find record within pages, decode it, and store remaining data
-            pages = record.find(pages)
-
-
-
-    def update(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UDPATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read number of pages
-        self.measure()
-
-        # Read max 2 pages
-        self.read(min(self.size, 2))
-
-
-
 class Basal(PumpComponent):
 
     def __init__(self, pump):
@@ -1346,6 +1203,149 @@ class Bolus(PumpComponent):
 
         # Run command
         self.command.run(bolus)
+
+
+
+class History(PumpComponent):
+
+    def __init__(self, pump):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            HOTFIX: suspend/resume records last to avoid corrupted detection of
+                    bolus records
+        """
+
+        # Initialize history component
+        super(History, self).__init__(pump)
+
+        # Initialize history size
+        self.size = None
+
+        # Initialize history pages
+        self.pages = None
+
+        # Define commands
+        self.commands = {"Measure": commands.ReadPumpHistorySize(pump),
+                         "Read": commands.ReadPumpHistoryPage(pump)}
+
+        # Define possible records
+        self.records = [records.TBRecord(pump),
+                        records.BolusRecord(pump),
+                        records.CarbsRecord(pump),
+                        records.SuspendRecord(pump),
+                        records.ResumeRecord(pump)]
+
+
+
+    def measure(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MEASURE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Get history size
+        self.size = self.commands["Measure"].run()
+
+        # Info
+        print "Found " + str(self.size) + " pump history pages."
+
+
+
+    def read(self, n = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READ
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Reset pages
+        self.pages = []
+
+        # If no number of pages to read was specified, read all of them
+        if n is None:
+
+            # Find number of existing history pages
+            self.measure()
+
+            # Assign number of pages found
+            n = self.size
+
+        # Download n most recent pages of pump history (reverse page numbers to
+        # ensure data is downloaded from oldest to most recent, without data
+        # corruption between pages)
+        for i in reversed(range(n)):
+
+            # Get page
+            page = self.commands["Read"].run(i)
+
+            # Extend known history of pump if page passes CRC check
+            self.pages.extend(page)
+
+        # Show pages
+        self.show()
+
+        # Decode them
+        self.decode()
+
+
+
+    def show(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHOW
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        print ("Read page(s) [" + str(len(self.pages)) + " byte(s)]:")
+
+        # Print downloaded history pages
+        print self.pages
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        print "Finding records..."
+
+        # Initialize pages
+        pages = self.pages
+
+        # Go through records
+        for record in self.records:
+
+            # Find record within pages, decode it, and store remaining data
+            pages = record.find(pages)
+
+
+
+    def update(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            UDPATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read number of pages
+        self.measure()
+
+        # Read max 2 pages
+        self.read(min(self.size, 2))
 
 
 
