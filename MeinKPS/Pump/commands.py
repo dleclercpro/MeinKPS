@@ -817,7 +817,7 @@ class WriteReadStickRadio(StickCommand):
 
 
 
-class SwitchStickLED(StickCommand):
+class ToggleStickLED(StickCommand):
 
     def __init__(self, stick):
 
@@ -828,10 +828,59 @@ class SwitchStickLED(StickCommand):
         """
 
         # Initialize command
-        super(SwitchStickLED, self).__init__(stick)
+        super(ToggleStickLED, self).__init__(stick)
 
         # Define code
         self.code = 30
+
+
+
+class TurnOnStickLED(StickCommand):
+
+    def __init__(self, stick):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(TurnOnStickLED, self).__init__(stick)
+
+        # Define code
+        self.code = 31
+
+
+
+    def send(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Send command code
+        self.stick.write(self.code)
+
+
+
+class TurnOffStickLED(StickCommand):
+
+    def __init__(self, stick):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize command
+        super(TurnOffStickLED, self).__init__(stick)
+
+        # Define code
+        self.code = 32
 
 
 

@@ -100,7 +100,9 @@ class Stick(object):
                          "Radio RX": commands.ReadStickRadio(self),
                          "Radio TX": commands.WriteStickRadio(self),
                          "Radio TX/RX": commands.WriteReadStickRadio(self),
-                         "LED": commands.SwitchStickLED(self)}
+                         "LED Toggle": commands.ToggleStickLED(self),
+                         "LED On": commands.TurnOnStickLED(self),
+                         "LED Off": commands.TurnOffStickLED(self)}
 
         # Define radio registers
         self.registers = ["SYNC1",
@@ -623,13 +625,13 @@ class Stick(object):
         """
 
         # Switch LED
-        self.commands["LED"].run()
+        self.commands["LED Toggle"].run()
 
         # Wait
         time.sleep(1)
 
         # Re-switch LED
-        self.commands["LED"].run()
+        self.commands["LED Toggle"].run()
 
 
 

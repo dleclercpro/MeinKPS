@@ -221,6 +221,9 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # LED on
+        self.pump.stick.commands["LED On"].run()
+
         # Define starting time
         self.start = datetime.datetime.now()
 
@@ -280,6 +283,9 @@ class Loop(object):
         Reporter.add(self.report, ["Status"],
                                   {"Duration": (self.end - self.start).seconds},
                                   True)
+
+        # LED off
+        self.pump.stick.commands["LED Off"].run()
 
 
 
