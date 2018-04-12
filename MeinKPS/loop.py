@@ -164,17 +164,20 @@ class Loop(object):
                 # Cancel it
                 self.pump.TB.cancel()
 
+                # Re-update history
+                self.pump.history.update
+
         # Otherwise, enact recommendation
         else:
 
             # Enact TB
             self.pump.TB.set(*TB)
 
+            # Re-update history
+            self.pump.history.update
+
         # Acknowledge TB was done
         self.do(lib.NOP, ["Pump"], "TB")
-
-        # Re-update history
-        self.do(self.pump.history.update, ["Pump"], "History")
 
         # Stop pump
         self.pump.stop()
