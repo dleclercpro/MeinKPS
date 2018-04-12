@@ -59,8 +59,8 @@ class Loop(object):
         """
 
         # Initialize start/end times
-        self.start = None
-        self.end = None
+        self.t0 = None
+        self.t1 = None
 
         # Give the loop devices
         self.cgm = cgm.CGM()
@@ -99,10 +99,10 @@ class Loop(object):
         """
 
         # Define starting time
-        self.start = datetime.datetime.now()
+        self.t0 = datetime.datetime.now()
 
         # Give user info
-        print "Start: " + lib.formatTime(self.start)
+        print "Start: " + lib.formatTime(self.t0)
 
         # Start CGM
         self.cgm.start()
@@ -115,7 +115,7 @@ class Loop(object):
 
         # Update last loop time
         Reporter.add(self.report, ["Status"],
-                     {"Time": lib.formatTime(self.start)}, True)
+                     {"Time": lib.formatTime(self.t0)}, True)
 
         # Update loop iterations
         Reporter.increment(self.report, ["Status"], "N")
@@ -140,14 +140,14 @@ class Loop(object):
         self.cgm.stop()
 
         # Define ending time
-        self.end = datetime.datetime.now()
+        self.t1 = datetime.datetime.now()
 
         # Give user info
-        print "End: " + lib.formatTime(self.end)
+        print "End: " + lib.formatTime(self.t1)
 
         # Update loop infos
         Reporter.add(self.report, ["Status"],
-                                  {"Duration": (self.end - self.start).seconds},
+                                  {"Duration": (self.t1 - self.t0).seconds},
                                   True)
 
 
@@ -204,7 +204,7 @@ class Loop(object):
         self.do(self.pump.history.update, ["Pump"], "History")
 
         # Run calculator and get recommendation
-        TB = self.calc.run(self.start)
+        TB = self.calc.run(self.t0)
 
         # If no TB is required
         if TB is None:
@@ -244,7 +244,7 @@ class Loop(object):
         """
 
         # Export preprocessed treatments
-        self.do(Exporter.run, ["Status"], "Export", self.start)
+        self.do(Exporter.run, ["Status"], "Export", self.t0)
 
         # Upload them
         self.upload()
