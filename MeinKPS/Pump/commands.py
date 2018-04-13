@@ -1917,7 +1917,7 @@ class ReadHistoryPage(GetBigCommand):
         if computedCRC != expectedCRC:
 
             # Raise error
-            raise errors.HistoryPageBadCRC(expectedCRC, computedCRC)
+            raise errors.BadHistoryPageCRC(expectedCRC, computedCRC)
 
 
 
