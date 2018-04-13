@@ -88,7 +88,7 @@ class ProfileError(BaseError):
     pass
 
 class ReporterError(BaseError):
-pass
+    pass
 
 
 
