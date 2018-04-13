@@ -503,7 +503,7 @@ class Stick(object):
                     RSSIs[f].append(pkt.RSSI["dBm"])
 
                 # On invalid packet or radio error
-                except (errors.RadioError, errors.InvalidPacket):
+                except (errors.RadioError, errors.InvalidPumpPacket):
 
                     # Add fake low RSSI reading
                     RSSIs[f].append(-99)

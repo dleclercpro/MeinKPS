@@ -408,13 +408,13 @@ class PumpPacket(Packet):
                 if bits != "":
 
                     # Raise error
-                    raise errors.UnmatchedBits(word)
+                    raise errors.UnmatchPumpPacketBits(word)
 
                 # If last bits do not fit
                 elif word != "0101":
 
                     # Raise error
-                    raise errors.BadEnding(word)
+                    raise errors.BadPumpPacketEnding(word)
 
         # Split string in groups of 2 characters
         self.bytes["Decoded"]["Hex"] = lib.split(string, 2)
@@ -454,7 +454,7 @@ class PumpPacket(Packet):
         if n % 8 != 0:
 
             # Raise error
-            raise errors.MissingBits(n)
+            raise errors.MissingPumpPacketBits(n)
 
         # Initialize bytes
         bytes = []
@@ -680,7 +680,7 @@ class FromPumpPacket(FromPacket, PumpPacket):
         if computedCRC != expectedCRC:
 
             # Raise error
-            raise errors.BadCRC(expectedCRC, computedCRC)
+            raise errors.BadPumpPacketCRC(expectedCRC, computedCRC)
 
         # Return CRC
         return computedCRC
@@ -712,7 +712,7 @@ class FromPumpPacket(FromPacket, PumpPacket):
         if n < self.min:
 
             # Raise error
-            raise errors.NotEnoughBytes(self.min, n)
+            raise errors.NotEnoughPumpPacketBytes(self.min, n)
 
         # Get recipient
         self.recipient = self.bytes["Decoded"]["Hex"][0]
@@ -721,7 +721,7 @@ class FromPumpPacket(FromPacket, PumpPacket):
         if self.recipient != "A7":
 
             # Raise error
-            raise errors.UnknownPacket
+            raise errors.UnknownPumpPacket
 
         # Get serial
         self.serial = self.bytes["Decoded"]["Hex"][1:4]

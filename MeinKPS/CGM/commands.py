@@ -127,7 +127,7 @@ class Command(object):
         if computedCRC != expectedCRC:
 
             # Error
-            raise errors.BadCRCCGM
+            raise errors.BadCGMCRC
 
 
 

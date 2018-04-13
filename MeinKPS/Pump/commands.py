@@ -371,7 +371,7 @@ class BigCommand(Command):
                                               .packets["RX"][-1])
 
             # Radio error
-            except (errors.RadioError, errors.InvalidPacket):
+            except (errors.RadioError, errors.InvalidPumpPacket):
 
                 # NAK
                 if self.repeat["NAK"]:
@@ -402,7 +402,7 @@ class BigCommand(Command):
             super(BigCommand, self).execute()
 
         # Radio error
-        except (errors.RadioError, errors.InvalidPacket):
+        except (errors.RadioError, errors.InvalidPumpPacket):
 
             # NAK
             if self.repeat["NAK"]:
@@ -447,7 +447,7 @@ class BigCommand(Command):
                 return
 
             # Radio error
-            except (errors.RadioError, errors.InvalidPacket):
+            except (errors.RadioError, errors.InvalidPumpPacket):
 
                 # Ignore
                 pass
@@ -646,7 +646,7 @@ class Power(SetCommand, BigCommand):
                 return
 
             # Except
-            except (errors.RadioError, errors.InvalidPacket):
+            except (errors.RadioError, errors.InvalidPumpPacket):
 
                 # Ignore
                 pass

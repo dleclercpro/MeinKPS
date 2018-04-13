@@ -222,7 +222,7 @@ class Database(object):
         if computedCRC != expectedCRC:
 
             # Error
-            raise errors.BadCRCCGM
+            raise errors.BadCGMCRC
 
 
 

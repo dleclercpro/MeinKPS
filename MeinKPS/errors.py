@@ -33,15 +33,8 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Make sure arguments are of list type
-        if type(args) is not list:
-            args = [args]
-
-        # Store arguments
-        self.args = args[0]
-
-        # Make sure arguments are strings
-        self.args = [str(x) for x in self.args]
+        # Convert arguments to strings
+        self.args = [str(x) for x in args]
 
         # Prepare error
         self.prepare()
@@ -85,20 +78,17 @@ class BaseError(Exception):
 class StickError(BaseError):
     pass
 
-class InvalidPacket(StickError):
-    pass
-
 class PumpError(BaseError):
     pass
 
 class CGMError(BaseError):
     pass
 
-class ReporterError(BaseError):
-    pass
-
 class ProfileError(BaseError):
     pass
+
+class ReporterError(BaseError):
+pass
 
 
 
@@ -133,22 +123,7 @@ class RadioError(StickError):
 
 
 
-class UnsuccessfulRadioCommand(StickError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = "Radio command was unsuccessful."
-
-
-
-class BadFrequencies(StickError):
+class BadFrequencies(RadioError):
 
     def prepare(self):
 
@@ -163,8 +138,28 @@ class BadFrequencies(StickError):
 
 
 
+class UnsuccessfulRadioCommand(RadioError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "Radio command was unsuccessful."
+
+
+
 # Packets errors
-class UnknownPacket(InvalidPacket):
+class InvalidPumpPacket(RadioError):
+    pass
+
+
+
+class UnknownPumpPacket(InvalidPumpPacket):
 
     def prepare(self):
 
@@ -179,7 +174,7 @@ class UnknownPacket(InvalidPacket):
 
 
 
-class UnmatchedBits(InvalidPacket):
+class UnmatchPumpPacketBits(InvalidPumpPacket):
 
     def prepare(self):
 
@@ -195,7 +190,7 @@ class UnmatchedBits(InvalidPacket):
 
 
 
-class NotEnoughBytes(InvalidPacket):
+class NotEnoughPumpPacketBytes(InvalidPumpPacket):
 
     def prepare(self):
 
@@ -211,7 +206,7 @@ class NotEnoughBytes(InvalidPacket):
 
 
 
-class MissingBits(InvalidPacket):
+class MissingPumpPacketBits(InvalidPumpPacket):
 
     def prepare(self):
 
@@ -227,7 +222,7 @@ class MissingBits(InvalidPacket):
 
 
 
-class BadEnding(InvalidPacket):
+class BadPumpPacketEnding(InvalidPumpPacket):
 
     def prepare(self):
 
@@ -243,7 +238,7 @@ class BadEnding(InvalidPacket):
 
 
 
-class BadCRC(InvalidPacket):
+class BadPumpPacketCRC(InvalidPumpPacket):
 
     def prepare(self):
 
@@ -292,7 +287,7 @@ class NoHistory(PumpError):
 
 
 
-class HistoryPageBadCRC(PumpError):
+class BadHistoryPageCRC(PumpError):
 
     def prepare(self):
 
@@ -494,7 +489,7 @@ class NoCGM(CGMError):
 
 
 
-class BadCRCCGM(CGMError):
+class BadCGMCRC(CGMError):
 
     def prepare(self):
 
