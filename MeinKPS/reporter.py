@@ -43,6 +43,11 @@ import errors
 
 
 
+# CONSTANTS
+SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep + "Reports"
+
+
+
 class Reporter:
 
     def __init__(self):
@@ -54,11 +59,10 @@ class Reporter:
         """
 
         # Define source path
-        self.src = Path(os.path.dirname(os.path.realpath(__file__)) + os.sep +
-                        "Reports")
+        self.src = Path(SRC)
 
         # Define export path
-        self.exp = Path(self.src.str + "Export")
+        self.exp = Path(SRC + os.sep + "Export")
 
 
 
@@ -718,8 +722,7 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: first slash only works for Linux.
+            Note: first slash only works for Linux.
         """
 
         # Merge path
@@ -758,7 +761,7 @@ class Path:
 
 
 
-    def touch(self, file = None, n = 1):
+    def touch(self, file = None, n = 1, mode = "JSON"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -785,7 +788,7 @@ class Path:
                 os.makedirs(path)
 
             # Contine looking
-            self.touch(file, n + 1)
+            self.touch(file, n + 1, mode)
 
         # Look for file
         elif file is not None:
@@ -802,8 +805,11 @@ class Path:
                 # Create it
                 with open(path, "w") as f:
 
-                    # Dump empty dict
-                    json.dump({}, f)
+                    # JSON
+                    if mode == "JSON":
+
+                        # Dump empty dict
+                        json.dump({}, f)
 
                 # Give permissions
                 os.chmod(path, 0777)

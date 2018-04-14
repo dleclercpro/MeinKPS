@@ -23,77 +23,142 @@
 """
 
 # LIBRARIES
-import os
 import datetime
-import logging
-import logging.handlers
 
 
 
 # USER LIBRARIES
 import lib
+import reporter
 
 
 
 # CONSTANTS
-SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep + "Reports" + os.sep
+LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 
-# FUNCTIONS
-def get(name, level = logging.DEBUG):
+# CLASSES
+class Logger(object):
 
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        GET
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
+    def __init__(self, level = "DEBUG"):
 
-    # Get logger
-    logger = logging.getLogger(name)
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-    # Set its level
-    logger.setLevel(level)
+        # Define source path
+        self.src = reporter.Path(reporter.SRC)
 
-    # Define logging format
-    fmt = "[%(asctime)s] [%(levelname)8s] --- %(message)s"
+        # Get level index
+        self.level = LEVELS.index(level)
 
-    # Define formatter
-    formatter = logging.Formatter(fmt = fmt, datefmt = "%H:%M:%S")
+        # Define logging format
+        self.format = "[{:%H:%M:%S}] [{:>8}] --- {}"
 
-    # Define timed rotating handler
-    handler = logging.handlers.TimedRotatingFileHandler(getPath(), "midnight")
-
-    # Set formatter
-    handler.setFormatter(formatter)
-
-    # Add rotating handler
-    logger.addHandler(handler)
-
-    # Return it
-    return logger
+        # Define report
+        self.report = "loop.log"
 
 
 
-def getPath():
+    def log(self, level, msg):
 
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        GETPATH
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOG
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
-    # Get current time
-    now = datetime.datetime.now()
+        # Does level allow logging?
+        if self.level <= LEVELS.index(level):
 
-    # Define path
-    path = (SRC + "{0:04}".format(now.year) + os.sep +
-                  "{0:02}".format(now.month) + os.sep +
-                  "{0:02}".format(now.day) + os.sep +
-                  "loop.log")
+            # Get current time
+            now = datetime.datetime.now()
 
-    # Return it
-    return path
+            # Format message
+            msg = self.format.format(now, level, msg)
+
+            # Format date
+            date = lib.formatDate(now)
+
+            # Define path to log
+            path = reporter.Path(self.src.str + date)
+
+            # Touch it
+            path.touch(file = self.report, mode = None)
+
+            # Log message
+            with open(path.str + self.report, "a") as f:
+
+                # Do it and add new line
+                f.write(msg + "\n")
+
+
+
+    def debug(self, msg):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEBUG
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Log message
+        self.log("DEBUG", msg)
+
+
+
+    def info(self, msg):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INFO
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Log message
+        self.log("INFO", msg)
+
+
+
+    def warning(self, msg):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            WARNING
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Log message
+        self.log("WARNING", msg)
+
+
+
+    def ERROR(self, msg):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ERROR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Log message
+        self.log("ERROR", msg)
+
+
+
+    def critical(self, msg):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CRITICAL
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Log message
+        self.log("CRITICAL", msg)
 
 
 
@@ -105,23 +170,14 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Instanciate loggers
-    logger1 = get("1")
-    logger2 = get("2")
+    # Get current time
+    now = datetime.datetime.now()
 
-    # Try logger 1 out
-    logger1.debug("Test 1 - DEBUG")
-    logger1.info("Test 1 - INFO")
-    logger1.warning("Test 1 - WARNING")
-    logger1.error("Test 1 - ERROR")
-    logger1.critical("Test 1 - CRITICAL")
-    
-    # Try logger 2 out
-    logger2.debug("Test 2 - DEBUG")
-    logger2.info("Test 2 - INFO")
-    logger2.warning("Test 2 - WARNING")
-    logger2.error("Test 2 - ERROR")
-    logger2.critical("Test 2 - CRITICAL")
+    # Instanciate logger
+    logger = Logger()
+
+    # Write
+    logger.info("Test")
 
 
 
