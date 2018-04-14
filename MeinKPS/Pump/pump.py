@@ -28,6 +28,7 @@
 #       - No point in reissuing same TB
 #       - Decode square/dual boluses
 #       - Bolus needs to be checked after being enacted!
+#       - Suspend/Resume records at same time problematic!
 
 
 
