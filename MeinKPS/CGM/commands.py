@@ -24,7 +24,13 @@
 
 # USER LIBRARIES
 import lib
+import logger
 import packets
+
+
+
+# Instanciate logger
+Logger = logger.Logger("CGM/commands.py")
 
 
 
@@ -99,7 +105,7 @@ class Command(object):
         self.response["CRC"] = data[-2:]
 
         # Try and find XML structure in response
-        #print "XML: " + str(lib.XMLify(self.response["Payload"]))
+        Logger.debug("XML: " + str(lib.XMLify(self.response["Payload"])))
 
         # Verify response
         self.verify()
@@ -119,15 +125,11 @@ class Command(object):
         computedCRC = lib.computeCRC16(self.response["Head"] +
                                        self.response["Payload"])
 
-        # Give user info
-        print "Expected CRC: " + str(expectedCRC)
-        print "Computed CRC: " + str(computedCRC)
-
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
 
             # Error
-            raise errors.BadCGMCRC
+            raise errors.BadCGMCRC(expectedCRC, computedCRC)
 
 
 

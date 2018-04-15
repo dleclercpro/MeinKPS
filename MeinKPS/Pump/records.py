@@ -30,11 +30,13 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import logger
 import reporter
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("Pump/records.py")
 Reporter = reporter.Reporter()
 
 
@@ -215,7 +217,7 @@ class Record(object):
         record = self.__class__.__name__
 
         # Give user info
-        print "Found " + str(n) + " '" + record + "':"
+        Logger.info("Found " + str(n) + " '" + record + "':")
 
         # Inject None for missing record times and/or values
         for i in range(n):
@@ -243,7 +245,7 @@ class Record(object):
                 value = None
 
             # Print current record
-            print str(value) + " (" + lib.formatTime(t) + ")"
+            Logger.info(str(value) + " (" + lib.formatTime(t) + ")")
 
 
 
@@ -299,7 +301,7 @@ class SuspendRecord(Record):
         """
 
         # Give user info
-        print "Adding suspend time to report: '" + self.report + "'..."
+        Logger.debug("Adding suspend time to report: '" + self.report + "'...")
 
         # Add entries
         Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t,
@@ -359,7 +361,7 @@ class ResumeRecord(Record):
         """
 
         # Give user info
-        print "Adding resume time to report: '" + self.report + "'..."
+        Logger.debug("Adding resume time to report: '" + self.report + "'...")
 
         # Add entries
         Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t,
@@ -451,7 +453,7 @@ class TBRecord(Record):
         """
 
         # Give user info
-        print "Adding TBs to report: '" + self.report + "'..."
+        Logger.debug("Adding TBs to report: '" + self.report + "'...")
 
         # Add entries
         Reporter.add(self.report, ["Temporary Basals"], dict(zip(self.t,
@@ -529,7 +531,7 @@ class BolusRecord(Record):
         """
 
         # Give user info
-        print "Adding boluses to report: '" + self.report + "'..."
+        Logger.debug("Adding boluses to report: '" + self.report + "'...")
 
         # Add entries
         Reporter.add(self.report, ["Boluses"], dict(zip(self.t, self.values)))
@@ -689,7 +691,7 @@ class CarbsRecord(Record):
         """
 
         # Give user info
-        print "Adding carbs to report: '" + self.report + "'..."
+        Logger.debug("Adding carbs to report: '" + self.report + "'...")
 
         # Add entries
         Reporter.add(self.report, ["Carbs"], dict(zip(self.t, self.values)))

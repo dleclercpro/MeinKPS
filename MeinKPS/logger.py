@@ -41,7 +41,7 @@ LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 # CLASSES
 class Logger(object):
 
-    def __init__(self, level = "DEBUG"):
+    def __init__(self, name, level = "DEBUG"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,21 +49,24 @@ class Logger(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define source path
-        self.src = reporter.Path(reporter.SRC)
+        # Store logger name
+        self.name = name
 
         # Get level index
         self.level = LEVELS.index(level)
 
         # Define logging format
-        self.format = "[{:%H:%M:%S}] [{:>8}] --- {}"
+        self.format = "[{:%H:%M:%S}] [{:>17}] [{:>8}] --- {}"
+
+        # Define source path
+        self.src = reporter.Path(reporter.SRC)
 
         # Define report
         self.report = "loop.log"
 
 
 
-    def log(self, level, msg):
+    def log(self, level, msg, show = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,28 +75,31 @@ class Logger(object):
         """
 
         # Does level allow logging?
-        if self.level <= LEVELS.index(level):
+        if LEVELS.index(level) >= self.level:
 
             # Get current time
             now = datetime.datetime.now()
 
             # Format message
-            msg = self.format.format(now, level, msg)
-
-            # Format date
-            date = lib.formatDate(now)
+            msg = self.format.format(now, self.name, level, msg)
 
             # Define path to log
-            path = reporter.Path(self.src.str + date)
+            path = reporter.Path(self.src.str + lib.formatDate(now))
 
             # Touch it
-            path.touch(file = self.report, mode = None)
+            path.touch()
 
             # Log message
             with open(path.str + self.report, "a") as f:
 
                 # Do it and add new line
                 f.write(msg + "\n")
+
+            # Print it to terminal?
+            if show:
+
+                # Do it
+                print msg
 
 
 
@@ -174,7 +180,7 @@ def main():
     now = datetime.datetime.now()
 
     # Instanciate logger
-    logger = Logger()
+    logger = Logger(__name__)
 
     # Write
     logger.info("Test")

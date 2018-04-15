@@ -31,12 +31,14 @@ import copy
 
 # USER LIBRARIES
 import lib
+import logger
 import reporter
 import base
 
 
 
-# Instanciate a reporter
+# Define instances
+Logger = logger.Logger("Profiles/IOB.py")
 Reporter = reporter.Reporter()
 
 
@@ -106,7 +108,7 @@ class FutureIOB(base.FutureProfile):
         """
 
         # Give user info
-        print "Predicting IOB..."
+        Logger.debug("Predicting IOB...")
 
         # Reset previous IOB predictions
         self.reset()
@@ -203,7 +205,7 @@ class FutureIOB(base.FutureProfile):
             IOB += r * y[i]
 
         # Give user info
-        #print "IOB: " + str(IOB) + " U"
+        Logger.info("IOB: " + str(IOB) + " U")
 
         # Return IOB
         return IOB
@@ -216,12 +218,11 @@ class FutureIOB(base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             STORE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: only stores current IOB for later displaying purposes.
+            Note: only stores current IOB for later displaying purposes.
         """
 
         # Give user info
-        print "Adding current IOB to report: '" + self.report + "'..."
+        Logger.debug("Adding current IOB to report: '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, self.branch, {self.T[0]: round(self.y[0], 3)})

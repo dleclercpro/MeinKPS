@@ -35,6 +35,7 @@ import numpy as np
 
 
 # USER LIBRARIES
+import logger
 import errors
 
 
@@ -110,6 +111,11 @@ CRC16_TABLE = [0, 4129, 8258, 12387, 16516, 20645, 24774, 28903,
 
 
 
+# Instanciate logger
+Logger = logger.Logger("lib.py")
+
+
+
 # FUNCTIONS
 def derivate(x, t):
 
@@ -166,8 +172,8 @@ def integrate(x, t, args):
                       x(t + h/2, args) * 4 +
                       x(t + h, args)))
 
-    # Give user info
-    print "I[" + str(a) + ", " + str(b) + "] = " + str(I)
+    # Info
+    Logger.debug("I[" + str(a) + ", " + str(b) + "] = " + str(I))
 
     # Return result of definite integral
     return I
@@ -445,11 +451,11 @@ def mergeDicts(base, new, n = 1):
             # Otherwise
             else:
 
-                # Give user info
-                print "Key already exists:"
+                # Info
+                Logger.debug("Key already exists:")
 
-                # Give user info
-                print str(key) + ": " + str(value)
+                # Info
+                Logger.debug(str(key) + ": " + str(value))
 
     # On end
     if n == 1:
@@ -482,11 +488,11 @@ def mergeNDicts(*args):
         # Update base
         base = mergeDicts(base, new)
 
-    # Give user info
-    #print "New merged dictionary:"
+    # Info
+    Logger.debug("New merged dictionary:")
 
     # Show it
-    #printJSON(base)
+    Logger.debug(JSONize(base))
 
     # Return updated base
     return base
@@ -736,16 +742,16 @@ def unpack(bytes, order = ">"):
 
 
 
-def printJSON(x):
+def JSONize(x):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        PRINTJSON
+        JSONIZE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Print a dictionary using a particular JSON formatting.
+        Return a dictionary using a particular JSON formatting.
     """
 
-    print json.dumps(x, indent = 2, separators = (",", ": "), sort_keys = True)
+    return json.dumps(x, indent = 2, separators = (",", ": "), sort_keys = True)
 
 
 

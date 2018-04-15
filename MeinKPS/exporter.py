@@ -29,12 +29,14 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import logger
 import reporter
 from Profiles import *
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("exporter.py")
 Reporter = reporter.Reporter()
 
 
@@ -96,6 +98,9 @@ class Exporter(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Info
+        Logger.debug("Reading recent data...")
+
         # Get recent BGs
         self.BGs = Reporter.getRecent(self.now, "BG.json", [])
 
@@ -129,6 +134,9 @@ class Exporter(object):
             FILL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Info
+        Logger.debug("Building recent data structures...")
 
         # Fill BG report
         self.reports["BG"].update(self.BGs)

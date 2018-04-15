@@ -39,12 +39,18 @@ import sys
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 
 
 
 # CONSTANTS
 SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep + "Reports"
+
+
+
+# Instanciate logger
+Logger = logger.Logger("reporter.py")
 
 
 
@@ -84,7 +90,7 @@ class Reporter:
         if not paths:
 
             # Give user info
-            print "No dated report found for '" + name + "'."
+            Logger.debug("No dated report found for '" + name + "'.")
 
         # Otherwise
         else:
@@ -152,7 +158,7 @@ class Reporter:
         section = report.json
 
         # Give user info
-        print "Getting section: " + " > ".join(["."] + branch)
+        Logger.debug("Getting section: " + " > ".join(["."] + branch))
 
         # Loop through whole report to find section
         for i in range(d):
@@ -167,7 +173,7 @@ class Reporter:
                 if make:
                 
                     # Give user info
-                    print "Section not found. Making it..."
+                    Logger.debug("Section not found. Making it...")
 
                     # Create it
                     section[b] = {}
@@ -182,10 +188,10 @@ class Reporter:
             section = section[b]
 
         # Give user info
-        print "Section found."
+        Logger.debug("Section found.")
 
         # Show section
-        #lib.printJSON(section)
+        Logger.debug(lib.JSONize(section))
 
         # Return section
         return section
@@ -201,7 +207,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Getting entry: " + str(key)
+        Logger.debug("Getting entry: " + str(key))
 
         # Look if entry exists
         if key in section:
@@ -210,10 +216,10 @@ class Reporter:
             value = section[key]
 
             # Give user info
-            print "Entry found."
+            Logger.debug("Entry found.")
 
             # Show value
-            #lib.printJSON(value)
+            Logger.debug(lib.JSONize(value))
 
             # Return it for external access
             return value
@@ -222,7 +228,7 @@ class Reporter:
         else:
 
             # Give user info
-            print "No matching entry found."
+            Logger.debug("No matching entry found.")
 
             # Return nothing
             return None
@@ -238,10 +244,10 @@ class Reporter:
         """
 
         # Give user info
-        print "Adding entry:"
+        Logger.debug("Adding entry:")
 
         # Show entry
-        lib.printJSON(entry)
+        Logger.debug(lib.JSONize(entry))
 
         # Destructure entry
         key, value = entry.items()[0]
@@ -250,7 +256,7 @@ class Reporter:
         if key in section and not overwrite:
 
             # Give user info
-            print "Entry already exists."
+            Logger.debug("Entry already exists.")
 
             # Entry was not modified
             return False
@@ -265,13 +271,13 @@ class Reporter:
             if overwrite:
 
                 # Give user info
-                print "Entry overwritten."
+                Logger.debug("Entry overwritten.")
 
             # Otherwise
             else:
 
                 # Give user info
-                print "Entry added."
+                Logger.debug("Entry added.")
 
             # Entry was modified
             return True
@@ -287,7 +293,7 @@ class Reporter:
         """
 
         # Give user info
-        print "Deleting entry: " + str(key)
+        Logger.debug("Deleting entry: " + str(key))
 
         # If it does, delete it
         if key in section:
@@ -296,12 +302,12 @@ class Reporter:
             del section[key]
 
             # Give user info
-            print "Entry deleted."
+            Logger.debug("Entry deleted.")
 
         else:
 
             # Give user info
-            print "No such entry."
+            Logger.debug("No such entry.")
 
 
 
@@ -317,7 +323,7 @@ class Reporter:
         if len(entries) == 0:
 
             # Info
-            print "No entries to add."
+            Logger.debug("No entries to add.")
 
             # Exit
             return
@@ -469,10 +475,10 @@ class Reporter:
                     N += 1
 
             # In case of failure
-            except Exception as e:
+            except:
 
-                # Show error message
-                print e.message
+                # Ignore
+                pass
 
         # Return entries
         return entries
@@ -528,7 +534,8 @@ class Report:
         """
 
         # Give user info
-        print "Resetting report: '" + self.name + "' (" + str(self.date) + ")"
+        Logger.debug("Resetting report: '" + self.name + "' (" +
+                     str(self.date) + ")")
 
         # Reset JSON
         self.json = {}
@@ -544,7 +551,8 @@ class Report:
         """
 
         # Give user info
-        print "Erasing report: '" + self.name + "' (" + str(self.date) + ")"
+        Logger.debug("Erasing report: '" + self.name + "' (" + str(self.date) +
+                     ")")
 
         # Reset JSON
         self.reset()
@@ -563,7 +571,8 @@ class Report:
         """
 
         # Give user info
-        print "Updating report: '" + self.name + "' (" + str(self.date) + ")"
+        Logger.debug("Updating report: '" + self.name + "' (" + str(self.date) +
+                     ")")
 
         # Update JSON
         self.json = lib.mergeNDicts(self.json, json)
@@ -579,7 +588,8 @@ class Report:
         """
 
         # Give user info
-        print "Loading report: '" + self.name + "' (" + str(self.date) + ")"
+        Logger.debug("Loading report: '" + self.name + "' (" + str(self.date) +
+                     ")")
 
         # Try opening report
         try:
@@ -597,7 +607,7 @@ class Report:
             raise errors.NoReport(self.name, self.date)
 
         # Give user info
-        print "Report loaded."
+        Logger.debug("Report loaded.")
 
 
 
@@ -610,7 +620,8 @@ class Report:
         """
 
         # Give user info
-        print "Storing report: '" + self.name + "' (" + str(self.date) + ")"
+        Logger.debug("Storing report: '" + self.name + "' (" + str(self.date) +
+                     ")")
 
         # If no path given
         if path is None:
@@ -638,10 +649,10 @@ class Report:
         """
 
         # Show report
-        lib.printJSON({"Name": self.name,
-                       "Path": self.path,
-                       "Date": self.date,
-                       "JSON": self.json})
+        Logger.debug(lib.JSONize({"Name": self.name,
+                                  "Path": self.path,
+                                  "Date": self.date,
+                                  "JSON": self.json}))
 
 
 
@@ -761,7 +772,7 @@ class Path:
 
 
 
-    def touch(self, file = None, n = 1, mode = "JSON"):
+    def touch(self, file = None, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -776,19 +787,19 @@ class Path:
         if n <= self.depth:
 
             # Show current path
-            #print path
+            Logger.debug(path)
 
             # If it does not exist
             if not os.path.exists(path):
 
                 # Give user info
-                print "Making path '" + path + "'..."
+                Logger.debug("Making path '" + path + "'...")
 
                 # Make it
                 os.makedirs(path)
 
             # Contine looking
-            self.touch(file, n + 1, mode)
+            self.touch(file, n + 1)
 
         # Look for file
         elif file is not None:
@@ -800,16 +811,13 @@ class Path:
             if not os.path.exists(path):
 
                 # Give user info
-                print "Making file '" + path + "'..."
+                Logger.debug("Making file '" + path + "'...")
 
                 # Create it
                 with open(path, "w") as f:
 
-                    # JSON
-                    if mode == "JSON":
-
-                        # Dump empty dict
-                        json.dump({}, f)
+                    # Dump empty dict
+                    json.dump({}, f)
 
                 # Give permissions
                 os.chmod(path, 0777)
@@ -834,8 +842,8 @@ class Path:
             path = self.str
 
             # Give user info
-            print ("Scanning for '" + str(file) + "' within '" + str(path) +
-                   "'...")
+            Logger.debug("Scanning for '" + str(file) + "' within '" +
+                         str(path) + "'...")
 
         # Get all files from path
         files = os.listdir(path)
@@ -892,17 +900,11 @@ def main():
     # Get BGs of today
     #reporter.get("BG.json", [], None, now)
 
-    # Add entries to test report
-    #reporter.add("test.json", ["D", "A"], {now: 0})
-
     # Get most recent data
     json = reporter.getRecent(now, "BG.json", [], 3, True)
-    #json = reporter.getRecent(now, "treatments.json", ["Temporary Basals"])
-    #json = reporter.getRecent(now, "treatments.json", ["Boluses"])
-    #json = reporter.getRecent(now, "history.json", ["CGM", "Sensor Statuses"])
 
     # Print data
-    lib.printJSON(json)
+    print lib.JSONize(json)
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")

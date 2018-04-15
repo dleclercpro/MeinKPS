@@ -39,6 +39,7 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 import reporter
 import commands
@@ -47,7 +48,8 @@ from Stick import stick
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("pump.py")
 Reporter = reporter.Reporter()
 
 
@@ -132,7 +134,7 @@ class Pump(object):
         """
 
         # Info
-        print "Starting pump..."
+        Logger.info("Starting pump...")
 
         # Start stick
         self.stick.start()
@@ -151,7 +153,7 @@ class Pump(object):
         """
 
         # Info
-        print "Stopping pump..."
+        Logger.info("Stopping pump...")
 
         # Stop stick
         self.stick.stop()
@@ -207,8 +209,7 @@ class PumpComponent(object):
         """
 
         # Info
-        print "-- " + self.name + " --"
-        print self.value
+        Logger.info(self.name + ": " + self.value)
 
 
 
@@ -274,7 +275,7 @@ class Power(PumpComponent):
         if delta > session:
 
             # Info
-            print "Pump's radio transmitter will be turned on..."
+            Logger.info("Pump's radio transmitter will be turned on...")
 
             # Power up pump's RF transmitter
             self.command.run(self.session)
@@ -282,8 +283,9 @@ class Power(PumpComponent):
         else:
 
             # Info
-            print ("Pump's radio transmitter is already on. Remaining time: " +
-                   str(self.session - delta.seconds / 60) + " m")
+            Logger.info("Pump's radio transmitter is already on. " +
+                        "Remaining time: " +
+                        str(self.session - delta.seconds / 60) + " m")
 
 
 
@@ -524,7 +526,8 @@ class Status(PumpComponent):
             raise errors.StatusSuspended
 
         # Info
-        print "Pump's status allows desired course of action. Proceeding..."
+        Logger.info("Pump's status allows desired course of action. " +
+                    "Proceeding...")
 
 
 
@@ -574,7 +577,8 @@ class Settings(PumpComponent):
             raise errors.SettingsMaxBolusExceeded
 
         # Info
-        print "Pump's settings allow desired course of action. Proceeding..."
+        Logger.info("Pump's settings allow desired course of action. " +
+                    "Proceeding...")
 
 
 
@@ -694,15 +698,15 @@ class BGTargets(PumpComponent):
         n = len(self.value["Times"])
 
         # Info
-        print "Found " + str(n) + " BG target(s):"
+        Logger.info("BG target(s):")
 
         # Print targets
         for i in range(n):
 
             # Format info
-            print (self.value["Times"][i] + " - " +
-                   str(self.value["Targets"][i]) + " " +
-                   self.value["Units"])
+            Logger.info(self.value["Times"][i] + " - " +
+                    str(self.value["Targets"][i]) + " " +
+                        self.value["Units"])
 
 
 
@@ -736,15 +740,15 @@ class ISF(PumpComponent):
         n = len(self.value["Times"])
 
         # Info
-        print "Found " + str(n) + " ISF(s):"
+        Logger.info("ISF(s):")
 
         # Print factors
         for i in range(n):
 
             # Format info
-            print (self.value["Times"][i] + " - " +
-                   str(self.value["Factors"][i]) + " " +
-                   self.value["Units"])
+            Logger.info(self.value["Times"][i] + " - " +
+                    str(self.value["Factors"][i]) + " " +
+                        self.value["Units"])
 
 
 
@@ -778,15 +782,15 @@ class CSF(PumpComponent):
         n = len(self.value["Times"])
 
         # Info
-        print "Found " + str(n) + " CSF(s):"
+        Logger.info("CSF(s):")
 
         # Print factors
         for i in range(n):
 
             # Format info
-            print (self.value["Times"][i] + " - " +
-                   str(self.value["Factors"][i]) + " " +
-                   self.value["Units"])
+            Logger.info(self.value["Times"][i] + " - " +
+                    str(self.value["Factors"][i]) + " " +
+                        self.value["Units"])
 
 
 
@@ -878,15 +882,14 @@ class Basal(PumpComponent):
         n = len(self.value["Times"])
 
         # Info
-        print ("Found " + str(n) + " rates for bolus profile '" + self.profile +
-               "':")
+        Logger.info("Bolus profile '" + self.profile + "':")
 
         # Print rates
         for i in range(n):
 
             # Format info
-            print (self.value["Times"][i] + " - " +
-                   str(self.value["Rates"][i]) + " U/h")
+            Logger.info(self.value["Times"][i] + " - " +
+                    str(self.value["Rates"][i]) + " U/h")
 
 
 
@@ -922,7 +925,7 @@ class TB(PumpComponent):
         self.value = self.commands["Read"].run()
 
     	# Info
-    	print "Current TB:"
+    	Logger.info("Current TB:")
 
         # Show it
         self.show()
@@ -944,8 +947,8 @@ class TB(PumpComponent):
             TB = self.value
 
         # Info
-        print ("TB: [" + str(TB["Rate"]) + " " + TB["Units"] + " (" +
-                         str(TB["Duration"]) + " m)]")
+        Logger.info("TB: [" + str(TB["Rate"]) + " " + TB["Units"] + " (" +
+                              str(TB["Duration"]) + " m)]")
 
 
 
@@ -986,7 +989,7 @@ class TB(PumpComponent):
             self.value["Units"] != TB["Units"]):
 
             # Info
-            print "TB must be canceled before doing anything..."
+            Logger.warning("TB must be canceled before doing anything...")
 
             # Cancel TB
             self.cancel(self.value["Units"])
@@ -995,7 +998,7 @@ class TB(PumpComponent):
         if self.value["Units"] != TB["Units"]:
 
             # Info
-            print "TB units do not match. Adjusting them..."
+            Logger.warning("TB units do not match. Adjusting them...")
 
             # Modify units as wished by the user
             self.pump.units["TB"].set(TB["Units"])
@@ -1011,7 +1014,7 @@ class TB(PumpComponent):
         """
 
         # Info
-        print "Adjusting TB from:"
+        Logger.info("Adjusting TB from:")
 
         # Show TB
         self.show(TB)
@@ -1035,7 +1038,7 @@ class TB(PumpComponent):
                                                  self.pump.basal.time)
 
         # Info
-        print "To:"
+        Logger.info("To:")
 
         # Show adjust TB
         self.show(TB)
@@ -1068,7 +1071,7 @@ class TB(PumpComponent):
             self.verify(TB)
 
         # Info
-        print "Enacting TB:"
+        Logger.info("Enacting TB:")
 
         # Show TB
         self.show(TB)
@@ -1087,7 +1090,7 @@ class TB(PumpComponent):
             self.commands["Set Percentage"].run(TB["Rate"], TB["Duration"])
 
         # Info
-        print "Verifying if TB was correctly enacted..."
+        Logger.info("Verifying if TB was correctly enacted...")
 
         # Verify that the TB was correctly issued by reading current TB on
         # pump
@@ -1097,7 +1100,7 @@ class TB(PumpComponent):
         if TB == self.value:
 
             # Info
-            print "TB correctly enacted."
+            Logger.info("TB correctly enacted.")
 
         # Otherwise
         else:
@@ -1253,7 +1256,7 @@ class History(PumpComponent):
         self.size = self.commands["Measure"].run()
 
         # Info
-        print "Found " + str(self.size) + " pump history pages."
+        Logger.info("Found " + str(self.size) + " pump history pages.")
 
 
 
@@ -1305,10 +1308,10 @@ class History(PumpComponent):
         """
 
         # Info
-        print ("Read page(s) [" + str(len(self.pages)) + " byte(s)]:")
+        Logger.info("Read page(s) [" + str(len(self.pages)) + " byte(s)]:")
 
         # Print downloaded history pages
-        print self.pages
+        Logger.info(self.pages)
 
 
 
@@ -1321,7 +1324,7 @@ class History(PumpComponent):
         """
 
         # Info
-        print "Finding records..."
+        Logger.debug("Finding records...")
 
         # Initialize pages
         pages = self.pages

@@ -23,7 +23,13 @@
 """
 
 # USER LIBRARIES
+import logger
 import base
+
+
+
+# Instanciate logger
+Logger = logger.Logger("Profiles/net.py")
 
 
 
@@ -54,7 +60,7 @@ class Net(base.PastProfile):
         """
 
         # Give user info
-        print "Building..."
+        Logger.debug("Building...")
 
         # Define time references of profile
         self.time(start, end)
@@ -93,7 +99,7 @@ class Net(base.PastProfile):
         self.y = net.y
         
         # Give user info
-        print "Net insulin profile:"
+        Logger.debug("Net insulin profile:")
 
         # Show it
         self.show()

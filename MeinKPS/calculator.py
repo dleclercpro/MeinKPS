@@ -32,12 +32,14 @@ import matplotlib.pyplot as plt
 
 # USER LIBRARIES
 import lib
+import logger
 import reporter
 from Profiles import *
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("calculator.py")
 Reporter = reporter.Reporter()
 
 
@@ -145,19 +147,19 @@ class Calculator(object):
         self.DIA = Reporter.get("pump.json", ["Settings"], "DIA")
 
         # Give user info
-        print "DIA: " + str(self.DIA) + " h"
+        Logger.info("DIA: " + str(self.DIA) + " h")
 
         # Read max basal
         self.max["Basal"] = Reporter.get("pump.json", ["Settings"], "Max Basal")
 
         # Give user info
-        print "Max basal: " + str(self.max["Basal"]) + " U/h"
+        Logger.info("Max basal: " + str(self.max["Basal"]) + " U/h")
 
         # Read max bolus
         self.max["Bolus"] = Reporter.get("pump.json", ["Settings"], "Max Bolus")
 
         # Give user info
-        print "Max bolus: " + str(self.max["Bolus"]) + " U"
+        Logger.info("Max bolus: " + str(self.max["Bolus"]) + " U")
 
 
 
@@ -222,7 +224,7 @@ class Calculator(object):
         """
 
         # Give user info
-        print "Computing insulin dose..."
+        Logger.debug("Computing insulin dose...")
 
         # Check for insufficient data
         self.BG.past.verify(1)
@@ -253,25 +255,23 @@ class Calculator(object):
         dose = self.BG.dose(dBG, self.ISF, self.IDC)
 
         # Give user info
-        print "BG target: " + str(targetBG) + " " + self.BG.u
-        print "Current BG: " + str(BG) + " " + self.BG.u
-        print "Current ISF: " + str(ISF) + " " + self.ISF.u
-        print "Current IOB: " + str(IOB) + " " + self.IOB.u
-        print "Naive eventual BG: " + str(naiveBG) + " " + self.BG.u
-        print "Eventual BG: " + str(eventualBG) + " " + self.BG.u
-        print "dBG: " + str(dBG) + " " + self.BG.u
-        print "Recommended dose: " + str(dose) + " " + "U"
+        Logger.info("BG target: " + str(targetBG) + " " + self.BG.u)
+        Logger.info("Current BG: " + str(BG) + " " + self.BG.u)
+        Logger.info("Current ISF: " + str(ISF) + " " + self.ISF.u)
+        Logger.info("Current IOB: " + str(IOB) + " " + self.IOB.u)
+        Logger.info("Naive eventual BG: " + str(naiveBG) + " " + self.BG.u)
+        Logger.info("Eventual BG: " + str(eventualBG) + " " + self.BG.u)
+        Logger.info("dBG: " + str(dBG) + " " + self.BG.u)
+        Logger.info("Recommended dose: " + str(dose) + " " + "U")
 
         # Look for conflictual info
         if (np.sign(BGI) == -1 and eventualBG > max(targetRangeBG) or
             np.sign(BGI) == 1 and eventualBG < min(targetRangeBG)):
 
             # Give user info
-            print ("Conflictual information: BG decreasing/rising although " +
-                   "expected to land higher/lower than target range.")
-
-            # No recommendation
-            #dose = 0
+            Logger.warning("Conflictual information: BG decreasing/rising " +
+                           "although expected to land higher/lower than " +
+                           "target range.")
 
         # Return dose
         return dose
@@ -289,7 +289,7 @@ class Calculator(object):
         """
 
         # Give user info
-        print "Computing TB to enact..."
+        Logger.debug("Computing TB to enact...")
 
         # Get current data
         basal = self.basal.y[-1]
@@ -314,10 +314,10 @@ class Calculator(object):
         TB = basal + dB
 
         # Give user info
-        print "Current basal: " + str(basal) + " U/h"
-        print "Required basal difference: " + str(dB) + " U/h"
-        print "Temporary basal to enact: " + str(TB) + " U/h"
-        print "Enactment time: " + str(T) + " h"
+        Logger.info("Current basal: " + str(basal) + " U/h")
+        Logger.info("Required basal difference: " + str(dB) + " U/h")
+        Logger.info("Temporary basal to enact: " + str(TB) + " U/h")
+        Logger.info("Enactment time: " + str(T) + " h")
 
         # Convert enactment time to minutes
         T *= 60
@@ -344,8 +344,8 @@ class Calculator(object):
         if rate < 0:
 
             # Give user info
-            print ("External action required: negative basal required. " +
-                   "Eat something!")
+            Logger.warning("External action required: negative basal " +
+                           "required. Eat something!")
 
             # Stop insulin delivery
             rate = 0
@@ -362,16 +362,17 @@ class Calculator(object):
             maxRate = min(4 * basal, 3 * maxDailyBasal, maxBasal)
 
             # Give user info
-            print "Theoretical max basal: " + str(maxBasal) + " U/h"
-            print "4x current basal: " + str(4 * basal) + " U/h"
-            print "3x max daily basal: " + str(3 * maxDailyBasal) + " U/h"
+            Logger.info("Theoretical max basal: " + str(maxBasal) + " U/h")
+            Logger.info("4x current basal: " + str(4 * basal) + " U/h")
+            Logger.info("3x max daily basal: " + str(3 * maxDailyBasal) + " " +
+                        "U/h")
 
             # TB exceeds max
             if rate > maxRate:
 
                 # Give user info
-                print ("External action required: maximal basal exceeded. " +
-                       "Enact dose manually!")
+                Logger.warning("External action required: maximal basal " +
+                               "exceeded. Enact dose manually!")
 
                 # Max it out
                 rate = maxRate
@@ -380,7 +381,7 @@ class Calculator(object):
         else:
 
             # Give user info
-            print ("No modification to insulin dosage necessary.")
+            Logger.info("No modification to insulin dosage necessary.")
 
         # Return limited TB
         return [rate, units, duration]
@@ -423,9 +424,9 @@ class Calculator(object):
                 T = int(round((snooze - d) * 60))
 
                 # Give user info
-                print ("Bolus snooze (" + str(snooze) + " h). If no more " +
-                       "bolus is issued, looping will restart in " + str(T) +
-                       " m.")
+                Logger.warning("Bolus snooze (" + str(snooze) + " h). If no " +
+                               "more bolus issued, looping will restart in " +
+                               str(T) + " m.")
 
                 # Snooze
                 return True
@@ -448,7 +449,7 @@ class Calculator(object):
         """
 
         # Give user info
-        print "Recommending treatment..."
+        Logger.debug("Recommending treatment...")
 
         # Compute recommended dose
         dose = self.computeDose()
@@ -472,8 +473,8 @@ class Calculator(object):
             [rate, units, duration] = TB
 
             # Give user info
-            print ("Recommended TB: " + str(rate) + " " + units + " (" +
-                                        str(duration) + " m)")
+            Logger.info("Recommended TB: " + str(rate) + " " + units + " (" +
+                                             str(duration) + " m)")
 
         # Return recommendation
         return TB
@@ -492,7 +493,7 @@ class Calculator(object):
         BGs = Reporter.getRecent(self.now, "BG.json", [], 7, True)
 
         # Show them
-        lib.printJSON(BGs)
+        lib.JSONize(BGs)
 
         # Build BG profile for last 24 hours
         BGProfile = 0

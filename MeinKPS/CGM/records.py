@@ -24,17 +24,18 @@
 
 # LIBRARIES
 import datetime
-import sys
 
 
 
 # USER LIBRARIES
 import lib
+import logger
 import reporter
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("CGM/records.py")
 Reporter = reporter.Reporter()
 
 
@@ -88,7 +89,7 @@ class Record(object):
             bytes = data[i * self.size: (i + 1) * self.size]
 
             # Give user info
-            print "Record bytes: " + str(bytes)
+            Logger.debug("Record bytes: " + str(bytes))
 
             # Store them
             self.bytes.append(bytes)
@@ -116,15 +117,11 @@ class Record(object):
         expectedCRC = lib.unpack(self.bytes[-1][-2:], "<")
         computedCRC = lib.computeCRC16(self.bytes[-1][:-2])
 
-        # Give user info
-        print "Expected CRC: " + str(expectedCRC)
-        print "Computed CRC: " + str(computedCRC)
-
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
 
-            # Give user info
-            sys.exit("Expected and computed CRCs do not match. Exiting...")
+            # Raise error
+            raise errors.BadCGMRecordCRC(expectedCRC, computedCRC)
 
 
 
@@ -145,7 +142,7 @@ class Record(object):
         self.t.append(t)
 
         # Give user info
-        print "Time: " + str(t)
+        Logger.info("Time: " + str(t))
 
 
 
@@ -243,7 +240,7 @@ class BGRecord(Record):
             BG = self.special[BG]
 
             # Give user info
-            print "Special value: " + BG
+            Logger.info("Special value: " + BG)
 
         # Deal with normal values
         else:
@@ -253,7 +250,7 @@ class BGRecord(Record):
                 BG = round(BG / 18.0, 1)
 
             # Give user info
-            print "BG: " + str(BG) + " " + str(trend)
+            Logger.info("BG: " + str(BG) + " " + str(trend))
 
         # Store them
         self.values.append({"BG": BG, "Trend": trend})
@@ -287,7 +284,7 @@ class BGRecord(Record):
             else:
 
                 # Give user info
-                print self.values[i]["BG"] + " (" + str(self.t[i]) + ")"
+                Logger.info(self.values[i]["BG"] + " (" + str(self.t[i]) + ")")
 
         # Return them
         return BGs
@@ -303,7 +300,7 @@ class BGRecord(Record):
         """
 
         # Give user info
-        print "Adding BG records to report: '" + self.report + "'..."
+        Logger.debug("Adding BG records to report: '" + self.report + "'...")
 
         # Add entries
         Reporter.add(self.report, [], self.filter())
@@ -360,7 +357,7 @@ class SensorRecord(Record):
         self.values.append(status)
 
         # Give user info
-        print "Sensor status: " + str(status)
+        Logger.info("Sensor status: " + str(status))
 
 
 
@@ -373,7 +370,8 @@ class SensorRecord(Record):
         """
 
         # Give user info
-        print "Adding sensor statuses to report: '" + self.report + "'..."
+        Logger.debug("Adding sensor statuses to report: '" + self.report +
+                     "'...")
 
         # Add entries
         Reporter.add(self.report, ["CGM", "Sensor Statuses"],
@@ -420,7 +418,7 @@ class CalibrationRecord(Record):
         self.values.append(BG)
 
         # Give user info
-        print "BG: " + str(BG) + " " + self.cgm.units.value
+        Logger.info("BG: " + str(BG) + " " + self.cgm.units.value)
 
 
 
@@ -433,7 +431,8 @@ class CalibrationRecord(Record):
         """
 
         # Give user info
-        print "Adding sensor calibrations to report: '" + self.report + "'..."
+        Logger.debug("Adding sensor calibrations to report: '" + self.report +
+                     "'...")
 
         # Add entries
         Reporter.add(self.report, ["CGM", "Calibrations"],

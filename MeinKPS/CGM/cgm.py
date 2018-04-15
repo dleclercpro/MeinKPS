@@ -32,6 +32,7 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 import commands
 import databases
@@ -44,7 +45,8 @@ SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("cgm.py")
 Reporter = reporter.Reporter()
 
 
@@ -151,7 +153,7 @@ class CGM(object):
         """
 
         # Info
-        print "Resetting..."
+        Logger.info("Resetting CGM...")
 
         # Reset USB interface
         self.usb.reset()
@@ -160,7 +162,7 @@ class CGM(object):
         if self.usb.is_kernel_driver_active(0):
 
             # Info
-            print "Detaching kernel..."
+            Logger.warning("Detaching CGM kernel...")
 
             # Disconnect
             self.usb.detach_kernel_driver(0)
@@ -190,7 +192,7 @@ class CGM(object):
         else:
 
             # Show it
-            print "CGM found."
+            Logger.debug( "CGM found.")
 
 
 
@@ -253,7 +255,7 @@ class CGM(object):
         """
 
         # Give user info
-        print "Sending packet: " + str(bytes)
+        Logger.debug("Sending packet: " + str(bytes))
 
         # Send packet
         self.EPs["OUT"].write(bytearray(bytes))
@@ -275,7 +277,7 @@ class CGM(object):
         bytes = list(raw)
 
         # Give user info
-        print "Received bytes: " + str(bytes)
+        Logger.debug("Received bytes: " + str(bytes))
 
         # Return response
         return bytes
@@ -391,7 +393,7 @@ class Battery(object):
             self.commands["ReadLevel"].response["Payload"], "<")
 
         # Give user info
-        print "Battery level: " + str(self.level)
+        Logger.info("Battery level: " + str(self.level))
 
         # Execute command
         self.commands["ReadState"].execute()
@@ -401,7 +403,7 @@ class Battery(object):
             self.commands["ReadState"].response["Payload"], "<")]
 
         # Give user info
-        print "Battery state: " + self.state
+        Logger.info("Battery state: " + self.state)
 
         # Store battery level
         self.store()
@@ -417,7 +419,8 @@ class Battery(object):
         """
 
         # Give user info
-        print "Storing battery level to report: '" + self.report + "'..."
+        Logger.debug("Storing battery level to report: '" + self.report +
+                     "'...")
 
         # Add entry
         Reporter.add(self.report, ["CGM", "Battery Levels"],
@@ -480,7 +483,7 @@ class Language(object):
             self.command.response["Payload"], "<")]
 
         # Give user info
-        print "Language: " + self.value
+        Logger.info("Language: " + self.value)
 
         # Store it
         self.store()
@@ -496,7 +499,7 @@ class Language(object):
         """
 
         # Give user info
-        print "Storing language to report: '" + self.report + "'..."
+        Logger.debug("Storing language to report: '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, [], {"Language": self.value}, True)
@@ -553,7 +556,7 @@ class Clock(object):
         self.systemTime = self.epoch + delta
 
         # Give user info
-        print "System time: " + str(self.systemTime)
+        Logger.info("System time: " + str(self.systemTime))
 
         # Execute command
         self.commands["ReadMode"].execute()
@@ -563,7 +566,7 @@ class Clock(object):
             self.commands["ReadMode"].response["Payload"], "<")]
 
         # Give user info
-        print "Clock mode: " + self.mode
+        Logger.info("Clock mode: " + self.mode)
 
         # Store clock mode
         self.store()
@@ -579,7 +582,7 @@ class Clock(object):
         """
 
         # Give user info
-        print "Storing clock mode to report: '" + self.report + "'..."
+        Logger.info("Storing clock mode to report: '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, [], {"Clock Mode": self.mode}, True)
@@ -626,7 +629,7 @@ class Units(object):
             self.command.response["Payload"], "<")]
 
         # Give user info
-        print "Units: " + self.value
+        Logger.info("Units: " + self.value)
 
         # Store it
         self.store()
@@ -642,7 +645,7 @@ class Units(object):
         """
 
         # Give user info
-        print "Storing BG units to report: '" + self.report + "'..."
+        Logger.debug("Storing BG units to report: '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, [], {"Units": self.value}, True)
@@ -717,7 +720,7 @@ class Transmitter(object):
         self.id = lib.translate(self.command.response["Payload"])
 
         # Give user info
-        print "Transmitter ID: " + str(self.id)
+        Logger.info("Transmitter ID: " + str(self.id))
 
         # Store it
         self.store()
@@ -733,7 +736,8 @@ class Transmitter(object):
         """
 
         # Give user info
-        print "Storing transmitter ID to report: '" + self.report + "'..."
+        Logger.debug("Storing transmitter ID to report: '" + self.report +
+                     "'...")
 
         # Add entry
         Reporter.add(self.report, [], {"Transmitter ID": self.id}, True)

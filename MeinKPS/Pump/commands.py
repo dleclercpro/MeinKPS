@@ -31,13 +31,15 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 import reporter
 import packets
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("Pump/commands.py")
 Reporter = reporter.Reporter()
 
 
@@ -430,8 +432,8 @@ class BigCommand(Command):
         for i in range(self.repeat["NAK"]):
 
             # Info
-            print ("Retrying (NAK): " + str(i + 1) + "/" +
-                                        str(self.repeat["NAK"]))
+            Logger.debug("Retrying (NAK): " + str(i + 1) + "/" +
+                                              str(self.repeat["NAK"]))
 
             # Try
             try:
@@ -687,7 +689,7 @@ class Power(SetCommand, BigCommand):
         """
 
         # Give user info
-        print "Adding pump's last power up to '" + self.report + "'..."
+        Logger.debug("Adding pump's last power up to '" + self.report + "'...")
 
         # Get current formatted time
         now = lib.formatTime(datetime.datetime.now())
@@ -786,7 +788,7 @@ class ReadModel(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's model to '" + self.report + "'..."
+        Logger.debug("Adding pump's model to '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, ["Properties"],
@@ -843,7 +845,7 @@ class ReadFirmware(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's firmware to '" + self.report + "'..."
+        Logger.debug("Adding pump's firmware to '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, ["Properties"],
@@ -897,7 +899,7 @@ class ReadBattery(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's battery level to '" + self.report + "'..."
+        Logger.debug("Adding pump's battery level to '" + self.report + "'...")
 
         # Get current time
         now = datetime.datetime.now()
@@ -955,7 +957,8 @@ class ReadReservoir(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's reservoir level to '" + self.report + "'..."
+        Logger.debug("Adding pump's reservoir level to '" + self.report +
+                     "'...")
 
         # Get current time
         now = datetime.datetime.now()
@@ -1051,7 +1054,7 @@ class ReadSettings(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's settings to '" + self.report + "'..."
+        Logger.debug("Adding pump's settings to '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, [], {"Settings": self.response}, True)
@@ -1114,7 +1117,7 @@ class ReadBGUnits(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's BG units to '" + self.report + "'..."
+        Logger.debug("Adding pump's BG units to '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, ["Units"], {"BG": self.response}, True)
@@ -1177,7 +1180,7 @@ class ReadCarbsUnits(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's carb units to '" + self.report + "'..."
+        Logger.debug("Adding pump's carb units to '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, ["Units"], {"Carbs": self.response}, True)
@@ -1276,7 +1279,7 @@ class ReadBGTargets(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's BG targets to '" + self.report + "'..."
+        Logger.debug("Adding pump's BG targets to '" + self.report + "'...")
 
         # Store BG units
         Reporter.add(self.report, ["Units"],
@@ -1422,7 +1425,7 @@ class ReadISF(ReadFactors):
         """
 
         # Give user info
-        print "Adding pump's ISF(s) to '" + self.report + "'..."
+        Logger.debug("Adding pump's ISF(s) to '" + self.report + "'...")
 
         # Store BG units (without insulin units)
         Reporter.add(self.report, ["Units"],
@@ -1489,7 +1492,7 @@ class ReadCSF(ReadFactors):
         """
 
         # Give user info
-        print "Adding pump's CSF(s) to '" + self.report + "'..."
+        Logger.debug("Adding pump's CSF(s) to '" + self.report + "'...")
 
         # Zip times and factors
         response = dict(zip(self.response["Times"], self.response["Factors"]))
@@ -1613,8 +1616,8 @@ class ReadBasalProfile(GetBigCommand):
         """
 
         # Give user info
-        print ("Adding pump's basal profile '" + self.name + "' to '" + 
-               self.report + "'...")
+        Logger.debug("Adding pump's basal profile '" + self.name + "' to '" + 
+                     self.report + "'...")
 
         # Zip times and rates
         response = dict(zip(self.response["Times"], self.response["Rates"]))
@@ -1796,7 +1799,7 @@ class ReadTB(GetCommand):
         """
 
         # Give user info
-        print "Adding pump's TB units to '" + self.report + "'..."
+        Logger.debug("Adding pump's TB units to '" + self.report + "'...")
 
         # Store TB units
         Reporter.add(self.report, ["Units"],

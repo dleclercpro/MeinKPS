@@ -30,6 +30,7 @@ import math
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 
 
@@ -40,6 +41,11 @@ TABLE = ["010101", "110001", "110010", "100011", # 0 1 2 3
          "110100", "100101", "100110", "010110", # 4 5 6 7
          "011010", "011001", "101010", "001011", # 8 9 A B
          "101100", "001101", "001110", "011100"] # C D E F
+
+
+
+# Instanciate logger
+Logger = logger.Logger("Pump/packets.py")
 
 
 
@@ -112,7 +118,7 @@ class FromPacket(Packet):
         RSSI = self.RSSI["Hex"]
 
         # Info
-        print "RSSI (Byte): " + str(RSSI)
+        Logger.debug("RSSI (Byte): " + str(RSSI))
 
         # Bigger than
         if RSSI >= 128:
@@ -136,7 +142,7 @@ class FromPacket(Packet):
         self.RSSI["dBm"] = RSSI
 
         # Info
-        print "RSSI (dBm): " + str(RSSI)
+        Logger.debug("RSSI (dBm): " + str(RSSI))
 
 
 
@@ -153,7 +159,7 @@ class FromPacket(Packet):
         self.index = bytes[0]
 
         # Info
-        print "#: " + str(self.index)
+        Logger.debug("#: " + str(self.index))
 
         # Get RSSI reading
         self.RSSI = {"Hex": bytes[1], "dBm": None}
@@ -257,11 +263,11 @@ class PumpPacket(Packet):
         # Compute number of exceeding bytes
         N = size % n
 
-        # Define number of rows to be printed 
+        # Define number of rows to print
         R = size / n + int(N != 0)
 
         # Info
-        print "Encoded bytes:"
+        Logger.debug("Encoded bytes:")
 
         # Print formatted response
         for r in range(R):
@@ -273,10 +279,7 @@ class PumpPacket(Packet):
             row = str(self.bytes["Encoded"][a:b])
 
             # Show response
-            print row
-
-        # Breathe
-        print
+            Logger.debug(row)
 
 
 
@@ -295,11 +298,11 @@ class PumpPacket(Packet):
         # Compute number of exceeding bytes
         N = size % n
 
-        # Define number of rows to be printed 
+        # Define number of rows to print
         R = size / n + int(N != 0)
 
         # Info
-        print "Decoded bytes:"
+        Logger.debug("Decoded bytes:")
 
         # Print formatted response
         for r in range(R):
@@ -323,10 +326,7 @@ class PumpPacket(Packet):
             row = rowHex + 3 * " " + rowChr + 3 * " " + rowInt
 
             # Show response
-            print row
-
-        # Breathe
-        print
+            Logger.debug(row)
 
 
 
@@ -339,17 +339,14 @@ class PumpPacket(Packet):
         """
 
         # Show characteristics
-        print "Type: " + str(self.type)
-        print "Recipient: " + str(self.recipient)
-        print "Serial: " + " ".join(self.serial)
-        print "Code: " + str(self.code)
-        print "Size: " + str(self.size)
-        print "Part: " + str(self.part)
-        print "Payload: " + " ".join(self.payload)
-        print "CRC: " + str(self.CRC)
-
-        # Breathe
-        print
+        Logger.debug("Type: " + str(self.type))
+        Logger.debug("Recipient: " + str(self.recipient))
+        Logger.debug("Serial: " + " ".join(self.serial))
+        Logger.debug("Code: " + str(self.code))
+        Logger.debug("Size: " + str(self.size))
+        Logger.debug("Part: " + str(self.part))
+        Logger.debug("Payload: " + " ".join(self.payload))
+        Logger.debug("CRC: " + str(self.CRC))
 
         # Show its encoded version
         #self.showEncoded()        

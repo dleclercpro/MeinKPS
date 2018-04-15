@@ -30,13 +30,15 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 import reporter
 import base
 
 
 
-# Instanciate a reporter
+# Define instances
+Logger = logger.Logger("Profiles/BG.py")
 Reporter = reporter.Reporter()
 
 
@@ -114,7 +116,7 @@ class PastBG(base.PastProfile):
                 n += 1
 
         # Give user info
-        print "Found " + str(n) + " BGs within last " + str(T) + " m."
+        Logger.debug("Found " + str(n) + " BGs within last " + str(T) + " m.")
 
         # Store number of valid recent BGs
         self.n = n
@@ -127,8 +129,7 @@ class PastBG(base.PastProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             VERIFY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Verify there is enough recent BGs to do anything.
+            Verify there is enough recent BGs to do anything.
         """
 
         # Count recent BGs
@@ -188,13 +189,12 @@ class FutureBG(base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
-        Use IOB and ISF to predict where BG will land after insulin activity is
-        over, assuming a natural decay.
+            Use IOB and ISF to predict where BG will land after insulin activity
+            is over, assuming a natural decay.
         """
 
         # Give user info
-        print "Decaying BG..."
+        Logger.debug("Decaying BG...")
 
         # Is there at least one recent BG?
         try:
@@ -206,12 +206,9 @@ class FutureBG(base.FutureProfile):
             self.u = self.past.u
 
         # It failed, so there isn't
-        except Exception as e:
+        except:
 
-            # Show error message
-            print e.message
-
-            # Skip
+            # Exit
             return
 
         # Reset previous BG predictions
@@ -227,8 +224,8 @@ class FutureBG(base.FutureProfile):
         BG = self.past.y[-1]
 
         # Give user info
-        print ("Initial BG: " + str(BG) + " " + self.u + " " +
-               "(" + lib.formatTime(self.past.T[-1]) + ")")
+        Logger.debug("Initial BG: " + str(BG) + " " + self.u + " " +
+                     "(" + lib.formatTime(self.past.T[-1]) + ")")
 
         # Compute change in IOB (insulin that has kicked in within ISF step)
         for i in range(n):
@@ -238,31 +235,32 @@ class FutureBG(base.FutureProfile):
             b = IOB.T[i + 1]
 
             # Give user info
-            print "Time: " + lib.formatTime(a) + " @ " + lib.formatTime(b)
+            Logger.debug("Time: " + lib.formatTime(a) + " @ " +
+                                    lib.formatTime(b))
 
             # Compute ISF
             isf = ISF.f(a)
 
             # Print ISF
-            print "ISF: " + str(isf) + " " + ISF.u
+            Logger.debug("ISF: " + str(isf) + " " + ISF.u)
 
             # Compute IOB change
             dIOB = IOB.y[i + 1] - IOB.y[i]
 
             # Give user info
-            print "dIOB: " + str(round(dIOB, 1)) + " " + IOB.u
+            Logger.debug("dIOB: " + str(round(dIOB, 1)) + " " + IOB.u)
 
             # Compute BG change
             dBG = isf * dIOB
 
             # Give user info
-            print "dBG: " + str(round(dBG, 1)) + " " + self.u
+            Logger.debug("dBG: " + str(round(dBG, 1)) + " " + self.u)
 
             # Add BG impact
             BG += dBG
 
             # Print eventual BG
-            print "BG: " + str(round(BG, 1)) + " " + self.u
+            Logger.debug("BG: " + str(round(BG, 1)) + " " + self.u)
 
             # Store current BG
             self.T.append(b)
@@ -285,12 +283,11 @@ class FutureBG(base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PROJECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        BG projection based on expected duration dt (h) of current BG trend
+            BG projection based on expected duration dt (h) of current BG trend
         """
 
         # Give user info
-        print "Projection time: " + str(dt) + " h"
+        Logger.info("Projection time: " + str(dt) + " h")
 
         # Read latest BG
         BG = self.past.y[-1]
@@ -312,12 +309,11 @@ class FutureBG(base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             EXPECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        BG expectation after a certain time dt (h) based on IOB decay
+            BG expectation after a certain time dt (h) based on IOB decay
         """
 
         # Give user info
-        print "Expectation time: " + str(dt) + " h"
+        Logger.info("Expectation time: " + str(dt) + " h")
 
         # Get number of steps corresponding to expected BG
         n = dt / IOB.dt - 1
@@ -339,12 +335,11 @@ class FutureBG(base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             ANALYZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Analyze and compute BG-related values.
+            Analyze and compute BG-related values.
         """
 
         # Give user info
-        print "Analyzing BG..."
+        Logger.debug("Analyzing BG...")
 
         # Define prediction time (h)
         dt = 0.5
@@ -368,20 +363,23 @@ class FutureBG(base.FutureProfile):
         deltaBGI = BGI - expectedBGI
 
         # Give user info (about BG)
-        print "Expected BG: " + str(round(expectedBG, 1)) + " " + self.u
-        print "Projected BG: " + str(round(projectedBG, 1)) + " " + self.u
-        print "BG deviation: " + str(round(deltaBG, 1)) + " " + self.u
+        Logger.info("Expected BG: " + str(round(expectedBG, 1)) + " " +
+                    self.u)
+        Logger.info("Projected BG: " + str(round(projectedBG, 1)) + " " +
+                    self.u)
+        Logger.info("BG deviation: " + str(round(deltaBG, 1)) + " " +
+                    self.u)
 
         # Give user info (about BGI)
-        print ("Expected BGI: " + str(round(expectedBGI, 1)) + " " + self.u +
-               "/h")
-        print ("BGI: " + str(round(BGI, 1)) + " " + self.u +
-               "/h")
-        print ("BGI deviation: " + str(round(deltaBGI, 1)) + " " + self.u +
-               "/h")
+        Logger.info("Expected BGI: " + str(round(expectedBGI, 1)) + " " +
+                    self.u + "/h")
+        Logger.info("BGI: " + str(round(BGI, 1)) + " " +
+                    self.u + "/h")
+        Logger.info("BGI deviation: " + str(round(deltaBGI, 1)) + " " +
+                    self.u + "/h")
 
         # Give user info
-        print "End of BG analysis."
+        Logger.debug("End of BG analysis.")
 
         # Return computations
         return [deltaBG, BGI, expectedBGI]
@@ -394,8 +392,7 @@ class FutureBG(base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DOSE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Compute bolus to bring back BG to target using ISF and IDC.
+            Compute bolus to bring back BG to target using ISF and IDC.
         """
 
         # Initialize conversion factor between dose and BG difference to target

@@ -23,6 +23,17 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# USER LIBRARIES
+import logger
+
+
+
+# Instanciate logger
+Logger = logger.Logger("errors.py")
+
+
+
+# CLASSES
 class BaseError(Exception):
 
     def __init__(self, *args):
@@ -32,6 +43,9 @@ class BaseError(Exception):
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Initialize error type
+        self.type = None
 
         # Convert arguments to strings
         self.args = [str(x) for x in args]
@@ -70,8 +84,20 @@ class BaseError(Exception):
         # Get error name
         errorName = self.__class__.__name__
 
-        # Give user info about error
-        print errorType + " > " + errorName + ": " + self.info
+        # Build error message
+        msg = errorType + " > " + errorName + ": " + self.info
+
+        # Critical error
+        if self.type == "Critical":
+
+            # Info
+            Logger.critical(msg)
+
+        # Otherwise
+        else:
+
+            # Info
+            Logger.error(msg)
 
 
 
@@ -103,6 +129,9 @@ class NoStick(StickError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error type
+        self.type = "Critical"
+
         # Define error info
         self.info = "No stick detected. Are you sure it's plugged in?"
 
@@ -123,6 +152,24 @@ class RadioError(StickError):
 
 
 
+class RadioRegisterTXFail(RadioError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error type
+        self.type = "Critical"
+
+        # Define error info
+        self.info = "Radio register not updated correctly."
+
+
+
 class BadFrequencies(RadioError):
 
     def prepare(self):
@@ -134,7 +181,7 @@ class BadFrequencies(RadioError):
         """
 
         # Define error info
-        self.info = ("Bad frequencies to scan over.")
+        self.info = "Bad frequencies to scan over."
 
 
 
@@ -147,6 +194,9 @@ class UnsuccessfulRadioCommand(RadioError):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error type
+        self.type = "Critical"
 
         # Define error info
         self.info = "Radio command was unsuccessful."
@@ -265,6 +315,9 @@ class NoPump(PumpError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error type
+        self.type = "Critical"
+
         # Define error info
         self.info = ("No pump detected. Are you sure it's nearby and " +
                      "battery level is not too low?")
@@ -327,6 +380,9 @@ class TBFail(PumpError):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error type
+        self.type = "Critical"
 
         # Define error info
         self.info = ("New TB could not be correctly set.")
@@ -484,6 +540,9 @@ class NoCGM(CGMError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error type
+        self.type = "Critical"
+
         # Define error info
         self.info = "No CGM detected. Are you sure it's plugged in?"
 
@@ -500,7 +559,24 @@ class BadCGMCRC(CGMError):
         """
 
         # Define error info
-        self.info = "Expected and computed header CRCs do not match."
+        self.info = ("Expected header CRC: " + self.args[0] + ". " +
+                     "Computed header CRC: " + self.args[1])
+
+
+
+class BadCGMRecordCRC(CGMError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Expected CRC: " + self.args[0] + ". " +
+                     "Computed CRC: " + self.args[1])
 
 
 
@@ -689,6 +765,9 @@ class MissingBGs(ProfileError):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error type
+        self.type = "Critical"
 
         # Define error info
         self.info = ("Not enough recent BGs.")

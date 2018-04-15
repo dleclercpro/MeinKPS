@@ -24,8 +24,14 @@
 
 # USER LIBRARIES
 import lib
+import logger
 import commands
 import records
+
+
+
+# Instanciate logger
+Logger = logger.Logger("CGM/databases.py")
 
 
 
@@ -97,7 +103,7 @@ class Database(object):
         if self.range == self.emptyRange:
 
             # Give user info
-            print "Database empty."
+            Logger.warning("Database empty.")
 
             # Exit
             return False
@@ -105,7 +111,7 @@ class Database(object):
         else:
 
             # Give user info
-            print "Database range: " + str(self.range)
+            Logger.debug("Database range: " + str(self.range))
 
             # Exit
             return True
@@ -180,7 +186,8 @@ class Database(object):
             for i in range(start, end + 1):
 
                 # Give user info
-                print "Reading database page " + str(i) + "/" + str(end) + "..."
+                Logger.debug("Reading database page " + str(i) + "/" +
+                             str(end) + "...")
 
                 # Tell command which page to read
                 command.page = i
@@ -214,15 +221,11 @@ class Database(object):
         expectedCRC = lib.unpack(self.page["Header"][-2:], "<")
         computedCRC = lib.computeCRC16(self.page["Header"][:-2])
 
-        # Give user info
-        print "Expected header CRC: " + str(expectedCRC)
-        print "Computed header CRC: " + str(computedCRC)
-
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
 
             # Error
-            raise errors.BadCGMCRC
+            raise errors.BadCGMCRC(expectedCRC, computedCRC)
 
 
 

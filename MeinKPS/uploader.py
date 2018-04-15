@@ -29,11 +29,13 @@ import ftplib
 
 
 # USER LIBRARIES
+import logger
 import reporter
 
 
 
-# Instanciate a reporter
+# Define instances
+Logger = logger.Logger("uploader.py")
 Reporter = reporter.Reporter()
 
 
@@ -81,7 +83,7 @@ class Uploader(object):
                     continue
 
                 # Give user info
-                print "Uploading: '" + os.getcwd() + "/" + f + "'"
+                Logger.debug("Uploading: '" + os.getcwd() + "/" + f + "'")
 
                 # Open file
                 F = open(f, "r")
@@ -99,7 +101,7 @@ class Uploader(object):
                 if f not in ftp.nlst():
 
                     # Give user info
-                    print "Making directory: '" + f + "'"
+                    Logger.debug("Making directory: '" + f + "'")
 
                     # Make directory
                     ftp.mkd(f)

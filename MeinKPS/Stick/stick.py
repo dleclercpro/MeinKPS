@@ -37,6 +37,7 @@ import numpy as np
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 import reporter
 import commands
@@ -49,7 +50,8 @@ SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
 
 
-# Define a reporter
+# Define instances
+Logger = logger.Logger("stick.py")
 Reporter = reporter.Reporter()
 
 
@@ -201,7 +203,7 @@ class Stick(object):
         else:
 
             # Show it
-            print "Stick found."
+            Logger.debug("Stick found.")
 
 
 
@@ -253,6 +255,9 @@ class Stick(object):
 
         # Otherwise
         except:
+
+            # Info
+            Logger.warning("Resetting USB interface...")
 
             # Reset USB ports
             os.system("sudo sh " + SRC + "../reset.sh")
@@ -335,7 +340,7 @@ class Stick(object):
         """
 
         # Info
-        print "Tuning radio to: " + str(f) + " MHz"
+        Logger.info("Tuning radio to: " + str(f) + " MHz")
 
         # Convert frequency to corresponding value (according to datasheet)
         f = int(round(f * (2 ** 16) / self.f["Reference"]))
@@ -353,10 +358,10 @@ class Stick(object):
             if self.commands["Radio Register RX"].run(reg) != byte:
 
                 # Raise error
-                raise IOError("Register not updated correctly.")
+                raise errors.RadioRegisterTXFail
 
         # Info
-        print "Radio tuned."
+        Logger.info("Radio tuned.")
 
 
 
@@ -402,7 +407,7 @@ class Stick(object):
                 raise errors.BadFrequencies()
 
         # Info
-        print "Scanning for a " + region + " pump..."
+        Logger.debug("Scanning for a " + region + " pump...")
 
         # Return frequencies
         return F1, F2
@@ -432,7 +437,7 @@ class Stick(object):
         f = round(lib.getMaxMiddle(x, y, 5), 3)
 
         # Info
-        print "Optimized frequency (MHz): " + str(f)
+        Logger.info("Optimized frequency (MHz): " + str(f))
 
         # Return best frequency
         return f
@@ -449,7 +454,8 @@ class Stick(object):
         """
 
         # Give user info
-        print "Adding pump's last optimized frequency to '" + self.report + "'..."
+        Logger.debug("Adding pump's last optimized frequency to '" +
+                     self.report + "'...")
 
         # Get current formatted time
         now = lib.formatTime(datetime.datetime.now())
@@ -512,7 +518,7 @@ class Stick(object):
             RSSIs[f] = np.mean(RSSIs[f])
 
         # Show readings
-        lib.printJSON(RSSIs)
+        Logger.debug(lib.JSONize(RSSIs))
 
         # Optimize frequency
         f = self.optimize(RSSIs)

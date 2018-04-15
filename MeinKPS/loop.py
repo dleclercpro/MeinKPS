@@ -30,6 +30,7 @@ import time
 
 # USER LIBRARIES
 import lib
+import logger
 import reporter
 import exporter
 import uploader
@@ -40,7 +41,8 @@ from Pump import pump
 
 
 
-# Define a reporter, an exporter, and an uploader
+# Define a instances
+Logger = logger.Logger("loop.py")
 Reporter = reporter.Reporter()
 Exporter = exporter.Exporter()
 Uploader = uploader.Uploader()
@@ -102,7 +104,7 @@ class Loop(object):
         self.t0 = datetime.datetime.now()
 
         # Give user info
-        print "Start: " + lib.formatTime(self.t0)
+        Logger.info("Start: " + lib.formatTime(self.t0))
 
         # Start CGM
         self.cgm.start()
@@ -143,7 +145,7 @@ class Loop(object):
         self.t1 = datetime.datetime.now()
 
         # Give user info
-        print "End: " + lib.formatTime(self.t1)
+        Logger.info("End: " + lib.formatTime(self.t1))
 
         # Update loop infos
         Reporter.add(self.report, ["Status"],

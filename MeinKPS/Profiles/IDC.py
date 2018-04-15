@@ -35,8 +35,7 @@ class FourthOrderIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Modelization of IDC as a 4th-order polynomial.
+            Modelization of IDC as a 4th-order polynomial.
         """
 
         # Initialize 4th-order parameters
@@ -57,8 +56,7 @@ class FourthOrderIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             VERIFY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Verify that given time is within insulin's range of action.
+            Verify that given time is within insulin's range of action.
         """
 
         # If too old
@@ -84,9 +82,8 @@ class FourthOrderIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Gives fraction of active insulin remaining in body t hours after
-        enacting it. Takes negative input!
+            Gives fraction of active insulin remaining in body t hours after
+            enacting it. Takes negative input!
         """
 
         # Verify time
@@ -135,8 +132,7 @@ class TriangleIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Modelization of IDC based on a triangle IAC.
+            Modelization of IDC based on a triangle IAC.
         """
 
         # Define DIA
@@ -164,8 +160,7 @@ class TriangleIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             VERIFY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Verify that given time is within insulin's range of action.
+            Verify that given time is within insulin's range of action.
         """
 
         # If too old
@@ -191,9 +186,8 @@ class TriangleIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Gives fraction of active insulin remaining in body t hours after
-        enacting it. Takes negative input!
+            Gives fraction of active insulin remaining in body t hours after
+            enacting it. Takes negative input!
         """
 
         # Verify time

@@ -24,6 +24,12 @@
 
 # USER LIBRARIES
 import lib
+import logger
+
+
+
+# Instanciate logger
+Logger = logger.Logger("CGM/packets.py")
 
 
 

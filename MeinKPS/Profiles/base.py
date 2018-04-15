@@ -31,12 +31,14 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import logger
 import errors
 import reporter
 
 
 
-# Instanciate a reporter
+# Define instances
+Logger = logger.Logger("Profiles/base.py")
 Reporter = reporter.Reporter()
 
 
@@ -118,7 +120,7 @@ class Profile(object):
         """
 
         # Give user info
-        print "Resetting..."
+        Logger.debug("Resetting...")
 
         # Reset components
         self.T = []
@@ -140,7 +142,7 @@ class Profile(object):
         """
 
         # Give user info
-        print "Building..."
+        Logger.debug("Building...")
 
         # Define time references
         self.time(start, end)
@@ -180,8 +182,7 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             TIME
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Define time references for profile.
+            Define time references for profile.
         """
 
         # Define start of profile
@@ -224,12 +225,11 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Load profile components from specified report(s).
+            Load profile components from specified report(s).
         """
 
         # Give user info
-        print "Loading..."
+        Logger.debug("Loading...")
 
         # Reset previously loaded profile components
         self.reset()
@@ -286,7 +286,7 @@ class Profile(object):
             self.data = Reporter.get(self.report, self.branch)
 
         # Give user info
-        print "'" + self.__class__.__name__ + "' loaded."
+        Logger.debug("'" + self.__class__.__name__ + "' loaded.")
 
 
 
@@ -296,12 +296,11 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECOUPLE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Decouple profile components.
+            Decouple profile components.
         """
 
         # Give user info
-        print "Decoupling components..."
+        Logger.debug("Decoupling components...")
 
         # If data found
         if self.data:
@@ -329,7 +328,7 @@ class Profile(object):
         else:
 
             # Give user info
-            print "No data found."
+            Logger.warning("No profile data found.")
 
 
 
@@ -342,7 +341,7 @@ class Profile(object):
         """
 
         # Give user info
-        print "Mapping time..."
+        Logger.debug("Mapping time...")
 
         # Initialize profile components
         T = []
@@ -378,16 +377,16 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INJECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Inject zeros after theoretical end of steps. Spot canceling steps and
-        set their value to "None". Will only work if step durations are defined!
+            Inject zeros after theoretical end of steps. Spot canceling steps
+            and set their value to "None". Will only work if step durations are
+            defined!
         """
 
         # If step durations are set
         if self.d:
 
             # Give user info
-            print "Injecting..."
+            Logger.debug("Injecting...")
 
             # Initialize temporary components
             T = []
@@ -434,7 +433,7 @@ class Profile(object):
         else:
 
             # Give user info
-            print "No step durations available."
+            Logger.debug("No step durations available.")
 
 
 
@@ -444,15 +443,15 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             CUT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Cut remaining excess entries in profile and ensure the latter starts
+            and ends according to the previously defined limit times.
 
-        Cut remaining excess entries in profile and ensure the latter starts and
-        ends according to the previously defined limit times.
-
-        FIXME: does not work when first entry happens later than profile start.
+            FIXME: does not work when first entry happens later than profile
+                   start.
         """
 
         # Give user info
-        print "Cutting..."
+        Logger.debug("Cutting...")
 
         # If no start given
         if a is None:
@@ -521,15 +520,14 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Force specific profile limits.
+            Force specific profile limits.
         """
 
         # Only step profiles can be padded
         if self.type == "Step":
 
             # Give user info
-            print "Padding..."
+            Logger.debug("Padding...")
 
             # If no previous step was found
             if last is None:
@@ -569,7 +567,7 @@ class Profile(object):
         if filler is not None and self.type == "Step":
 
             # Give user info
-            print "Filling..."
+            Logger.debug("Filling...")
 
             # Initialize new profile components
             T = []
@@ -624,15 +622,14 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SMOOTH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Smooth profile (remove redundant steps).
+            Smooth profile (remove redundant steps).
         """
 
         # If step profile
         if self.type == "Step":
 
             # Give user info
-            print "Smoothing..."
+            Logger.debug("Smoothing...")
 
             # Initialize components for smoothed profile
             T = []
@@ -671,12 +668,11 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Normalize profile's time axis (h).
+            Normalize profile's time axis (h).
         """
 
         # Give user info
-        print "Normalizing..."
+        Logger.debug("Normalizing...")
 
         # Check if profile is normalizable
         if self.T:
@@ -718,7 +714,7 @@ class Profile(object):
         else:
 
             # Give user info
-            print "Profiles without time axes cannot be normalized."
+            Logger.warning("Profiles without time axes cannot be normalized.")
 
 
 
@@ -728,15 +724,14 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DERIVATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Derivate dot typed profiles using their normalized time axis.
+            Derivate dot typed profiles using their normalized time axis.
         """
 
         # Check if profile is differentiable
         if self.t and self.type == "Dot":
 
             # Give user info
-            print "Derivating..."
+            Logger.debug("Derivating...")
 
             # Derivate
             self.dydt = lib.derivate(self.y, self.t)
@@ -749,8 +744,7 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Show profile components.
+            Show profile components.
         """
 
         # Define profile dictionary
@@ -768,7 +762,7 @@ class Profile(object):
             if axes[0] and axes[1]:
 
                 # Give user info
-                print p
+                Logger.debug(p)
 
                 # Read number of entries
                 n = len(axes[1])
@@ -795,7 +789,7 @@ class Profile(object):
                         y = round(y, 2)
 
                     # Give user info
-                    print str(y) + " - (" + str(t) + ")"
+                    Logger.debug(str(y) + " - (" + str(t) + ")")
 
 
 
@@ -805,8 +799,7 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Compute profile's value (y) for a given time (t).
+            Compute profile's value (y) for a given time (t).
         """
 
         # Initialize result
@@ -863,7 +856,7 @@ class Profile(object):
         y = self.y[index]
 
         # Give user info
-        #print "f(" + str(t) + ") = " + str(y)
+        Logger.debug("f(" + str(t) + ") = " + str(y))
 
         # Return result
         return y
@@ -882,13 +875,13 @@ class Profile(object):
         base = self.__class__.__name__
 
         # Give user info
-        print "'" + base + "'"
+        Logger.debug("'" + base + "'")
 
         # Show base profile
         self.show()
 
         # Give user info
-        print "with: "
+        Logger.debug("with: ")
 
         # Show profiles
         for p in operands:
@@ -897,7 +890,7 @@ class Profile(object):
             profile = p.__class__.__name__
 
             # Give user info
-            print "'" + profile + "'"
+            Logger.debug("'" + profile + "'")
 
             # Show profile
             p.show()
@@ -916,9 +909,8 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             OPERATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Note: Profiles on which operations are made must have same limits.
-              They also cannot have "None" values within them!
+            Note: Profiles on which operations are made must have same limits.
+                  They also cannot have "None" values within them!
         """
 
         # Verify validity of operation
@@ -971,7 +963,7 @@ class Profile(object):
         operation = lambda x, y: x + y
 
         # Give user info
-        print "Adding:"
+        Logger.debug("Adding:")
 
         # Do operation
         return self.operate(operation, list(args))
@@ -990,7 +982,7 @@ class Profile(object):
         operation = lambda x, y: x - y
 
         # Give user info
-        print "Subtracting:"
+        Logger.debug("Subtracting:")
 
         # Do operation
         return self.operate(operation, list(args))

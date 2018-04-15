@@ -26,6 +26,12 @@
 
 # USER LIBRARIES
 import lib
+import logger
+
+
+
+# Instanciate logger
+Logger = logger.Logger("Stick/commands.py")
 
 
 
@@ -212,7 +218,7 @@ class ReadName(Command):
         self.response = "".join(lib.charify(self.data["RX"]))
 
         # Info
-        print "Stick name: " + self.response
+        Logger.info("Stick name: " + self.response)
 
 
 
@@ -246,7 +252,7 @@ class ReadAuthor(Command):
         self.response = "".join(lib.charify(self.data["RX"]))
 
         # Info
-        print "Stick author: " + self.response
+        Logger.info("Stick author: " + self.response)
 
 
 
@@ -331,7 +337,7 @@ class ReadRadioRegister(Command):
         self.response = self.data["RX"][0]
 
         # Info
-        print self.register + ": " + str(self.response)
+        Logger.debug(self.register + ": " + str(self.response))
 
 
 
