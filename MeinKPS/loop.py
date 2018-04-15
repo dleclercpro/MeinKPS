@@ -41,7 +41,7 @@ from Pump import pump
 
 
 
-# Define a instances
+# Define instances
 Logger = logger.Logger("loop.py")
 Reporter = reporter.Reporter()
 Exporter = exporter.Exporter()
