@@ -578,7 +578,7 @@ class Clock(object):
         """
 
         # Give user info
-        Logger.info("Storing clock mode to report: '" + self.report + "'...")
+        Logger.debug("Storing clock mode to report: '" + self.report + "'...")
 
         # Add entry
         Reporter.add(self.report, [], {"Clock Mode": self.mode}, True)
