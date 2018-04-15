@@ -80,7 +80,8 @@ class Logger(object):
             msg = self.format.format(now, self.name, level, msg)
 
             # Define log directory
-            directory = path.Path(path.SRC + path.formatDate(now))
+            directory = path.Path(path.Path(path.SRC + "Reports").str +
+                                  path.formatDate(now))
 
             # Touch it
             directory.touch()
