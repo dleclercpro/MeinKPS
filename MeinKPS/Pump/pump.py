@@ -133,9 +133,6 @@ class Pump(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Info
-        Logger.info("Starting pump...")
-
         # Start stick
         self.stick.start()
 
@@ -151,9 +148,6 @@ class Pump(object):
             STOP
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Info
-        Logger.info("Stopping pump...")
 
         # Stop stick
         self.stick.stop()

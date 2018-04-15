@@ -193,7 +193,7 @@ class Stick(object):
         if self.usb is None:
 
             # Raise error
-            raise IOError("No stick found. Are you sure it's plugged in?")
+            raise errors.NoStick
 
         # Otherwise
         else:
