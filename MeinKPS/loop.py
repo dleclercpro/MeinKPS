@@ -92,6 +92,28 @@ class Loop(object):
 
 
 
+    def doTry(self, task, *args):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DOTRY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Try task
+        try:
+
+            # Do it
+            task(*args)
+
+        # Ignore all errors
+        except Exception as e:
+
+            # But log them
+            Logger.error(e.message)
+
+
+
     def start(self):
 
         """
@@ -274,47 +296,20 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start
-        self.start()
+        # Start loop
+        self.doTry(self.start)
 
-        # Try CGM stuff
-        try:
+        # Do CGM stuff
+        self.doTry(self.doCGM)
 
-            # Do it
-            self.doCGM()
+        # Do pump stuff
+        self.doTry(self.doPump)
 
-        # Error
-        except:
+        # Export recent treatments
+        self.doTry(self.export)
 
-            # Ignore
-            pass
-
-        # Try pump stuff
-        try:
-
-            # Do it
-            self.doPump()
-
-        # Error
-        except:
-
-            # Ignore
-            pass
-
-        # Try exporting recent treatments
-        try:
-
-            # Do it
-            self.export()
-
-        # Error
-        except:
-
-            # Ignore
-            pass
-
-        # Stop
-        self.stop()
+        # Stop loop
+        self.doTry(self.stop)
 
 
 
