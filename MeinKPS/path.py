@@ -16,7 +16,7 @@
               (http://www.gnu.org/licenses/gpl.html)
 
     Overview: This is a module that defines a Path object able to deal with
-    		  directory/file management.
+              directory/file management.
 
     Notes:    ...
 
@@ -159,23 +159,23 @@ class Path:
             FROMDATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+        
+        # If datetime object
+        if type(date) is datetime.datetime or type(date) is datetime.date:
 
-	    # If datetime object
-	    if type(date) is datetime.datetime or type(date) is datetime.date:
+            # Format date
+            date = datetime.datetime.strftime(date, "%Y" + os.sep +
+                                                    "%m" + os.sep +
+                                                    "%d" + os.sep)
 
-	        # Format date
-	        date = datetime.datetime.strftime(date, "%Y" + os.sep +
-	                                                "%m" + os.sep +
-	                                                "%d" + os.sep)
+        # Otherwise
+        else:
 
-	    # Otherwise
-	    else:
+            # Raise error
+            raise NotImplementedError
 
-	        # Raise error
-	        raise NotImplementedError
-
-	    # Return formatted date
-	    return date
+        # Return formatted date
+        return date
 
 
 
@@ -223,11 +223,11 @@ class Path:
                 # Create it
                 with open(path, "w") as f:
 
-                	# JSON mode
-                	if mode == "JSON":
+                    # JSON mode
+                    if mode == "JSON":
 
-	                    # Dump empty dict
-	                    json.dump({}, f)
+                        # Dump empty dict
+                        json.dump({}, f)
 
                 # Give permissions
                 os.chmod(path, 0777)
@@ -253,7 +253,7 @@ class Path:
 
             # Give user info
             #print ("Scanning for '" + str(file) + "' within '" + str(path) +
-            #	    "'...")
+            #       "'...")
 
         # Get all files from path
         files = os.listdir(path)
