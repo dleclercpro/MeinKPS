@@ -32,20 +32,14 @@
 # LIBRARIES
 import json
 import datetime
-import os
-import sys
 
 
 
 # USER LIBRARIES
 import lib
+import path
 import logger
 import errors
-
-
-
-# CONSTANTS
-SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep + "Reports"
 
 
 
@@ -54,6 +48,7 @@ Logger = logger.Logger("reporter.py")
 
 
 
+# CLASSES
 class Reporter:
 
     def __init__(self):
@@ -65,10 +60,10 @@ class Reporter:
         """
 
         # Define source path
-        self.src = Path(SRC)
+        self.src = path.Path(path.SRC + "Reports")
 
         # Define export path
-        self.exp = Path(SRC + os.sep + "Export")
+        self.exp = path.Path(self.src.str + "Export")
 
 
 
@@ -83,11 +78,11 @@ class Reporter:
         # Initialize dates
         dates = []
 
-        # Scan for all possible report paths
-        paths = self.src.scan(name)
+        # Scan for all possible report directories
+        directories = self.src.scan(name)
 
         # If no possible reports found
-        if not paths:
+        if not directories:
 
             # Give user info
             Logger.debug("No dated report found for '" + name + "'.")
@@ -96,14 +91,14 @@ class Reporter:
         else:
 
             # Convert paths to dates
-            dates = [Path(p).date() for p in paths]
+            dates = [path.Path(d).toDate() for d in directories]
 
         # Return dates
         return dates
 
 
 
-    def getReport(self, name, date = None, path = None, touch = True):
+    def getReport(self, name, date = None, directory = None, touch = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,29 +106,29 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Default path
-        if path is None:
+        # Default directory
+        if directory is None:
 
             # Define source
-            path = self.src.str
+            directory = self.src.str
 
         # Otherwise
         if date is not None:
 
             # Format date
-            date = lib.formatDate(date)
+            date = path.fromDate(date)
 
             # Update path to report
-            path = Path(path + date).str
+            directory = path.Path(directory + date).str
 
         # If report can be generated in case it doesn't exist yet
         if touch:
 
             # Touch it
-            Path(path).touch(name)
+            path.Path(directory).touch(name)
 
         # Generate new report
-        report = Report(name, path, date)
+        report = Report(name, directory, date)
 
         # Load its JSON
         report.load()
@@ -509,7 +504,7 @@ class Reporter:
 
 class Report:
 
-    def __init__(self, name = None, path = None, date = None, json = {}):
+    def __init__(self, name = None, directory = None, date = None, json = {}):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -519,7 +514,7 @@ class Report:
 
         # Initialize report attributes
         self.name = name
-        self.path = path
+        self.directory = directory
         self.date = date
         self.json = json
 
@@ -595,7 +590,7 @@ class Report:
         try:
 
             # Open report
-            with open(self.path + self.name, "r") as f:
+            with open(self.directory + self.name, "r") as f:
 
                 # Load JSON
                 self.json = json.load(f)
@@ -611,7 +606,7 @@ class Report:
 
 
 
-    def store(self, path = None):
+    def store(self, directory = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -623,14 +618,14 @@ class Report:
         Logger.debug("Storing report: '" + self.name + "' (" + str(self.date) +
                      ")")
 
-        # If no path given
-        if path is None:
+        # If no directory given
+        if directory is None:
 
-            # Use stored path
-            path = self.path
+            # Use stored directory
+            directory = self.directory
 
         # Rewrite report
-        with open(path + self.name, "w") as f:
+        with open(directory + self.name, "w") as f:
 
             # Dump JSON
             json.dump(self.json, f,
@@ -650,233 +645,9 @@ class Report:
 
         # Show report
         Logger.debug(lib.JSONize({"Name": self.name,
-                                  "Path": self.path,
+                                  "Directory": self.directory,
                                   "Date": self.date,
                                   "JSON": self.json}))
-
-
-
-class Path:
-
-    def __init__(self, path):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize string
-        self.str = None
-
-        # Initialize list
-        self.list = None
-
-        # If input is string
-        if type(path) is str:
-
-            # Store it
-            self.str = path
-
-        # If it is list
-        elif type(path) is list:
-
-            # Store it
-            self.list = path
-
-        # Normalize path
-        self.normalize()
-
-        # Compute path depth
-        self.depth = len(self.list)
-
-
-
-    def normalize(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            NORMALIZE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If list given
-        if self.list is not None:
-
-            # Merge it
-            self.str = self.merge()
-
-        # Normalize string
-        self.str = os.path.abspath(self.str) + os.sep
-
-        # Split it
-        self.list = self.split()
-
-
-
-    def split(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SPLIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Split path
-        return [p for p in self.str.split(os.sep) if p != ""]
-
-
-
-    def merge(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MERGE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: first slash only works for Linux.
-        """
-
-        # Merge path
-        return os.sep + os.sep.join(self.list)
-
-
-
-    def date(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize date
-        date = []
-
-        # Get path and remove last slash
-        path = os.path.split(self.str)[0]
-
-        # Loop 3 directories up to get corresponding date
-        for i in range(3):
-
-            # Split path
-            path, file = os.path.split(path)
-
-            # Add date component
-            date.append(int(file))
-
-        # Reverse date to get format YYYY.MM.DD
-        date.reverse()
-
-        # Return datetime object
-        return datetime.date(*date)
-
-
-
-    def touch(self, file = None, n = 1):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            TOUCH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get current path
-        path = Path(self.list[:n]).str
-
-        # Look for path
-        if n <= self.depth:
-
-            # Show current path
-            Logger.debug(path)
-
-            # If it does not exist
-            if not os.path.exists(path):
-
-                # Give user info
-                Logger.debug("Making path '" + path + "'...")
-
-                # Make it
-                os.makedirs(path)
-
-            # Contine looking
-            self.touch(file, n + 1)
-
-        # Look for file
-        elif file is not None:
-
-            # Complete path with filename
-            path += file
-
-            # If it does not exist
-            if not os.path.exists(path):
-
-                # Give user info
-                Logger.debug("Making file '" + path + "'...")
-
-                # Create it
-                with open(path, "w") as f:
-
-                    # Dump empty dict
-                    json.dump({}, f)
-
-                # Give permissions
-                os.chmod(path, 0777)
-
-
-
-    def scan(self, file, path = None, results = None, n = 1):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SCAN
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # On first run
-        if n == 1:
-
-            # Initialize results
-            results = []
-
-            # Read source path
-            path = self.str
-
-            # Give user info
-            Logger.debug("Scanning for '" + str(file) + "' within '" +
-                         str(path) + "'...")
-
-        # Get all files from path
-        files = os.listdir(path)
-
-        # Get inside path
-        os.chdir(path)
-
-        # Upload files
-        for f in files:
-
-            # If file
-            if os.path.isfile(f):
-
-                # Check if filename fits
-                if f == file:
-
-                    # Store path
-                    results.append(os.getcwd())
-
-            # If directory and a digit (because a date)
-            elif os.path.isdir(f) and f.isdigit():
-
-                # Scan further
-                self.scan(file, f, results, n + 1)
-
-        # Go back up
-        os.chdir("..")
-
-        # If first level
-        if n == 1:
-
-            # Return results
-            return results
 
 
 

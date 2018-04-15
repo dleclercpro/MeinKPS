@@ -32,16 +32,12 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import path
 import logger
 import errors
 import commands
 import databases
 import reporter
-
-
-
-# CONSTANTS
-SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
 
 
@@ -236,7 +232,7 @@ class CGM(object):
         except:
 
             # Reset USB ports
-            os.system("sudo sh " + SRC + "../reset.sh")
+            os.system("sudo sh " + path.SRC + "reset.sh")
 
             # Wait until devices are back
             time.sleep(5)

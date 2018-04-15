@@ -22,6 +22,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# USER LIBRARIES
+import path
+
+
+
 # CONSTANTS
 LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -38,9 +43,6 @@ class Logger(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Single import
-        import reporter
-
         # Store logger name
         self.name = name
 
@@ -49,9 +51,6 @@ class Logger(object):
 
         # Define logging format
         self.format = "[{:%H:%M:%S}] [{:>17}] [{:>8}] --- {}"
-
-        # Define source path
-        self.src = reporter.Path(reporter.SRC)
 
         # Define report
         self.report = "loop.log"
@@ -66,10 +65,6 @@ class Logger(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Single imports
-        import lib
-        import reporter
-
         # Does level allow logging?
         if LEVELS.index(level) >= self.level:
 
@@ -79,14 +74,14 @@ class Logger(object):
             # Format message
             msg = self.format.format(now, self.name, level, msg)
 
-            # Define path to log
-            path = reporter.Path(self.src.str + lib.formatDate(now))
+            # Define log directory
+            directory = path.Path(path.SRC + path.fromDate(now))
 
             # Touch it
-            path.touch()
+            directory.touch()
 
             # Log message
-            with open(path.str + self.report, "a") as f:
+            with open(directory.str + self.report, "a") as f:
 
                 # Do it and add new line
                 f.write(msg + "\n")

@@ -37,16 +37,12 @@ import numpy as np
 
 # USER LIBRARIES
 import lib
+import path
 import logger
 import errors
 import reporter
 import commands
 from Pump import packets
-
-
-
-# CONSTANTS
-SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
 
 
@@ -260,7 +256,7 @@ class Stick(object):
             Logger.warning("Resetting USB interface...")
 
             # Reset USB ports
-            os.system("sudo sh " + SRC + "../reset.sh")
+            os.system("sudo sh " + path.SRC + "reset.sh")
 
             # Wait until devices are back
             time.sleep(5)
