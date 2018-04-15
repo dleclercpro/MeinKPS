@@ -205,7 +205,7 @@ class FutureIOB(base.FutureProfile):
             IOB += r * y[i]
 
         # Give user info
-        Logger.info("IOB: " + str(IOB) + " U")
+        Logger.debug("IOB: " + str(IOB) + " U")
 
         # Return IOB
         return IOB

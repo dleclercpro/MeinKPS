@@ -356,7 +356,7 @@ class SensorRecord(Record):
         self.values.append(status)
 
         # Give user info
-        Logger.info("Sensor status: " + str(status) +
+        Logger.info("Sensor status: " + str(status) + " " +
                     "(" + lib.formatTime(self.t[-1]) + ")")
 
 
@@ -418,7 +418,7 @@ class CalibrationRecord(Record):
         self.values.append(BG)
 
         # Give user info
-        Logger.info("BG: " + str(BG) + " " + self.cgm.units.value +
+        Logger.info("BG: " + str(BG) + " " + self.cgm.units.value + " " +
                     "(" + lib.formatTime(self.t[-1]) + ")")
 
 
