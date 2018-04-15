@@ -49,7 +49,7 @@ from Stick import stick
 
 
 # Define instances
-Logger = logger.Logger("pump.py")
+Logger = logger.Logger("Pump/pump.py")
 Reporter = reporter.Reporter()
 
 

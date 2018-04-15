@@ -42,7 +42,7 @@ import reporter
 
 
 # Define instances
-Logger = logger.Logger("cgm.py")
+Logger = logger.Logger("CGM/cgm.py")
 Reporter = reporter.Reporter()
 
 

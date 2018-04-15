@@ -47,7 +47,7 @@ from Pump import packets
 
 
 # Define instances
-Logger = logger.Logger("stick.py")
+Logger = logger.Logger("Stick/stick.py")
 Reporter = reporter.Reporter()
 
 
