@@ -44,8 +44,8 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize error type
-        self.type = None
+        # Initialize error logging level
+        self.level = "ERROR"
 
         # Convert arguments to strings
         self.args = [str(x) for x in args]
@@ -84,20 +84,8 @@ class BaseError(Exception):
         # Get error name
         errorName = self.__class__.__name__
 
-        # Build error message
-        msg = errorType + " > " + errorName + ": " + self.info
-
-        # Critical error
-        if self.type == "Critical":
-
-            # Info
-            Logger.critical(msg)
-
-        # Otherwise
-        else:
-
-            # Info
-            Logger.error(msg)
+        # Log error with according level
+        Logger.log(self.level, errorType + " > " + errorName + ": " + self.info)
 
 
 
@@ -129,8 +117,8 @@ class NoStick(StickError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error type
-        self.type = "Critical"
+        # Define error logging level
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = "No stick detected. Are you sure it's plugged in?"
@@ -162,8 +150,8 @@ class RadioRegisterTXFail(RadioError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error type
-        self.type = "Critical"
+        # Define error logging level
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = "Radio register not updated correctly."
@@ -195,8 +183,8 @@ class UnsuccessfulRadioCommand(RadioError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error type
-        self.type = "Critical"
+        # Define error logging level
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = "Radio command was unsuccessful."
@@ -315,8 +303,8 @@ class NoPump(PumpError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error type
-        self.type = "Critical"
+        # Define error logging level
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = ("No pump detected. Are you sure it's nearby and " +
@@ -381,8 +369,8 @@ class TBFail(PumpError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error type
-        self.type = "Critical"
+        # Define error logging level
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = ("New TB could not be correctly set.")
@@ -540,8 +528,8 @@ class NoCGM(CGMError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error type
-        self.type = "Critical"
+        # Define error logging level
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = "No CGM detected. Are you sure it's plugged in?"
@@ -608,6 +596,9 @@ class NoReport(ReporterError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error logging level
+        self.level = "DEBUG"
+
         # Define error info
         self.info = ("Report '" + self.args[0] + "' (" + self.args[1] +
                      ") not loaded.")
@@ -623,6 +614,9 @@ class NoSection(ReporterError):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error logging level
+        self.level = "DEBUG"
 
         # Define error info
         self.info = ("Neither was a matching section found nor did the " +
@@ -766,8 +760,8 @@ class MissingBGs(ProfileError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error type
-        self.type = "Critical"
+        # Define error logging level
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = ("Not enough recent BGs.")
