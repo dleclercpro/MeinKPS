@@ -134,15 +134,11 @@ class Record(object):
         """
 
         # Decode local time
-        t = (datetime.timedelta(seconds =
-                                lib.unpack(self.bytes[-1][4:8], "<")) +
-                                self.cgm.clock.epoch)
+        t = (self.cgm.clock.epoch +
+             datetime.timedelta(seconds = lib.unpack(self.bytes[-1][4:8], "<")))
 
         # Store it
         self.t.append(t)
-
-        # Give user info
-        Logger.info("Time: " + str(t))
 
 
 
@@ -247,10 +243,13 @@ class BGRecord(Record):
 
             # Convert BG units if desired
             if self.convert:
+
+                # Convert them
                 BG = round(BG / 18.0, 1)
 
             # Give user info
-            Logger.info("BG: " + str(BG) + " " + str(trend))
+            Logger.info("BG: " + str(BG) + " " + str(trend) + " " +
+                        "(" + lib.formatTime(self.t[-1]) + ")")
 
         # Store them
         self.values.append({"BG": BG, "Trend": trend})
@@ -357,7 +356,8 @@ class SensorRecord(Record):
         self.values.append(status)
 
         # Give user info
-        Logger.info("Sensor status: " + str(status))
+        Logger.info("Sensor status: " + str(status) +
+                    "(" + lib.formatTime(self.t[-1]) + ")")
 
 
 
@@ -418,7 +418,8 @@ class CalibrationRecord(Record):
         self.values.append(BG)
 
         # Give user info
-        Logger.info("BG: " + str(BG) + " " + self.cgm.units.value)
+        Logger.info("BG: " + str(BG) + " " + self.cgm.units.value +
+                    "(" + lib.formatTime(self.t[-1]) + ")")
 
 
 
@@ -455,16 +456,3 @@ class EventRecord(Record):
 
         # Define record size
         self.size = 20
-
-
-
-    def decode(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize decoding
-        super(self.__class__, self).decode()
