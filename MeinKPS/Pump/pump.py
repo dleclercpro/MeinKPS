@@ -1308,10 +1308,10 @@ class History(PumpComponent):
         """
 
         # Info
-        Logger.info("Read page(s) [" + str(len(self.pages)) + " byte(s)]:")
+        Logger.debug("Read page(s) [" + str(len(self.pages)) + " byte(s)]:")
 
         # Print downloaded history pages
-        Logger.info(self.pages)
+        Logger.debug(self.pages)
 
 
 
