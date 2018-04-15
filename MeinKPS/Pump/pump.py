@@ -209,7 +209,7 @@ class PumpComponent(object):
         """
 
         # Info
-        Logger.info(self.name + ": " + self.value)
+        Logger.info(self.name + ": " + str(self.value))
 
 
 
