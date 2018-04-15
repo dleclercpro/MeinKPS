@@ -104,7 +104,7 @@ class Loop(object):
         self.t0 = datetime.datetime.now()
 
         # Give user info
-        Logger.info("Start: " + lib.formatTime(self.t0))
+        Logger.info("Started loop.")
 
         # Start CGM
         self.cgm.start()
@@ -145,7 +145,7 @@ class Loop(object):
         self.t1 = datetime.datetime.now()
 
         # Give user info
-        Logger.info("End: " + lib.formatTime(self.t1))
+        Logger.info("Ended loop.")
 
         # Update loop infos
         Reporter.add(self.report, ["Status"],

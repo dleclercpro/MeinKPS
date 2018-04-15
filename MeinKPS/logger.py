@@ -55,7 +55,7 @@ class Logger(object):
         self.level = LEVELS.index(level)
 
         # Define logging format
-        self.format = "[{:%H:%M:%S}] [{:>17}] [{:>8}] --- {}"
+        self.format = "[{:%H:%M:%S.%f}] [{:>17}] [{:>8}] --- {}"
 
         # Define report
         self.report = "loop.log"
