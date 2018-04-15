@@ -22,17 +22,6 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# LIBRARIES
-import datetime
-
-
-
-# USER LIBRARIES
-import lib
-import reporter
-
-
-
 # CONSTANTS
 LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -48,6 +37,9 @@ class Logger(object):
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Single import
+        import reporter
 
         # Store logger name
         self.name = name
@@ -73,6 +65,10 @@ class Logger(object):
             LOG
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Single imports
+        import lib
+        import reporter
 
         # Does level allow logging?
         if LEVELS.index(level) >= self.level:
