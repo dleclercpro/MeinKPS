@@ -91,7 +91,7 @@ class Reporter:
         else:
 
             # Convert paths to dates
-            dates = [path.Path(d).toDate() for d in directories]
+            dates = [path.Path(d).date() for d in directories]
 
         # Return dates
         return dates
@@ -116,7 +116,7 @@ class Reporter:
         if date is not None:
 
             # Format date
-            date = path.fromDate(date)
+            date = path.formatDate(date)
 
             # Update path to report
             directory = path.Path(directory + date).str

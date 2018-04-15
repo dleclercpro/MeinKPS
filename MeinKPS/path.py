@@ -35,6 +35,34 @@ SRC = os.path.dirname(os.path.realpath(__file__)) + os.sep
 
 
 
+# FUNCTIONS
+def formatDate(date):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        FORMATDATE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+    
+    # If datetime object
+    if type(date) is datetime.datetime or type(date) is datetime.date:
+
+        # Format date
+        date = datetime.datetime.strftime(date, "%Y" + os.sep +
+                                                "%m" + os.sep +
+                                                "%d" + os.sep)
+
+    # Otherwise
+    else:
+
+        # Raise error
+        raise NotImplementedError
+
+    # Return formatted date
+    return date
+
+
+
 # CLASSES
 class Path:
 
@@ -121,11 +149,11 @@ class Path:
 
 
 
-    def toDate(self):
+    def date(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            TODATE
+            DATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -149,33 +177,6 @@ class Path:
 
         # Return datetime object
         return datetime.date(*date)
-
-
-
-    def fromDate(self, date):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FROMDATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        
-        # If datetime object
-        if type(date) is datetime.datetime or type(date) is datetime.date:
-
-            # Format date
-            date = datetime.datetime.strftime(date, "%Y" + os.sep +
-                                                    "%m" + os.sep +
-                                                    "%d" + os.sep)
-
-        # Otherwise
-        else:
-
-            # Raise error
-            raise NotImplementedError
-
-        # Return formatted date
-        return date
 
 
 
