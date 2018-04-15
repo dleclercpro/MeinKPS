@@ -138,7 +138,7 @@ class Logger(object):
 
 
 
-    def ERROR(self, msg):
+    def error(self, msg):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
