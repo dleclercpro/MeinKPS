@@ -552,7 +552,7 @@ class Clock(object):
         self.systemTime = self.epoch + delta
 
         # Give user info
-        Logger.info("System time: " + str(self.systemTime))
+        Logger.info("System time: " + lib.formatTime(self.systemTime))
 
         # Execute command
         self.commands["ReadMode"].execute()
