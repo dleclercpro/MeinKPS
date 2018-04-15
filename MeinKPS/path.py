@@ -25,6 +25,8 @@
 
 # LIBRARIES
 import os
+import json
+import datetime
 
 
 
@@ -177,7 +179,7 @@ class Path:
 
 
 
-    def touch(self, file = None, n = 1):
+    def touch(self, file = None, n = 1, mode = "JSON"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,8 +223,11 @@ class Path:
                 # Create it
                 with open(path, "w") as f:
 
-                    # Dump empty dict
-                    json.dump({}, f)
+                	# JSON mode
+                	if mode == "JSON":
+
+	                    # Dump empty dict
+	                    json.dump({}, f)
 
                 # Give permissions
                 os.chmod(path, 0777)
