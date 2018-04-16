@@ -110,7 +110,7 @@ class Loop(object):
         except Exception as e:
 
             # But log them
-            Logger.error(e.message)
+            Logger.error(e)
 
 
 
