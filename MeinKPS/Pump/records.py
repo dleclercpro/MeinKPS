@@ -385,16 +385,19 @@ class TBRecord(Record):
                       "Date": 5,
                       "Body": 8}
 
-        # Define theoretical max basal in bytes
+        # Define theoretical min/max in bytes
         minTB = {"U/h": 0 / pump.basal.stroke, "%": 0}
         maxTB = {"U/h": 35 / pump.basal.stroke, "%": 200}
+        minDuration = 0
+        maxDuration = 24 * 60 / pump.basal.time
 
         # Define record's criteria
         self.criteria = (lambda x: x[0] == self.code and
-                                   minTB["U/h"] <= x[1] <= maxTB["U/h"] and
+                                  (minTB["U/h"] <= x[1] <= maxTB["U/h"] and
                                    0 <= x[7] < 8 or
                                    minTB["%"] <= x[1] <= maxTB["%"] and
-                                   x[7] == 8)
+                                   x[7] == 8) and
+                                   minDuration <= x[9] <= maxDuration)
 
         # Initialize rest of record
         super(self.__class__, self).__init__(pump)

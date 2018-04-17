@@ -827,7 +827,7 @@ class Basal(PumpComponent):
 
         # Initialize basal characteristics
         self.stroke = 0.025 # Pump basal stroke rate (U/h)
-        self.time = 30      # Time block (m) used by pump for basal durations
+        self.time   = 30    # Time block (m) used by pump for basal durations
 
 
 
