@@ -103,6 +103,10 @@ class FromPacket(Packet):
         # Define packet type
         self.type = "RX"
 
+        # Initialize characteristics due to CC1111 firmware
+        self.index = None
+        self.RSSI = None
+
 
 
     def rssi(self, offset = 73):
@@ -349,7 +353,7 @@ class PumpPacket(Packet):
         Logger.debug("CRC: " + str(self.CRC))
 
         # Show its encoded version
-        #self.showEncoded()        
+        #self.showEncoded()
 
         # Show its decoded version
         self.showDecoded()
