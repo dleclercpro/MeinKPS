@@ -22,6 +22,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# LIBRARIES
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+
+
 # USER LIBRARIES
 import errors
 
@@ -68,6 +75,69 @@ class IDC(object):
 
         # Return verified time
         return t
+
+
+
+    def plot(self, show = True, color = "black", n = 1, size = [1, 1]):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PLOT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define subplot
+        ax = plt.subplot(size[0], size[1], n)
+
+        # Define title
+        title = "IDC(s)"
+
+        # Define axis labels
+        x = "(h)"
+        y = "(-)"
+
+        # Define subplot label
+        label = self.__class__.__name__
+
+        # Subplots
+        if size[0] > 1 or size[1] > 1:
+
+            # Title of each subplot corresponds to its label
+            title = label
+
+        # Set title
+        ax.set_title(title, fontweight = "semibold")
+
+        # Set x-axis label
+        ax.set_xlabel(x)
+
+        # Set y-axis label
+        ax.set_ylabel(y)
+
+        # Set x-axis limit
+        ax.set_xlim([-self.DIA, 0])
+
+        # Set y-axis limit
+        ax.set_ylim([0, 1])
+
+        # Compute axes
+        t = np.linspace(-self.DIA, 0, 100)
+        y = np.vectorize(self.f)(t)
+
+        # Add data to plot
+        ax.plot(t, y, lw = 2, ls = "-", label = label, c = color)
+
+        # Single plot
+        if size == [1, 1]:
+
+            # Show legend
+            ax.legend()
+
+        # Ready to show?
+        if show:
+
+            # Show plot
+            plt.show()
 
 
 
@@ -353,3 +423,53 @@ class FiaspIDC(TriangleModelIDC):
 
         # Start initialization
         super(FiaspIDC, self).__init__(DIA, DIA / 6.0)
+
+
+
+# FUNCTIONS
+def initPlot(n = 0):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        INITPLOT
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Configure graph
+    mpl.rc("font", size = 10, family = "Ubuntu")
+
+    # Define figure
+    fig = plt.figure(n, figsize = (10, 8), tight_layout = True)
+
+    # Return figure
+    return fig
+
+
+
+def main():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Define time references
+    DIA = 5.0
+
+    # Instanciate IDC
+    NovoRapid = WalshIDC(DIA)
+    Fiasp = FiaspIDC(DIA)
+
+    # Show it
+    initPlot()
+    NovoRapid.plot(False, "orange")
+    Fiasp.plot(True, "#99e500")
+    #NovoRapid.plot(False, "orange", 1, [2, 1])
+    #Fiasp.plot(True, "#99e500", 2, [2, 1])
+
+
+
+# Run this when script is called from terminal
+if __name__ == "__main__":
+    main()
