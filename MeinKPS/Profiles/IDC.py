@@ -27,7 +27,7 @@ import errors
 
 
 
-class FourthOrderIDC(object):
+class IDC(object):
 
     def __init__(self, DIA):
 
@@ -35,28 +35,23 @@ class FourthOrderIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Modelization of IDC as a 4th-order polynomial.
+            Warning: all IDC curves take NEGATIVE time input! For example, if
+                     it has been 2 hours since a bolus has been given, then the
+                     corresponding time of said bolus is given by t = -2.
         """
-
-        # Initialize 4th-order parameters
-        self.m0 = None
-        self.m1 = None
-        self.m2 = None
-        self.m3 = None
-        self.m4 = None
 
         # Define DIA
-        self.DIA = DIA
+        self.DIA = float(DIA)
 
 
 
-    def verify(self, t):
+    def correct(self, t):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFY
+            CORRECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Verify that given time is within insulin's range of action.
+            Bring back given time within insulin's range of action.
         """
 
         # If too old
@@ -69,10 +64,33 @@ class FourthOrderIDC(object):
         elif t > 0:
 
             # Bring it back down
-            t = 0
+            raise errors.BadInsulinAge()
 
         # Return verified time
         return t
+
+
+
+class FourthOrderIDC(IDC):
+
+    def __init__(self, DIA):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Modelization of IDC as a 4th-order polynomial.
+        """
+
+        # Start initialization
+        super(FourthOrderIDC, self).__init__(DIA)
+
+        # Initialize 4th-order parameters
+        self.m0 = None
+        self.m1 = None
+        self.m2 = None
+        self.m3 = None
+        self.m4 = None
 
 
 
@@ -83,11 +101,11 @@ class FourthOrderIDC(object):
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Gives fraction of active insulin remaining in body t hours after
-            enacting it. Takes negative input!
+            enacting it.
         """
 
-        # Verify time
-        t = self.verify(t)
+        # Correct time
+        t = self.correct(t)
 
         # Compute f(t) of IDC
         f = (self.m4 * t ** 4 +
@@ -107,10 +125,11 @@ class FourthOrderIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Note: implicit integration of IDC. Only makes sense when taking dF.
         """
 
-        # Verify time
-        t = self.verify(t)
+        # Correct time
+        t = self.correct(t)
 
         # Compute F(t) of IDC
         F = (self.m4 * t ** 5 / 5 +
@@ -124,7 +143,7 @@ class FourthOrderIDC(object):
 
 
 
-class TriangleIDC(object):
+class TriangleModelIDC(IDC):
 
     def __init__(self, DIA, PIA):
 
@@ -132,51 +151,42 @@ class TriangleIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Modelization of IDC based on a triangle IAC.
+            Modelization of IDC based on a triangle IAC. The IAC is given by the
+            following formula (with negative times since injection):
+
+                ÌAC(t) = m_0 * t + b_0 for t = [-DIA, -PIA]
+                         m_1 * t + b_1 for t = [-PIA, 0]
+
+            where the units of IAC are given by [/h].
+
+            We assume that the IDC is given by the integral of the IAC:
+
+                IDC(t) = S IAC(t) * dt
+                       = m_0 * t ** 2 / 2 + b_0 * t + c_0 for t = [-DIA, -PIA]
+                         m_1 * t ** 2 / 2 + b_1 * t + c_1 for t = [-PIA, 0]
+
+            where S represents an integral on time t.
         """
 
-        # Define DIA
-        self.DIA = float(DIA)
+        # Start initialization
+        super(TriangleModelIDC, self).__init__(DIA)
 
         # Define PIA
         self.PIA = float(PIA)
 
-        # Define coefficients
+        # Compute value of IAC at peak of action [y0 = IAC(PIA)] using
+        # normalization: S IAC(t) * dt = 1
         self.y0 = 2 / self.DIA
+
+        # Define coefficients for t = [-DIA, -PIA]
         self.m0 = self.y0 / (self.DIA - self.PIA)
-        self.m1 = -self.y0 / self.PIA
         self.b0 = self.m0 * self.DIA
+        self.c0 = self.DIA * (self.b0 - self.m0 * self.DIA / 2)
+
+        # Define coefficients for t = [-PIA, 0]
+        self.m1 = -self.y0 / self.PIA
         self.b1 = 0
-
-        # Define integrals
-        self.I = lambda t, m, b: m * t ** 2 / 2 + b * t
-        self.II = lambda t, m, b: m * t ** 3 / 6 + b * t ** 2 / 2
-
-
-
-    def verify(self, t):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Verify that given time is within insulin's range of action.
-        """
-
-        # If too old
-        if t < -self.DIA:
-
-            # Bring it back up
-            t = -self.DIA
-
-        # If too new
-        elif t > 0:
-
-            # Bring it back down
-            t = 0
-
-        # Return verified time
-        return t
+        self.c1 = 1
 
 
 
@@ -187,40 +197,30 @@ class TriangleIDC(object):
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Gives fraction of active insulin remaining in body t hours after
-            enacting it. Takes negative input!
+            enacting it.
         """
 
-        # Verify time
-        t = self.verify(t)
-
-        # Initialize result
-        f = 0
+        # Correct time
+        t = self.correct(t)
 
         # From -DIA to PIA
         if -self.DIA <= t <= -self.PIA:
 
-            # Define reference point
-            T = -self.DIA
-
             # Link coefficients
             m = self.m0
             b = self.b0
+            c = self.c0
 
         # From PIA to 0
         elif -self.PIA < t <= 0:
 
-            # Define reference point
-            T = -self.PIA
-
             # Link coefficients
             m = self.m1
             b = self.b1
+            c = self.c1
 
-            # Add first part of integral
-            f += self.f(T)
-
-        # Compute it
-        f += self.I(t, m, b) - self.I(T, m, b)
+        # Compute IDC(t)
+        f = m * t ** 2 / 2 + b * t + c
 
         # Return it
         return f
@@ -233,10 +233,20 @@ class TriangleIDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Note: implicit integration of IDC. Only makes sense when taking dF.
+
+            The integration of the piecewise IDC is based on the following rule:
+
+                S_a^b f(t) * dt = S_u^b f(t) * dt - S_u^a f(t) * dt
+
+            where S_a^b represents the integral on time of f(t) from a to b.
         """
 
-        # Verify time
-        t = self.verify(t)
+        # Correct time
+        t = self.correct(t)
+
+        # Define integral
+        I = lambda t, m, b, c: m * t ** 3 / 6 + b * t ** 2 / 2 + c * t
 
         # Initialize result
         F = 0
@@ -250,6 +260,7 @@ class TriangleIDC(object):
             # Link coefficients
             m = self.m0
             b = self.b0
+            c = self.c0
 
         # From PIA to 0
         elif -self.PIA < t <= 0:
@@ -260,13 +271,13 @@ class TriangleIDC(object):
             # Link coefficients
             m = self.m1
             b = self.b1
+            c = self.c1
 
             # Add first part of integral
-            F += self.f(T) * t - self.f(T) * T + self.F(T)
+            F += self.F(T)
 
         # Compute it
-        F += (self.II(t, m, b) - self.II(T, m, b) -
-              (self.I(T, m, b) * t - self.I(T, m, b) * T))
+        F += I(t) - I(T)
 
         # Return it
         return F
@@ -284,7 +295,7 @@ class WalshIDC(FourthOrderIDC):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(DIA)
+        super(WalshIDC, self).__init__(DIA)
 
         # Define parameters of IDC for various DIA
         if DIA == 3:
@@ -327,7 +338,7 @@ class WalshIDC(FourthOrderIDC):
 
 
 
-class FiaspIDC(TriangleIDC):
+class FiaspIDC(TriangleModelIDC):
 
     def __init__(self, DIA):
 
@@ -335,7 +346,10 @@ class FiaspIDC(TriangleIDC):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Set peak of insulin action at a 6th of the DIA by default. For
+            example, if the insulin action lasts 6 hours, then the peak of
+            action would be presumed to be at 1 hour after injection.
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(DIA, DIA / 6.0)
+        super(FiaspIDC, self).__init__(DIA, DIA / 6.0)

@@ -25,8 +25,9 @@
 # LIBRARIES
 import datetime
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+import copy
+#import matplotlib as mpl
+#import matplotlib.pyplot as plt
 
 
 
@@ -34,7 +35,7 @@ import matplotlib.pyplot as plt
 import lib
 import logger
 import reporter
-from Profiles import *
+#from Profiles import *
 
 
 
@@ -69,40 +70,40 @@ class Calculator(object):
         self.IDC = None
 
         # Give calculator a basal profile
-        self.basal = basal.Basal()
+        #self.basal = basal.Basal()
 
         # Give calculator a TB profile
-        self.TB = TB.TB()
+        #self.TB = TB.TB()
 
         # Give calculator a bolus profile
-        self.bolus = bolus.Bolus()
+        #self.bolus = bolus.Bolus()
 
         # Give calculator a suspend profile
-        self.suspend = suspend.Suspend()
+        #self.suspend = suspend.Suspend()
 
         # Give calculator a resume profile
-        self.resume = resume.Resume()
+        #self.resume = resume.Resume()
 
         # Initialize net insulin profile
-        self.net = net.Net()
+        #self.net = net.Net()
 
         # Give calculator an IOB profile
-        self.IOB = IOB.FutureIOB(IOB.PastIOB())
+        #self.IOB = IOB.FutureIOB(IOB.PastIOB())
 
         # Give calculator a COB profile
-        self.COB = COB.COB()
+        #self.COB = COB.COB()
 
         # Give calculator an ISF profile
-        self.ISF = ISF.ISF()
+        #self.ISF = ISF.ISF()
 
         # Give calculator a CSF profile
-        self.CSF = CSF.CSF()
+        #self.CSF = CSF.CSF()
 
         # Give calculator a BG targets profile
-        self.BGTargets = BGTargets.BGTargets()
+        #self.BGTargets = BGTargets.BGTargets()
 
         # Give calculator a BG profile
-        self.BG = BG.FutureBG(BG.PastBG())
+        #self.BG = BG.FutureBG(BG.PastBG())
 
         # Initialize pump's max values
         self.max = {"Basal": None,
@@ -208,6 +209,164 @@ class Calculator(object):
 
         # Build future BG profile
         self.BG.build(self.IOB, self.ISF)
+
+
+
+    def computeIOB(self, net, IDC):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTEIOB
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            The formula to compute IOB is given by:
+
+                IOB = SUM_t' NET(t') * S_t' IDC(t) * dt
+
+            where S represents an integral and t' the value of a given step in
+            the net insulin profile.
+        """
+
+        # Initialize IOB
+        IOB = 0
+
+        # Decouple net insulin profile components
+        t, y = net.t, net.y
+
+        # Get number of steps
+        n = len(t) - 1
+
+        # Compute IOB
+        for i in range(n):
+
+            # Compute remaining IOB factor based on integral of IDC
+            r = IDC.F(t[i + 1]) - IDC.F(t[i])
+
+            # Compute active insulin remaining for current step
+            IOB += r * y[i]
+
+        # Give user info
+        Logger.debug("IOB: " + str(IOB) + " U")
+
+        # Return IOB
+        return IOB
+
+
+
+    def computeBGVariation(self, net, IDC, ISF):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTEBGVARIATION
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Compute expected variation of BG based on ISF profile and used IDC.
+            The formula to compute it is given by:
+
+                dBG = SUM_t' ISF(t') * dIOB(t')
+
+            where t' represents the value of a given step in the ISF profile and
+            dIOB(t') the drop in active insuline (IOB) during that time.
+        """
+
+        # Initialize dBG
+        dBG = 0
+
+        # Decouple ISF profile components
+        T, t, y = ISF.T, ISF.t, ISF.y
+
+        # Get number of steps in ISF profile
+        n = len(t) - 1
+
+        # Get number of entries in net insulin profile
+        m = len(net.t)
+
+        # Copy net insulin profile
+        net = copy.copy(net)
+
+        # Compute initial IOB
+        IOB0 = self.computeIOB(net, IDC)
+
+        # Compute dBG
+        for i in range(n):
+
+            # Get step size
+            dT = T[i + 1] - T[i]
+            dt = t[i + 1] - t[i]
+
+            # Move net insulin profile into the past
+            for j in range(m):
+
+                # Update time axes
+                net.T[j] -= dT
+                net.t[j] -= dt
+
+            # Compute new IOB
+            IOB = self.computeIOB(net, IDC)
+
+            # Compute dIOB
+            dIOB = IOB - IOB0
+
+            # Compute dBG for current step
+            dBG += y[i] * dIOB
+
+            # Update IOB
+            IOB0 = IOB
+
+        # Give user info (remove "/U" from ISF units)
+        Logger.debug("dBG: " + str(dBG) + " " + ISF.units[:-2])
+
+        # Return dBG
+        return dBG
+
+
+
+    def countValidBGs(self, BGs, N = 2, age = 30):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COUNTVALIDBGS
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Count and make sure there are enough (>= N) BGs that can be
+            considered valid (recent enough) for dosing decisions based on a
+            given age (m).
+
+            Note: it is assumed here that the end of the BG profile corresponds
+                  to the current time!
+        """
+
+        # Count how many BGs are not older than T
+        n = np.sum(np.array(BGs.T) > BGs.end - datetime.timedelta(minutes = age))
+
+        # Give user info
+        Logger.debug("Found " + str(n) + " BGs within last " + str(age) + " m.")
+
+        # Check for insufficient valid BGs
+        if n < N:
+
+            # Exit
+            raise errors.MissingBGs()
+
+        # Return count
+        return n
+
+
+
+    def computeBGI(self, BGs):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTEBGI
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Compute BG variation using linear fit on most recent BGs.
+        """
+
+        # Count valid BGs
+        n = self.countValidBGs(BGs)
+
+        # Get fit over last minutes
+        [m, b] = np.polyfit(BGs.t[-n:], BGs.y[-n:], 1)
+
+        # Return fit slope, which corresponds to BGI
+        return m
 
 
 
@@ -590,7 +749,7 @@ def main():
     """
 
     # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(days = 0)
+    now = datetime.datetime(2017, 9, 1, 23, 0, 0)
 
     # Instanciate a calculator
     calculator = Calculator()
@@ -602,7 +761,7 @@ def main():
     #calculator.autosens()
 
     # Show components
-    calculator.show()
+    #calculator.show()
 
 
 

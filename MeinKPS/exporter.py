@@ -147,7 +147,7 @@ class Exporter(object):
                                            "IOB": self.IOBs})
 
         # Fill history report
-        self.reports["history"].update(lib.mergeNDicts(self.history, {"CGM": {
+        self.reports["history"].update(lib.mergeDicts(self.history, {"CGM": {
             "Sensor Statuses": self.statuses,
             "Calibrations": self.calibrations}}))
 

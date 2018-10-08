@@ -33,6 +33,7 @@ import lib
 import logger
 import errors
 import reporter
+import calculator
 import base
 
 
@@ -40,10 +41,11 @@ import base
 # Define instances
 Logger = logger.Logger("Profiles/BG.py")
 Reporter = reporter.Reporter()
+Calculator = calculator.Calculator()
 
 
 
-class PastBG(base.PastProfile):
+class BG(base.DotProfile):
 
     def __init__(self):
 
@@ -54,117 +56,27 @@ class PastBG(base.PastProfile):
         """
 
         # Start initialization
-        super(PastBG, self).__init__()
+        super(BG, self).__init__()
 
-        # Initialize number of valid recent BGs
-        self.n = 0
+        # Read units
+        self.units = Reporter.get("pump.json", ["Units"], "BG")
 
-        # Define type
-        self.type = "Dot"
+        # Define plot y-axis default limits (mmol/L)
+        self.ylim = [0, 15]
 
         # Define report info
         self.report = "BG.json"
 
 
 
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read units
-        self.u = Reporter.get("pump.json", ["Units"], "BG")
-
-        # Load rest
-        super(PastBG, self).load()
+class PastBG(BG, base.PastProfile):
+    pass
 
 
 
-    def count(self):
+class FutureBG(BG, base.FutureProfile):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COUNT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define maximum age of BGs (m)
-        T = 30
-
-        # Read number of BGs
-        N = len(self.T)
-
-        # Initialize number of recent BGs
-        n = 0
-
-        # Check age of most recent BGs
-        for i in range(N):
-
-            # They should not be older than a certain duration
-            if self.T[-(i + 1)] < self.end - datetime.timedelta(minutes = T):
-
-                # Exit
-                break
-
-            # If so, update count
-            else:
-
-                # Update
-                n += 1
-
-        # Give user info
-        Logger.debug("Found " + str(n) + " BGs within last " + str(T) + " m.")
-
-        # Store number of valid recent BGs
-        self.n = n
-
-
-
-    def verify(self, n):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Verify there is enough recent BGs to do anything.
-        """
-
-        # Count recent BGs
-        self.count()
-
-        # Check for insufficient BG data
-        if self.n < n:
-
-            # Exit
-            raise errors.MissingBGs()
-
-
-
-    def impact(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            IMPACT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Check for insufficient data
-        self.verify(2)
-
-        # Get fit over last minutes
-        [m, b] = np.polyfit(self.t[-self.n:], self.y[-self.n:], 1)
-
-        # Return fit slope, which corresponds to BGI
-        return m
-
-
-
-class FutureBG(base.FutureProfile):
-
-    def __init__(self, past):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,96 +87,74 @@ class FutureBG(base.FutureProfile):
         # Start initialization
         super(FutureBG, self).__init__()
 
-        # Store past profile
-        self.past = past
-
-        # Define type
-        self.type = "Dot"
+        # Initialize step size
+        self.dt = None
+        self.dT = None
 
 
 
-    def build(self, IOB, ISF):
+    def build(self, past, IOB, ISF):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Use IOB and ISF to predict where BG will land after insulin activity
-            is over, assuming a natural decay.
+            Use predicted IOB decay curve and ISF to predict where BG will land
+            after insulin activity is over, assuming a natural decay.
+
+            FIXME: when predicting dBG and ISF changes, dBG != ISF0 * dIOB
         """
 
         # Give user info
         Logger.debug("Decaying BG...")
 
-        # Is there at least one recent BG?
-        try:
-
-            # Verify
-            self.past.verify(1)
-
-            # Link units
-            self.u = self.past.u
-
-        # It failed, so there isn't
-        except:
-
-            # Exit
-            return
+        # Make sure there is one BG that's max 15 minutes old to ensure
+        # accurate predicted BG decay
+        Calculator.countValidBGs(past, 1, 15)
 
         # Reset previous BG predictions
         self.reset()
 
-        # Define time references of profile
-        self.time(IOB.start, IOB.end)
+        # Define time references using IOB decay prediction
+        self.define(IOB)
 
-        # Get number of ISF steps
-        n = len(IOB.T) - 1
+        # Read latest BG and corresponding time
+        BG = past.y[-1]
 
-        # Read latest BG
-        BG = self.past.y[-1]
+        # Add it to prediction
+        self.y.append(BG)
 
         # Give user info
-        Logger.debug("Initial BG: " + str(BG) + " " + self.u + " " +
-                     "(" + lib.formatTime(self.past.T[-1]) + ")")
+        Logger.debug("Step size: " + str(self.dt) + " h")
+        Logger.debug("Initial BG: " + str(BG) + " " + self.units + " " +
+                     "(" + lib.formatTime(past.T[-1]) + ")")
+
+        # Get number of IOB predicted points
+        n = len(IOB.T)
 
         # Compute change in IOB (insulin that has kicked in within ISF step)
-        for i in range(n):
-
-            # Get step limits
-            a = IOB.T[i]
-            b = IOB.T[i + 1]
-
-            # Give user info
-            Logger.debug("Time: " + lib.formatTime(a) + " @ " +
-                                    lib.formatTime(b))
+        for i in range(n - 1):
 
             # Compute ISF
-            isf = ISF.f(a)
-
-            # Print ISF
-            Logger.debug("ISF: " + str(isf) + " " + ISF.u)
+            isf = ISF.f(self.T[i])
 
             # Compute IOB change
             dIOB = IOB.y[i + 1] - IOB.y[i]
 
-            # Give user info
-            Logger.debug("dIOB: " + str(round(dIOB, 1)) + " " + IOB.u)
-
             # Compute BG change
             dBG = isf * dIOB
 
-            # Give user info
-            Logger.debug("dBG: " + str(round(dBG, 1)) + " " + self.u)
-
-            # Add BG impact
+            # Update BG
             BG += dBG
 
-            # Print eventual BG
-            Logger.debug("BG: " + str(round(BG, 1)) + " " + self.u)
-
             # Store current BG
-            self.T.append(b)
             self.y.append(BG)
+
+            # Give user info
+            Logger.debug("ISF: " + str(isf) + " " + ISF.units)
+            Logger.debug("dIOB: " + str(round(dIOB, 1)) + " " + IOB.units)
+            Logger.debug("dBG: " + str(round(dBG, 1)) + " " + self.units)
+            Logger.debug("BG: " + str(round(BG, 1)) + " " + self.units)
 
         # Normalize
         self.normalize()
@@ -274,6 +164,34 @@ class FutureBG(base.FutureProfile):
 
         # Show
         self.show()
+
+
+
+    def define(self, IOB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Define time references for prediction of BG decay using the one for
+            IOB.
+        """
+
+        # Copy step size
+        self.dt = IOB.dt
+        self.dT = IOB.dT
+
+        # Copy normalized time axis
+        self.t = IOB.t
+
+        # Copy datetime time axis
+        self.T = IOB.T
+
+        # Finish defining
+        super(FutureBG, self).define(IOB.start, IOB.end)
+
+
+
 
 
 
@@ -300,7 +218,6 @@ class FutureBG(base.FutureProfile):
 
         # Return BG projection based on dBG/dt
         return BG
-
 
 
     def expect(self, dt, IOB):
@@ -364,19 +281,19 @@ class FutureBG(base.FutureProfile):
 
         # Give user info (about BG)
         Logger.info("Expected BG: " + str(round(expectedBG, 1)) + " " +
-                    self.u)
+                    self.units)
         Logger.info("Projected BG: " + str(round(projectedBG, 1)) + " " +
-                    self.u)
+                    self.units)
         Logger.info("BG deviation: " + str(round(deltaBG, 1)) + " " +
-                    self.u)
+                    self.units)
 
         # Give user info (about BGI)
         Logger.info("Expected BGI: " + str(round(expectedBGI, 1)) + " " +
-                    self.u + "/h")
+                    self.units + "/h")
         Logger.info("BGI: " + str(round(BGI, 1)) + " " +
-                    self.u + "/h")
+                    self.units + "/h")
         Logger.info("BGI deviation: " + str(round(deltaBGI, 1)) + " " +
-                    self.u + "/h")
+                    self.units + "/h")
 
         # Give user info
         Logger.debug("End of BG analysis.")
@@ -387,6 +304,8 @@ class FutureBG(base.FutureProfile):
 
 
     def dose(self, dBG, ISF, IDC):
+
+        # FIXME
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -428,10 +347,7 @@ def main():
     """
 
     # Instanciate a BG profile
-    BG = FutureBG(PastBG())
-
-    # Load past
-    BG.past.load()
+    BG = FutureBG()
 
 
 

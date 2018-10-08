@@ -27,7 +27,7 @@ import base
 
 
 
-class Suspend(base.PastProfile):
+class Suspend(base.PastProfile, base.StepProfile):
 
     def __init__(self):
 
@@ -40,12 +40,11 @@ class Suspend(base.PastProfile):
         # Start initialization
         super(Suspend, self).__init__()
 
-        # Define units
-        self.u = "U/h"
-
-        # Initialize zero (assume pump is not suspended in case no data is
-        # found)
+        # Initialize zero (no data found: assume pump is not suspended)
         self.zero = 0
+
+        # Define units
+        self.units = "U/h"
 
         # Load latest data available
         self.strict = False
@@ -76,7 +75,7 @@ class Suspend(base.PastProfile):
             # If suspend
             if self.y[i] == 0:
 
-                # Replace by None and fill later
+                # Fill later
                 self.y[i] = None
 
             # If resume

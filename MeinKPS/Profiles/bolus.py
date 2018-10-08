@@ -33,7 +33,7 @@ import base
 
 
 
-class Bolus(base.PastProfile):
+class Bolus(base.PastProfile, base.StepProfile):
 
     def __init__(self):
 
@@ -46,11 +46,11 @@ class Bolus(base.PastProfile):
         # Start initialization
         super(Bolus, self).__init__()
 
-        # Define units
-        self.u = "U/h"
-
         # Define profile zero
         self.zero = 0
+
+        # Define units
+        self.units = "U/h"
 
         # Define bolus delivery rate
         self.rate = 90.0

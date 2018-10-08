@@ -33,7 +33,7 @@ import base
 
 
 
-class TB(base.PastProfile):
+class TB(base.PastProfile, base.StepProfile):
 
     def __init__(self):
 
@@ -47,7 +47,7 @@ class TB(base.PastProfile):
         super(TB, self).__init__()
 
         # Renitialize units
-        self.u = []
+        self.units = []
 
         # Define report info
         self.report = "treatments.json"
@@ -76,32 +76,13 @@ class TB(base.PastProfile):
             self.d.append(datetime.timedelta(minutes = self.y[i][2]))
 
             # Get units
-            self.u.append(self.y[i][1])
+            self.units.append(self.y[i][1])
+
+            # Verify last units
+            if self.units[-1] != "U/h":
+
+                # Only support U/h for now
+                raise errors.BadTBUnits()
 
             # Get rate
             self.y[i] = self.y[i][0]
-
-        # Verify units
-        self.verifyUnits()
-
-
-
-    def verifyUnits(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFYUNITS
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get number of steps
-        n = len(self.T)
-
-        # Check for use of incorrect units within profile
-        for i in range(n):
-
-            # Units currently supported
-            if self.u[i] != "U/h":
-
-                # Give user info
-                raise errors.BadTBUnits()

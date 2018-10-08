@@ -27,7 +27,7 @@ import base
 
 
 
-class Resume(base.PastProfile):
+class Resume(base.PastProfile, base.StepProfile):
 
     def __init__(self):
 
@@ -41,11 +41,7 @@ class Resume(base.PastProfile):
         super(Resume, self).__init__()
 
         # Define units
-        self.u = "U/h"
-
-        # Initialize zero (assume pump is not suspended in case no data is
-        # found)
-        self.zero = None
+        self.units = "U/h"
 
         # Load latest data available
         self.strict = False
@@ -76,7 +72,7 @@ class Resume(base.PastProfile):
             # If resume
             if self.y[i] == 1:
 
-                # Replace by None and fill later
+                # Fill later
                 self.y[i] = None
 
             # If suspend

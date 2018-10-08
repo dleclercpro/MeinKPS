@@ -464,7 +464,7 @@ class Reporter:
                 if section:
 
                     # Merge entries
-                    entries = lib.mergeNDicts(entries, section)
+                    entries = lib.mergeDicts(entries, section)
 
                     # Update number of reports merged
                     N += 1
@@ -570,7 +570,7 @@ class Report:
                      ")")
 
         # Update JSON
-        self.json = lib.mergeNDicts(self.json, json)
+        self.json = lib.mergeDicts(self.json, json)
 
 
 

@@ -168,6 +168,9 @@ class BadFrequencies(RadioError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error logging level
+        self.level = "CRITICAL"
+
         # Define error info
         self.info = "Bad frequencies to scan over."
 
@@ -184,7 +187,7 @@ class UnsuccessfulRadioCommand(RadioError):
         """
 
         # Define error logging level
-        self.level = "CRITICAL"
+        self.level = "WARNING"
 
         # Define error info
         self.info = "Radio command was unsuccessful."
@@ -193,7 +196,17 @@ class UnsuccessfulRadioCommand(RadioError):
 
 # Packets errors
 class InvalidPumpPacket(RadioError):
-    pass
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error logging level
+        self.level = "WARNING"
 
 
 
@@ -206,6 +219,9 @@ class UnknownPumpPacket(InvalidPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Start preparing
+        super(UnknownPumpPacket, self).__init__()
 
         # Define error info
         self.info = "Unknown packet."
@@ -221,6 +237,9 @@ class UnmatchPumpPacketBits(InvalidPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Start preparing
+        super(UnmatchPumpPacketBits, self).__init__()
 
         # Define error info
         self.info = ("Unmatched bits before end-of-packet (corrupted " +
@@ -238,6 +257,9 @@ class NotEnoughPumpPacketBytes(InvalidPumpPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Start preparing
+        super(NotEnoughPumpPacketBytes, self).__init__()
+
         # Define error info
         self.info = ("Not enough bytes received. Expected: " + self.args[0] +
                      ". Received: " + self.args[1] + ".")
@@ -253,6 +275,9 @@ class MissingPumpPacketBits(InvalidPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Start preparing
+        super(MissingPumpPacketBits, self).__init__()
 
         # Define error info
         self.info = ("Impossible to encode number of bytes which isn't a " +
@@ -270,6 +295,9 @@ class BadPumpPacketEnding(InvalidPumpPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Start preparing
+        super(BadPumpPacketEnding, self).__init__()
+
         # Define error info
         self.info = ("Last bits do not correspond to expectation (0101): " +
                      self.args[0])
@@ -285,6 +313,9 @@ class BadPumpPacketCRC(InvalidPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Start preparing
+        super(BadPumpPacketCRC, self).__init__()
 
         # Define error info
         self.info = ("Bad CRC (corrupted packet). Expected: " + self.args[0] +
@@ -624,7 +655,22 @@ class NoSection(ReporterError):
 
 
 
-# Calculator errors
+# Profile errors
+class NoProfileData(ProfileError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("No data found for profile '" + self.args[0] + "'.")
+
+
+
 class BadDIA(ProfileError):
 
     def prepare(self):
@@ -640,7 +686,7 @@ class BadDIA(ProfileError):
 
 
 
-class ProfileEndsTypeMismatch(ProfileError):
+class BadInsulinAge(ProfileError):
 
     def prepare(self):
 
@@ -651,23 +697,7 @@ class ProfileEndsTypeMismatch(ProfileError):
         """
 
         # Define error info
-        self.info = ("Type of profile ends (" + self.args[0] + " vs " +
-                     self.args[1] + ") do not match.")
-
-
-
-class NoNormalizedCut(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Cannot cut profile using normalized time limits yet.")
+        self.info = ("Given insulin age is too new.")
 
 
 
@@ -715,23 +745,6 @@ class ProfileAxesLengthMismatch(ProfileError):
 
         # Define error info
         self.info = ("Cannot compute f(t): axes' length do not fit.")
-
-
-
-class ProfileLimitsMismatch(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Operation impossible due to unfitting limits between " +
-                     "profiles: '" + self.args[0] + "' and '" + self.args[1] +
-                     "'.")
 
 
 
@@ -797,6 +810,36 @@ class BadTime(BaseError):
 
         # Define error info
         self.info = "Bad time."
+
+
+
+class BadFunctionCall(BaseError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "The value of f(" + self.args[0] + ") does not exist."
+
+
+
+class MismatchKeyValue(BaseError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "Cannot merge dicts: (key, value) sets mismatch."
 
 
 

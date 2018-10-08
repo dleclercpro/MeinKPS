@@ -8,9 +8,9 @@
 
     Author:   David Leclerc
 
-    Version:  0.1
+    Version:  0.2
 
-    Date:     30.06.2017
+    Date:     31.08.2018
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -23,9 +23,11 @@
 """
 
 # LIBRARIES
-import numpy as np
 import copy
 import datetime
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 
 
@@ -38,7 +40,7 @@ import reporter
 
 
 # Define instances
-Logger = logger.Logger("Profiles/base.py")
+Logger = logger.Logger("Profiles/base.py", "DEBUG")
 Reporter = reporter.Reporter()
 
 
@@ -53,59 +55,19 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize time axis
-        self.T = []
-
-        # Initialize normalized time axis
-        self.t = []
-
-        # Initialize y-axis
-        self.y = []
-
-        # Initialize derivative
-        self.dydt = []
-
-        # Initialize step durations
-        self.d = []
-
-        # Initialize units
-        self.u = None
-
-        # Initialize profile start
-        self.start = None
-
-        # Initialize profile end
-        self.end = None
-
-        # Initialize time reference
-        self.norm = None
-
-        # Initialize necessary day range to compute profile
-        self.range = []
-
-        # Initialize min/max values
-        self.min = None
-        self.max = None
-
         # Initialize zero (default value)
         self.zero = None
 
-        # Initialize data
-        self.data = {}
+        # Initialize units
+        self.units = None
 
-        # Define whether data is time mapped or not
-        self.mapped = True
-
-        # Define whether data should strictly be loaded within given time range
-        # or try and find the latest available
-        self.strict = True
+        # Initialize plot limits
+        self.xlim = []
+        self.ylim = []
 
         # Initialize report info
         self.report = None
         self.branch = []
-
-        # Initialize profile type
-        self.type = "Step"
 
 
 
@@ -115,25 +77,40 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RESET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Reset profile components.
+            Reset profile data.
         """
 
         # Give user info
         Logger.debug("Resetting...")
 
-        # Reset components
+        # Reset time axis
         self.T = []
+
+        # Reset normalized time axis
         self.t = []
+
+        # Reset y-axis
         self.y = []
+
+        # Reset derivative
         self.dydt = []
+
+        # Reset start/end times
+        self.start = None
+        self.end = None
+
+        # Reset range of days covered
+        self.days = []
+
+        # Reset time norm
+        self.norm = None
 
         # Reset loaded data
         self.data = {}
 
 
 
-    def build(self, start, end, filler = None):
+    def build(self, start, end):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,78 +121,45 @@ class Profile(object):
         # Give user info
         Logger.debug("Building...")
 
-        # Define time references
-        self.time(start, end)
+        # Reset profile
+        self.reset()
 
-        # Load profile components
+        # Define time references
+        self.define(start, end)
+
+        # Load data
         self.load()
+
+        # Verify if data was loaded
+        self.verify()
 
         # Decouple profile components
         self.decouple()
 
-        # Inject zeros between profile steps
-        self.inject()
-
-        # Cut entries outside of time limits
-        self.cut()
-
-        # Fill profile
-        self.fill(filler)
-
-        # Smooth profile
-        self.smooth()
-
-        # Normalize profile
-        self.normalize()
-
-        # Compute profile derivative
-        self.derivate()
-
-        # Show profile
-        self.show()
 
 
-
-    def time(self, start, end):
+    def define(self, start, end):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            TIME
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Define time references for profile.
+            Based on profile type, define its time references.
         """
 
-        # Define start of profile
+        # Give user info
+        Logger.debug("Defining time references...")
+
+        # Define start/end times
         self.start = start
-
-        # Define end of profile
         self.end = end
 
-        # Get number of days to map (including limits)
+        # Compute number of days to cover
         n = (end - start).days + 1
 
-        # Define time reference if future profile
-        if issubclass(self.__class__, FutureProfile):
-
-            # Define it
-            self.norm = start
-
-            # Define day range (adding one to account for overlapping last
-            # entries)
-            days = range(-1, n)
-
-        # Otherwise if past profile
-        elif issubclass(self.__class__, PastProfile):
-
-            # Define it
-            self.norm = end
-
-            # Define day range (adding one to account for overlapping last
-            # entries)
-            days = range(-n, 1)
-
-        # Compute days range as datetime objects
-        self.range = [self.norm + datetime.timedelta(days = x) for x in days]
+        # Define corresponding range of days
+        self.days = [start.date() + datetime.timedelta(days = x)
+                     for x in range(-1, n)]
 
 
 
@@ -225,68 +169,31 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Load profile components from specified report(s).
+            Load profile data.
         """
 
-        # Give user info
-        Logger.debug("Loading...")
+        # Not defined for abstract profile class
+        pass
 
-        # Reset previously loaded profile components
-        self.reset()
 
-        # If time mapped
-        if self.mapped:
 
-            # Get start and end dates
-            [start, end] = [t.date() for t in [self.start, self.end]]
+    def verify(self):
 
-            # Count number of days between them (including limits)
-            n = (end - start).days + 1
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Check if data was successfully loaded.
+        """
 
-            # If strictly looking for dates within range of profile
-            if self.strict:
+        # No data found
+        if not self.data:
 
-                # Define dates range
-                dates = range(-n, 1)
-
-                # Generate date range (adding one day to account for overlapping
-                # last entries)
-                dates = [end + datetime.timedelta(days = x) for x in dates]
-
-                # Get corresponding reports
-                for date in dates:
-
-                    # Try getting data
-                    try:
-
-                        # Get current data
-                        data = Reporter.get(self.report, self.branch, None,
-                                            date)
-
-                        # Load data
-                        self.data = lib.mergeNDicts(self.data, data)
-
-                    # Otherwise
-                    except:
-
-                        # Skip
-                        pass
-
-            # If looking for last stored data
-            else:
-
-                # Load data
-                self.data = Reporter.getRecent(self.norm, self.report,
-                                                          self.branch)
-
-        # Otherwise
-        else:
-
-            # Load data
-            self.data = Reporter.get(self.report, self.branch)
+            # Error
+            raise errors.NoProfileData(self.__class__.__name__)
 
         # Give user info
-        Logger.debug("'" + self.__class__.__name__ + "' loaded.")
+        Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
 
 
 
@@ -296,144 +203,20 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECOUPLE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Decouple profile components.
+            Decouple profile data into components.
         """
 
         # Give user info
         Logger.debug("Decoupling components...")
 
-        # If data found
-        if self.data:
+        # Decouple components
+        for t in sorted(self.data):
 
-            # Decouple components
-            for t in sorted(self.data):
+            # Get time and convert it to datetime object if possible
+            self.T.append(lib.formatTime(t))
 
-                # Get time and convert it to datetime object if possible
-                self.T.append(lib.formatTime(t))
-
-                # Get value
-                self.y.append(self.data[t])
-
-            # If time is not mapped
-            if not self.mapped:
-
-                # Map it
-                self.map()
-
-            # Read min/max values
-            self.min = min(self.y)
-            self.max = max(self.y)
-
-        # Otherwise
-        else:
-
-            # Give user info
-            Logger.warning("No profile data found.")
-
-
-
-    def map(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MAP
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Give user info
-        Logger.debug("Mapping time...")
-
-        # Initialize profile components
-        T = []
-        y = []
-
-        # Get number of entries
-        n = len(self.T)
-
-        # Loop on day range
-        for day in self.range:
-
-            # Rebuild profile
-            for i in range(n):
-
-                # Add time
-                T.append(datetime.datetime.combine(day, self.T[i]))
-
-                # Add value
-                y.append(self.y[i])
-
-        # Zip and sort profile
-        z = sorted(zip(T, y))
-
-        # Update profile
-        self.T = [x for x, y in z]
-        self.y = [y for x, y in z]
-
-
-
-    def inject(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INJECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Inject zeros after theoretical end of steps. Spot canceling steps
-            and set their value to "None". Will only work if step durations are
-            defined!
-        """
-
-        # If step durations are set
-        if self.d:
-
-            # Give user info
-            Logger.debug("Injecting...")
-
-            # Initialize temporary components
-            T = []
-            y = []
-
-            # Get number of steps
-            n = len(self.T)
-
-            # Add end to time axis in order to correctly compute last dt (number
-            # of steps has to be computed before that!)
-            self.T.append(self.end)
-
-            # Rebuild profile and inject zeros where needed
-            for i in range(n):
-
-                # Add step
-                T.append(self.T[i])
-                y.append(self.y[i])
-
-                # Get current step duration
-                d = self.d[i]
-
-                # Compute time between current and next steps
-                dt = self.T[i + 1] - self.T[i]
-
-                # If step is a canceling one
-                if d == datetime.timedelta(0):
-
-                    # Replace value with zero (default) value
-                    y[-1] = self.zero
-
-                # Inject zero in profile
-                elif d < dt:
-
-                    # Add zero
-                    T.append(self.T[i] + d)
-                    y.append(self.zero)
-
-            # Update profile
-            self.T = T
-            self.y = y
-
-        # No step durations
-        else:
-
-            # Give user info
-            Logger.debug("No step durations available.")
+            # Get value
+            self.y.append(self.data[t])
 
 
 
@@ -443,11 +226,7 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             CUT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Cut remaining excess entries in profile and ensure the latter starts
-            and ends according to the previously defined limit times.
-
-            FIXME: does not work when first entry happens later than profile
-                   start.
+            Cut remaining excess entries in profile.
         """
 
         # Give user info
@@ -465,23 +244,11 @@ class Profile(object):
             # Set default end limit
             b = self.end
 
-        # Verify limit types
-        if type(a) is not type(b):
-
-            # Exit
-            raise errors.ProfileEndsTypeMismatch(type(a), type(b))
-
-        # Get desired axis
-        if type(a) is not datetime.datetime:
-
-            # Exit
-            raise errors.NoNormalizedCut()
-
         # Initialize cut-off profile components
         T = []
         y = []
 
-        # Initialize index of last step before profile
+        # Initialize last step value before beginning of profile
         last = None
 
         # Get number of steps
@@ -490,8 +257,14 @@ class Profile(object):
         # Cut-off steps outside of start and end limits
         for i in range(n):
 
+            # Update last step
+            if self.T[i] < a:
+
+                # Store last value
+                last = self.y[i]
+
             # Inclusion criteria
-            if a <= self.T[i] <= b:
+            elif a <= self.T[i] <= b:
 
                 # Add time
                 T.append(self.T[i])
@@ -499,166 +272,12 @@ class Profile(object):
                 # Add value
                 y.append(self.y[i])
 
-            # Update last step
-            elif self.T[i] < a:
-
-                # Store last value
-                last = self.y[i]
-
         # Update profile
         self.T = T
         self.y = y
 
-        # Ensure ends of step profile fit
-        self.pad(a, b, last)
-
-
-
-    def pad(self, a, b, last):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Force specific profile limits.
-        """
-
-        # Only step profiles can be padded
-        if self.type == "Step":
-
-            # Give user info
-            Logger.debug("Padding...")
-
-            # If no previous step was found
-            if last is None:
-
-                # Use profile zero (default) value
-                last = self.zero
-
-            # Start of profile
-            if len(self.T) == 0 or self.T[0] != a:
-
-                # Add time
-                self.T.insert(0, a)
-                
-                # Extend precedent step's value
-                self.y.insert(0, last)
-
-            # End of profile
-            if self.T[-1] != b:
-
-                # Add time
-                self.T.append(b)
-
-                # Add rate
-                self.y.append(self.y[-1])
-
-
-
-    def fill(self, filler):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILL
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # If filler given and step profile
-        if filler is not None and self.type == "Step":
-
-            # Give user info
-            Logger.debug("Filling...")
-
-            # Initialize new profile components
-            T = []
-            y = []
-
-            # Get number of steps within profile
-            m = len(self.T)
-
-            # Get number of steps within filler
-            n = len(filler.T)
-
-            # Add end to time axis in order to correctly compute last dt (number
-            # of steps has to be computed before that!)
-            self.T.append(self.end)
-
-            # Fill profile
-            for i in range(m):
-
-                # Filling criteria
-                if self.y[i] is None:
-
-                    # Fill step
-                    T.append(self.T[i])
-                    y.append(filler.f(self.T[i]))
-
-                    # Look for additional steps to fill
-                    for j in range(n):
-
-                        # Filling criteria
-                        if (self.T[i] < filler.T[j] < self.T[i + 1]):
-
-                            # Add step
-                            T.append(filler.T[j])
-                            y.append(filler.y[j])
-
-                # Step exists in profile
-                else:
-
-                    # Add step
-                    T.append(self.T[i])
-                    y.append(self.y[i])
-
-            # Update profile
-            self.T = T
-            self.y = y
-
-
-
-    def smooth(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SMOOTH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Smooth profile (remove redundant steps).
-        """
-
-        # If step profile
-        if self.type == "Step":
-
-            # Give user info
-            Logger.debug("Smoothing...")
-
-            # Initialize components for smoothed profile
-            T = []
-            y = []
-
-            # Restore start of profile
-            T.append(self.T[0])
-            y.append(self.y[0])
-
-            # Get number of steps in profile
-            n = len(self.T)
-
-            # Look for redundancies
-            for i in range(1, n - 1):
-
-                # Non-redundancy criteria
-                if self.y[i] != self.y[i - 1]:
-
-                    # Add step
-                    T.append(self.T[i])
-                    y.append(self.y[i])
-
-            # Restore end of profile
-            T.append(self.T[-1])
-            y.append(self.y[-1])
-
-            # Update profile
-            self.T = T
-            self.y = y
+        # Return core infos
+        return [a, b, last]
 
 
 
@@ -668,73 +287,44 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Normalize profile's time axis (h).
+            Normalize profile's time axis.
         """
 
         # Give user info
         Logger.debug("Normalizing...")
 
-        # Check if profile is normalizable
-        if self.T:
+        # Verify if norm was left empty
+        if T is None:
 
-            # Verify if norm was left empty
+            # Get time reference
+            T = self.norm
+
+            # If no time reference
             if T is None:
 
-                # Get time reference
-                T = self.norm
-
-                # If no time reference
-                if T is None:
-
-                    # Exit
-                    raise errors.NoNorm()
-
-            # Before using given reference time, verify its type
-            if type(T) is not datetime.datetime:
-
                 # Exit
-                raise errors.BadTypeNormalization()
+                raise errors.NoNorm()
 
-            # Initialize normalized axis
-            t = []
+        # Before using given reference time, verify its type
+        if type(T) is not datetime.datetime:
 
-            # Get number of steps in profile
-            n = len(self.T)
+            # Exit
+            raise errors.BadTypeNormalization()
 
-            # Normalize time
-            for i in range(n):
+        # Initialize normalized axis
+        t = []
 
-                # Add step (h)
-                t.append(lib.normalizeTime(self.T[i], T))
+        # Get number of steps in profile
+        n = len(self.T)
 
-            # Update normalized axis
-            self.t = t
+        # Normalize time
+        for i in range(n):
 
-        # Otherwise
-        else:
+            # Add step (h)
+            t.append(lib.normalizeTime(self.T[i], T))
 
-            # Give user info
-            Logger.warning("Profiles without time axes cannot be normalized.")
-
-
-
-    def derivate(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DERIVATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Derivate dot typed profiles using their normalized time axis.
-        """
-
-        # Check if profile is differentiable
-        if self.t and self.type == "Dot":
-
-            # Give user info
-            Logger.debug("Derivating...")
-
-            # Derivate
-            self.dydt = lib.derivate(self.y, self.t)
+        # Update normalized axis
+        self.t = t
 
 
 
@@ -748,24 +338,24 @@ class Profile(object):
         """
 
         # Define profile dictionary
-        profile = {"Standard t-axis": [self.T, self.y],
-                   "Normalized t-axis": [self.t, self.y],
-                   "Derivative": [self.t, self.dydt]}
+        profiles = {"Standard t-axis": [self.T, self.y],
+                    "Normalized t-axis": [self.t, self.y],
+                    "Derivative": [self.t[:-1], self.dydt]}
 
         # Loop on each profile component
-        for p in profile:
+        for p in profiles:
+
+            # Give user info
+            Logger.debug(p)
 
             # Get axes
-            axes = profile[p]
+            axes = profiles[p]
+
+            # Read number of entries
+            n = len(axes[0])
 
             # If component exists
-            if axes[0] and axes[1]:
-
-                # Give user info
-                Logger.debug(p)
-
-                # Read number of entries
-                n = len(axes[1])
+            if n > 0 and len(axes[0]) == len(axes[1]):
 
                 # Show profile
                 for i in range(n):
@@ -793,6 +383,330 @@ class Profile(object):
 
 
 
+    def plot(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PLOT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize plot
+        mpl.rc("font", size = 10, family = "Ubuntu")
+
+        # Define figure
+        fig = plt.figure(0, figsize = (10, 8), tight_layout = True)
+
+        # Define subplot
+        ax = plt.subplot(111)
+
+        # Define title
+        title = self.__class__.__name__
+
+        # Define axis labels
+        x = "(h)"
+        y = "(" + self.units + ")"
+
+        # Set title
+        ax.set_title(title, fontweight = "semibold")
+
+        # Set x-axis label
+        ax.set_xlabel(x)
+
+        # Set y-axis label
+        ax.set_ylabel(y)
+
+        # If x-axis limit defined
+        if self.xlim:
+
+            # Set x-axis limit
+            ax.set_xlim([min(self.xlim[0], self.t[0]),
+                         max(self.xlim[1], self.t[-1])])
+
+        # If y-axis limit defined
+        if self.ylim:
+
+            # Set y-axis limit
+            ax.set_ylim([min(self.ylim[0], min(self.y)),
+                         max(self.ylim[1], max(self.y))])
+
+        # Return figure and subplot
+        return [fig, ax]
+
+
+
+class StepProfile(Profile):
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start resetting
+        super(StepProfile, self).reset()
+
+        # Reset step durations
+        self.d = []
+
+
+
+    def build(self, start, end, filler = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            BUILD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start building
+        super(StepProfile, self).build(start, end)
+
+        # If step durations present
+        if self.d:
+
+            # Inject zeros between profile steps
+            self.inject()
+
+        # Cut entries outside of time limits
+        self.cut()
+
+        # Filling required?
+        if filler is not None:
+
+            # Fill profile
+            self.fill(filler)
+
+        # Smooth profile
+        self.smooth()
+
+        # Normalize profile
+        self.normalize()
+
+        # Show profile
+        self.show()
+
+
+
+    def inject(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INJECT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Inject zeros after theoretical end of steps. Will only work if step
+            durations are defined!
+        """
+
+        # Give user info
+        Logger.debug("Injecting...")
+
+        # Initialize temporary components
+        T = []
+        y = []
+
+        # Get number of steps
+        n = len(self.T)
+
+        # Pad end of axes with infinitely far away entry in order to correctly
+        # compute last step duration
+        self.T.append(datetime.datetime.max)
+        self.y.append(None)
+
+        # Rebuild profile and inject zeros where needed
+        for i in range(n):
+
+            # Add step
+            T.append(self.T[i])
+            y.append(self.y[i])
+
+            # Get current step duration
+            d = self.d[i]
+
+            # Compute time between current and next steps
+            dt = self.T[i + 1] - self.T[i]
+
+            # If step is a canceling one
+            if d == datetime.timedelta(0):
+
+                # Replace value with zero (default) value
+                y[-1] = self.zero
+
+            # Inject zero in profile
+            elif d < dt:
+
+                # Add zero
+                T.append(self.T[i] + d)
+                y.append(self.zero)
+
+        # Update profile
+        self.T = T
+        self.y = y
+
+
+
+    def cut(self, a = None, b = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CUT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Cut remaining excess entries in profile and ensure the latter starts
+            and ends according to the previously defined limit times.
+        """
+
+        # Cut profile
+        [start, end, last] = super(StepProfile, self).cut(a, b)
+
+        # Ensure ends of profile fit
+        self.pad(start, end, last)
+
+
+
+    def pad(self, a, b, last):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Force specific profile limits after profile is cut.
+        """
+
+        # Give user info
+        Logger.debug("Padding...")
+
+        # If no previous step was found
+        if last is None:
+
+            # Use profile zero (default) value
+            last = self.zero
+
+        # Start of profile
+        if len(self.T) == 0 or self.T[0] != a:
+
+            # Add time
+            self.T.insert(0, a)
+            
+            # Extend precedent step's value
+            self.y.insert(0, last)
+
+        # End of profile
+        if self.T[-1] != b:
+
+            # Add time
+            self.T.append(b)
+
+            # Add rate
+            self.y.append(self.y[-1])
+
+
+
+    def fill(self, filler):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FILL
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Note: Only cut and padded profile can be filled! The last entry has
+                  to delimit the end of the last step.
+        """
+
+        # Give user info
+        Logger.debug("Filling...")
+
+        # Initialize new profile components
+        T = []
+        y = []
+
+        # Get number of steps within profile
+        m = len(self.T)
+
+        # Get number of steps within filler
+        n = len(filler.T)
+
+        # Pad axes end with last entry in order to compute last step correctly
+        self.T.append(self.T[-1])
+        self.y.append(None)
+
+        # Fill profile
+        for i in range(m):
+
+            # Add step time
+            T.append(self.T[i])
+
+            # Filling criteria
+            if self.y[i] is None:
+
+                # Fill step value
+                y.append(filler.f(self.T[i]))
+
+                # Look for additional steps to fill
+                for j in range(n):
+
+                    # Filling criteria
+                    if (self.T[i] < filler.T[j] < self.T[i + 1]):
+
+                        # Add step
+                        T.append(filler.T[j])
+                        y.append(filler.y[j])
+
+            # Step exists in profile
+            else:
+
+                # Add step value
+                y.append(self.y[i])
+
+        # Update profile
+        self.T = T
+        self.y = y
+
+
+
+    def smooth(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SMOOTH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Smooth profile (remove redundant steps) after it is cut and padded.
+        """
+
+        # Give user info
+        Logger.debug("Smoothing...")
+
+        # Initialize components for smoothed profile
+        T = []
+        y = []
+
+        # Restore start of profile
+        T.append(self.T[0])
+        y.append(self.y[0])
+
+        # Get number of steps in profile
+        n = len(self.T)
+
+        # Look for redundancies
+        for i in range(1, n - 1):
+
+            # Non-redundancy criteria
+            if self.y[i] != y[-1]:
+
+                # Add step
+                T.append(self.T[i])
+                y.append(self.y[i])
+
+        # Restore end of profile
+        T.append(self.T[-1])
+        y.append(self.y[-1])
+
+        # Update profile
+        self.T = T
+        self.y = y
+
+
+
     def f(self, t):
 
         """
@@ -802,28 +716,26 @@ class Profile(object):
             Compute profile's value (y) for a given time (t).
         """
 
-        # Initialize result
-        y = None
-
         # Initialize index
         index = None
 
-        # Get desired axis
+        # Datetime axis
         if type(t) is datetime.datetime:
 
             # Define axis
             axis = self.T
 
+        # Normalized axis
         else:
 
             # Define axis
             axis = self.t
 
         # Get number of steps in profile
-        n = len(axis)
+        n = len(axis) - 1
 
         # Make sure axes fit
-        if n != len(self.y):
+        if n != len(self.y) - 1:
 
             # Exit
             raise errors.ProfileAxesLengthMismatch()
@@ -831,120 +743,80 @@ class Profile(object):
         # Compute profile value
         for i in range(n):
 
-            # For all steps
-            if i < n - 1:
+            # Index identification criteria
+            if axis[i] <= t < axis[i + 1]:
 
-                # Index identification criteria
-                if axis[i] <= t < axis[i + 1]:
+                # Store index
+                index = i
 
-                    # Store index
-                    index = i
+                # Exit
+                break
 
-                    # Exit
-                    break
+        # Index identification criteria (end time)
+        if t == axis[-1]:
 
-            # For last step
-            else:
+            # Store index
+            index = -1
 
-                # Index identification criteria
-                if t == axis[-1]:
+        # Check if result could be found
+        if index is None:
 
-                    # Store index
-                    index = -1
+            # Error
+            raise errors.BadFunctionCall(lib.formatTime(t))
 
         # Compute corresponding value
         y = self.y[index]
 
         # Give user info
-        Logger.debug("f(" + str(t) + ") = " + str(y))
+        Logger.debug("f(" + lib.formatTime(t) + ") = " + str(y))
 
         # Return result
         return y
 
 
 
-    def validate(self, operands):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VALIDATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Read base profile name
-        base = self.__class__.__name__
-
-        # Give user info
-        Logger.debug("'" + base + "'")
-
-        # Show base profile
-        self.show()
-
-        # Give user info
-        Logger.debug("with: ")
-
-        # Show profiles
-        for p in operands:
-
-            # Read profile name
-            profile = p.__class__.__name__
-
-            # Give user info
-            Logger.debug("'" + profile + "'")
-
-            # Show profile
-            p.show()
-
-            # If limits do not fit
-            if p.start != self.start or p.end != self.end:
-
-                # Exit
-                raise errors.ProfileLimitsMismatch(profile, base)
-
-
-
-    def operate(self, operation, operands):
+    def operate(self, op, profiles):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             OPERATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: Profiles on which operations are made must have same limits.
-                  They also cannot have "None" values within them!
+            Note: Profiles on which operations are made cannot have "None"
+                  values within them!
         """
 
-        # Verify validity of operation
-        self.validate(operands)
-
         # Copy profile on which operation is done
-        new = copy.deepcopy(self)
+        new = copy.copy(self)
 
         # Reset its components
         new.reset()
 
+        # Re-define time references
+        new.define(self.start, self.end)
+
         # Merge all steps
-        new.T = lib.uniqify(self.T + lib.flatten([p.T for p in operands]))
+        new.T = lib.uniqify(self.T + lib.flatten([p.T for p in profiles]))
 
         # Compute each step of new profile
         for T in new.T:
 
             # Compute partial result with base profile
-            result = self.f(T)
+            y = self.f(T)
 
             # Look within each profile
-            for p in operands:
+            for p in profiles:
 
                 # Compute partial result on current profile
-                result = operation(result, p.f(T))
+                y = op(y, p.f(T))
 
             # Store result for current step
-            new.y.append(result)
+            new.y.append(y)
+
+        # Get min/max values
+        [new.min, new.max] = [min(new.y), max(new.y)]
 
         # Normalize it
         new.normalize()
-
-        # Derivate it
-        new.derivate()
 
         # Return new profile
         return new
@@ -959,14 +831,11 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define operation
-        operation = lambda x, y: x + y
-
         # Give user info
         Logger.debug("Adding:")
 
         # Do operation
-        return self.operate(operation, list(args))
+        return self.operate(lambda x, y: x + y, list(args))
 
 
 
@@ -978,14 +847,125 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define operation
-        operation = lambda x, y: x - y
-
         # Give user info
         Logger.debug("Subtracting:")
 
         # Do operation
-        return self.operate(operation, list(args))
+        return self.operate(lambda x, y: x - y, list(args))
+
+
+
+    def multiply(self, *args):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MULTIPLY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        Logger.debug("Multiplying:")
+
+        # Do operation
+        return self.operate(lambda x, y: x * y, list(args))
+
+
+
+    def divide(self, *args):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DIVIDE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        Logger.debug("Dividing:")
+
+        # Do operation
+        return self.operate(lambda x, y: x / y, list(args))
+
+
+
+    def plot(self, color = "red"):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PLOT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start plotting
+        [fig, ax] = super(StepProfile, self).plot()
+
+        # Add data to plot
+        ax.step(self.t, self.y, where = "post", lw = 2, ls = "-", c = color)
+
+        # Show plot
+        plt.show()
+
+
+
+class DotProfile(Profile):
+
+    def build(self, start, end):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            BUILD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start building
+        super(DotProfile, self).build(start, end)
+
+        # Cut entries outside of time limits
+        self.cut()
+
+        # Normalize profile
+        self.normalize()
+
+        # Compute profile derivative
+        self.derivate()
+
+        # Show profile
+        self.show()
+
+
+
+    def derivate(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DERIVATE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Derivate dot typed profiles using their normalized time axis.
+        """
+
+        # Give user info
+        Logger.debug("Derivating...")
+
+        # Derivate
+        self.dydt = lib.derivate(self.y, self.t)
+
+
+
+    def plot(self, color = "red"):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PLOT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start plotting
+        [fig, ax] = super(DotProfile, self).plot()
+
+        # Add data to plot
+        ax.plot(self.t, self.y, marker = "o", ms = 3.5, lw = 0, c = color)
+
+        # Show plot
+        plt.show()
 
 
 
@@ -999,26 +979,182 @@ class PastProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Start initializing
         super(PastProfile, self).__init__()
 
-        # Define time reference
-        self.norm = "End"
+        # Define whether data should strictly be loaded within given time range
+        # or try and find the latest available
+        self.strict = True
+
+
+
+    def define(self, start, end):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Define profile time references.
+        """
+
+        # Start defining
+        super(PastProfile, self).define(start, end)
+
+        # Define norm
+        self.norm = end
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Load profile components from specified report(s).
+        """
+
+        # Give user info
+        Logger.debug("Loading...")
+
+        # If strictly looking for dates within range of profile
+        if self.strict:
+
+            # Get corresponding reports
+            for day in self.days:
+
+                # Try getting data
+                try:
+
+                    # Get current data
+                    data = Reporter.get(self.report, self.branch, None, day)
+
+                    # Load data
+                    self.data = lib.mergeDicts(self.data, data)
+
+                # Otherwise
+                except:
+
+                    # Skip
+                    pass
+
+        # If looking for last stored data
+        else:
+
+            # Load data
+            self.data = Reporter.getRecent(self.norm, self.report, self.branch)
 
 
 
 class FutureProfile(Profile):
 
-    def __init__(self):
+    def define(self, start, end):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Define profile time references.
+        """
+
+        # Start defining
+        super(FutureProfile, self).define(start, end)
+        
+        # Define norm
+        self.norm = start
+
+
+
+class DailyProfile(StepProfile):
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
-        super(FutureProfile, self).__init__()
+        # Give user info
+        Logger.debug("Loading...")
 
-        # Define time reference
-        self.norm = "Start"
+        # Load data
+        self.data = Reporter.get(self.report, self.branch)
+
+
+
+    def decouple(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECOUPLE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decouple profile components.
+        """
+
+        # Start decoupling
+        super(DailyProfile, self).decouple()
+
+        # Map time
+        self.map()
+
+
+
+    def map(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MAP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Give user info
+        Logger.debug("Mapping time...")
+
+        # Initialize profile components
+        T = []
+        y = []
+
+        # Get number of entries
+        n = len(self.T)
+
+        # Loop on range of days covered by profile
+        for day in self.days:
+
+            # Rebuild profile
+            for i in range(n):
+
+                # Add time
+                T.append(datetime.datetime.combine(day, self.T[i]))
+
+                # Add value
+                y.append(self.y[i])
+
+        # Zip and sort profile
+        z = sorted(zip(T, y))
+
+        # Update profile
+        self.T = [x for x, y in z]
+        self.y = [y for x, y in z]
+
+
+
+def main():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Get current time
+    now = datetime.datetime.now()
+
+    # Get older time
+    then = now - datetime.timedelta(days = 1)
+
+
+
+# Run this when script is called from terminal
+if __name__ == "__main__":
+    main()

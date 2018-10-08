@@ -33,7 +33,7 @@ Logger = logger.Logger("Profiles/net.py")
 
 
 
-class Net(base.PastProfile):
+class Net(base.PastProfile, base.StepProfile):
 
     def __init__(self):
 
@@ -47,11 +47,11 @@ class Net(base.PastProfile):
         super(Net, self).__init__()
 
         # Define units
-        self.u = "U/h"
+        self.units = "U/h"
 
 
 
-    def build(self, start, end, basal, TB, suspend, resume, bolus = None):
+    def build(self, start, end, suspend, resume, basal, TB, bolus = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,8 +62,11 @@ class Net(base.PastProfile):
         # Give user info
         Logger.debug("Building...")
 
+        # Reset components
+        self.reset()
+
         # Define time references of profile
-        self.time(start, end)
+        self.define(start, end)
 
         # Build basal profile
         basal.build(start, end)

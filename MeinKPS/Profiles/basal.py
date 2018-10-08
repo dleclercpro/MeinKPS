@@ -27,7 +27,7 @@ import base
 
 
 
-class Basal(base.PastProfile):
+class Basal(base.DailyProfile, base.PastProfile):
 
     def __init__(self, profile = "Standard"):
 
@@ -41,10 +41,10 @@ class Basal(base.PastProfile):
         super(Basal, self).__init__()
 
         # Define units
-        self.u = "U/h"
+        self.units = "U/h"
 
-        # Define whether data is time mapped or not
-        self.mapped = False
+        # Define plot y-axis default limits (U/h)
+        self.ylim = [0, 1]
 
         # Define report info
         self.report = "pump.json"

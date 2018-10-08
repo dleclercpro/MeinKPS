@@ -33,7 +33,7 @@ Reporter = reporter.Reporter()
 
 
 
-class ISF(base.FutureProfile):
+class ISF(base.DailyProfile, base.FutureProfile):
 
     def __init__(self):
 
@@ -45,26 +45,10 @@ class ISF(base.FutureProfile):
 
         # Start initialization
         super(ISF, self).__init__()
-
-        # Define whether data is time mapped or not
-        self.mapped = False
         
         # Define report info
         self.report = "pump.json"
         self.branch = ["ISF"]
 
-
-
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        
         # Read units
-        self.u = Reporter.get(self.report, ["Units"], "BG") + "/U"
-
-        # Load rest
-        super(ISF, self).load()
+        self.units = Reporter.get(self.report, ["Units"], "BG") + "/U"

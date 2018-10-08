@@ -33,7 +33,7 @@ Reporter = reporter.Reporter()
 
 
 
-class CSF(base.FutureProfile):
+class CSF(base.DailyProfile, base.FutureProfile):
 
     def __init__(self):
 
@@ -46,37 +46,21 @@ class CSF(base.FutureProfile):
         # Start initialization
         super(CSF, self).__init__()
 
-        # Define whether data is time mapped or not
-        self.mapped = False
-
         # Define report info
         self.report = "pump.json"
         self.branch = ["CSF"]
 
-
-
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
         # Read units
-        self.u = Reporter.get(self.report, ["Units"], "Carbs")
+        units = Reporter.get(self.report, ["Units"], "Carbs")
 
         # In case of grams
-        if self.u == "g":
+        if units == "g":
 
             # Adapt units
-            self.u = self.u + "/U"
+            self.units = "g/U"
 
         # In case of exchanges
-        elif self.u == "exchange":
+        elif units == "exchange":
 
             # Adapt units
-            self.u = "U/" + self.u
-
-        # Load rest
-        super(CSF, self).load()
+            self.units = "U/exchange"

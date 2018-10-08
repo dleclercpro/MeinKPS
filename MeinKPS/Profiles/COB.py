@@ -22,10 +22,27 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# LIBRARIES
+import numpy as np
+
+
+
 # USER LIBRARIES
+import lib
+import logger
+import reporter
 import base
 
 
 
-class COB(base.Profile):
+# Define instances
+Logger = logger.Logger("Profiles/COB.py")
+Reporter = reporter.Reporter()
+
+
+
+class PastCOB(base.PastProfile, base.DotProfile):
+    pass
+
+class FutureCOB(base.FutureProfile, base.DotProfile):
     pass

@@ -8,9 +8,9 @@
 
     Author:   David Leclerc
 
-    Version:  0.1
+    Version:  0.2
 
-    Date:     30.06.2017
+    Date:     03.10.2018
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -33,6 +33,7 @@ import copy
 import lib
 import logger
 import reporter
+import calculator
 import base
 
 
@@ -40,10 +41,11 @@ import base
 # Define instances
 Logger = logger.Logger("Profiles/IOB.py")
 Reporter = reporter.Reporter()
+Calculator = calculator.Calculator()
 
 
 
-class PastIOB(base.PastProfile):
+class IOB(base.DotProfile):
 
     def __init__(self):
 
@@ -54,13 +56,10 @@ class PastIOB(base.PastProfile):
         """
 
         # Start initialization
-        super(PastIOB, self).__init__()
+        super(IOB, self).__init__()
 
         # Define units
-        self.u = "U"
-
-        # Define type
-        self.type = "Dot"
+        self.units = "U"
 
         # Define report info
         self.report = "treatments.json"
@@ -68,9 +67,14 @@ class PastIOB(base.PastProfile):
 
 
 
-class FutureIOB(base.FutureProfile):
+class PastIOB(IOB, base.PastProfile):
+    pass
 
-    def __init__(self, past):
+
+
+class FutureIOB(IOB, base.FutureProfile):
+
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,90 +85,54 @@ class FutureIOB(base.FutureProfile):
         # Start initialization
         super(FutureIOB, self).__init__()
 
-        # Store past profile
-        self.past = past
-
-        # Define timestep (h)
-        self.dt = 5.0 / 60.0
-
-        # Define units
-        self.u = "U"
-
-        # Define type
-        self.type = "Dot"
-
-        # Define report info
-        self.report = "treatments.json"
-        self.branch = ["IOB"]
+        # Initialize step size
+        self.dt = None
+        self.dT = None
 
 
 
-    def build(self, net, IDC):
+    def build(self, net, IDC, dt = 5.0 / 60.0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Build prediction profile of IOB decay.
         """
 
         # Give user info
         Logger.debug("Predicting IOB...")
 
-        # Reset previous IOB predictions
+        # Reset components
         self.reset()
 
-        # Define time references of profile
-        self.time(net.end, net.end + datetime.timedelta(hours = IDC.DIA))
+        # Define time references
+        self.define(net.end, dt, IDC.DIA)
 
-        # Compute number of steps
-        n = int(IDC.DIA / self.dt) + 1
+        # Copy net insulin profile
+        net = copy.copy(net)
 
-        # Generate time axis
-        t = np.linspace(0, IDC.DIA, n)
+        # Get number of prediction dots in IOB profile
+        n = len(self.t)
 
-        # Convert to datetime objects
-        t = [datetime.timedelta(hours = x) for x in t]
+        # Get number of entries in net insulin profile
+        m = len(net.t)
 
-        # Compute IOB decay
-        for i in range(n):
+        # Compute initial IOB and store it
+        self.y.append(Calculator.computeIOB(net, IDC))
 
-            # Compute prediction time
-            T = net.end + t[i]
+        # Compute IOB decay (initial dot already done)
+        for i in range(n - 1):
 
-            # Copy net insulin profile
-            new = copy.copy(net)
+            # Move net insulin profile into the past
+            for j in range(m):
 
-            # Reset it
-            new.reset()
+                # Update time axes
+                net.T[j] -= self.dT
+                net.t[j] -= self.dt
 
-            # Initialize start/end times
-            new.T.append(new.start)
-            new.T.append(new.end)
-
-            # Initialize start/end values
-            new.y.append(None)
-            new.y.append(0)
-
-            # Fill profile
-            new.fill(net)
-
-            # Smooth profile
-            new.smooth()
-
-            # Normalize profile
-            new.normalize(T)
-
-            # Compute IOB for current time
-            IOB = self.compute(new, IDC)
-
-            # Store prediction time
-            self.T.append(T)
-
-            # Store IOB
-            self.y.append(IOB)
-
-        # Normalize
-        self.normalize()
+            # Compute new IOB and store it
+            self.y.append(Calculator.computeIOB(net, IDC))
 
         # Derivate
         self.derivate()
@@ -177,38 +145,30 @@ class FutureIOB(base.FutureProfile):
 
 
 
-    def compute(self, net, IDC):
+    def define(self, start, dt, DIA):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Define time references for prediction of IOB decay.
         """
 
-        # Decouple net insulin profile components
-        t = net.t
-        y = net.y
+        # Compute end of profile
+        end = start + datetime.timedelta(hours = DIA)
 
-        # Initialize IOB
-        IOB = 0
+        # Define step size
+        self.dt = dt
+        self.dT = datetime.timedelta(hours = dt)
 
-        # Get number of steps
-        n = len(t) - 1
+        # Generate normalized time axis
+        self.t = np.linspace(0, DIA, int(DIA / dt) + 1)
 
-        # Compute IOB
-        for i in range(n):
+        # Generate datetime time axis
+        self.T = [start + datetime.timedelta(hours = h) for h in self.t]
 
-            # Compute remaining IOB factor based on integral of IDC
-            r = IDC.F(t[i + 1]) - IDC.F(t[i])
-
-            # Compute active insulin remaining for current step
-            IOB += r * y[i]
-
-        # Give user info
-        Logger.debug("IOB: " + str(IOB) + " U")
-
-        # Return IOB
-        return IOB
+        # Finish defining
+        super(FutureIOB, self).define(start, end)
 
 
 
@@ -225,4 +185,4 @@ class FutureIOB(base.FutureProfile):
         Logger.debug("Adding current IOB to report: '" + self.report + "'...")
 
         # Add entry
-        Reporter.add(self.report, self.branch, {self.T[0]: round(self.y[0], 3)})
+        Reporter.add(self.report, self.branch, {self.T[0]: round(self.y[0], 2)})

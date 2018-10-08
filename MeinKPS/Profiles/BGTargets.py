@@ -33,7 +33,7 @@ Reporter = reporter.Reporter()
 
 
 
-class BGTargets(base.FutureProfile):
+class BGTargets(base.DailyProfile, base.FutureProfile):
 
     def __init__(self):
 
@@ -46,25 +46,9 @@ class BGTargets(base.FutureProfile):
         # Start initialization
         super(BGTargets, self).__init__()
 
-        # Define whether data is time mapped or not
-        self.mapped = False
-
         # Define report info
         self.report = "pump.json"
         self.branch = ["BG Targets"]
 
-
-
-    def load(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
         # Read units
-        self.u = Reporter.get(self.report, ["Units"], "BG")
-
-        # Load rest
-        super(BGTargets, self).load()
+        self.units = Reporter.get(self.report, ["Units"], "BG")
