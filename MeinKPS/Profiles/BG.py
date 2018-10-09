@@ -23,8 +23,9 @@
 """
 
 # LIBRARIES
-import numpy as np
+import copy
 import datetime
+import numpy as np
 
 
 
@@ -61,8 +62,16 @@ class BG(base.DotProfile):
         # Read units
         self.units = Reporter.get("pump.json", ["Units"], "BG")
 
-        # Define plot y-axis default limits (mmol/L)
-        self.ylim = [0, 15]
+        # Define plot y-axis default limits
+        if self.units == "mmol/L":
+
+            # mmol/L
+            self.ylim = [0, 15]
+
+        elif self.units == "mg/dL":
+
+            # mg/dL
+            self.ylim = [0, 270]
 
         # Define report info
         self.report = "BG.json"
@@ -93,68 +102,107 @@ class FutureBG(BG, base.FutureProfile):
 
 
 
-    def build(self, past, IOB, ISF):
+    def build(self, dt, net, IDC, ISF, past):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Use predicted IOB decay curve and ISF to predict where BG will land
-            after insulin activity is over, assuming a natural decay.
-
-            FIXME: when predicting dBG and ISF changes, dBG != ISF0 * dIOB
+            Predict natural IOB decay and compute resulting dBG at the same
+            time, using ISF.
         """
 
         # Give user info
         Logger.debug("Decaying BG...")
 
-        # Make sure there is one BG that's max 15 minutes old to ensure
-        # accurate predicted BG decay
+        # Ensure there is one BG recent enough to accurately predict decay
         Calculator.countValidBGs(past, 1, 15)
+
+        # Initialize BG
+        BG = past.y[-1]
+
+        # Give user info
+        Logger.debug("Step size: " + str(self.dt) + " h")
+        Logger.debug("Initial BG: " + str(BG) + " " + self.units)
 
         # Reset previous BG predictions
         self.reset()
 
-        # Define time references using IOB decay prediction
-        self.define(IOB)
+        # Define time references
+        self.define(net.end, IDC.DIA, dt)
 
-        # Read latest BG and corresponding time
-        BG = past.y[-1]
-
-        # Add it to prediction
+        # Store initial (most recent) BG
         self.y.append(BG)
 
-        # Give user info
-        Logger.debug("Step size: " + str(self.dt) + " h")
-        Logger.debug("Initial BG: " + str(BG) + " " + self.units + " " +
-                     "(" + lib.formatTime(past.T[-1]) + ")")
+        # Copy net insulin profile
+        net = copy.deepcopy(net)
 
-        # Get number of IOB predicted points
-        n = len(IOB.T)
+        # Compute initial IOB
+        IOB0 = Calculator.computeIOB(net, IDC)
 
-        # Compute change in IOB (insulin that has kicked in within ISF step)
-        for i in range(n - 1):
+        # Read number of steps in prediction
+        n = len(self.t) - 1
 
-            # Compute ISF
-            isf = ISF.f(self.T[i])
+        # Read number of entries in net insulin profile
+        m = len(net.t)
 
-            # Compute IOB change
-            dIOB = IOB.y[i + 1] - IOB.y[i]
+        # Read number of entries in ISF profile
+        l = len(ISF.t)
 
-            # Compute BG change
-            dBG = isf * dIOB
+        # Compute dBG
+        for i in range(n):
 
-            # Update BG
-            BG += dBG
+            # Compute start/end of current step
+            t0 = self.t[i]
+            t1 = self.t[i + 1]
 
-            # Store current BG
+            # Initialize time axis associated with ISF changes
+            t = []
+
+            # Define start time
+            t.append(t0)
+
+            # Fill it with ISF change times
+            for j in range(l):
+
+                # Change contained within current step
+                if t0 < ISF.t[j] < t1:
+
+                    # Add it
+                    t.append(ISF.t[j])
+
+            # Define end time
+            t.append(t1)
+
+            # Loop on ISF changes
+            for j in range(len(t) - 1):
+
+                # Define step
+                dt = t[j + 1] - t[j]
+
+                # Move net insulin profile into the past
+                for k in range(m):
+
+                    # Update normalized time axis
+                    net.t[k] -= dt
+
+                # Compute new IOB
+                IOB = Calculator.computeIOB(net, IDC)
+
+                # Compute dIOB
+                dIOB = IOB - IOB0
+
+                # Update IOB
+                IOB0 = IOB
+
+                # Compute dBG for current step
+                dBG = ISF.f(t[j]) * dIOB
+
+                # Compute expected BG
+                BG += dBG
+
+            # Store BG at end of current step
             self.y.append(BG)
-
-            # Give user info
-            Logger.debug("ISF: " + str(isf) + " " + ISF.units)
-            Logger.debug("dIOB: " + str(round(dIOB, 1)) + " " + IOB.units)
-            Logger.debug("dBG: " + str(round(dBG, 1)) + " " + self.units)
-            Logger.debug("BG: " + str(round(BG, 1)) + " " + self.units)
 
         # Normalize
         self.normalize()
@@ -167,28 +215,33 @@ class FutureBG(BG, base.FutureProfile):
 
 
 
-    def define(self, IOB):
+    def define(self, start, DIA, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Define time references for prediction of BG decay using the one for
-            IOB.
+            Define time references for prediction of BG decay.
         """
 
-        # Copy step size
-        self.dt = IOB.dt
-        self.dT = IOB.dT
+        # Compute end of profile
+        end = start + datetime.timedelta(hours = DIA)
 
-        # Copy normalized time axis
-        self.t = IOB.t
+        # Define step size
+        self.dt = dt
+        self.dT = datetime.timedelta(hours = dt)
 
-        # Copy datetime time axis
-        self.T = IOB.T
+        # Generate normalized time axis
+        self.t = np.linspace(0, DIA, int(DIA / dt) + 1)
+
+        # Generate datetime time axis
+        self.T = [start + datetime.timedelta(hours = h) for h in self.t]
 
         # Finish defining
-        super(FutureBG, self).define(IOB.start, IOB.end)
+        super(FutureBG, self).define(start, end)
+
+
+
 
 
 

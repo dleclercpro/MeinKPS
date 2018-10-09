@@ -43,9 +43,6 @@ class Basal(base.DailyProfile, base.PastProfile):
         # Define units
         self.units = "U/h"
 
-        # Define plot y-axis default limits (U/h)
-        self.ylim = [0, 1]
-
         # Define report info
         self.report = "pump.json"
         self.branch = ["Basal Profile (" + profile + ")"]

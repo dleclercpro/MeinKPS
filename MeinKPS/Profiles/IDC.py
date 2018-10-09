@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 
 
 # USER LIBRARIES
+import lib
 import errors
 
 
@@ -49,6 +50,10 @@ class IDC(object):
 
         # Define DIA
         self.DIA = float(DIA)
+
+        # Define plot limits
+        self.xlim = [-self.DIA, 0]
+        self.ylim = [0, 1]
 
 
 
@@ -90,7 +95,7 @@ class IDC(object):
         ax = plt.subplot(size[0], size[1], n)
 
         # Define title
-        title = "IDC(s)"
+        title = "IDCs"
 
         # Define axis labels
         x = "(h)"
@@ -108,17 +113,13 @@ class IDC(object):
         # Set title
         ax.set_title(title, fontweight = "semibold")
 
-        # Set x-axis label
+        # Set axis labels
         ax.set_xlabel(x)
-
-        # Set y-axis label
         ax.set_ylabel(y)
 
-        # Set x-axis limit
-        ax.set_xlim([-self.DIA, 0])
-
-        # Set y-axis limit
-        ax.set_ylim([0, 1])
+        # Set axis limits
+        ax.set_xlim(self.xlim)
+        ax.set_ylim(self.ylim)
 
         # Compute axes
         t = np.linspace(-self.DIA, 0, 100)
@@ -426,26 +427,6 @@ class FiaspIDC(TriangleModelIDC):
 
 
 
-# FUNCTIONS
-def initPlot(n = 0):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        INITPLOT
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Configure graph
-    mpl.rc("font", size = 10, family = "Ubuntu")
-
-    # Define figure
-    fig = plt.figure(n, figsize = (10, 8), tight_layout = True)
-
-    # Return figure
-    return fig
-
-
-
 def main():
 
     """
@@ -462,7 +443,7 @@ def main():
     Fiasp = FiaspIDC(DIA)
 
     # Show it
-    initPlot()
+    lib.initPlot()
     NovoRapid.plot(False, "orange")
     Fiasp.plot(True, "#99e500")
     #NovoRapid.plot(False, "orange", 1, [2, 1])

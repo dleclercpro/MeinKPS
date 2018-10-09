@@ -31,6 +31,8 @@ import json
 import datetime
 import math
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 
 
@@ -421,7 +423,7 @@ def merge(base, new, n = 1):
             sys.exit("Only dicts can be merged.")
 
         # Copy base in order to not overwrite it
-        base = copy.copy(base)
+        base = copy.deepcopy(base)
 
     # Loop over keys
     for key, value in new.items():
@@ -907,6 +909,25 @@ def getEP(configuration, direction, interface = 0, setting = 0):
     return usb.util.find_descriptor(configuration[(interface, setting)],
         custom_match = lambda e:
             usb.util.endpoint_direction(e.bEndpointAddress) == direction)
+
+
+
+def initPlot(n = 0):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        INITPLOT
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Configure graph
+    mpl.rc("font", size = 10, family = "Ubuntu")
+
+    # Define figure
+    fig = plt.figure(n, figsize = (10, 8), tight_layout = True)
+
+    # Return figure
+    return fig
 
 
 

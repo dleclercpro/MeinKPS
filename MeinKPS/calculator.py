@@ -33,6 +33,7 @@ import copy
 
 # USER LIBRARIES
 import lib
+import errors
 import logger
 import reporter
 #from Profiles import *
@@ -271,7 +272,7 @@ class Calculator(object):
         dBG = 0
 
         # Decouple ISF profile components
-        T, t, y = ISF.T, ISF.t, ISF.y
+        t, y = ISF.t, ISF.y
 
         # Get number of steps in ISF profile
         n = len(t) - 1
@@ -280,7 +281,7 @@ class Calculator(object):
         m = len(net.t)
 
         # Copy net insulin profile
-        net = copy.copy(net)
+        net = copy.deepcopy(net)
 
         # Compute initial IOB
         IOB0 = self.computeIOB(net, IDC)
@@ -289,14 +290,12 @@ class Calculator(object):
         for i in range(n):
 
             # Get step size
-            dT = T[i + 1] - T[i]
             dt = t[i + 1] - t[i]
 
             # Move net insulin profile into the past
             for j in range(m):
 
                 # Update time axes
-                net.T[j] -= dT
                 net.t[j] -= dt
 
             # Compute new IOB

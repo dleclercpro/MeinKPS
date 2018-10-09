@@ -91,7 +91,7 @@ class FutureIOB(IOB, base.FutureProfile):
 
 
 
-    def build(self, net, IDC, dt = 5.0 / 60.0):
+    def build(self, dt, net, IDC):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -107,10 +107,10 @@ class FutureIOB(IOB, base.FutureProfile):
         self.reset()
 
         # Define time references
-        self.define(net.end, dt, IDC.DIA)
+        self.define(net.end, IDC.DIA, dt)
 
         # Copy net insulin profile
-        net = copy.copy(net)
+        net = copy.deepcopy(net)
 
         # Get number of prediction dots in IOB profile
         n = len(self.t)
@@ -128,7 +128,6 @@ class FutureIOB(IOB, base.FutureProfile):
             for j in range(m):
 
                 # Update time axes
-                net.T[j] -= self.dT
                 net.t[j] -= self.dt
 
             # Compute new IOB and store it
@@ -145,7 +144,7 @@ class FutureIOB(IOB, base.FutureProfile):
 
 
 
-    def define(self, start, dt, DIA):
+    def define(self, start, DIA, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

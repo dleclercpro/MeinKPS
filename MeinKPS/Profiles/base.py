@@ -130,9 +130,6 @@ class Profile(object):
         # Load data
         self.load()
 
-        # Verify if data was loaded
-        self.verify()
-
         # Decouple profile components
         self.decouple()
 
@@ -161,6 +158,9 @@ class Profile(object):
         self.days = [start.date() + datetime.timedelta(days = x)
                      for x in range(-1, n)]
 
+        # Define plot x-axis default limits
+        self.xlim = [lib.normalizeTime(t, self.norm) for t in [start, end]]
+
 
 
     def load(self):
@@ -174,26 +174,6 @@ class Profile(object):
 
         # Not defined for abstract profile class
         pass
-
-
-
-    def verify(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFY
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Check if data was successfully loaded.
-        """
-
-        # No data found
-        if not self.data:
-
-            # Error
-            raise errors.NoProfileData(self.__class__.__name__)
-
-        # Give user info
-        Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
 
 
 
@@ -345,17 +325,17 @@ class Profile(object):
         # Loop on each profile component
         for p in profiles:
 
-            # Give user info
-            Logger.debug(p)
-
             # Get axes
             axes = profiles[p]
 
             # Read number of entries
             n = len(axes[0])
 
-            # If component exists
+            # If profile exists
             if n > 0 and len(axes[0]) == len(axes[1]):
+
+                # Give user info
+                Logger.debug(p)
 
                 # Show profile
                 for i in range(n):
@@ -383,7 +363,7 @@ class Profile(object):
 
 
 
-    def plot(self):
+    def plot(self, n, size, title = None, xlim = [], ylim = []):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -391,17 +371,11 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize plot
-        mpl.rc("font", size = 10, family = "Ubuntu")
-
-        # Define figure
-        fig = plt.figure(0, figsize = (10, 8), tight_layout = True)
-
         # Define subplot
-        ax = plt.subplot(111)
+        ax = plt.subplot(size[0], size[1], n)
 
         # Define title
-        title = self.__class__.__name__
+        title = title or self.__class__.__name__
 
         # Define axis labels
         x = "(h)"
@@ -410,28 +384,38 @@ class Profile(object):
         # Set title
         ax.set_title(title, fontweight = "semibold")
 
-        # Set x-axis label
+        # Set axis labels
         ax.set_xlabel(x)
-
-        # Set y-axis label
         ax.set_ylabel(y)
 
-        # If x-axis limit defined
-        if self.xlim:
+        # If x-axis limits given
+        if xlim:
 
             # Set x-axis limit
-            ax.set_xlim([min(self.xlim[0], self.t[0]),
-                         max(self.xlim[1], self.t[-1])])
+            ax.set_xlim(xlim)
 
-        # If y-axis limit defined
-        if self.ylim:
+        # If x-axis limits defined
+        elif self.xlim:
+
+            # Set x-axis limit
+            ax.set_xlim(min(ax.get_xlim()[0], self.xlim[0]),
+                        max(ax.get_xlim()[1], self.xlim[1]))
+
+        # If y-axis limits given
+        if ylim:
 
             # Set y-axis limit
-            ax.set_ylim([min(self.ylim[0], min(self.y)),
-                         max(self.ylim[1], max(self.y))])
+            ax.set_ylim(ylim)
+
+        # If y-axis limits defined
+        elif self.ylim:
+
+            # Set y-axis limit
+            ax.set_ylim([min(ax.get_ylim()[0], self.ylim[0]),
+                         max(ax.get_ylim()[1], self.ylim[1])])
 
         # Return figure and subplot
-        return [fig, ax]
+        return ax
 
 
 
@@ -767,9 +751,6 @@ class StepProfile(Profile):
         # Compute corresponding value
         y = self.y[index]
 
-        # Give user info
-        Logger.debug("f(" + lib.formatTime(t) + ") = " + str(y))
-
         # Return result
         return y
 
@@ -786,7 +767,7 @@ class StepProfile(Profile):
         """
 
         # Copy profile on which operation is done
-        new = copy.copy(self)
+        new = copy.deepcopy(self)
 
         # Reset its components
         new.reset()
@@ -887,7 +868,8 @@ class StepProfile(Profile):
 
 
 
-    def plot(self, color = "red"):
+    def plot(self, n = 1, size = [1, 1], show = True, title = None,
+                   xlim = [], ylim = [], color = "black"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -896,13 +878,23 @@ class StepProfile(Profile):
         """
 
         # Start plotting
-        [fig, ax] = super(StepProfile, self).plot()
+        ax = super(StepProfile, self).plot(n, size, title, xlim, ylim)
 
         # Add data to plot
-        ax.step(self.t, self.y, where = "post", lw = 2, ls = "-", c = color)
+        ax.step(self.t, self.y, where = "post", label = self.__class__.__name__,
+                lw = 2, ls = "-", c = color)
 
-        # Show plot
-        plt.show()
+        # More than one line
+        if len(ax.lines) > 1:
+
+            # Add legend
+            ax.legend()
+
+        # Ready to show?
+        if show:
+
+            # Show plot
+            plt.show()
 
 
 
@@ -950,7 +942,8 @@ class DotProfile(Profile):
 
 
 
-    def plot(self, color = "red"):
+    def plot(self, n = 1, size = [1, 1], show = True, title = None,
+                   xlim = [], ylim = [], color = "black"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -959,13 +952,23 @@ class DotProfile(Profile):
         """
 
         # Start plotting
-        [fig, ax] = super(DotProfile, self).plot()
+        ax = super(DotProfile, self).plot(n, size, title, xlim, ylim)
 
         # Add data to plot
-        ax.plot(self.t, self.y, marker = "o", ms = 3.5, lw = 0, c = color)
+        ax.plot(self.t, self.y, label = self.__class__.__name__,
+                marker = "o", ms = 3.5, lw = 0, c = color)
 
-        # Show plot
-        plt.show()
+        # More than one line
+        if len(ax.lines) > 1:
+            
+            # Add legend
+            ax.legend()
+
+        # Ready to show?
+        if show:
+
+            # Show plot
+            plt.show()
 
 
 
@@ -997,11 +1000,11 @@ class PastProfile(Profile):
             Define profile time references.
         """
 
-        # Start defining
-        super(PastProfile, self).define(start, end)
-
         # Define norm
         self.norm = end
+
+        # Finish defining
+        super(PastProfile, self).define(start, end)
 
 
 
@@ -1044,6 +1047,9 @@ class PastProfile(Profile):
             # Load data
             self.data = Reporter.getRecent(self.norm, self.report, self.branch)
 
+        # Give user info
+        Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
+
 
 
 class FutureProfile(Profile):
@@ -1056,12 +1062,12 @@ class FutureProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Define profile time references.
         """
-
-        # Start defining
-        super(FutureProfile, self).define(start, end)
         
         # Define norm
         self.norm = start
+
+        # Finish defining
+        super(FutureProfile, self).define(start, end)
 
 
 
@@ -1080,6 +1086,9 @@ class DailyProfile(StepProfile):
 
         # Load data
         self.data = Reporter.get(self.report, self.branch)
+
+        # Give user info
+        Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
 
 
 
