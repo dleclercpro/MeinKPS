@@ -24,6 +24,12 @@
 
 # USER LIBRARIES
 import base
+import reporter
+
+
+
+# Define instances
+Reporter = reporter.Reporter()
 
 
 
@@ -42,6 +48,9 @@ class Basal(base.DailyProfile, base.PastProfile):
 
         # Define units
         self.units = "U/h"
+
+        # Read theoretical max
+        self.max = Reporter.get("pump.json", ["Settings"], "Max Basal")
 
         # Define report info
         self.report = "pump.json"

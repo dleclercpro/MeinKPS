@@ -30,18 +30,16 @@ import copy
 
 
 # USER LIBRARIES
-import lib
 import logger
 import reporter
-import calculator
 import base
+import calculator as calc
 
 
 
 # Define instances
 Logger = logger.Logger("Profiles/IOB.py")
 Reporter = reporter.Reporter()
-Calculator = calculator.Calculator()
 
 
 
@@ -119,7 +117,7 @@ class FutureIOB(IOB, base.FutureProfile):
         m = len(net.t)
 
         # Compute initial IOB and store it
-        self.y.append(Calculator.computeIOB(net, IDC))
+        self.y.append(calc.computeIOB(net, IDC))
 
         # Compute IOB decay (initial dot already done)
         for i in range(n - 1):
@@ -131,7 +129,7 @@ class FutureIOB(IOB, base.FutureProfile):
                 net.t[j] -= self.dt
 
             # Compute new IOB and store it
-            self.y.append(Calculator.computeIOB(net, IDC))
+            self.y.append(calc.computeIOB(net, IDC))
 
         # Derivate
         self.derivate()

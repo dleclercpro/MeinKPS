@@ -8,9 +8,9 @@
 
     Author:   David Leclerc
 
-    Version:  0.1
+    Version:  0.2
 
-    Date:     30.06.2017
+    Date:     09.10.2018
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -30,19 +30,16 @@ import numpy as np
 
 
 # USER LIBRARIES
-import lib
 import logger
-import errors
 import reporter
-import calculator
 import base
+import calculator as calc
 
 
 
 # Define instances
 Logger = logger.Logger("Profiles/BG.py")
 Reporter = reporter.Reporter()
-Calculator = calculator.Calculator()
 
 
 
@@ -63,15 +60,7 @@ class BG(base.DotProfile):
         self.units = Reporter.get("pump.json", ["Units"], "BG")
 
         # Define plot y-axis default limits
-        if self.units == "mmol/L":
-
-            # mmol/L
-            self.ylim = [0, 15]
-
-        elif self.units == "mg/dL":
-
-            # mg/dL
-            self.ylim = [0, 270]
+        self.ylim = [0, 15] if self.units == "mmol/L" else [0, 270]
 
         # Define report info
         self.report = "BG.json"
@@ -108,15 +97,23 @@ class FutureBG(BG, base.FutureProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Predict natural IOB decay and compute resulting dBG at the same
-            time, using ISF.
+            Predict natural IOB decay and compute resulting BG variation at the
+            same time, using ISF profile and IDC. The formula used to compute it
+            is given by:
+
+                dBG = SUM_t' ISF(t') * dIOB(t')
+
+            where t' represents the value of a given time step, dIOB(t') the
+            drop in active insuline (IOB) during that time, and ISF(t') the
+            corresponding insulin sensitivity factor. The variation in BG after
+            the end of insulin activity is given by dBG.
         """
 
         # Give user info
         Logger.debug("Decaying BG...")
 
         # Ensure there is one BG recent enough to accurately predict decay
-        Calculator.countValidBGs(past, 1, 15)
+        calc.countValidBGs(past, 15, 1)
 
         # Initialize BG
         BG = past.y[-1]
@@ -138,7 +135,7 @@ class FutureBG(BG, base.FutureProfile):
         net = copy.deepcopy(net)
 
         # Compute initial IOB
-        IOB0 = Calculator.computeIOB(net, IDC)
+        IOB0 = calc.computeIOB(net, IDC)
 
         # Read number of steps in prediction
         n = len(self.t) - 1
@@ -187,7 +184,7 @@ class FutureBG(BG, base.FutureProfile):
                     net.t[k] -= dt
 
                 # Compute new IOB
-                IOB = Calculator.computeIOB(net, IDC)
+                IOB = calc.computeIOB(net, IDC)
 
                 # Compute dIOB
                 dIOB = IOB - IOB0
@@ -239,155 +236,6 @@ class FutureBG(BG, base.FutureProfile):
 
         # Finish defining
         super(FutureBG, self).define(start, end)
-
-
-
-
-
-
-
-
-
-    def project(self, dt):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PROJECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            BG projection based on expected duration dt (h) of current BG trend
-        """
-
-        # Give user info
-        Logger.info("Projection time: " + str(dt) + " h")
-
-        # Read latest BG
-        BG = self.past.y[-1]
-
-        # Compute derivative to use when predicting future BG
-        dBGdt = self.past.impact()
-
-        # Predict future BG
-        BG += dBGdt * dt
-
-        # Return BG projection based on dBG/dt
-        return BG
-
-
-    def expect(self, dt, IOB):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXPECT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            BG expectation after a certain time dt (h) based on IOB decay
-        """
-
-        # Give user info
-        Logger.info("Expectation time: " + str(dt) + " h")
-
-        # Get number of steps corresponding to expected BG
-        n = dt / IOB.dt - 1
-
-        # Check if expectation fits with previously computed BGs
-        if int(n) != n or n < 0:
-
-            # Exit
-            raise errors.BadBGTime()
-
-        # Return expected BG
-        return self.y[int(n)]
-
-
-
-    def analyze(self, IOB, ISF):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ANALYZE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Analyze and compute BG-related values.
-        """
-
-        # Give user info
-        Logger.debug("Analyzing BG...")
-
-        # Define prediction time (h)
-        dt = 0.5
-
-        # Compute projected BG based on latest CGM readings
-        projectedBG = self.project(dt)
-
-        # Compute BG variation due to IOB decay
-        expectedBG = self.expect(dt, IOB)
-
-        # Read BGI
-        BGI = self.past.impact()
-
-        # Compute BGI (dBG/dt) based on IOB decay
-        expectedBGI = IOB.dydt[0] * ISF.y[0]
-
-        # Compute deviation between BGs
-        deltaBG = projectedBG - expectedBG
-
-        # Compute deviation between BGIs
-        deltaBGI = BGI - expectedBGI
-
-        # Give user info (about BG)
-        Logger.info("Expected BG: " + str(round(expectedBG, 1)) + " " +
-                    self.units)
-        Logger.info("Projected BG: " + str(round(projectedBG, 1)) + " " +
-                    self.units)
-        Logger.info("BG deviation: " + str(round(deltaBG, 1)) + " " +
-                    self.units)
-
-        # Give user info (about BGI)
-        Logger.info("Expected BGI: " + str(round(expectedBGI, 1)) + " " +
-                    self.units + "/h")
-        Logger.info("BGI: " + str(round(BGI, 1)) + " " +
-                    self.units + "/h")
-        Logger.info("BGI deviation: " + str(round(deltaBGI, 1)) + " " +
-                    self.units + "/h")
-
-        # Give user info
-        Logger.debug("End of BG analysis.")
-
-        # Return computations
-        return [deltaBG, BGI, expectedBGI]
-
-
-
-    def dose(self, dBG, ISF, IDC):
-
-        # FIXME
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOSE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Compute bolus to bring back BG to target using ISF and IDC.
-        """
-
-        # Initialize conversion factor between dose and BG difference to target
-        f = 0
-
-        # Get number of ISF steps
-        n = len(ISF.t) - 1
-
-        # Compute factor
-        for i in range(n):
-
-            # Compute step limits
-            a = ISF.t[i] - IDC.DIA
-            b = ISF.t[i + 1] - IDC.DIA
-
-            # Update factor with current step
-            f += ISF.y[i] * (IDC.f(a) - IDC.f(b))
-
-        # Compute bolus
-        bolus = dBG / f
-
-        # Return bolus
-        return bolus
 
 
 

@@ -8,14 +8,15 @@
 
     Author:   David Leclerc
 
-    Version:  0.1
+    Version:  0.2
 
-    Date:     27.05.2016
+    Date:     09.10.2018
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
 
-    Overview: ...
+    Overview: Library used to make insulin dosing decisions based on various
+              treatment profiles.
 
     Notes:    ...
 
@@ -26,17 +27,15 @@
 import datetime
 import numpy as np
 import copy
-#import matplotlib as mpl
-#import matplotlib.pyplot as plt
 
 
 
 # USER LIBRARIES
+import string
 import lib
 import errors
 import logger
 import reporter
-#from Profiles import *
 
 
 
@@ -47,695 +46,425 @@ Reporter = reporter.Reporter()
 
 
 # CONSTANTS
-BG_HYPO_LIMIT = 4.2
+BG_HYPO_LIMIT       = 4.5 # (mmol/L)
+BG_HYPER_LIMIT      = 8.5 # (mmol/L)
+DOSE_ENACT_TIME     = 0.5 # (h)
+SNOOZE_DIA_FRACTION = 0.5 # (-)
 
 
 
-class Calculator(object):
+def computeIOB(net, IDC):
 
-    def __init__(self):
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPUTEIOB
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        The formula to compute IOB is given by:
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+            IOB = SUM_t' NET(t') * S_t' IDC(t) * dt
 
-        # Initialize current time
-        self.now = None
+        where S represents an integral and t' the value of a given step in the
+        net insulin profile.
+    """
 
-        # Initialize DIA
-        self.DIA = None
+    # Initialize IOB
+    IOB = 0
 
-        # Initialize IDC
-        self.IDC = None
+    # Decouple net insulin profile components
+    t, y = net.t, net.y
 
-        # Give calculator a basal profile
-        #self.basal = basal.Basal()
+    # Get number of steps
+    n = len(t) - 1
 
-        # Give calculator a TB profile
-        #self.TB = TB.TB()
+    # Compute IOB
+    for i in range(n):
 
-        # Give calculator a bolus profile
-        #self.bolus = bolus.Bolus()
+        # Compute remaining IOB factor based on integral of IDC
+        r = IDC.F(t[i + 1]) - IDC.F(t[i])
 
-        # Give calculator a suspend profile
-        #self.suspend = suspend.Suspend()
+        # Compute active insulin remaining for current step
+        IOB += r * y[i]
 
-        # Give calculator a resume profile
-        #self.resume = resume.Resume()
+    # Give user info
+    Logger.debug("IOB: " + str(IOB) + " U")
 
-        # Initialize net insulin profile
-        #self.net = net.Net()
-
-        # Give calculator an IOB profile
-        #self.IOB = IOB.FutureIOB(IOB.PastIOB())
-
-        # Give calculator a COB profile
-        #self.COB = COB.COB()
-
-        # Give calculator an ISF profile
-        #self.ISF = ISF.ISF()
-
-        # Give calculator a CSF profile
-        #self.CSF = CSF.CSF()
-
-        # Give calculator a BG targets profile
-        #self.BGTargets = BGTargets.BGTargets()
-
-        # Give calculator a BG profile
-        #self.BG = BG.FutureBG(BG.PastBG())
-
-        # Initialize pump's max values
-        self.max = {"Basal": None,
-                    "Bolus": None}
+    # Return IOB
+    return IOB
 
 
 
-    def run(self, now):
+def computeDose(dBG, ISF, IDC):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RUN
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPUTEDOSE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Compute dose (theoretical instant bolus) to bring back BG to target
+        using ISF and IDC, based on the following formula:
 
-        # Define current time
-        self.now = now
+            dBG = SUM_t' ISF(t') * dIDC(t') * D
 
-        # Load components
-        self.load()
+        where dBG represents the desired BG variation, t' to the considered time
+        step in the ISF profile, dIDC to the corresponding change in remaining
+        active insulin over said step, and D to the necessary insulin dose. The
+        dose can simply be taken out of the sum, since it is a constant
+        (assuming a theoretical instant bolus).
+    """
 
-        # Prepare components
-        self.prepare()
+    # Initialize conversion factor between dose and BG difference to target
+    f = 0
 
-        # Run autosens
-        #self.autosens()
+    # Get number of ISF steps
+    n = len(ISF.t) - 1
 
-        # Recommend and return TB
-        return self.recommend()
+    # Compute factor
+    for i in range(n):
+
+        # Compute step limits
+        a = -ISF.t[i]
+        b = -ISF.t[i + 1]
+
+        # Update factor with current step
+        f += ISF.y[i] * (IDC.f(b) - IDC.f(a))
+
+    # Compute necessary dose (instant bolus)
+    dose = dBG / f
+
+    # Return dose
+    return dose
 
 
 
-    def load(self):
+def countValidBGs(BGs, age = 30, N = 2):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COUNTVALIDBGS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Count and make sure there are enough (>= N) BGs that can be considered
+        valid (recent enough) for dosing decisions based on a given age (m).
 
-        # Read DIA
-        self.DIA = Reporter.get("pump.json", ["Settings"], "DIA")
+        Note: it is assumed here that the end of the BG profile corresponds to
+        the current time!
+    """
+
+    # Count how many BGs are not older than T
+    n = np.sum(np.array(BGs.T) > BGs.end - datetime.timedelta(minutes = age))
+
+    # Give user info
+    Logger.debug("Found " + str(n) + " BGs within last " + str(age) + " m.")
+
+    # Check for insufficient valid BGs
+    if n < N:
+
+        # Exit
+        raise errors.MissingBGs()
+
+    # Return count
+    return n
+
+
+
+def computeBGI(BGs):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPUTEBGI
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Compute dBG/dt a.k.a. BGI (mmol/L/h) using linear fit on most recent BGs.
+    """
+
+    # Count valid BGs
+    n = countValidBGs(BGs, 30, 4)
+
+    # Get fit over last minutes
+    [m, b] = np.polyfit(BGs.t[-n:], BGs.y[-n:], 1)
+
+    # Return fit slope, which corresponds to BGI
+    return m
+
+
+
+def linearlyProjectBG(BGs, dt):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        LINEARLYPROJECTBG
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        BG projection based on expected duration dt (h) of current BGI
+        (mmol/L/h).
+    """
+
+    # Give user info
+    Logger.info("Projection time: " + str(dt) + " h")
+
+    # Compute derivative to use when predicting future BG
+    BGI = computeBGI(BGs)
+
+    # Get most recent BG
+    BG0 = BGs.y[-1]
+
+    # Predict future BG
+    BG = BG0 + BGI * dt
+
+    # Return BG linear projection and BGI
+    return [BG, BGI]
+
+
+
+def computeBGDynamics(BGs, BGTargets, IOB, ISF, dt = 0.5):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPUTEBGDYNAMICS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Compute BG related dynamics.
+
+        dt:     time period over which current BGI is expected stay constant (h)
+        BG:     blood glucose (mmol/L or mg/dL)
+        BGI:    variation in blood glucose (mmol/L/h or mg/dL/h)
+        expBG:  expected BG after dt based on natural IOB decay (mmol/L)
+        expBGI: expected BGI based on current dIOB/dt and ISF (mmol/L/h)
+        IOB:    insulin-on-board (U)
+        ISF:    insulin sensibility factor (mmol/L/U)
+    """
+
+    # Give user info
+    Logger.debug("Computing BG dynamics...")
+
+    # Compute BG target by the end of insulin action
+    BGTargetRange = BGTargets.y[-1]
+    BGTarget = np.mean(BGTargetRange)
+
+    # Read current BG
+    BG = BGs.y[0]
+
+    # Read expected BG after natural decay of IOB
+    expectedBG = BGs.y[-1]
+
+    # Compute BG assuming continuation of current BGI over dt (h)
+    [shortProjectedBG, BGI] = linearlyProjectBG(BGs, dt)
+
+    # Compute BG variation due to IOB decay (will only work if dt is a
+    # multiple of predicted BG decay's profile timestep
+    shortExpectedBG = BGs.y[BGs.t.index(dt)]
+
+    # Compute deviation between expected and projected BG
+    shortdBG = shortProjectedBG - shortExpectedBG
+
+    # Compute expected BGI based on IOB decay
+    expectedBGI = IOB.dydt[0] * ISF.y[0]
+
+    # Compute deviation between expected and real BGI
+    dBGI = BGI - expectedBGI
+
+    # Compute eventual BG at the end of DIA
+    eventualBG = expectedBG + shortdBG
+
+    # Compute difference with BG target
+    eventualdBG = BGTarget - eventualBG
+
+    # Give user info (short (dt) BG projection)
+    Logger.info("Projection time dt: " + str(dt) + " h")
+    Logger.info("Current BG: " + string.BG(BG))
+    Logger.info("Expected BG (dt): " + string.BG(shortExpectedBG))
+    Logger.info("Projected BG (dt): " + string.BG(shortProjectedBG))
+    Logger.info("dBG (dt): " + string.BG(shortdBG))
+
+    # Give user info (long (DIA) BG projection)
+    Logger.info("BG Target (DIA): " + string.BG(BGTarget))
+    Logger.info("Expected BG (DIA): " + string.BG(expectedBG))
+    Logger.info("Eventual BG (DIA): " + string.BG(eventualBG))
+    Logger.info("Eventual dBG (DIA): " + string.BG(eventualdBG))
+
+    # Give user info (BGI)
+    Logger.info("Expected BGI: " + string.BGI(expectedBGI))
+    Logger.info("Current BGI: " + string.BGI(BGI))
+    Logger.info("dBGI: " + string.BGI(dBGI))
+
+    # Return BG dynamics computations
+    return {"BGTarget": BGTarget,
+            "BG": BG,
+            "expectedBG": expectedBG,
+            "eventualBG": eventualBG,
+            "eventualdBG": eventualdBG,
+            "shortdBG": shortdBG,
+            "shortExpectedBG": shortExpectedBG,
+            "shortProjectedBG": shortProjectedBG,
+            "dBGI": dBGI,
+            "expectedBGI": expectedBGI,
+            "BGI": BGI}
+
+
+
+def computeTB(basal, dose):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPUTETB
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Compute TB to enact given current basal and recommended insulin dose.
+    """
+
+    # Give user info
+    Logger.debug("Computing TB to enact...")
+
+    # Find required basal difference to enact over given time
+    dB = dose / DOSE_ENACT_TIME
+
+    # Compute TB to enact 
+    TB = basal + dB
+
+    # Give user info
+    Logger.info("Current basal: " + string.basal(basal))
+    Logger.info("Required basal difference: " + string.basal(dB))
+    Logger.info("Temporary basal to enact: " + string.basal(TB))
+    Logger.info("Enactment time: " + str(DOSE_ENACT_TIME) + " h")
+
+    # Return TB recommendation (in minutes)
+    return [TB, "U/h", DOSE_ENACT_TIME * 60]
+
+
+
+def limitTB(TB, basals, BG):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        LIMITTB
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Limit TB recommendations based on incoming hypos or exceeding of max
+        basal according to simple security computation (see under).
+    """
+
+    # Destructure TB
+    [rate, units, duration] = TB
+
+    # Get current basal
+    basal = basals.y[-1]
+
+    # Negative TB rate
+    if rate < 0 or BG < BG_HYPO_LIMIT:
 
         # Give user info
-        Logger.info("DIA: " + str(self.DIA) + " h")
+        Logger.warning("Hypo prevention mode.")
 
-        # Read max basal
-        self.max["Basal"] = Reporter.get("pump.json", ["Settings"], "Max Basal")
+        # Stop insulin delivery
+        rate = 0
 
-        # Give user info
-        Logger.info("Max basal: " + str(self.max["Basal"]) + " U/h")
+    # Positive TB
+    elif rate > 0:
 
-        # Read max bolus
-        self.max["Bolus"] = Reporter.get("pump.json", ["Settings"], "Max Bolus")
+        # Compute maximum daily basal rate
+        maxDailyBasal = max(basals.y)
 
-        # Give user info
-        Logger.info("Max bolus: " + str(self.max["Bolus"]) + " U")
-
-
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Compute past start of insulin action
-        past = self.now - datetime.timedelta(hours = self.DIA)
-
-        # Compute future end of insulin action
-        future = self.now + datetime.timedelta(hours = self.DIA)
-
-        # Build net insulin profile
-        self.net.build(past, self.now, self.basal, self.TB, self.suspend,
-                                       self.resume, self.bolus)
-
-        # Define IDC
-        self.IDC = IDC.WalshIDC(self.DIA)
-        #self.IDC = IDC.FiaspIDC(self.DIA)
-
-        # Build past IOB profile
-        self.IOB.past.build(past, self.now)
-
-        # Build future IOB profile
-        self.IOB.build(self.net, self.IDC)
-
-        # Build COB profile
-        #self.COB.build(past, self.now)
-
-        # Build future ISF profile
-        self.ISF.build(self.now, future)
-
-        # Build future CSF profile
-        self.CSF.build(self.now, future)
-
-        # Build future BG targets profile
-        self.BGTargets.build(self.now, future)
-
-        # Build past BG profile
-        self.BG.past.build(past, self.now)
-
-        # Build future BG profile
-        self.BG.build(self.IOB, self.ISF)
-
-
-
-    def computeIOB(self, net, IDC):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTEIOB
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            The formula to compute IOB is given by:
-
-                IOB = SUM_t' NET(t') * S_t' IDC(t) * dt
-
-            where S represents an integral and t' the value of a given step in
-            the net insulin profile.
-        """
-
-        # Initialize IOB
-        IOB = 0
-
-        # Decouple net insulin profile components
-        t, y = net.t, net.y
-
-        # Get number of steps
-        n = len(t) - 1
-
-        # Compute IOB
-        for i in range(n):
-
-            # Compute remaining IOB factor based on integral of IDC
-            r = IDC.F(t[i + 1]) - IDC.F(t[i])
-
-            # Compute active insulin remaining for current step
-            IOB += r * y[i]
+        # Define max basal rate allowed (U/h)
+        maxRate = min(4 * basal, 3 * maxDailyBasal, basals.max)
 
         # Give user info
-        Logger.debug("IOB: " + str(IOB) + " U")
+        Logger.info("Theoretical max basal: " + string.basal(basals.max))
+        Logger.info("4x current basal: " + string.basal(4 * basal))
+        Logger.info("3x max daily basal: " + string.basal(3 * maxDailyBasal))
 
-        # Return IOB
-        return IOB
-
-
-
-    def computeBGVariation(self, net, IDC, ISF):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTEBGVARIATION
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Compute expected variation of BG based on ISF profile and used IDC.
-            The formula to compute it is given by:
-
-                dBG = SUM_t' ISF(t') * dIOB(t')
-
-            where t' represents the value of a given step in the ISF profile and
-            dIOB(t') the drop in active insuline (IOB) during that time.
-        """
-
-        # Initialize dBG
-        dBG = 0
-
-        # Decouple ISF profile components
-        t, y = ISF.t, ISF.y
-
-        # Get number of steps in ISF profile
-        n = len(t) - 1
-
-        # Get number of entries in net insulin profile
-        m = len(net.t)
-
-        # Copy net insulin profile
-        net = copy.deepcopy(net)
-
-        # Compute initial IOB
-        IOB0 = self.computeIOB(net, IDC)
-
-        # Compute dBG
-        for i in range(n):
-
-            # Get step size
-            dt = t[i + 1] - t[i]
-
-            # Move net insulin profile into the past
-            for j in range(m):
-
-                # Update time axes
-                net.t[j] -= dt
-
-            # Compute new IOB
-            IOB = self.computeIOB(net, IDC)
-
-            # Compute dIOB
-            dIOB = IOB - IOB0
-
-            # Compute dBG for current step
-            dBG += y[i] * dIOB
-
-            # Update IOB
-            IOB0 = IOB
-
-        # Give user info (remove "/U" from ISF units)
-        Logger.debug("dBG: " + str(dBG) + " " + ISF.units[:-2])
-
-        # Return dBG
-        return dBG
-
-
-
-    def countValidBGs(self, BGs, N = 2, age = 30):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COUNTVALIDBGS
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Count and make sure there are enough (>= N) BGs that can be
-            considered valid (recent enough) for dosing decisions based on a
-            given age (m).
-
-            Note: it is assumed here that the end of the BG profile corresponds
-                  to the current time!
-        """
-
-        # Count how many BGs are not older than T
-        n = np.sum(np.array(BGs.T) > BGs.end - datetime.timedelta(minutes = age))
-
-        # Give user info
-        Logger.debug("Found " + str(n) + " BGs within last " + str(age) + " m.")
-
-        # Check for insufficient valid BGs
-        if n < N:
-
-            # Exit
-            raise errors.MissingBGs()
-
-        # Return count
-        return n
-
-
-
-    def computeBGI(self, BGs):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTEBGI
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Compute BG variation using linear fit on most recent BGs.
-        """
-
-        # Count valid BGs
-        n = self.countValidBGs(BGs)
-
-        # Get fit over last minutes
-        [m, b] = np.polyfit(BGs.t[-n:], BGs.y[-n:], 1)
-
-        # Return fit slope, which corresponds to BGI
-        return m
-
-
-
-    def computeDose(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTEDOSE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Compute the necessary insulin amount at the current time  based on
-        latest BG input and future target, taking into account ISF step curve
-        over the next DIA hours (assuming natural decay of insulin).
-        """
-
-        # Give user info
-        Logger.debug("Computing insulin dose...")
-
-        # Check for insufficient data
-        self.BG.past.verify(1)
-
-        # Get current data
-        BG = self.BG.past.y[-1]
-        ISF = self.ISF.y[0]
-        IOB = self.IOB.y[0]
-
-        # Compute target by the end of insulin action
-        targetRangeBG = self.BGTargets.y[-1]
-        targetBG = np.mean(targetRangeBG)
-
-        # Compute eventual BG after complete IOB decay
-        naiveBG = self.BG.expect(self.DIA, self.IOB)
-
-        # Compute BG deviation based on CGM readings and expected BG due to IOB
-        # decay
-        [deltaBG, BGI, expectedBGI] = self.BG.analyze(self.IOB, self.ISF)
-
-        # Update eventual BG
-        eventualBG = naiveBG + deltaBG
-
-        # Compute BG difference with average target
-        dBG = targetBG - eventualBG
-
-        # Compute required dose
-        dose = self.BG.dose(dBG, self.ISF, self.IDC)
-
-        # Give user info
-        Logger.info("BG target: " + str(targetBG) + " " + self.BG.u)
-        Logger.info("Current BG: " + str(BG) + " " + self.BG.u)
-        Logger.info("Current ISF: " + str(ISF) + " " + self.ISF.u)
-        Logger.info("Current IOB: " + str(IOB) + " " + self.IOB.u)
-        Logger.info("Naive eventual BG: " + str(naiveBG) + " " + self.BG.u)
-        Logger.info("Eventual BG: " + str(eventualBG) + " " + self.BG.u)
-        Logger.info("dBG: " + str(dBG) + " " + self.BG.u)
-        Logger.info("Recommended dose: " + str(dose) + " " + "U")
-
-        # Look for conflictual info
-        if (np.sign(BGI) == -1 and eventualBG > max(targetRangeBG) or
-            np.sign(BGI) == 1 and eventualBG < min(targetRangeBG)):
+        # TB exceeds max
+        if rate > maxRate:
 
             # Give user info
-            Logger.warning("Conflictual information: BG decreasing/rising " +
-                           "although expected to land higher/lower than " +
-                           "target range.")
+            Logger.warning("TB recommendation exceeds maximal basal and has " +
+                           "thus been limited. Bolus would bring BG back to " +
+                           "safe range more effectively.")
 
-        # Return dose
-        return dose
+            # Max it out
+            rate = maxRate
 
-
-
-    def computeTB(self, dose):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTETB
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Compute TB to enact given a recommended insulin dose.
-        """
-
-        # Give user info
-        Logger.debug("Computing TB to enact...")
-
-        # Get current data
-        basal = self.basal.y[-1]
-
-        # Define time to enact equivalent of dose (h)
-        T = 0.5
-
-        # When too close to hypo
-        if self.BG.past.y[-1] < BG_HYPO_LIMIT:
-
-            # Stop insulin delivery
-            dB = -basal
-
-        # Otherwise
-        else:
-
-            # Find required basal difference to enact over given time (round to
-            # pump's precision)
-            dB = dose / T
-
-        # Compute TB to enact 
-        TB = basal + dB
-
-        # Give user info
-        Logger.info("Current basal: " + str(basal) + " U/h")
-        Logger.info("Required basal difference: " + str(dB) + " U/h")
-        Logger.info("Temporary basal to enact: " + str(TB) + " U/h")
-        Logger.info("Enactment time: " + str(T) + " h")
-
-        # Convert enactment time to minutes
-        T *= 60
-
-        # Return TB recommendation
-        return [TB, "U/h", T]
+    # Return limited TB
+    return [rate, units, duration]
 
 
 
-    def limitTB(self, TB):
+def snooze(TB, basal, DIA):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LIMITTB
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        SNOOZE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Snooze enactment of high TBs (bigger than current basal) for a while
+        after eating.
+    """
 
-        Limit too low/high TBs.
-        """
+    # Get last carbs
+    lastCarbs = Reporter.getRecent(self.now, "treatments.json", ["Carbs"], 1)
+
+    # Snooze criteria (no high temping after eating)
+    if lastCarbs:
+
+        # Get last meal time and format it to datetime object
+        lastTime = lib.formatTime(max(lastCarbs))
+
+        # Compute elapsed time since then and now (h)
+        dt = (basals.end - lastTime).total_seconds() / 3600.0
+
+        # Define snooze duration (h) as a fraction f of DIA
+        snooze = SNOOZE_DIA_FRACTION * DIA
+
+        # If snooze necessary
+        if dt < snooze and TB > basal:
+
+            # Compute remaining time (m)
+            T = int(round((snooze - d) * 60))
+
+            # Give user info
+            Logger.warning("Bolus snooze (" + str(snooze) + " h). If no " +
+                           "more bolus issued, high temping will resume in " +
+                           str(T) + " m.")
+
+            # Snooze
+            return True
+
+    # Do not snooze
+    return False
+
+
+
+def recommendTB(BGDynamics, basals, ISF, IDC):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        RECOMMENDTB
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Recommend a TB based on latest treatment information, predictions and
+        security limitations.
+    """
+
+    # Give user info
+    Logger.debug("Recommending TB...")
+
+    # Compute necessary insulin dose to bring back eventual BG to target
+    dose = computeDose(BGDynamics["eventualdBG"], ISF, IDC)
+
+    # Compute corresponding TB
+    TB = computeTB(basals.y[-1], dose)
+
+    # Limit it
+    TB = limitTB(TB, basals, BGDynamics["BG"])
+
+    # Snoozing of high temping required?
+    if snooze(TB, basals.y[-1], IDC.DIA):
+
+        # No TB recommendation (back to programmed basals)
+        TB = None
+
+    # If recommendation was not canceled
+    if TB is not None:
 
         # Destructure TB
         [rate, units, duration] = TB
 
-        # Negative TB rate
-        if rate < 0:
-
-            # Give user info
-            Logger.warning("External action required: negative basal " +
-                           "required. Eat something!")
-
-            # Stop insulin delivery
-            rate = 0
-
-        # Positive TB
-        elif rate > 0:
-
-            # Get basal info
-            basal = self.basal.y[-1]
-            maxDailyBasal = self.basal.max
-            maxBasal = self.max["Basal"]
-
-            # Define max basal rate allowed (U/h)
-            maxRate = min(4 * basal, 3 * maxDailyBasal, maxBasal)
-
-            # Give user info
-            Logger.info("Theoretical max basal: " + str(maxBasal) + " U/h")
-            Logger.info("4x current basal: " + str(4 * basal) + " U/h")
-            Logger.info("3x max daily basal: " + str(3 * maxDailyBasal) + " " +
-                        "U/h")
-
-            # TB exceeds max
-            if rate > maxRate:
-
-                # Give user info
-                Logger.warning("External action required: maximal basal " +
-                               "exceeded. Enact dose manually!")
-
-                # Max it out
-                rate = maxRate
-
-        # No TB
-        else:
-
-            # Give user info
-            Logger.info("No modification to insulin dosage necessary.")
-
-        # Return limited TB
-        return [rate, units, duration]
-
-
-
-    def snooze(self, TB):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SNOOZE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Snooze enactment of high TBs for a while after eating.
-        """
-
-        # Get last carbs
-        lastCarbs = Reporter.getRecent(self.now, "treatments.json",
-                                                 ["Carbs"], 1)
-
-        # Destructure TB
-        [rate, units, duration] = TB
-
-        # Define snooze duration (h)
-        snooze = 0.5 * self.DIA
-
-        # Snooze criteria (no high temping after eating)
-        if lastCarbs:
-
-            # Get last meal time and format it to datetime object
-            lastTime = lib.formatTime(max(lastCarbs))
-
-            # Compute elapsed time since (h)
-            d = (self.now - lastTime).total_seconds() / 3600.0
-
-            # If snooze necessary
-            if d < snooze:
-
-                # Compute remaining time (m)
-                T = int(round((snooze - d) * 60))
-
-                # Give user info
-                Logger.warning("Bolus snooze (" + str(snooze) + " h). If no " +
-                               "more bolus issued, looping will restart in " +
-                               str(T) + " m.")
-
-                # Snooze
-                return True
-
-        # Do not snooze
-        return False
-
-
-
-    def recommend(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECOMMEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        Recommend a bolus based on latest BG and future target average, taking
-        into account ISF step curve over the next DIA hours (assuming natural
-        decay of insulin).
-        """
-
         # Give user info
-        Logger.debug("Recommending treatment...")
+        Logger.info("Recommended TB: " + string.basal(rate) + " " +
+                    "(" + str(duration) + " m)")
 
-        # Compute recommended dose
-        dose = self.computeDose()
-
-        # Compute corresponding TB
-        TB = self.computeTB(dose)
-
-        # Limit it
-        TB = self.limitTB(TB)
-
-        # Snoozing of TB enactment required?
-        if self.snooze(TB):
-
-            # No TB recommendation
-            TB = None
-
-        # If recommendation was not canceled
-        if TB is not None:
-
-            # Destructure TB
-            [rate, units, duration] = TB
-
-            # Give user info
-            Logger.info("Recommended TB: " + str(rate) + " " + units + " (" +
-                                             str(duration) + " m)")
-
-        # Return recommendation
-        return TB
-
-
-
-    def autosens(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            AUTOSENS
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Get last 24 hours of BGs
-        BGs = Reporter.getRecent(self.now, "BG.json", [], 7, True)
-
-        # Show them
-        lib.JSONize(BGs)
-
-        # Build BG profile for last 24 hours
-        BGProfile = 0
-
-
-
-    def show(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize plot
-        mpl.rc("font", size = 10, family = "Ubuntu")
-        fig = plt.figure(0, figsize = (10, 8))
-        axes = [plt.subplot(221),
-                plt.subplot(222),
-                plt.subplot(223),
-                plt.subplot(224)]
-
-        # Define titles
-        titles = ["BG", "Net Insulin Profile", "IOB", "COB"]
-
-        # Define axis labels
-        x = ["(h)"] * 4
-        y = ["(" + self.BG.u + ")", "(U/h)", "(U)", "(g)"]
-
-        # Define axis limits
-        xlim = [[-self.DIA, self.DIA]] * 4
-        ylim = [[2, 20], None, None, None]
-
-        # Define subplots
-        for i in range(4):
-
-            # Set titles
-            axes[i].set_title(titles[i], fontweight = "semibold")
-
-            # Set x-axis labels
-            axes[i].set_xlabel(x[i])
-
-            # Set y-axis labels
-            axes[i].set_ylabel(y[i])
-
-            # Set x-axis limits
-            axes[i].set_xlim(xlim[i])
-
-        # Set y-axis limits
-        axes[0].set_ylim(ylim[0])
-
-        # Add BGs to plot
-        axes[0].plot(self.BG.past.t, self.BG.past.y,
-                     marker = "o", ms = 3.5, lw = 0, c = "red")
-
-        # Add BG predictions to plot
-        axes[0].plot(self.BG.t, self.BG.y,
-                     marker = "o", ms = 3.5, lw = 0, c = "black")
-
-        # Add net insulin profile to plot
-        axes[1].step(self.net.t, np.append(0, self.net.y[:-1]),
-                     lw = 2, ls = "-", c = "purple")
-
-        # Add past IOB to plot
-        axes[2].plot(self.IOB.past.t, self.IOB.past.y,
-                     marker = "o", ms = 3.5, lw = 0, c = "orange")
-
-        # Add IOB predictions to plot
-        axes[2].plot(self.IOB.t, self.IOB.y,
-                     lw = 2, ls = "-", c = "black")
-
-        # Add COB to plot
-        axes[3].plot([-self.DIA, 0], [0, 0],
-                     lw = 2, ls = "-", c = "#99e500")
-
-        # Add COB predictions to plot
-        axes[3].plot([0, self.DIA], [0, 0],
-                     lw = 2, ls = "-", c = "black")
-
-        # Tighten up
-        plt.tight_layout()
-
-        # Show plot
-        plt.show()
+    # Return recommendation
+    return TB
 
 
 
@@ -749,18 +478,6 @@ def main():
 
     # Get current time
     now = datetime.datetime(2017, 9, 1, 23, 0, 0)
-
-    # Instanciate a calculator
-    calculator = Calculator()
-
-    # Run calculator
-    calculator.run(now)
-
-    # Run autosens
-    #calculator.autosens()
-
-    # Show components
-    #calculator.show()
 
 
 

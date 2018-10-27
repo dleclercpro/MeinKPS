@@ -61,10 +61,6 @@ class Profile(object):
         # Initialize units
         self.units = None
 
-        # Initialize plot limits
-        self.xlim = []
-        self.ylim = []
-
         # Initialize report info
         self.report = None
         self.branch = []
@@ -99,11 +95,15 @@ class Profile(object):
         self.start = None
         self.end = None
 
+        # Reset time norm
+        self.norm = None
+
         # Reset range of days covered
         self.days = []
 
-        # Reset time norm
-        self.norm = None
+        # Reset plot limits
+        self.xlim = []
+        self.ylim = []
 
         # Reset loaded data
         self.data = {}
@@ -147,19 +147,19 @@ class Profile(object):
         # Give user info
         Logger.debug("Defining time references...")
 
+        # Compute dT
+        dT = end - start
+
+        # Compute number of days to cover
+        n = dT.days + 1
+
         # Define start/end times
         self.start = start
         self.end = end
 
-        # Compute number of days to cover
-        n = (end - start).days + 1
-
         # Define corresponding range of days
         self.days = [start.date() + datetime.timedelta(days = x)
                      for x in range(-1, n)]
-
-        # Define plot x-axis default limits
-        self.xlim = [lib.normalizeTime(t, self.norm) for t in [start, end]]
 
 
 
@@ -172,7 +172,7 @@ class Profile(object):
             Load profile data.
         """
 
-        # Not defined for abstract profile class
+        # N/A for abstract profile class
         pass
 
 
@@ -363,7 +363,7 @@ class Profile(object):
 
 
 
-    def plot(self, n, size, title = None, xlim = [], ylim = []):
+    def plot(self, n, size, title = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -388,27 +388,15 @@ class Profile(object):
         ax.set_xlabel(x)
         ax.set_ylabel(y)
 
-        # If x-axis limits given
-        if xlim:
-
-            # Set x-axis limit
-            ax.set_xlim(xlim)
-
         # If x-axis limits defined
-        elif self.xlim:
+        if self.xlim:
 
             # Set x-axis limit
             ax.set_xlim(min(ax.get_xlim()[0], self.xlim[0]),
                         max(ax.get_xlim()[1], self.xlim[1]))
 
-        # If y-axis limits given
-        if ylim:
-
-            # Set y-axis limit
-            ax.set_ylim(ylim)
-
         # If y-axis limits defined
-        elif self.ylim:
+        if self.ylim:
 
             # Set y-axis limit
             ax.set_ylim([min(ax.get_ylim()[0], self.ylim[0]),
@@ -869,7 +857,7 @@ class StepProfile(Profile):
 
 
     def plot(self, n = 1, size = [1, 1], show = True, title = None,
-                   xlim = [], ylim = [], color = "black"):
+                   color = "black"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -878,7 +866,7 @@ class StepProfile(Profile):
         """
 
         # Start plotting
-        ax = super(StepProfile, self).plot(n, size, title, xlim, ylim)
+        ax = super(StepProfile, self).plot(n, size, title)
 
         # Add data to plot
         ax.step(self.t, self.y, where = "post", label = self.__class__.__name__,
@@ -943,7 +931,7 @@ class DotProfile(Profile):
 
 
     def plot(self, n = 1, size = [1, 1], show = True, title = None,
-                   xlim = [], ylim = [], color = "black"):
+                   color = "black"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -952,7 +940,7 @@ class DotProfile(Profile):
         """
 
         # Start plotting
-        ax = super(DotProfile, self).plot(n, size, title, xlim, ylim)
+        ax = super(DotProfile, self).plot(n, size, title)
 
         # Add data to plot
         ax.plot(self.t, self.y, label = self.__class__.__name__,
@@ -1000,11 +988,17 @@ class PastProfile(Profile):
             Define profile time references.
         """
 
+        # Start defining
+        super(PastProfile, self).define(start, end)
+
+        # Compute dT
+        dT = end - start
+
         # Define norm
         self.norm = end
 
-        # Finish defining
-        super(PastProfile, self).define(start, end)
+        # Define plot x-axis default limits
+        self.xlim = [lib.normalizeTime(t, end) for t in [end - dT, end + dT]]
 
 
 
@@ -1062,12 +1056,19 @@ class FutureProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Define profile time references.
         """
+
+        # Start defining
+        super(FutureProfile, self).define(start, end)
+
+        # Compute dT
+        dT = end - start
         
         # Define norm
         self.norm = start
 
-        # Finish defining
-        super(FutureProfile, self).define(start, end)
+        # Define plot x-axis default limits
+        self.xlim = [lib.normalizeTime(t, start) for t in [start - dT,
+                                                           start + dT]]
 
 
 

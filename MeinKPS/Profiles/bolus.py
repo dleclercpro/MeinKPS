@@ -28,8 +28,13 @@ import datetime
 
 
 # USER LIBRARIES
-import lib
 import base
+import reporter
+
+
+
+# Define instances
+Reporter = reporter.Reporter()
 
 
 
@@ -54,6 +59,9 @@ class Bolus(base.PastProfile, base.StepProfile):
 
         # Define bolus delivery rate
         self.rate = 90.0
+
+        # Read theoretical max
+        self.max = Reporter.get("pump.json", ["Settings"], "Max Bolus")
 
         # Define report info
         self.report = "treatments.json"
