@@ -49,7 +49,6 @@ Reporter = reporter.Reporter()
 BG_HYPO_LIMIT       = 4.5 # (mmol/L)
 BG_HYPER_LIMIT      = 8.5 # (mmol/L)
 DOSE_ENACT_TIME     = 0.5 # (h)
-SNOOZE_DIA_FRACTION = 0.5 # (-)
 
 
 
@@ -232,15 +231,14 @@ def computeBGDynamics(BGs, BGTargets, IOB, ISF, dt = 0.5):
     # Give user info
     Logger.debug("Computing BG dynamics...")
 
-    # Compute BG target by the end of insulin action
-    BGTargetRange = BGTargets.y[-1]
-    BGTarget = np.mean(BGTargetRange)
-
     # Read current BG
     BG = BGs.y[0]
 
     # Read expected BG after natural decay of IOB
     expectedBG = BGs.y[-1]
+
+    # Compute BG target by the end of insulin action
+    BGTarget = np.mean(BGTargets.y[-1])
 
     # Compute BG assuming continuation of current BGI over dt (h)
     [shortProjectedBG, BGI] = linearlyProjectBG(BGs, dt)
@@ -264,16 +262,18 @@ def computeBGDynamics(BGs, BGTargets, IOB, ISF, dt = 0.5):
     # Compute difference with BG target
     eventualdBG = BGTarget - eventualBG
 
-    # Give user info (short (dt) BG projection)
-    Logger.info("Projection time dt: " + str(dt) + " h")
-    Logger.info("Current BG: " + string.BG(BG))
+    # Give user info about long (DIA) BG projection
+    Logger.info("Current BG: " + string.BG(BG))    
+    Logger.info("Expected BG (DIA): " + string.BG(expectedBG))
+    Logger.info("BG Target (DIA): " + string.BG(BGTarget))
+
+    # Give user info about short (dt) BG projection
+    Logger.info("Projection time: " + str(dt) + " h")
     Logger.info("Expected BG (dt): " + string.BG(shortExpectedBG))
     Logger.info("Projected BG (dt): " + string.BG(shortProjectedBG))
     Logger.info("dBG (dt): " + string.BG(shortdBG))
 
-    # Give user info (long (DIA) BG projection)
-    Logger.info("BG Target (DIA): " + string.BG(BGTarget))
-    Logger.info("Expected BG (DIA): " + string.BG(expectedBG))
+    # Give user info about eventual BG
     Logger.info("Eventual BG (DIA): " + string.BG(eventualBG))
     Logger.info("Eventual dBG (DIA): " + string.BG(eventualdBG))
 
@@ -283,21 +283,21 @@ def computeBGDynamics(BGs, BGTargets, IOB, ISF, dt = 0.5):
     Logger.info("dBGI: " + string.BGI(dBGI))
 
     # Return BG dynamics computations
-    return {"BGTarget": BGTarget,
-            "BG": BG,
+    return {"BG": BG,
             "expectedBG": expectedBG,
-            "eventualBG": eventualBG,
-            "eventualdBG": eventualdBG,
-            "shortdBG": shortdBG,
+            "BGTarget": BGTarget,
             "shortExpectedBG": shortExpectedBG,
             "shortProjectedBG": shortProjectedBG,
-            "dBGI": dBGI,
+            "shortdBG": shortdBG,
+            "eventualBG": eventualBG,
+            "eventualdBG": eventualdBG,
             "expectedBGI": expectedBGI,
-            "BGI": BGI}
+            "BGI": BGI,
+            "dBGI": dBGI}
 
 
 
-def computeTB(basal, dose):
+def computeTB(dose, basals):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -312,8 +312,8 @@ def computeTB(basal, dose):
     # Find required basal difference to enact over given time
     dB = dose / DOSE_ENACT_TIME
 
-    # Compute TB to enact 
-    TB = basal + dB
+    # Compute TB to enact using the current basal and said required difference
+    TB = basals.y[-1] + dB
 
     # Give user info
     Logger.info("Current basal: " + string.basal(basal))
@@ -343,7 +343,7 @@ def limitTB(TB, basals, BG):
     basal = basals.y[-1]
 
     # Negative TB rate
-    if rate < 0 or BG < BG_HYPO_LIMIT:
+    if rate < 0 or BG <= BG_HYPO_LIMIT:
 
         # Give user info
         Logger.warning("Hypo prevention mode.")
@@ -381,7 +381,7 @@ def limitTB(TB, basals, BG):
 
 
 
-def snooze(TB, basal, DIA):
+def snooze(TB, basals, duration = 2):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -403,19 +403,22 @@ def snooze(TB, basal, DIA):
         # Compute elapsed time since then and now (h)
         dt = (basals.end - lastTime).total_seconds() / 3600.0
 
-        # Define snooze duration (h) as a fraction f of DIA
-        snooze = SNOOZE_DIA_FRACTION * DIA
+        # Get current basal
+        basal = basals.y[-1]
+
+        # Get recommended TB
+        rate = TB[0]
 
         # If snooze necessary
-        if dt < snooze and TB > basal:
+        if dt < duration and rate > basal:
 
             # Compute remaining time (m)
-            T = int(round((snooze - d) * 60))
+            t = int(round((duration - dt) * 60))
 
             # Give user info
-            Logger.warning("Bolus snooze (" + str(snooze) + " h). If no " +
+            Logger.warning("Bolus snooze (" + str(duration) + " h). If no " +
                            "more bolus issued, high temping will resume in " +
-                           str(T) + " m.")
+                           str(t) + " m.")
 
             # Snooze
             return True
@@ -442,13 +445,13 @@ def recommendTB(BGDynamics, basals, ISF, IDC):
     dose = computeDose(BGDynamics["eventualdBG"], ISF, IDC)
 
     # Compute corresponding TB
-    TB = computeTB(basals.y[-1], dose)
+    TB = computeTB(dose, basals)
 
     # Limit it
     TB = limitTB(TB, basals, BGDynamics["BG"])
 
     # Snoozing of high temping required?
-    if snooze(TB, basals.y[-1], IDC.DIA):
+    if snooze(TB, basals):
 
         # No TB recommendation (back to programmed basals)
         TB = None
