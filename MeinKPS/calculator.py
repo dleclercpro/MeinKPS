@@ -381,36 +381,30 @@ def limitTB(TB, basals, BG):
 
 
 
-def snooze(TB, basals, duration = 2):
+def snooze(now, duration = 2):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         SNOOZE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Snooze enactment of high TBs (bigger than current basal) for a while
-        after eating.
+        Snooze enactment of TBs for a while after eating.
+        FIXME: take carbs dynamics into consideration!
     """
 
     # Get last carbs
     lastCarbs = Reporter.getRecent(self.now, "treatments.json", ["Carbs"], 1)
 
-    # Snooze criteria (no high temping after eating)
+    # Snooze criteria (no temping after eating)
     if lastCarbs:
 
-        # Get last meal time and format it to datetime object
+        # Get last meal time
         lastTime = lib.formatTime(max(lastCarbs))
 
-        # Compute elapsed time since then and now (h)
-        dt = (basals.end - lastTime).total_seconds() / 3600.0
-
-        # Get current basal
-        basal = basals.y[-1]
-
-        # Get recommended TB
-        rate = TB[0]
+        # Compute elapsed time since last meal
+        dt = (now - lastTime).total_seconds() / 3600.0
 
         # If snooze necessary
-        if dt < duration and rate > basal:
+        if dt < duration:
 
             # Compute remaining time (m)
             t = int(round((duration - dt) * 60))
@@ -450,8 +444,8 @@ def recommendTB(BGDynamics, basals, ISF, IDC):
     # Limit it
     TB = limitTB(TB, basals, BGDynamics["BG"])
 
-    # Snoozing of high temping required?
-    if snooze(TB, basals):
+    # Snoozing of temping required?
+    if snooze(basals.end):
 
         # No TB recommendation (back to programmed basals)
         TB = None
