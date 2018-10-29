@@ -625,7 +625,7 @@ class Report:
             directory = self.directory
 
         # Make sure report exists
-        path.touch(directory + self.name)
+        path.Path(directory).touch(name)
 
         # Rewrite report
         with open(directory + self.name, "w") as f:
