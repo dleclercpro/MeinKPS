@@ -8,9 +8,9 @@
 
     Author:   David Leclerc
 
-    Version:  0.1
+    Version:  0.2
 
-    Date:     24.05.2017
+    Date:     29.10.2018
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -24,7 +24,6 @@
 
 # LIBRARIES
 import datetime
-import time
 
 
 
