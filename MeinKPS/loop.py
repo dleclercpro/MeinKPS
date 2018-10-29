@@ -201,6 +201,9 @@ class Loop(object):
         # Read remaining amount of insulin
         self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
 
+        # Read pump settings
+        self.do(self.pump.settings.read, ["Pump"], "Settings")
+
         # Read ISF
         self.do(self.pump.ISF.read, ["Pump"], "ISF")
 
