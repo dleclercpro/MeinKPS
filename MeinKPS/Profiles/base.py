@@ -119,7 +119,7 @@ class Profile(object):
         """
 
         # Give user info
-        Logger.debug("Building...")
+        Logger.debug("Building '" + self.__class__.__name__ + "'...")
 
         # Reset profile
         self.reset()
@@ -147,19 +147,21 @@ class Profile(object):
         # Give user info
         Logger.debug("Defining time references...")
 
-        # Compute dT
-        dT = end - start
-
-        # Compute number of days to cover
-        n = dT.days + 1
-
         # Define start/end times
         self.start = start
         self.end = end
 
-        # Define corresponding range of days
-        self.days = [start.date() + datetime.timedelta(days = x)
-                     for x in range(-1, n)]
+        # First day to cover for always one before start date
+        day = start.date() - datetime.timedelta(days = 1)
+
+        # Fill them until end date is reached
+        while day <= end.date():
+
+            # Add day
+            self.days.append(day)
+
+            # Update it
+            day += datetime.timedelta(days = 1)
 
 
 
@@ -329,16 +331,17 @@ class Profile(object):
             axes = profiles[p]
 
             # Read number of entries
-            n = len(axes[0])
+            nx = len(axes[0])
+            ny = len(axes[1])
 
             # If profile exists
-            if n > 0 and len(axes[0]) == len(axes[1]):
+            if nx > 0 and nx == ny:
 
                 # Give user info
                 Logger.debug(p)
 
                 # Show profile
-                for i in range(n):
+                for i in range(nx):
 
                     # Get time
                     t = axes[0][i]

@@ -68,6 +68,22 @@ class Loop(object):
         self.cgm = cgm.CGM()
         self.pump = pump.Pump(stick.Stick())
 
+        # Instanciate profiles
+        self.profiles = {"IDC": None,
+                         "Suspend": suspend.Suspend(),
+                         "Resume": resume.Resume(),
+                         "Basal": basal.Basal(),
+                         "TB": TB.TB(),
+                         "Bolus": bolus.Bolus(),
+                         "Net": net.Net(),
+                         "BGTargets": BGTargets.BGTargets(),
+                         "ISF": ISF.ISF(),
+                         "CSF": CSF.CSF(),
+                         "PastIOB": IOB.PastIOB(),
+                         "FutureIOB": IOB.FutureIOB(),
+                         "PastBG": BG.PastBG(),
+                         "FutureBG": BG.FutureBG()}
+
         # Define report
         self.report = "loop.json"
 
@@ -221,7 +237,7 @@ class Loop(object):
 
 
 
-    def compute(self):
+    def compute(self, now, dt = 5.0 / 60.0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -232,63 +248,48 @@ class Loop(object):
         # Read DIA
         DIA = Reporter.get("pump.json", ["Settings"], "DIA")
 
-        # Read current time
-        now = self.t0
-
         # Define past/future reference times
         past = now - datetime.timedelta(hours = DIA)
         future = now + datetime.timedelta(hours = DIA)
 
-        # Instanciate profiles
-        profiles = {"Suspend": suspend.Suspend(),
-                    "Resume": resume.Resume(),
-                    "Basal": basal.Basal(),
-                    "TB": TB.TB(),
-                    "Bolus": bolus.Bolus(),
-                    "Net": net.Net(),
-                    "BGTargets": BGTargets.BGTargets(),
-                    "ISF": ISF.ISF(),
-                    "CSF": CSF.CSF(),
-                    "IDC": IDC.WalshIDC(DIA),
-                    "PastIOB": IOB.PastIOB(),
-                    "FutureIOB": IOB.FutureIOB(),
-                    "PastBG": BG.PastBG(),
-                    "FutureBG": BG.FutureBG()}
+        # Build IDC
+        self.profiles["IDC"] = IDC.WalshIDC(DIA)
         
         # Build net insulin profile
-        profiles["Net"].build(past, now, profiles["Suspend"],
-                                         profiles["Resume"],
-                                         profiles["Basal"],
-                                         profiles["TB"],
-                                         profiles["Bolus"])
+        self.profiles["Net"].build(past, now, self.profiles["Suspend"],
+                                              self.profiles["Resume"],
+                                              self.profiles["Basal"],
+                                              self.profiles["TB"],
+                                              self.profiles["Bolus"])
 
         # Build past profiles
-        profiles["PastIOB"].build(past, now)
-        profiles["PastBG"].build(past, now)
+        self.profiles["PastIOB"].build(past, now)
+        self.profiles["PastBG"].build(past, now)
         
         # Build daily profiles
-        profiles["BGTargets"].build(now, future)
-        profiles["ISF"].build(now, future)
-        #profiles["CSF"].build(now, future)
-
-        # Define timestep (m) for prediction (future) profiles
-        dt = 5.0 / 60.0
+        self.profiles["BGTargets"].build(now, future)
+        self.profiles["ISF"].build(now, future)
+        self.profiles["CSF"].build(now, future)
 
         # Build prediction profiles
-        profiles["FutureIOB"].build(dt, profiles["Net"], profiles["IDC"])
-        profiles["FutureBG"].build(dt, profiles["Net"], profiles["IDC"],
-                                       profiles["ISF"], profiles["PastBG"])
+        self.profiles["FutureIOB"].build(dt, self.profiles["Net"],
+                                             self.profiles["IDC"])
+        self.profiles["FutureBG"].build(dt, self.profiles["Net"],
+                                            self.profiles["IDC"],
+                                            self.profiles["ISF"],
+                                            self.profiles["PastBG"])
 
         # Compute BG dynamics
-        BGDynamics = calc.computeBGDynamics(profiles["PastBG"],
-                                            profiles["BGTargets"],
-                                            profiles["FutureIOB"],
-                                            profiles["ISF"])
+        BGDynamics = calc.computeBGDynamics(self.profiles["PastBG"],
+                                            self.profiles["FutureBG"],
+                                            self.profiles["BGTargets"],
+                                            self.profiles["FutureIOB"],
+                                            self.profiles["ISF"])
 
         # Run calculator, get TB recommendation and return it
-        return calc.recommendTB(BGDynamics, profiles["basal"],
-                                            profiles["ISF"],
-                                            profiles["IDC"])
+        return calc.recommendTB(BGDynamics, self.profiles["Basal"],
+                                            self.profiles["ISF"],
+                                            self.profiles["IDC"])
 
 
 
@@ -345,6 +346,34 @@ class Loop(object):
 
 
 
+    def plot(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PLOT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Prepare plot
+        lib.initPlot()
+
+        # Build graph 1 (basals)
+        self.profiles["Basal"].plot(1, [4, 1], False, None, "purple")
+        self.profiles["Net"].plot(1, [4, 1], False, "Basals", "orange")
+
+        # Build graph 2 (ISFs)
+        self.profiles["ISF"].plot(2, [4, 1], False, "ISFs", "red")
+
+        # Build graph 3 (IOBs)
+        self.profiles["PastIOB"].plot(3, [4, 1], False, None, "#99e500")
+        self.profiles["FutureIOB"].plot(3, [4, 1], False, "IOBs")
+        
+        # Build graph 4 (BGs)
+        self.profiles["PastBG"].plot(4, [4, 1], False, None, "pink")
+        self.profiles["FutureBG"].plot(4, [4, 1], True, "BGs")
+
+
+
     def run(self):
 
         """
@@ -360,7 +389,7 @@ class Loop(object):
         self.doTry(self.read)
 
         # Compute necessary TB and enact it
-        self.doTry(self.enact, self.doTry(self.compute))
+        self.doTry(self.enact, self.doTry(self.compute, self.t0))
 
         # Export recent treatments
         self.doTry(self.export)
@@ -382,7 +411,11 @@ def main():
     loop = Loop()
 
     # Loop
-    loop.run()
+    #loop.run()
+
+    # Test
+    loop.compute(datetime.datetime(2017, 9, 3, 6, 0, 0))
+    loop.plot()
 
 
 

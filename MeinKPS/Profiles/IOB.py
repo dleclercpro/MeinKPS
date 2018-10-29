@@ -38,7 +38,7 @@ import calculator as calc
 
 
 # Define instances
-Logger = logger.Logger("Profiles/IOB.py")
+Logger = logger.Logger("Profiles/IOB.py", "DEBUG")
 Reporter = reporter.Reporter()
 
 
@@ -99,7 +99,7 @@ class FutureIOB(IOB, base.FutureProfile):
         """
 
         # Give user info
-        Logger.debug("Predicting IOB...")
+        Logger.debug("Building 'FutureIOB'...")
 
         # Reset components
         self.reset()

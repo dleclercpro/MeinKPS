@@ -38,7 +38,7 @@ import calculator as calc
 
 
 # Define instances
-Logger = logger.Logger("Profiles/BG.py")
+Logger = logger.Logger("Profiles/BG.py", "DEBUG")
 Reporter = reporter.Reporter()
 
 
@@ -110,7 +110,7 @@ class FutureBG(BG, base.FutureProfile):
         """
 
         # Give user info
-        Logger.debug("Decaying BG...")
+        Logger.debug("Building 'FutureBG'...")
 
         # Ensure there is one BG recent enough to accurately predict decay
         calc.countValidBGs(past, 15, 1)

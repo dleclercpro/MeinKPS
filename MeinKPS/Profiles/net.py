@@ -29,7 +29,7 @@ import base
 
 
 # Instanciate logger
-Logger = logger.Logger("Profiles/net.py")
+Logger = logger.Logger("Profiles/net.py", "DEBUG")
 
 
 
@@ -60,7 +60,7 @@ class Net(base.PastProfile, base.StepProfile):
         """
 
         # Give user info
-        Logger.debug("Building...")
+        Logger.debug("Building 'Net' ...")
 
         # Reset components
         self.reset()
