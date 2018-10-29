@@ -31,7 +31,7 @@ import copy
 
 
 # USER LIBRARIES
-import string
+import fmt
 import lib
 import errors
 import logger
@@ -85,7 +85,7 @@ def computeIOB(net, IDC):
         IOB += r * y[i]
 
     # Give user info
-    Logger.debug("IOB: " + str(IOB) + " U")
+    Logger.debug("IOB: " + fmt.IOB(IOB))
 
     # Return IOB
     return IOB
@@ -263,24 +263,24 @@ def computeBGDynamics(BGs, BGTargets, IOB, ISF, dt = 0.5):
     eventualdBG = BGTarget - eventualBG
 
     # Give user info about long (DIA) BG projection
-    Logger.info("Current BG: " + string.BG(BG))    
-    Logger.info("Expected BG (DIA): " + string.BG(expectedBG))
-    Logger.info("BG Target (DIA): " + string.BG(BGTarget))
+    Logger.info("Current BG: " + fmt.BG(BG))    
+    Logger.info("Expected BG (DIA): " + fmt.BG(expectedBG))
+    Logger.info("BG Target (DIA): " + fmt.BG(BGTarget))
 
     # Give user info about short (dt) BG projection
     Logger.info("Projection time: " + str(dt) + " h")
-    Logger.info("Expected BG (dt): " + string.BG(shortExpectedBG))
-    Logger.info("Projected BG (dt): " + string.BG(shortProjectedBG))
-    Logger.info("dBG (dt): " + string.BG(shortdBG))
+    Logger.info("Expected BG (dt): " + fmt.BG(shortExpectedBG))
+    Logger.info("Projected BG (dt): " + fmt.BG(shortProjectedBG))
+    Logger.info("dBG (dt): " + fmt.BG(shortdBG))
 
     # Give user info about eventual BG
-    Logger.info("Eventual BG (DIA): " + string.BG(eventualBG))
-    Logger.info("Eventual dBG (DIA): " + string.BG(eventualdBG))
+    Logger.info("Eventual BG (DIA): " + fmt.BG(eventualBG))
+    Logger.info("Eventual dBG (DIA): " + fmt.BG(eventualdBG))
 
     # Give user info (BGI)
-    Logger.info("Expected BGI: " + string.BGI(expectedBGI))
-    Logger.info("Current BGI: " + string.BGI(BGI))
-    Logger.info("dBGI: " + string.BGI(dBGI))
+    Logger.info("Expected BGI: " + fmt.BGI(expectedBGI))
+    Logger.info("Current BGI: " + fmt.BGI(BGI))
+    Logger.info("dBGI: " + fmt.BGI(dBGI))
 
     # Return BG dynamics computations
     return {"BG": BG,
@@ -316,9 +316,9 @@ def computeTB(dose, basals):
     TB = basals.y[-1] + dB
 
     # Give user info
-    Logger.info("Current basal: " + string.basal(basal))
-    Logger.info("Required basal difference: " + string.basal(dB))
-    Logger.info("Temporary basal to enact: " + string.basal(TB))
+    Logger.info("Current basal: " + fmt.basal(basal))
+    Logger.info("Required basal difference: " + fmt.basal(dB))
+    Logger.info("Temporary basal to enact: " + fmt.basal(TB))
     Logger.info("Enactment time: " + str(DOSE_ENACT_TIME) + " h")
 
     # Return TB recommendation (in minutes)
@@ -361,9 +361,9 @@ def limitTB(TB, basals, BG):
         maxRate = min(4 * basal, 3 * maxDailyBasal, basals.max)
 
         # Give user info
-        Logger.info("Theoretical max basal: " + string.basal(basals.max))
-        Logger.info("4x current basal: " + string.basal(4 * basal))
-        Logger.info("3x max daily basal: " + string.basal(3 * maxDailyBasal))
+        Logger.info("Theoretical max basal: " + fmt.basal(basals.max))
+        Logger.info("4x current basal: " + fmt.basal(4 * basal))
+        Logger.info("3x max daily basal: " + fmt.basal(3 * maxDailyBasal))
 
         # TB exceeds max
         if rate > maxRate:
@@ -457,7 +457,7 @@ def recommendTB(BGDynamics, basals, ISF, IDC):
         [rate, units, duration] = TB
 
         # Give user info
-        Logger.info("Recommended TB: " + string.basal(rate) + " " +
+        Logger.info("Recommended TB: " + fmt.basal(rate) + " " +
                     "(" + str(duration) + " m)")
 
     # Return recommendation

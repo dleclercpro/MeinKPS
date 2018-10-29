@@ -1,12 +1,12 @@
 {
     "CGM": {
-        "BG": 62,
-        "Battery": 62,
-        "Calibration": 62,
+        "BG": 63,
+        "Battery": 63,
+        "Calibration": 63,
         "Clock": 0,
         "Firmware": 0,
         "Language": 0,
-        "Sensor": 62,
+        "Sensor": 63,
         "Start": 0,
         "Stop": 0,
         "Transmitter": 0,
@@ -28,7 +28,7 @@
     },
     "Status": {
         "Duration": 29,
-        "Export": 38,
+        "Export": 41,
         "N": 62,
         "Time": "2018.04.11 - 17:05:29",
         "Upload": 38

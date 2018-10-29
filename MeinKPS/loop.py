@@ -34,10 +34,11 @@ import logger
 import reporter
 import exporter
 import uploader
-import calculator
+import calculator as calc
 from CGM import cgm
 from Stick import stick
 from Pump import pump
+from Profiles import *
 
 
 
@@ -67,9 +68,6 @@ class Loop(object):
         # Give the loop devices
         self.cgm = cgm.CGM()
         self.pump = pump.Pump(stick.Stick())
-
-        # Give the loop a calculator
-        self.calc = calculator.Calculator()
 
         # Define report
         self.report = "loop.json"
@@ -176,14 +174,15 @@ class Loop(object):
 
 
 
-    def doCGM(self):
+    def read(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOCGM
+            READ
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # CGM
         # Read BGs (last 24 hours)
         self.do(self.cgm.dumpBG, ["CGM"], "BG", 8)
 
@@ -196,16 +195,7 @@ class Loop(object):
         # Read calibrations
         self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
 
-
-
-    def doPump(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOPUMP
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
+        # PUMP
         # Read battery level
         self.do(self.pump.battery.read, ["Pump"], "Battery")
 
@@ -227,8 +217,86 @@ class Loop(object):
         # Update history
         self.do(self.pump.history.update, ["Pump"], "History")
 
-        # Run calculator and get recommendation
-        TB = self.calc.run(self.t0)
+
+
+    def compute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            COMPUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Read DIA
+        DIA = Reporter.get("pump.json", ["Settings"], "DIA")
+
+        # Read current time
+        now = self.t0
+
+        # Define past/future reference times
+        past = now - datetime.timedelta(hours = DIA)
+        future = now + datetime.timedelta(hours = DIA)
+
+        # Instanciate profiles
+        profiles = {"Suspend": suspend.Suspend(),
+                    "Resume": resume.Resume(),
+                    "Basal": basal.Basal(),
+                    "TB": TB.TB(),
+                    "Bolus": bolus.Bolus(),
+                    "Net": net.Net(),
+                    "BGTargets": BGTargets.BGTargets(),
+                    "ISF": ISF.ISF(),
+                    "CSF": CSF.CSF(),
+                    "IDC": IDC.WalshIDC(DIA),
+                    "PastIOB": IOB.PastIOB(),
+                    "FutureIOB": IOB.FutureIOB(),
+                    "PastBG": BG.PastBG(),
+                    "FutureBG": BG.FutureBG()}
+        
+        # Build net insulin profile
+        profiles["Net"].build(past, now, profiles["Suspend"],
+                                         profiles["Resume"],
+                                         profiles["Basal"],
+                                         profiles["TB"],
+                                         profiles["Bolus"])
+
+        # Build past profiles
+        profiles["PastIOB"].build(past, now)
+        profiles["PastBG"].build(past, now)
+        
+        # Build daily profiles
+        profiles["BGTargets"].build(now, future)
+        profiles["ISF"].build(now, future)
+        #profiles["CSF"].build(now, future)
+
+        # Define timestep (m) for prediction (future) profiles
+        dt = 5.0 / 60.0
+
+        # Build prediction profiles
+        profiles["FutureIOB"].build(dt, profiles["Net"], profiles["IDC"])
+        profiles["FutureBG"].build(dt, profiles["Net"], profiles["IDC"],
+                                       profiles["ISF"], profiles["PastBG"])
+
+        # Compute BG dynamics
+        BGDynamics = calc.computeBGDynamics(profiles["PastBG"],
+                                            profiles["BGTargets"],
+                                            profiles["FutureIOB"],
+                                            profiles["ISF"])
+
+        # Run calculator, get TB recommendation and return it
+        return calc.recommendTB(BGDynamics, profiles["basal"],
+                                            profiles["ISF"],
+                                            profiles["IDC"])
+
+
+
+    def enact(self, TB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ENACT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
         # If no TB is required
         if TB is None:
@@ -240,22 +308,22 @@ class Loop(object):
             if self.pump.TB.value["Duration"] != 0:
 
                 # Cancel it
-                self.pump.TB.cancel()
+                self.do(self.pump.TB.cancel, ["Pump"], "TB")
 
-                # Re-update history
-                self.pump.history.update
+            # Otherwise
+            else:
+
+                # Exit
+                return
 
         # Otherwise, enact recommendation
         else:
 
             # Enact TB
-            self.pump.TB.set(*TB)
+            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
-            # Re-update history
-            self.pump.history.update
-
-        # Acknowledge TB was done
-        self.do(lib.NOP, ["Pump"], "TB")
+        # Re-update history
+        self.pump.history.update()
 
 
 
@@ -269,19 +337,6 @@ class Loop(object):
 
         # Export preprocessed treatments
         self.do(Exporter.run, ["Status"], "Export", self.t0)
-
-        # Upload them
-        self.upload()
-
-
-
-    def upload(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UPLOAD
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
 
         # Upload stuff
         self.do(Uploader.run, ["Status"], "Upload")
@@ -299,11 +354,11 @@ class Loop(object):
         # Start loop
         self.doTry(self.start)
 
-        # Do CGM stuff
-        self.doTry(self.doCGM)
+        # Read CGM/pump
+        self.doTry(self.read)
 
-        # Do pump stuff
-        self.doTry(self.doPump)
+        # Compute necessary TB and enact it
+        self.doTry(self.enact, self.doTry(self.compute))
 
         # Export recent treatments
         self.doTry(self.export)
