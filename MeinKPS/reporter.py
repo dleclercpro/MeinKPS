@@ -624,6 +624,9 @@ class Report:
             # Use stored directory
             directory = self.directory
 
+        # Make sure report exists
+        path.touch(directory + self.name)
+
         # Rewrite report
         with open(directory + self.name, "w") as f:
 
