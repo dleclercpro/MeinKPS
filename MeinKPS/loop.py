@@ -114,13 +114,13 @@ class Loop(object):
         """
 
         # Do it
-        task(*args)
+        return task(*args)
 
         # Try task
         #try:
 
             # Do it
-            #task(*args)
+            #return task(*args)
 
         # Ignore all errors
         #except Exception as e:
