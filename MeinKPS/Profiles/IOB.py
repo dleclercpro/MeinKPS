@@ -38,7 +38,7 @@ import calculator as calc
 
 
 # Define instances
-Logger = logger.Logger("Profiles/IOB.py", "DEBUG")
+Logger = logger.Logger("Profiles/IOB.py")
 Reporter = reporter.Reporter()
 
 

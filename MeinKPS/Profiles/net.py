@@ -29,7 +29,7 @@ import base
 
 
 # Instanciate logger
-Logger = logger.Logger("Profiles/net.py", "DEBUG")
+Logger = logger.Logger("Profiles/net.py")
 
 
 

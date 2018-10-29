@@ -38,7 +38,7 @@ import calculator as calc
 
 
 # Define instances
-Logger = logger.Logger("Profiles/BG.py", "DEBUG")
+Logger = logger.Logger("Profiles/BG.py")
 Reporter = reporter.Reporter()
 
 

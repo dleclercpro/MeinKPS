@@ -40,7 +40,7 @@ import reporter
 
 
 # Define instances
-Logger = logger.Logger("Profiles/base.py", "DEBUG")
+Logger = logger.Logger("Profiles/base.py")
 Reporter = reporter.Reporter()
 
 

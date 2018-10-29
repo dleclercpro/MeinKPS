@@ -411,11 +411,10 @@ def main():
     loop = Loop()
 
     # Loop
-    #loop.run()
+    loop.run()
 
-    # Test
-    loop.compute(datetime.datetime(2017, 9, 3, 6, 0, 0))
-    loop.plot()
+    # Plot
+    #loop.plot()
 
 
 
