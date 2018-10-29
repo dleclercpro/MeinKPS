@@ -55,9 +55,6 @@ class Exporter(object):
         # Initialize current time
         self.now = None
 
-        # Initialize past time
-        self.past = None
-
         # Initialize reports
         self.reports = {"BG": reporter.Report("BG.json"),
                         "history": reporter.Report("history.json"),
@@ -168,13 +165,11 @@ class Exporter(object):
         self.now = now
 
         # Compute past time
-        self.past = now - datetime.timedelta(hours = hours)
+        past = now - datetime.timedelta(hours = hours)
 
         # Build it for last 24 hours
-        self.net.build(self.past, self.now, basal.Basal(),
-                                            TB.TB(),
-                                            suspend.Suspend(),
-                                            resume.Resume())
+        self.net.build(past, self.now, suspend.Suspend(), resume.Resume(),
+                                       basal.Basal(), TB.TB())
 
         # Format net profile
         self.net = dict(zip([lib.formatTime(T) for T in self.net.T],
@@ -186,7 +181,7 @@ class Exporter(object):
         # Fill reports
         self.fill()
 
-        # Export reports
+        # Store reports to exports directory
         for report in self.reports.values():
 
             # Do it

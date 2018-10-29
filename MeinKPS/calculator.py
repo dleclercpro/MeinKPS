@@ -175,7 +175,7 @@ def computeBGI(pastBGs):
     """
 
     # Count valid BGs
-    n = countValidBGs(pastBGs, 20, 4)
+    n = countValidBGs(pastBGs, 30, 4)
 
     # Get fit over last minutes
     [m, b] = np.polyfit(pastBGs.t[-n:], pastBGs.y[-n:], 1)
