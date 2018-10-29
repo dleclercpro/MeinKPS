@@ -220,9 +220,6 @@ class UnknownPumpPacket(InvalidPumpPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start preparing
-        super(UnknownPumpPacket, self).__init__()
-
         # Define error info
         self.info = "Unknown packet."
 
@@ -237,9 +234,6 @@ class UnmatchPumpPacketBits(InvalidPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Start preparing
-        super(UnmatchPumpPacketBits, self).__init__()
 
         # Define error info
         self.info = ("Unmatched bits before end-of-packet (corrupted " +
@@ -257,9 +251,6 @@ class NotEnoughPumpPacketBytes(InvalidPumpPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start preparing
-        super(NotEnoughPumpPacketBytes, self).__init__()
-
         # Define error info
         self.info = ("Not enough bytes received. Expected: " + self.args[0] +
                      ". Received: " + self.args[1] + ".")
@@ -275,9 +266,6 @@ class MissingPumpPacketBits(InvalidPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Start preparing
-        super(MissingPumpPacketBits, self).__init__()
 
         # Define error info
         self.info = ("Impossible to encode number of bytes which isn't a " +
@@ -295,9 +283,6 @@ class BadPumpPacketEnding(InvalidPumpPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start preparing
-        super(BadPumpPacketEnding, self).__init__()
-
         # Define error info
         self.info = ("Last bits do not correspond to expectation (0101): " +
                      self.args[0])
@@ -313,9 +298,6 @@ class BadPumpPacketCRC(InvalidPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Start preparing
-        super(BadPumpPacketCRC, self).__init__()
 
         # Define error info
         self.info = ("Bad CRC (corrupted packet). Expected: " + self.args[0] +

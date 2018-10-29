@@ -113,17 +113,20 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Do it
+        task(*args)
+
         # Try task
-        try:
+        #try:
 
             # Do it
-            task(*args)
+            #task(*args)
 
         # Ignore all errors
-        except Exception as e:
+        #except Exception as e:
 
             # But log them
-            Logger.error(e)
+            #Logger.error(e)
 
 
 
