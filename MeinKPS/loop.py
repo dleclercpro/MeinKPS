@@ -106,11 +106,11 @@ class Loop(object):
 
 
 
-    def doTry(self, task, *args):
+    def _try(self, task, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOTRY
+            _TRY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -139,20 +139,11 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define starting time
-        self.t0 = datetime.datetime.now()
-
         # Give user info
         Logger.info("Started loop.")
 
-        # Start CGM
-        self.cgm.start()
-
-        # Start pump
-        self.pump.start()
-
-        # LED on
-        self.pump.stick.commands["LED On"].run()
+        # Define starting time
+        self.t0 = datetime.datetime.now()
 
         # Update last loop time
         Reporter.add(self.report, ["Status"],
@@ -160,6 +151,12 @@ class Loop(object):
 
         # Update loop iterations
         Reporter.increment(self.report, ["Status"], "N")
+
+        # Start CGM
+        self.cgm.start()
+
+        # Start pump
+        self.pump.start()
 
 
 
@@ -171,37 +168,33 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # LED off
-        self.pump.stick.commands["LED Off"].run()
-
-        # Stop pump
-        self.pump.stop()
-
-        # Stop CGM
-        self.cgm.stop()
+        # Give user info
+        Logger.info("Ended loop.")
 
         # Define ending time
         self.t1 = datetime.datetime.now()
-
-        # Give user info
-        Logger.info("Ended loop.")
 
         # Update loop infos
         Reporter.add(self.report, ["Status"],
                                   {"Duration": (self.t1 - self.t0).seconds},
                                   True)
 
+        # Stop CGM
+        self.cgm.stop()
+
+        # Stop pump
+        self.pump.stop()
 
 
-    def read(self):
+
+    def readCGM(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            READ
+            READCGM
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # CGM
         # Read BGs (last 24 hours)
         self.do(self.cgm.dumpBG, ["CGM"], "BG", 8)
 
@@ -214,7 +207,19 @@ class Loop(object):
         # Read calibrations
         self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
 
-        # PUMP
+        # Reading done
+        return True
+
+
+
+    def readPump(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            READPUMP
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
         # Read battery level
         self.do(self.pump.battery.read, ["Pump"], "Battery")
 
@@ -390,19 +395,19 @@ class Loop(object):
         """
 
         # Start loop
-        self.doTry(self.start)
+        self._try(self.start)
 
         # If reading CGM/pump data works
-        if self.doTry(self.read):
+        if self._try(self.read):
 
             # Compute necessary TB and enact it
-            self.doTry(self.enact, self.doTry(self.compute, self.t0))
+            self._try(self.enact, self._try(self.compute, self.t0))
 
         # Export recent treatments
-        self.doTry(self.export)
+        self._try(self.export)
 
         # Stop loop
-        self.doTry(self.stop)
+        self._try(self.stop)
 
 
 

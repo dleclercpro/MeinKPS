@@ -1355,45 +1355,45 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Instanciate a pump for me
+    # Instanciate pump
     pump = Pump(stick.Stick())
 
-    # Start dialogue with pump
+    # Start it
     pump.start()
 
-    # Read pump time
+    # Read time
     pump.time.read()
 
-    # Read pump model
+    # Read model
     pump.model.read()
 
-    # Read pump firmware version
+    # Read firmware version
     pump.firmware.read()
 
-    # Read pump battery level
+    # Read battery level
     pump.battery.read()
 
-    # Read remaining amount of insulin in pump
+    # Read remaining amount of insulin
     pump.reservoir.read()
 
-    # Push button on pump
+    # Push buttons
     #pump.buttons.push("EASY")
     #pump.buttons.push("ESC")
     #pump.buttons.push("ACT")
     #pump.buttons.push("UP")
     #pump.buttons.push("DOWN")
 
-    # Read pump status
+    # Read status
     pump.status.read()
     #pump.status.verify()
     #pump.status.suspend()
     #pump.status.resume()
 
-    # Read pump settings
+    # Read settings
     pump.settings.read()
     #pump.settings.verify()
 
-    # Read units set in pump
+    # Read set units
     pump.units["BG"].read()
     pump.units["Carbs"].read()
     pump.units["TB"].read()
@@ -1402,40 +1402,40 @@ def main():
     #pump.units["TB"].set("U/h")
     #pump.units["TB"].set("%")
 
-    # Read BG targets stored in pump
+    # Read BG targets
     pump.BGTargets.read()
 
-    # Read insulin sensitivity factors stored in pump
+    # Read insulin sensitivity factors
     pump.ISF.read()
 
-    # Read carb sensitivity factors stored in pump
+    # Read carb sensitivity factors
     pump.CSF.read()
 
-    # Read basal profile stored in pump
+    # Read basal profiles
     pump.basal.read("Standard")
     pump.basal.read("A")
     pump.basal.read("B")
 
-    # Read daily totals on pump
+    # Read daily totals
     pump.dailyTotals.read()
 
-    # Read pump history
+    # Read history
     pump.history.read(2)
 
-    # Send bolus to pump
+    # Enact bolus
     #pump.bolus.deliver(0.2)
 
     # Read current TB
     #pump.TB.read()
 
-    # Send TB to pump
+    # Enact TB
     #pump.TB.set(2.35, "U/h", 30)
     #pump.TB.set(34.95, "U/h", 30)
     #pump.TB.set(1, "%", 90)
     #pump.TB.set(99, "%", 90)
     #pump.TB.cancel()
 
-    # Stop dialogue with pump
+    # Stop pump
     pump.stop()
 
 

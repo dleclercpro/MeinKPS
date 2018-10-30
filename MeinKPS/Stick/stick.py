@@ -55,7 +55,7 @@ Reporter = reporter.Reporter()
 # CLASSES
 class Stick(object):
 
-    def __init__(self, pump = None):
+    def __init__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,9 +81,9 @@ class Stick(object):
         # Define frequencies (MHz)
         self.f = {"Reference": 24.0,
                   "Regions": {"NA": {"Default": 916.665,
-                                     "Range": [916.500, 916.800]},
+                                     "Range":  [916.500, 916.800]},
                               "WW": {"Default": 868.330,
-                                     "Range": [868.150, 868.750]}}}
+                                     "Range":  [868.150, 868.750]}}}
 
         # Define radio errors
         self.errors = {0xAA: "Timeout",
@@ -123,12 +123,9 @@ class Stick(object):
         # Define report
         self.report = "stick.json"
 
-        # Initialize pump
-        self.pump = pump
 
 
-
-    def start(self, ping = True):
+    def start(self, pump, ping = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -143,6 +140,9 @@ class Stick(object):
         # Configure it
         self.configure()
 
+        # Turn LED on
+        self.commands["LED On"].run()
+
         # If ping required
         if ping:
 
@@ -150,10 +150,10 @@ class Stick(object):
             self.ping()
 
         # If pump given
-        if self.pump is not None:
+        if pump is not None:
 
             # Check if frequency optimizing necessary
-            self.check()
+            self.check(pump)
 
         # Otherwise
         else:
@@ -171,8 +171,8 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
-        pass
+        # Turn LED off
+        self.commands["LED Off"].run()
 
 
 
@@ -527,7 +527,7 @@ class Stick(object):
 
 
 
-    def check(self):
+    def check(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -555,7 +555,7 @@ class Stick(object):
         if entry is None or now.day != t.day:
 
             # Scan for best frequency and tune radio to it
-            self.tune(self.scan(self.pump))
+            self.tune(self.scan(pump))
 
         # Otherwise
         else:
