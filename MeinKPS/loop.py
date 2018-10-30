@@ -397,14 +397,17 @@ class Loop(object):
         # Start loop
         self._try(self.start)
 
-        # If reading CGM/pump data works
-        if self._try(self.read):
+        # If reading CGM works
+        if self._try(self.readCGM):
 
-            # Compute necessary TB and enact it
-            self._try(self.enact, self._try(self.compute, self.t0))
+            # If reading pump works
+            if self._try(self.readPump):
 
-        # Export recent treatments
-        self._try(self.export)
+                # Compute necessary TB and enact it
+                self._try(self.enact, self._try(self.compute, self.t0))
+
+            # Export recent treatments
+            self._try(self.export)
 
         # Stop loop
         self._try(self.stop)
