@@ -398,8 +398,8 @@ class Loop(object):
             # Compute necessary TB and enact it
             self.doTry(self.enact, self.doTry(self.compute, self.t0))
 
-            # Export recent treatments
-            self.doTry(self.export)
+        # Export recent treatments
+        self.doTry(self.export)
 
         # Stop loop
         self.doTry(self.stop)
