@@ -24,6 +24,7 @@
 
 # LIBRARIES
 import datetime
+import traceback
 
 
 
@@ -113,20 +114,17 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Do it
-        return task(*args)
-
         # Try task
-        #try:
+        try:
 
             # Do it
-            #return task(*args)
+            return task(*args)
 
         # Ignore all errors
-        #except Exception as e:
+        except Exception as e:
 
             # But log them
-            #Logger.error(e)
+            Logger.error("\n" + traceback.format_exc())
 
 
 
