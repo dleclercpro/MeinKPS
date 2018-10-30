@@ -393,7 +393,7 @@ class Loop(object):
         self.doTry(self.start)
 
         # If reading CGM/pump data works
-        if self.doTry(self.read)
+        if self.doTry(self.read):
 
             # Compute necessary TB and enact it
             self.doTry(self.enact, self.doTry(self.compute, self.t0))
