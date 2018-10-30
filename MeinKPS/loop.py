@@ -126,6 +126,9 @@ class Loop(object):
             # But log them
             Logger.error("\n" + traceback.format_exc())
 
+            # Return
+            return False
+
 
 
     def start(self):
@@ -235,6 +238,9 @@ class Loop(object):
 
         # Update history
         self.do(self.pump.history.update, ["Pump"], "History")
+
+        # Reading done
+        return True
 
 
 
@@ -386,14 +392,14 @@ class Loop(object):
         # Start loop
         self.doTry(self.start)
 
-        # Read CGM/pump
-        self.doTry(self.read)
+        # If reading CGM/pump data works
+        if self.doTry(self.read)
 
-        # Compute necessary TB and enact it
-        self.doTry(self.enact, self.doTry(self.compute, self.t0))
+            # Compute necessary TB and enact it
+            self.doTry(self.enact, self.doTry(self.compute, self.t0))
 
-        # Export recent treatments
-        self.doTry(self.export)
+            # Export recent treatments
+            self.doTry(self.export)
 
         # Stop loop
         self.doTry(self.stop)
