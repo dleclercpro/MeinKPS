@@ -125,7 +125,7 @@ class Stick(object):
 
 
 
-    def start(self, pump, ping = True):
+    def start(self, pump = None, ping = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,12 +155,6 @@ class Stick(object):
             # Check if frequency optimizing necessary
             self.check(pump)
 
-        # Otherwise
-        else:
-
-            # Tune to NA default frequency
-            self.tune(self.f["Regions"]["NA"]["Default"])
-
 
 
     def stop(self):
@@ -173,6 +167,26 @@ class Stick(object):
 
         # Turn LED off
         self.commands["LED Off"].run()
+
+
+
+    def flash(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FLASH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Flash LED.
+        """
+
+        # Switch LED
+        self.commands["LED Toggle"].run()
+
+        # Wait
+        time.sleep(1)
+
+        # Re-switch LED
+        self.commands["LED Toggle"].run()
 
 
 
@@ -410,57 +424,6 @@ class Stick(object):
 
 
 
-    def optimize(self, RSSIs):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            OPTIMIZE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Find out which frequency corresponds to best sample average RSSI.
-        """
-
-        # Destructure RSSIs
-        x, y = np.array(RSSIs.keys()), np.array(RSSIs.values())
-
-        # Get sorted indices
-        indices = x.argsort()
-
-        # Sort
-        x = x[indices]
-        y = y[indices]
-
-        # Get frequency with max signal power (5 dBm threshold, 3 digits)
-        f = round(lib.getMaxMiddle(x, y, 5), 3)
-
-        # Info
-        Logger.info("Optimized frequency (MHz): " + str(f))
-
-        # Return best frequency
-        return f
-
-
-
-    def store(self, f):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Store optimized frequency.
-        """
-
-        # Give user info
-        Logger.debug("Adding pump's last optimized frequency to '" +
-                     self.report + "'...")
-
-        # Get current formatted time
-        now = lib.formatTime(datetime.datetime.now())
-
-        # Add entry
-        Reporter.add(self.report, [], {"Frequency": [f, now]}, True)
-
-
-
     def scan(self, pump, F1 = None, F2 = None, n = 25, sample = 5):
 
         """
@@ -516,14 +479,74 @@ class Stick(object):
         # Show readings
         Logger.debug(lib.JSONize(RSSIs))
 
-        # Optimize frequency
-        f = self.optimize(RSSIs)
+        # Check if pump was detected
+        if not all(f == -99 for f in RSSIs.values()):
 
-        # Store it
-        self.store(f)
+            # Optimize frequency
+            f = self.optimize(RSSIs)
+
+            # Store it
+            self.store(f)
+
+        # Otherwise
+        else:
+
+            # Use default NA frequency
+            f = self.f["Regions"]["NA"]["Default"]
 
         # Return it
         return f
+
+
+
+    def optimize(self, RSSIs):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            OPTIMIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Find out which frequency corresponds to best sample average RSSI.
+        """
+
+        # Destructure RSSIs
+        x, y = np.array(RSSIs.keys()), np.array(RSSIs.values())
+
+        # Get sorted indices
+        indices = x.argsort()
+
+        # Sort
+        x = x[indices]
+        y = y[indices]
+
+        # Get frequency with max signal power (5 dBm threshold, 3 digits)
+        f = round(lib.getMaxMiddle(x, y, 5), 3)
+
+        # Info
+        Logger.info("Optimized frequency (MHz): " + str(f))
+
+        # Return best frequency
+        return f
+
+
+
+    def store(self, f):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Store optimized frequency.
+        """
+
+        # Give user info
+        Logger.debug("Adding pump's last optimized frequency to '" +
+                     self.report + "'...")
+
+        # Get current formatted time
+        now = lib.formatTime(datetime.datetime.now())
+
+        # Add entry
+        Reporter.add(self.report, [], {"Frequency": [f, now]}, True)
 
 
 
@@ -536,11 +559,14 @@ class Stick(object):
             Check if frequency optimizing required.
         """
 
+        # Get current formatted time
+        now = datetime.datetime.now()
+
         # Get last frequency optimization
         entry = Reporter.get(self.report, [], "Frequency")
 
-        # Frequency found
-        if entry is not None:
+        # Entry exists
+        if entry:
 
             # Destructure frequency entry
             [f, t] = entry
@@ -548,20 +574,14 @@ class Stick(object):
             # Convert time to datetime object
             t = lib.formatTime(t)
 
-            # Get current formatted time
-            now = datetime.datetime.now()
-
-        # If no optimized frequency stored or stick not tuned today
+        # No frequency stored or stick not tuned today
         if entry is None or now.day != t.day:
 
-            # Scan for best frequency and tune radio to it
-            self.tune(self.scan(pump))
+            # Scan for best frequency
+            f = self.scan(pump)
 
-        # Otherwise
-        else:
-
-            # Tune radio
-            self.tune(f)
+        # Tune radio
+        self.tune(f)
 
 
 
@@ -597,26 +617,6 @@ class Stick(object):
 
 
 
-    def flash(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FLASH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Flash LED.
-        """
-
-        # Switch LED
-        self.commands["LED Toggle"].run()
-
-        # Wait
-        time.sleep(1)
-
-        # Re-switch LED
-        self.commands["LED Toggle"].run()
-
-
-
 def main():
 
     """
@@ -630,6 +630,9 @@ def main():
 
     # Start it
     stick.start()
+
+    # Tune in to  default NA pump frequency
+    stick.tune(stick.f["Regions"]["NA"]["Default"])
 
     # Listen to radio
     stick.listen()
