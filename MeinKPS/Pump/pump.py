@@ -134,7 +134,7 @@ class Pump(object):
         """
 
         # Start stick
-        self.stick.start()
+        self.stick.start(self)
 
         # Power pump's radio transmitter if necessary
         self.power.verify()
