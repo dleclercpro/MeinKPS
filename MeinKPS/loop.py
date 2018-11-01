@@ -30,6 +30,7 @@ import traceback
 
 # USER LIBRARIES
 import lib
+import errors
 import logger
 import reporter
 import exporter
@@ -106,11 +107,11 @@ class Loop(object):
 
 
 
-    def _try(self, task, *args):
+    def doTry(self, task, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            _TRY
+            DOTRY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -298,7 +299,7 @@ class Loop(object):
                                             self.profiles["FutureIOB"],
                                             self.profiles["ISF"])
 
-        # Run calculator, get TB recommendation and return it
+        # Return TB recommendation
         return calc.recommendTB(BGDynamics, self.profiles["Basal"],
                                             self.profiles["ISF"],
                                             self.profiles["IDC"])
@@ -393,24 +394,24 @@ class Loop(object):
             RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
+        
         # Start loop
-        self._try(self.start)
+        self.doTry(self.start)
 
         # If reading CGM works
-        if self._try(self.readCGM):
+        if self.doTry(self.readCGM):
 
             # If reading pump works
-            if self._try(self.readPump):
+            if self.doTry(self.readPump):
 
                 # Compute necessary TB and enact it
-                self._try(self.enact, self._try(self.compute, self.t0))
+                self.doTry(self.enact, self.doTry(self.compute, self.t0))
 
             # Export recent treatments
-            self._try(self.export)
+            self.doTry(self.export)
 
         # Stop loop
-        self._try(self.stop)
+        self.doTry(self.stop)
 
 
 

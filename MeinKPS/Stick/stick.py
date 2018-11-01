@@ -491,8 +491,8 @@ class Stick(object):
         # Otherwise
         else:
 
-            # Use default NA frequency
-            f = self.f["Regions"]["NA"]["Default"]
+            # Pump does not respond
+            raise errors.NoPump
 
         # Return it
         return f
