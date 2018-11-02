@@ -134,7 +134,7 @@ def computeDose(dBG, ISF, IDC):
 
 
 
-def countValidBGs(pastBGs, age = 30, N = 2):
+def countValidBGs(pastBG, age = 30, N = 2):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -148,8 +148,8 @@ def countValidBGs(pastBGs, age = 30, N = 2):
     """
 
     # Count how many BGs are not older than T
-    n = np.sum(np.array(pastBGs.T) > pastBGs.end -
-                                     datetime.timedelta(minutes = age))
+    n = np.sum(np.array(pastBG.T) > pastBG.end -
+                                    datetime.timedelta(minutes = age))
 
     # Give user info
     Logger.debug("Found " + str(n) + " BGs within last " + str(age) + " m.")
@@ -165,7 +165,7 @@ def countValidBGs(pastBGs, age = 30, N = 2):
 
 
 
-def computeBGI(pastBGs):
+def computeBGI(pastBG):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,17 +175,17 @@ def computeBGI(pastBGs):
     """
 
     # Count valid BGs
-    n = countValidBGs(pastBGs, 30, 4)
+    n = countValidBGs(pastBG, 30, 4)
 
     # Get fit over last minutes
-    [m, b] = np.polyfit(pastBGs.t[-n:], pastBGs.y[-n:], 1)
+    [m, b] = np.polyfit(pastBG.t[-n:], pastBG.y[-n:], 1)
 
     # Return fit slope, which corresponds to BGI
     return m
 
 
 
-def linearlyProjectBG(pastBGs, dt):
+def linearlyProjectBG(pastBG, dt):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -199,10 +199,10 @@ def linearlyProjectBG(pastBGs, dt):
     Logger.info("Projection time: " + str(dt) + " h")
 
     # Compute derivative to use when predicting future BG
-    BGI = computeBGI(pastBGs)
+    BGI = computeBGI(pastBG)
 
     # Get most recent BG
-    BG0 = pastBGs.y[-1]
+    BG0 = pastBG.y[-1]
 
     # Predict future BG
     BG = BG0 + BGI * dt
@@ -212,7 +212,7 @@ def linearlyProjectBG(pastBGs, dt):
 
 
 
-def computeBGDynamics(pastBGs, futureBGs, BGTargets, IOB, ISF, dt = 0.5):
+def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, ISF, dt = 0.5):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -233,23 +233,23 @@ def computeBGDynamics(pastBGs, futureBGs, BGTargets, IOB, ISF, dt = 0.5):
     Logger.info("Computing BG dynamics...")
 
     # Read expected BG after natural decay of IOB
-    expectedBG = futureBGs.y[-1]
+    expectedBG = futureBG.y[-1]
 
     # Compute BG target by the end of insulin action
     BGTarget = np.mean(BGTargets.y[-1])
 
     # Compute BG assuming continuation of current BGI over dt (h)
-    [shortProjectedBG, BGI] = linearlyProjectBG(pastBGs, dt)
+    [shortProjectedBG, BGI] = linearlyProjectBG(pastBG, dt)
 
     # Compute BG variation due to IOB decay (will only work if dt is a
     # multiple of predicted BG decay's profile timestep
-    shortExpectedBG = futureBGs.y[futureBGs.t.index(dt)]
+    shortExpectedBG = futureBG.y[futureBG.t.index(dt)]
 
     # Compute deviation between expected and projected BG
     shortdBG = shortProjectedBG - shortExpectedBG
 
     # Compute expected BGI based on IOB decay
-    expectedBGI = IOB.dydt[0] * ISF.y[0]
+    expectedBGI = futureIOB.dydt[0] * ISF.y[0]
 
     # Compute deviation between expected and real BGI
     dBGI = BGI - expectedBGI
@@ -261,8 +261,8 @@ def computeBGDynamics(pastBGs, futureBGs, BGTargets, IOB, ISF, dt = 0.5):
     dBGTarget = BGTarget - eventualBG
 
     # Give user info about current status
-    Logger.info("Current BG: " + fmt.BG(pastBGs.y[-1]))
-    Logger.info("Current IOB: " + fmt.IOB(IOB.y[0]))
+    Logger.info("Current BG: " + fmt.BG(pastBG.y[-1]))
+    Logger.info("Current IOB: " + fmt.IOB(futureIOB.y[0]))
 
     # Give user info about short (dt) BG projection
     Logger.info("Projection time: " + str(dt) + " h")
@@ -282,7 +282,7 @@ def computeBGDynamics(pastBGs, futureBGs, BGTargets, IOB, ISF, dt = 0.5):
     Logger.info("dBGI: " + fmt.BGI(dBGI))
 
     # Return BG dynamics computations
-    return {"BG": pastBGs.y[-1],
+    return {"BG": pastBG.y[-1],
             "expectedBG": expectedBG,
             "shortExpectedBG": shortExpectedBG,
             "shortProjectedBG": shortProjectedBG,
@@ -296,7 +296,7 @@ def computeBGDynamics(pastBGs, futureBGs, BGTargets, IOB, ISF, dt = 0.5):
 
 
 
-def computeTB(dose, basals):
+def computeTB(dose, basal):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -308,14 +308,11 @@ def computeTB(dose, basals):
     # Give user info
     Logger.debug("Computing TB to enact...")
 
-    # Get current basal
-    basal = basals.y[-1]
-
     # Find required basal difference to enact over given time
     dB = dose / DOSE_ENACT_TIME
 
     # Compute TB to enact using the current basal and said required difference
-    TB = basal + dB
+    TB = basal.y[-1] + dB
 
     # Give user info
     Logger.info("Current basal: " + fmt.basal(basal))
@@ -328,7 +325,7 @@ def computeTB(dose, basals):
 
 
 
-def limitTB(TB, basals, BG):
+def limitTB(TB, basal, BG):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -340,9 +337,6 @@ def limitTB(TB, basals, BG):
 
     # Destructure TB
     [rate, units, duration] = TB
-
-    # Get current basal
-    basal = basals.y[-1]
 
     # Negative TB rate
     if rate < 0 or BG <= BG_HYPO_LIMIT:
@@ -357,14 +351,14 @@ def limitTB(TB, basals, BG):
     elif rate > 0:
 
         # Compute maximum daily basal rate
-        maxDailyBasal = max(basals.y)
+        maxDailyBasal = max(basal.y)
 
         # Define max basal rate allowed (U/h)
-        maxRate = min(4 * basal, 3 * maxDailyBasal, basals.max)
+        maxRate = min(4 * basal.y[-1], 3 * maxDailyBasal, basal.max)
 
         # Give user info
-        Logger.info("Theoretical max basal: " + fmt.basal(basals.max))
-        Logger.info("4x current basal: " + fmt.basal(4 * basal))
+        Logger.info("Theoretical max basal: " + fmt.basal(basal.max))
+        Logger.info("4x current basal: " + fmt.basal(4 * basal.y[-1]))
         Logger.info("3x max daily basal: " + fmt.basal(3 * maxDailyBasal))
 
         # TB exceeds max
@@ -424,7 +418,7 @@ def snooze(now, duration = 2):
 
 
 
-def recommendTB(BGDynamics, basals, ISF, IDC):
+def recommendTB(BGDynamics, basal, ISF, IDC):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -441,15 +435,15 @@ def recommendTB(BGDynamics, basals, ISF, IDC):
     dose = computeDose(BGDynamics["dBGTarget"], ISF, IDC)
 
     # Compute corresponding TB
-    TB = computeTB(dose, basals)
+    TB = computeTB(dose, basal)
 
     # Limit it
-    TB = limitTB(TB, basals, BGDynamics["BG"])
+    TB = limitTB(TB, basal, BGDynamics["BG"])
 
     # Snoozing of temping required?
-    if snooze(basals.end):
+    if snooze(basal.end):
 
-        # No TB recommendation (back to programmed basals)
+        # No TB recommendation (back to programmed basal)
         TB = None
 
     # If recommendation was not canceled

@@ -30,6 +30,7 @@ import traceback
 
 # USER LIBRARIES
 import lib
+import fmt
 import errors
 import logger
 import reporter
@@ -70,8 +71,11 @@ class Loop(object):
         self.cgm = cgm.CGM()
         self.pump = pump.Pump(stick.Stick())
 
+        # Get DIA
+        self.DIA = Reporter.get("pump.json", ["Settings"], "DIA")
+
         # Instanciate profiles
-        self.profiles = {"IDC": None,
+        self.profiles = {"IDC": IDC.WalshIDC(self.DIA),
                          "Suspend": suspend.Suspend(),
                          "Resume": resume.Resume(),
                          "Basal": basal.Basal(),
@@ -250,23 +254,17 @@ class Loop(object):
 
 
 
-    def compute(self, now, dt = 5.0 / 60.0):
+    def computeTB(self, now, dt = 5.0 / 60.0):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            COMPUTE
+            COMPUTETB
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Read DIA
-        DIA = Reporter.get("pump.json", ["Settings"], "DIA")
 
         # Define past/future reference times
-        past = now - datetime.timedelta(hours = DIA)
-        future = now + datetime.timedelta(hours = DIA)
-
-        # Build IDC
-        self.profiles["IDC"] = IDC.WalshIDC(DIA)
+        past = now - datetime.timedelta(hours = self.DIA)
+        future = now + datetime.timedelta(hours = self.DIA)
         
         # Build net insulin profile
         self.profiles["Net"].build(past, now, self.profiles["Suspend"],
@@ -282,7 +280,7 @@ class Loop(object):
         # Build daily profiles
         self.profiles["BGTargets"].build(now, future)
         self.profiles["ISF"].build(now, future)
-        self.profiles["CSF"].build(now, future)
+        #self.profiles["CSF"].build(now, future)
 
         # Build prediction profiles
         self.profiles["FutureIOB"].build(dt, self.profiles["Net"],
@@ -306,11 +304,62 @@ class Loop(object):
 
 
 
-    def enact(self, TB):
+    def autosens(self, now, t = 24):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ENACT
+            AUTOSENS
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define past reference time
+        past = now - datetime.timedelta(hours = t)
+
+        # Define DIA as a datetime timedelta object
+        dia = datetime.timedelta(hours = self.DIA)
+
+        # Build past BG profile
+        self.profiles["PastBG"].build(past, now)
+        
+        # Build past ISF profile
+        self.profiles["ISF"].build(past, now)
+
+        # Reference to BG time axis
+        T = self.profiles["PastBG"].T
+
+        # Initialize IOB arrays
+        IOBs = []
+
+        # Get number of BGs
+        n = len(T)
+
+        # Compute IOB for each BG
+        for i in range(n):
+
+            # Build necessary profiles
+            _suspend = suspend.Suspend()
+            _resume = resume.Resume()
+            _basal = basal.Basal()
+            _TB = TB.TB()
+            _bolus = bolus.Bolus()
+            _net = net.Net()
+
+            # Build net insulin profile
+            _net.build(T[i] - dia, T[i], _suspend, _resume, _basal, _TB, _bolus)
+
+            # Do it
+            IOBs.append(calc.computeIOB(_net, self.profiles["IDC"]))
+
+            # Show IOB
+            print "IOB(" + str(i + 1) + "/" + str(n) + ") = " + str(round(self.profiles["PastBG"].t[i], 1)) + ": " + fmt.IOB(IOBs[-1])
+
+
+
+    def enactTB(self, TB):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ENACTTB
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -394,7 +443,7 @@ class Loop(object):
             RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-        
+
         # Start loop
         self.doTry(self.start)
 
@@ -405,7 +454,7 @@ class Loop(object):
             if self.doTry(self.readPump):
 
                 # Compute necessary TB and enact it
-                self.doTry(self.enact, self.doTry(self.compute, self.t0))
+                self.doTry(self.enactTB, self.doTry(self.computeTB, self.t0))
 
             # Export recent treatments
             self.doTry(self.export)
@@ -423,14 +472,20 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
     """
 
+    # Get current time
+    now = datetime.datetime(2017, 8, 30, 0, 0, 0)
+
     # Instanciate a loop
     loop = Loop()
 
     # Loop
-    loop.run()
+    #loop.run()
 
     # Plot
     #loop.plot()
+
+    # Autosens
+    loop.autosens(now)
 
 
 

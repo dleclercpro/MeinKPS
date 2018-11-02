@@ -60,7 +60,7 @@ class Net(base.PastProfile, base.StepProfile):
         """
 
         # Give user info
-        Logger.debug("Building 'Net' ...")
+        Logger.debug("Building 'Net'...")
 
         # Reset components
         self.reset()

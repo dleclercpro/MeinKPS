@@ -116,20 +116,17 @@ class FutureIOB(IOB, base.FutureProfile):
         # Get number of entries in net insulin profile
         m = len(net.t)
 
-        # Compute initial IOB and store it
-        self.y.append(calc.computeIOB(net, IDC))
+        # Compute IOB decay
+        for i in range(n):
 
-        # Compute IOB decay (initial dot already done)
-        for i in range(n - 1):
+            # Compute new IOB and store it
+            self.y.append(calc.computeIOB(net, IDC))
 
             # Move net insulin profile into the past
             for j in range(m):
 
                 # Update time axes
                 net.t[j] -= self.dt
-
-            # Compute new IOB and store it
-            self.y.append(calc.computeIOB(net, IDC))
 
         # Derivate
         self.derivate()

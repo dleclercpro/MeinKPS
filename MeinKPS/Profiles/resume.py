@@ -52,16 +52,14 @@ class Resume(base.PastProfile, base.StepProfile):
 
 
 
-    def decouple(self):
+    def fill(self, filler):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
+            FILL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Change resume times to None before filling with net insulin profile.
         """
-
-        # Start decoupling
-        super(Resume, self).decouple()
 
         # Get number of steps
         n = len(self.T)
@@ -75,8 +73,5 @@ class Resume(base.PastProfile, base.StepProfile):
                 # Fill later
                 self.y[i] = None
 
-            # If suspend
-            else:
-
-                # Replace by 0
-                self.y[i] = 0
+        # Fill
+        super(Resume, self).fill(filler)

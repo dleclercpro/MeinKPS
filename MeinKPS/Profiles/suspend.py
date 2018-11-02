@@ -55,16 +55,14 @@ class Suspend(base.PastProfile, base.StepProfile):
 
 
 
-    def decouple(self):
+    def fill(self, filler):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
+            FILL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Change suspend times to None before filling with basal profile.
         """
-
-        # Start decoupling
-        super(Suspend, self).decouple()
 
         # Get number of steps
         n = len(self.T)
@@ -83,3 +81,6 @@ class Suspend(base.PastProfile, base.StepProfile):
 
                 # Replace by 0
                 self.y[i] = 0
+
+        # Fill
+        super(Suspend, self).fill(filler)

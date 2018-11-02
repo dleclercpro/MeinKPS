@@ -47,7 +47,7 @@ class TB(base.PastProfile, base.StepProfile):
         super(TB, self).__init__()
 
         # Renitialize units
-        self.units = []
+        self.units = "U/h"
 
         # Define report info
         self.report = "treatments.json"
@@ -75,11 +75,8 @@ class TB(base.PastProfile, base.StepProfile):
             # Get duration
             self.d.append(datetime.timedelta(minutes = self.y[i][2]))
 
-            # Get units
-            self.units.append(self.y[i][1])
-
-            # Verify last units
-            if self.units[-1] != "U/h":
+            # Verify units
+            if self.y[i][1] != "U/h":
 
                 # Only support U/h for now
                 raise errors.BadTBUnits()
