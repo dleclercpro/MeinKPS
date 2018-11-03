@@ -40,6 +40,9 @@ class Resume(base.PastProfile, base.StepProfile):
         # Start initialization
         super(Resume, self).__init__()
 
+        # Initialize zero (no data found: assume pump is not suspended)
+        self.zero = 1
+
         # Define units
         self.units = "U/h"
 

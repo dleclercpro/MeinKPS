@@ -41,7 +41,7 @@ class Suspend(base.PastProfile, base.StepProfile):
         super(Suspend, self).__init__()
 
         # Initialize zero (no data found: assume pump is not suspended)
-        self.zero = 0
+        self.zero = 1
 
         # Define units
         self.units = "U/h"
