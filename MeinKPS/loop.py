@@ -493,13 +493,13 @@ def main():
     loop = Loop()
 
     # Loop
-    #loop.run()
+    loop.run()
 
     # Plot
     #loop.plot()
 
     # Autosens
-    loop.autosens(now)
+    #loop.autosens(now)
 
 
 

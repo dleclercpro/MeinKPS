@@ -315,7 +315,7 @@ def computeTB(dose, basal):
     TB = basal.y[-1] + dB
 
     # Give user info
-    Logger.info("Current basal: " + fmt.basal(basal))
+    Logger.info("Current basal: " + fmt.basal(basal.y[-1]))
     Logger.info("Required basal difference: " + fmt.basal(dB))
     Logger.info("Temporary basal to enact: " + fmt.basal(TB))
     Logger.info("Enactment time: " + str(DOSE_ENACT_TIME) + " h")
