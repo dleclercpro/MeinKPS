@@ -33,7 +33,7 @@ Reporter = reporter.Reporter()
 
 
 
-class ISF(base.DailyProfile, base.FutureProfile):
+class ISF(base.DailyProfile):
 
     def __init__(self):
 
@@ -52,3 +52,13 @@ class ISF(base.DailyProfile, base.FutureProfile):
 
         # Read units
         self.units = Reporter.get(self.report, ["Units"], "BG") + "/U"
+
+
+
+class PastISF(ISF, base.PastProfile):
+    pass
+
+
+
+class FutureISF(ISF, base.FutureProfile):
+    pass
