@@ -259,7 +259,7 @@ class Loop(object):
                     "Bolus": bolus.Bolus(),
                     "Net": net.Net(),
                     "BGTargets": BGTargets.BGTargets(),
-                    "ISF": ISF.ISF(),
+                    "FutureISF": ISF.FutureISF(),
                     "CSF": CSF.CSF(),
                     "PastIOB": IOB.PastIOB(),
                     "FutureIOB": IOB.FutureIOB(),
@@ -279,14 +279,14 @@ class Loop(object):
         
         # Build daily profiles
         profiles["BGTargets"].build(now, future)
-        profiles["ISF"].build(now, future)
+        profiles["FutureISF"].build(now, future)
         #profiles["CSF"].build(now, future)
 
         # Build prediction profiles
         profiles["FutureIOB"].build(dt, profiles["Net"], profiles["IDC"])
         profiles["FutureBG"].build(dt, profiles["Net"],
                                        profiles["IDC"],
-                                       profiles["ISF"],
+                                       profiles["FutureISF"],
                                        profiles["PastBG"])
 
         # Compute BG dynamics
@@ -294,11 +294,11 @@ class Loop(object):
                                             profiles["FutureBG"],
                                             profiles["BGTargets"],
                                             profiles["FutureIOB"],
-                                            profiles["ISF"])
+                                            profiles["FutureISF"])
 
         # Return TB recommendation
         return calc.recommendTB(BGDynamics, profiles["Basal"],
-                                            profiles["ISF"],
+                                            profiles["FutureISF"],
                                             profiles["IDC"])
 
 
@@ -325,17 +325,18 @@ class Loop(object):
                     "TB": None,
                     "Bolus": None,
                     "Net": None,
-                    "ISF": ISF.ISF(),
+                    "PastISF": ISF.PastISF(),
                     "PastBG": BG.PastBG()}
 
         # Build past BG profile
         profiles["PastBG"].build(past, now)
         
         # Build past ISF profile
-        profiles["ISF"].build(past, now)
+        profiles["PastISF"].build(past, now)
 
-        # Reference to BG time axis
+        # Reference to BG time axes
         T = profiles["PastBG"].T
+        t = profiles["PastBG"].t
 
         # Initialize IOB arrays
         IOBs = []
@@ -366,6 +367,61 @@ class Loop(object):
 
             # Show IOB
             print "IOB(" + lib.formatTime(T[i]) + ") = " + fmt.IOB(IOBs[-1])
+
+        # Initialize dBG deviations
+        ddBGs = []
+
+        # Go through IOB and find difference between expected dBG and actual one
+        for i in range(n - 1):
+
+            # Compute dIOB
+            dIOB = IOBs[i + 1] - IOBs[i]
+
+            # Compute dBG
+            dBG = profiles["PastBG"].y[i + 1] - profiles["PastBG"].y[i]
+            expecteddBG = dIOB * profiles["PastISF"].f(t[i])
+
+            # Compute delta dBG
+            ddBGs.append(dBG - expecteddBG)
+
+            # Avoid division by zero
+            if not expecteddBG == 0:
+
+                # Compute dBG ratio
+                r = round(dBG / float(expecteddBG), 2)
+
+            # Otherwise
+            else:
+
+                # No ratio available
+                r = None
+
+            # Give user info
+            print "dIOB: " + fmt.IOB(dIOB)
+            print "dBG: " + fmt.BG(dBG)
+            print "Expected dBG: " + fmt.BG(expecteddBG)
+            print "ddBG: " + fmt.BG(ddBGs[i])
+            print "r: " + str(r)
+            print
+
+        import numpy as np
+        import matplotlib.pyplot as plt
+        print "Mean ddBG: " + fmt.BG(np.mean(ddBGs))
+        lib.initPlot()
+        ax = plt.subplot(1, 1, 1)
+
+        # Define axis labels
+        x = "(h)"
+        y = "(mmol/L)"
+
+        # Set title
+        ax.set_title("dBG Deviations", fontweight = "semibold")
+
+        # Set axis labels
+        ax.set_xlabel(x)
+        ax.set_ylabel(y)
+        ax.plot(t[:-1], ddBGs, marker = "o", ms = 3.5, lw = 0, c = "red")
+        plt.show()
 
 
 
@@ -493,13 +549,13 @@ def main():
     loop = Loop()
 
     # Loop
-    loop.run()
+    #loop.run()
 
     # Plot
     #loop.plot()
 
     # Autosens
-    #loop.autosens(now)
+    loop.autosens(now)
 
 
 
