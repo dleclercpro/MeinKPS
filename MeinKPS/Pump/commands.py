@@ -1,26 +1,36 @@
+Skip to content
+ 
+Search or jump to…
+
+Pull requests
+Issues
+Marketplace
+Explore
+ 
+@mm22dl 
+3
+1 1 mm22dl/MeinKPS
+ Code  Issues 0  Pull requests 0  Projects 0  Wiki  Security  Insights  Settings
+MeinKPS/MeinKPS/Pump/commands.py
+@mm22dl mm22dl Logger introduced in every module.
+5b7e798 on 15 Apr 2018
+2405 lines (1534 sloc)  56.9 KB
+  
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     Title:    commands
-
     Author:   David Leclerc
-
     Version:  0.1
-
     Date:     28.03.2018
-
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
-
     Overview: This is a script that contains various commands to control a
               Medtronic MiniMed insulin pump over radio frequencies using the
               Texas Instruments CC1111 USB radio stick.
-
     Notes:    ...
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
@@ -94,7 +104,7 @@ class Command(object):
         self.packets = {"TX": [],
                         "RX": []}
 
-        # Initialize parameters (none)
+        # Reset parameters
         self.parameters = ["00"]
 
 
@@ -248,24 +258,6 @@ class SetCommand(Command):
 
 
 
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(SetCommand, self).reset()
-
-        # Initialize parameters
-        # Byte 0: number of parameter bytes
-        # Byte 1-64: parameter bytes
-        self.parameters.extend(64 * ["00"])
-
-
-
     def decode(self):
 
         """
@@ -306,19 +298,6 @@ class GetCommand(Command):
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpPacket
-
-
-
-    def reset(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RESET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize resetting
-        super(GetCommand, self).reset()
 
 
 
@@ -701,7 +680,7 @@ class Power(SetCommand, BigCommand):
         lib.withinRangeInt(t, [0, 30], "Invalid RF session length.")
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "02"
+        self.parameters = ["02"] + 64 * ["00"]
 
         # Define arbitrary byte
         self.parameters[1] = "01"
@@ -1925,12 +1904,8 @@ class ReadHistoryPage(GetBigCommand):
         # Test page number
         lib.withinRangeInt(page, [0, 35], "Invalid history page number.")
 
-        # Initialize parameters
-        # FIXME
-        self.parameters = 65 * ["00"]
-
         # Define number of bytes to read from payload
-        self.parameters[0] = "01"
+        self.parameters = ["01"] + 64 * ["00"]
 
         # Define page
         self.parameters[1] = "{0:02X}".format(page)
@@ -2038,7 +2013,7 @@ class PushButton(SetCommand, BigCommand):
             raise IOError("Bad button.")
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "01"
+        self.parameters = ["01"] + 64 * ["00"]
 
         # Define button
         self.parameters[1] = "{0:02X}".format(button)
@@ -2093,7 +2068,7 @@ class Resume(SetCommand, BigCommand):
         """
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "01"
+        self.parameters = ["01"] + 64 * ["00"]
 
         # Define button
         self.parameters[1] = "00"
@@ -2148,7 +2123,7 @@ class Suspend(SetCommand, BigCommand):
         """
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "01"
+        self.parameters = ["01"] + 64 * ["00"]
 
         # Define button
         self.parameters[1] = "01"
@@ -2209,7 +2184,7 @@ class DeliverBolus(SetCommand, BigCommand):
         lib.withinRangeInt(bolus, [0, 250], "Invalid bolus.")
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "01"
+        self.parameters = ["01"] + 64 * ["00"]
 
         # Define bolus
         self.parameters[1] = "{0:02X}".format(bolus)
@@ -2276,7 +2251,7 @@ class SetTBUnits(SetCommand, BigCommand):
             raise IOError("Bad TB units.")
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "01"
+        self.parameters = ["01"] + 64 * ["00"]
 
         # Define units
         self.parameters[1] = "{0:02X}".format(units)
@@ -2343,7 +2318,7 @@ class SetAbsoluteTB(SetCommand, BigCommand):
         lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "03"
+        self.parameters = ["03"] + 64 * ["00"]
 
         # Define rate
         self.parameters[1:3] = ["{0:02X}".format(x) for x
@@ -2414,7 +2389,7 @@ class SetPercentageTB(SetCommand, BigCommand):
         lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
 
         # Define number of bytes to read from payload
-        self.parameters[0] = "02"
+        self.parameters = ["02"] + 64 * ["00"]
 
         # Define rate
         self.parameters[1] = "{0:02X}".format(rate)
