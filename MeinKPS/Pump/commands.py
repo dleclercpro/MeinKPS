@@ -1925,6 +1925,10 @@ class ReadHistoryPage(GetBigCommand):
         # Test page number
         lib.withinRangeInt(page, [0, 35], "Invalid history page number.")
 
+        # Initialize parameters
+        # FIXME
+        self.parameters = ["00", "00"]
+
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
 
