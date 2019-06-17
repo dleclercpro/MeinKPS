@@ -1,36 +1,26 @@
-Skip to content
- 
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
- 
-@mm22dl 
-3
-1 1 mm22dl/MeinKPS
- Code  Issues 0  Pull requests 0  Projects 0  Wiki  Security  Insights  Settings
-MeinKPS/MeinKPS/Pump/commands.py
-@mm22dl mm22dl Logger introduced in every module.
-5b7e798 on 15 Apr 2018
-2405 lines (1534 sloc)  56.9 KB
-  
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     Title:    commands
+
     Author:   David Leclerc
+
     Version:  0.1
+
     Date:     28.03.2018
+
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
+
     Overview: This is a script that contains various commands to control a
               Medtronic MiniMed insulin pump over radio frequencies using the
               Texas Instruments CC1111 USB radio stick.
+
     Notes:    ...
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
