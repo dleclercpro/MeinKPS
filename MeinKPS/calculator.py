@@ -92,7 +92,7 @@ def computeIOB(net, IDC):
 
 
 
-def computeDose(dBG, ISF, IDC):
+def computeDose(dBG, futureISF, IDC):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,17 +114,17 @@ def computeDose(dBG, ISF, IDC):
     f = 0
 
     # Get number of ISF steps
-    n = len(ISF.t) - 1
+    n = len(futureISF.t) - 1
 
     # Compute factor
     for i in range(n):
 
         # Compute step limits
-        a = -ISF.t[i]
-        b = -ISF.t[i + 1]
+        a = -futureISF.t[i]
+        b = -futureISF.t[i + 1]
 
         # Update factor with current step
-        f += ISF.y[i] * (IDC.f(b) - IDC.f(a))
+        f += futureISF.y[i] * (IDC.f(b) - IDC.f(a))
 
     # Compute necessary dose (instant bolus)
     dose = dBG / f
@@ -212,7 +212,7 @@ def linearlyProjectBG(pastBG, dt):
 
 
 
-def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, ISF, dt = 0.5):
+def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF, dt = 0.5):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -249,7 +249,7 @@ def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, ISF, dt = 0.5):
     shortdBG = shortProjectedBG - shortExpectedBG
 
     # Compute expected BGI based on IOB decay
-    expectedBGI = futureIOB.dydt[0] * ISF.y[0]
+    expectedBGI = futureIOB.dydt[0] * futureISF.y[0]
 
     # Compute deviation between expected and real BGI
     dBGI = BGI - expectedBGI
@@ -418,7 +418,7 @@ def snooze(now, duration = 2):
 
 
 
-def recommendTB(BGDynamics, basal, ISF, IDC):
+def recommendTB(BGDynamics, basal, futureISF, IDC):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -432,7 +432,7 @@ def recommendTB(BGDynamics, basal, ISF, IDC):
     Logger.debug("Recommending TB...")
 
     # Compute necessary insulin dose to bring back eventual BG to target
-    dose = computeDose(BGDynamics["dBGTarget"], ISF, IDC)
+    dose = computeDose(BGDynamics["dBGTarget"], futureISF, IDC)
 
     # Compute corresponding TB
     TB = computeTB(dose, basal)

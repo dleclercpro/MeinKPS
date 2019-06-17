@@ -91,7 +91,7 @@ class FutureBG(BG, base.FutureProfile):
 
 
 
-    def build(self, dt, net, IDC, ISF, past):
+    def build(self, dt, net, IDC, futureISF, past):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,7 +144,7 @@ class FutureBG(BG, base.FutureProfile):
         m = len(net.t)
 
         # Read number of entries in ISF profile
-        l = len(ISF.t)
+        l = len(futureISF.t)
 
         # Compute dBG
         for i in range(n):
@@ -163,10 +163,10 @@ class FutureBG(BG, base.FutureProfile):
             for j in range(l):
 
                 # Change contained within current step
-                if t0 < ISF.t[j] < t1:
+                if t0 < futureISF.t[j] < t1:
 
                     # Add it
-                    t.append(ISF.t[j])
+                    t.append(futureISF.t[j])
 
             # Define end time
             t.append(t1)
@@ -193,7 +193,7 @@ class FutureBG(BG, base.FutureProfile):
                 IOB0 = IOB
 
                 # Compute dBG for current step
-                dBG = ISF.f(t[j]) * dIOB
+                dBG = futureISF.f(t[j]) * dIOB
 
                 # Compute expected BG
                 BG += dBG

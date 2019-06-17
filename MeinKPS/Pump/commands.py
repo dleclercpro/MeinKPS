@@ -94,7 +94,7 @@ class Command(object):
         self.packets = {"TX": [],
                         "RX": []}
 
-        # Reset parameters
+        # Initialize parameters (none)
         self.parameters = ["00"]
 
 
@@ -248,6 +248,24 @@ class SetCommand(Command):
 
 
 
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize resetting
+        super(SetCommand, self).reset()
+
+        # Initialize parameters
+        # Byte 0: number of parameter bytes
+        # Byte 1-64: parameter bytes
+        self.parameters.extend(64 * ["00"])
+
+
+
     def decode(self):
 
         """
@@ -288,6 +306,19 @@ class GetCommand(Command):
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpPacket
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize resetting
+        super(GetCommand, self).reset()
 
 
 
@@ -670,7 +701,7 @@ class Power(SetCommand, BigCommand):
         lib.withinRangeInt(t, [0, 30], "Invalid RF session length.")
 
         # Define number of bytes to read from payload
-        self.parameters = ["02"] + 64 * ["00"]
+        self.parameters[0] = "02"
 
         # Define arbitrary byte
         self.parameters[1] = "01"
@@ -1895,7 +1926,7 @@ class ReadHistoryPage(GetBigCommand):
         lib.withinRangeInt(page, [0, 35], "Invalid history page number.")
 
         # Define number of bytes to read from payload
-        self.parameters = ["01"] + 64 * ["00"]
+        self.parameters[0] = "01"
 
         # Define page
         self.parameters[1] = "{0:02X}".format(page)
@@ -2003,7 +2034,7 @@ class PushButton(SetCommand, BigCommand):
             raise IOError("Bad button.")
 
         # Define number of bytes to read from payload
-        self.parameters = ["01"] + 64 * ["00"]
+        self.parameters[0] = "01"
 
         # Define button
         self.parameters[1] = "{0:02X}".format(button)
@@ -2058,7 +2089,7 @@ class Resume(SetCommand, BigCommand):
         """
 
         # Define number of bytes to read from payload
-        self.parameters = ["01"] + 64 * ["00"]
+        self.parameters[0] = "01"
 
         # Define button
         self.parameters[1] = "00"
@@ -2113,7 +2144,7 @@ class Suspend(SetCommand, BigCommand):
         """
 
         # Define number of bytes to read from payload
-        self.parameters = ["01"] + 64 * ["00"]
+        self.parameters[0] = "01"
 
         # Define button
         self.parameters[1] = "01"
@@ -2174,7 +2205,7 @@ class DeliverBolus(SetCommand, BigCommand):
         lib.withinRangeInt(bolus, [0, 250], "Invalid bolus.")
 
         # Define number of bytes to read from payload
-        self.parameters = ["01"] + 64 * ["00"]
+        self.parameters[0] = "01"
 
         # Define bolus
         self.parameters[1] = "{0:02X}".format(bolus)
@@ -2241,7 +2272,7 @@ class SetTBUnits(SetCommand, BigCommand):
             raise IOError("Bad TB units.")
 
         # Define number of bytes to read from payload
-        self.parameters = ["01"] + 64 * ["00"]
+        self.parameters[0] = "01"
 
         # Define units
         self.parameters[1] = "{0:02X}".format(units)
@@ -2308,7 +2339,7 @@ class SetAbsoluteTB(SetCommand, BigCommand):
         lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
 
         # Define number of bytes to read from payload
-        self.parameters = ["03"] + 64 * ["00"]
+        self.parameters[0] = "03"
 
         # Define rate
         self.parameters[1:3] = ["{0:02X}".format(x) for x
@@ -2379,7 +2410,7 @@ class SetPercentageTB(SetCommand, BigCommand):
         lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
 
         # Define number of bytes to read from payload
-        self.parameters = ["02"] + 64 * ["00"]
+        self.parameters[0] = "02"
 
         # Define rate
         self.parameters[1] = "{0:02X}".format(rate)
