@@ -1927,7 +1927,7 @@ class ReadHistoryPage(GetBigCommand):
 
         # Initialize parameters
         # FIXME
-        self.parameters = ["00", "00"]
+        self.parameters = 65 * ["00"]
 
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
