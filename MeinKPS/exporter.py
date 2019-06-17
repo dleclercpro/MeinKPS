@@ -36,7 +36,7 @@ from Profiles import *
 
 
 # Define instances
-Logger = logger.Logger("exporter.py")
+Logger = logger.Logger("exporter.py", "DEBUG")
 Reporter = reporter.Reporter()
 
 
