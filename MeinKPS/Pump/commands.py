@@ -700,9 +700,6 @@ class Power(SetCommand, BigCommand):
         # Test RF session length
         lib.withinRangeInt(t, [0, 30], "Invalid RF session length.")
 
-        # Initialize parameters
-        self.parameters = ["00", "00", "00"]
-
         # Define number of bytes to read from payload
         self.parameters[0] = "02"
 
@@ -1928,9 +1925,6 @@ class ReadHistoryPage(GetBigCommand):
         # Test page number
         lib.withinRangeInt(page, [0, 35], "Invalid history page number.")
 
-        # Initialize parameters
-        self.parameters = ["00", "00"]
-
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
 
@@ -2039,9 +2033,6 @@ class PushButton(SetCommand, BigCommand):
             # Raise error
             raise IOError("Bad button.")
 
-        # Initialize parameters
-        self.parameters = ["00", "00"]
-
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
 
@@ -2097,9 +2088,6 @@ class Resume(SetCommand, BigCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize parameters
-        self.parameters = ["00", "00"]
-
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
 
@@ -2154,9 +2142,6 @@ class Suspend(SetCommand, BigCommand):
             ENCODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Initialize parameters
-        self.parameters = ["00", "00"]
 
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
@@ -2218,9 +2203,6 @@ class DeliverBolus(SetCommand, BigCommand):
 
         # Test bolus
         lib.withinRangeInt(bolus, [0, 250], "Invalid bolus.")
-
-        # Initialize parameters
-        self.parameters = ["00", "00"]
 
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
@@ -2289,9 +2271,6 @@ class SetTBUnits(SetCommand, BigCommand):
             # Raise error
             raise IOError("Bad TB units.")
 
-        # Initialize parameters
-        self.parameters = ["00", "00"]
-
         # Define number of bytes to read from payload
         self.parameters[0] = "01"
 
@@ -2358,9 +2337,6 @@ class SetAbsoluteTB(SetCommand, BigCommand):
 
         # Test duration
         lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
-
-        # Initialize parameters
-        self.parameters = ["00", "00", "00", "00"]
 
         # Define number of bytes to read from payload
         self.parameters[0] = "03"
@@ -2433,9 +2409,6 @@ class SetPercentageTB(SetCommand, BigCommand):
         # Test duration
         lib.withinRangeInt(duration, [0, 48], "Invalid TB duration.")
 
-        # Initialize parameters
-        self.parameters = ["00", "00", "00"]
-        
         # Define number of bytes to read from payload
         self.parameters[0] = "02"
 
