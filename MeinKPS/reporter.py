@@ -599,7 +599,9 @@ class Report:
         except:
 
             # No report
-            raise errors.NoReport(self.name, self.date)
+            # FIXME: just reset report to empty JSON object
+            self.erase()
+            #raise errors.NoReport(self.name, self.date)
 
         # Give user info
         Logger.debug("Report loaded.")
