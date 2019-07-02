@@ -84,7 +84,7 @@ class Logger(object):
             directory.expand(["Reports", path.formatDate(now)])
 
             # Touch it
-            directory.touch()
+            path.touch(directory)
 
             # Log message
             with open(directory.string + self.report, "a") as f:

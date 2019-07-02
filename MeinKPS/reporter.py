@@ -77,11 +77,8 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize dates
-        dates = []
-
         # Scan for all possible report directories
-        directories = self.src.scan(name)
+        directories = path.scan(self.src, name)
 
         # If no possible reports found
         if not directories:
@@ -89,14 +86,8 @@ class Reporter:
             # Give user info
             Logger.debug("No dated report found for '" + name + "'.")
 
-        # Otherwise
-        else:
-
-            # Convert paths to dates
-            dates = [path.Path(d).date() for d in directories]
-
-        # Return dates
-        return dates
+        # Convert paths to dates
+        return [path.getDate(path.Path(d)) for d in directories]
 
 
 
@@ -127,7 +118,7 @@ class Reporter:
         if touch:
 
             # Touch it
-            path.Path(directory).touch(name)
+            path.touch(path.Path(directory), name)
 
         # Generate new report
         report = Report(name, directory, date)
@@ -629,7 +620,7 @@ class Report:
             directory = self.directory
 
         # Make sure report exists
-        path.Path(directory).touch(self.name)
+        path.touch(path.Path(directory), self.name)
 
         # Rewrite report
         with open(directory + self.name, "w") as f:

@@ -122,149 +122,52 @@ class Path:
 
 
 
-    def date(self):
+    def exists(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DATE
+            EXISTS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Check if path exists.
         """
-
-        # Initialize date
-        date = []
-
-        # Get initial path
-        path = self.string
-
-        # Loop 3 directories up to get corresponding date
-        for i in range(3):
-
-            # Split path
-            path = os.path.split(path)
-
-            # Add date component
-            date.append(int(path))
-
-        # Reverse date to get format YYYY.MM.DD
-        date.reverse()
-
-        # Return datetime object
-        return datetime.date(*date)
-
-
-
-    def touch(self, filename = None, n = 1, mode = "JSON"):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            TOUCH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Only JSON works
-        if mode != "JSON":
-
-            # Error
-            raise TypeError("Only allowed to touch JSON files: " + mode)
-
-        # Get current path
-        path = Path(self.list[:n]).string
-
-        # Look for path
-        if n <= self.depth:
-
-            # If it does not exist
-            if not os.path.exists(path):
-
-                # Info
-                print "Making path '" + path + "'..."
-
-                # Make it
-                os.makedirs(path)
-
-            # Contine looking
-            self.touch(filename, n + 1, mode)
-
-        # Look for file
-        elif file is not None:
-
-            # Complete path with filename
-            path += filename
-
-            # If it does not exist
-            if not os.path.exists(path):
-
-                # Info
-                print "Making file '" + path + "'..."
-
-                # Create it
-                with open(path, "w") as f:
-
-                    # Dump empty dict
-                    json.dump({}, f)
-
-                # Give permissions
-                os.chmod(path, 0777)
-
-
-
-    def scan(self, filename, path = "", results = [], n = 1):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SCAN
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Top level scan
-        if n == 1:
-
-            # Read source path
-            path = self.string
-
-        # Give user info
-        # print ("Scanning for '" + str(filename) + "' within '" + str(path) +
-        #        "'...")
-
-        # Get all files from path
-        files = os.listdir(path)
-
-        # Get inside path
-        os.chdir(path)
-
-        # Upload files
-        for f in files:
-
-            # If file and name fits
-            if os.path.isfile(f) and f == filename:
-
-                # Store path
-                results.append(os.getcwd())
-
-            # If directory and a digit (because a date)
-            elif os.path.isdir(f) and f.isdigit():
-
-                # Scan further
-                self.scan(filename, f, results, n + 1)
-
-        # Go back up
-        os.chdir("..")
-
-        # End of top level scan
-        if n == 1:
-
-            # Return results
-            return results
+        
+        return os.path.exists(self.string)
 
 
 
 # FUNCTIONS
+def isString(path):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISSTRING
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Make sure the inputted path is a string.
+    """
+    
+    return type(path) is str
+
+
+
+def isList(path):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISLIST
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Make sure the inputted path is a list of strings.
+    """
+    
+    return type(path) is list and all(map(lambda p: type(p) is str, path))
+
+
+
 def split(path):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         SPLIT
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
     if not isString(path):
@@ -277,9 +180,9 @@ def split(path):
 def merge(path):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         MERGE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Note: first slash only works for Linux.
     """
 
@@ -291,12 +194,163 @@ def merge(path):
 
 
 
+def touch(path, filename = None, mode = "JSON"):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        TOUCH
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Only JSON works
+    if mode != "JSON":
+
+        # Error
+        raise TypeError("Only allowed to touch JSON files: " + mode)
+
+    # Get string from path
+    path = path.string
+
+    # If directories do not exist
+    if not os.path.exists(path):
+
+        # Info
+        # print "Making path '" + path.string + "'..."
+
+        # Make it
+        os.makedirs(path.string, 0777)
+
+    # Look for file
+    if filename is not None:
+
+        # Complete path with filename
+        path += filename
+
+        # If it does not exist
+        if not os.path.exists(path):
+
+            # Info
+            # print "Making file '" + path + "'..."
+
+            # Create it
+            with open(path, "w") as f:
+
+                # Dump empty dict
+                json.dump({}, f)
+
+            # Give permissions
+            os.chmod(path, 0777)
+
+
+
+def delete(path, filename = None, n = 1):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        DELETE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Top level scan
+    if n == 1:
+
+        # No path
+        if not path.exists():
+            return
+
+    # Get string from path
+    path = path.string
+
+    # Get all files/directories from path
+    files = os.listdir(path)
+
+    # Loop on them
+    for f in map(lambda p: path + p, files):
+
+        # If file and name fits
+        if os.path.isfile(f) and (filename is None or
+                                    filename is not None and
+                                    os.path.basename(f) == filename):
+
+            # Give user info
+            print "Deleting file '" + os.path.basename(f) + "'..."
+
+            # Remove it
+            os.remove(f)
+
+        # If directory
+        elif os.path.isdir(f):
+
+            # Delete further
+            delete(Path(f), filename, n + 1)
+
+    # Not deleting a specific file
+    if filename is None:
+
+        # Give user info
+        print "Deleting directory '" + str(path) + "'..."
+
+        # Delete directory
+        os.rmdir(path)
+
+
+
+def scan(path, filename, results = None, n = 1):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        SCAN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Top level scan
+    if n == 1:
+
+        # Initialize results
+        results = []
+
+        # No path
+        if not path.exists():
+            return []
+
+    # Get string from path
+    path = path.string
+
+    # Give user info
+    print "Scanning for '" + str(path) + str(filename) + "'..."
+
+    # Get all files/directories from path
+    files = os.listdir(path)
+
+    # Loop on them
+    for f in map(lambda p: path + p, files):
+
+        # If file and name fits
+        if os.path.isfile(f) and os.path.basename(f) == filename:
+
+            # Store path
+            results.append(os.path.dirname(f))
+
+        # If directory
+        elif os.path.isdir(f):
+
+            # Scan further
+            scan(Path(f), filename, results, n + 1)
+
+    # End of top level scan
+    if n == 1:
+
+        # Return results
+        return results
+
+
+
 def formatDate(date):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         FORMATDATE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Using a date object, format and return it as follows: YYYY/MM/DD/
     """
     
@@ -312,29 +366,34 @@ def formatDate(date):
 
 
 
-def isString(path):
+def getDate(path):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISSTRING
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Make sure the inputted path is a string.
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        GETDATE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
-    
-    return type(path) is str
 
+    # Initialize date
+    date = []
 
+    # Get string from path
+    path = path.string
 
-def isList(path):
+    # Loop 3 directories up to get corresponding date
+    for i in range(3):
 
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISLIST
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Make sure the inputted path is a list of strings.
-    """
-    
-    return type(path) is list and all(map(lambda p: type(p) is str, path))
+        # Split path
+        path = os.path.split(path)
+
+        # Add date component
+        date.append(int(path))
+
+    # Reverse date to get format YYYY.MM.DD
+    date.reverse()
+
+    # Return datetime object
+    return datetime.date(*date)
 
 
 
@@ -351,12 +410,27 @@ def main():
     print "Created path: " + path.string
 
     # Expand path
-    path.expand("1/2/3")
-    print "Expanded path to: " + path.string
+    path.expand("1/2")
+    #print "Expanded path to: " + path.string
 
     # Expand path
-    path.expand(["4", "5", "6"])
-    print "Expanded path to: " + path.string
+    path.expand(["3", "4"])
+    #print "Expanded path to: " + path.string
+
+    # Search for file
+    print scan(path, "test.json")
+
+    # Create, and find
+    touch(path, "test.json")
+    print scan(path, "test.json")
+
+    # Scan from top
+    path = Path("./Test")
+    print scan(path, "test.json")
+
+    # Delete
+    path = Path("./Test")
+    delete(path)
 
 
 
