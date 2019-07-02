@@ -25,6 +25,7 @@
 
 # LIBRARIES
 import os
+import sys
 import usb
 import copy
 import json
@@ -37,7 +38,6 @@ import matplotlib.pyplot as plt
 
 
 # USER LIBRARIES
-import logger
 import errors
 
 
@@ -113,11 +113,6 @@ CRC16_TABLE = [0,     4129,  8258,  12387, 16516, 20645, 24774, 28903,
 
 
 
-# Instanciate logger
-Logger = logger.Logger("lib.py")
-
-
-
 # FUNCTIONS
 def derivate(x, t):
 
@@ -175,7 +170,7 @@ def integrate(x, t, args):
                       x(t + h, args)))
 
     # Info
-    Logger.debug("I[" + str(a) + ", " + str(b) + "] = " + str(I))
+    # print "I[" + str(a) + ", " + str(b) + "] = " + str(I)
 
     # Return result of definite integral
     return I
@@ -278,7 +273,6 @@ def formatTime(t):
 
     # If datetime object
     if type(t) is datetime.datetime:
-
         t = datetime.datetime.strftime(t, f)
 
     # Otherwise
@@ -286,51 +280,20 @@ def formatTime(t):
 
         # Try first format
         try:
-
             t = datetime.datetime.strptime(t, f)
 
         except:
-
             pass
 
         # Try second format
         try:
-
             t = datetime.datetime.strptime(t, F).time()
 
         except:
-
             pass
 
     # Return formatted time
     return t
-
-
-
-def formatDate(t):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        FORMATDATE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # If datetime object
-    if type(t) is datetime.datetime or type(t) is datetime.date:
-
-        # Format date
-        date = datetime.datetime.strftime(t, "%Y" + os.sep +
-                                             "%m" + os.sep +
-                                             "%d")
-
-    # Otherwise
-    else:
-
-        # No date
-        date = str(None)
-
-    # Return formatted date
-    return date
 
 
 
@@ -453,7 +416,7 @@ def merge(base, new, n = 1):
             else:
 
                 # Info
-                Logger.warning("Key already exists: " + str(key) + " -> " + str(value))
+                # print "Key already exists: " + str(key) + " -> " + str(value)
 
                 # Mismatch
                 if base[key] != value:
@@ -493,10 +456,7 @@ def mergeDicts(*args):
         base = merge(base, new)
 
     # Info
-    Logger.debug("New merged dictionary:")
-
-    # Show it
-    Logger.debug(JSONize(base))
+    # print "New merged dictionary:\n" + JSONize(base)
 
     # Return updated base
     return base

@@ -269,8 +269,12 @@ class Stick(object):
             # Info
             Logger.warning("Resetting USB interface...")
 
+            # Define path to reset script
+            resetPath = path.Path()
+            resetPath.expand("reset.sh")
+
             # Reset USB ports
-            os.system("sudo sh " + path.SRC + "reset.sh")
+            os.system("sudo sh " + resetPath.string)
 
             # Wait until devices are back
             time.sleep(5)
