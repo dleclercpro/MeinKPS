@@ -55,11 +55,11 @@ class Path:
         """
 
         # Wrong path type
-        if type(path) is not str:
+        if type(path) is not str or isFile(path):
             raise TypeError("Incorrect path type: " + path)
 
         # Store absolute path
-        self.path = os.path.abspath(path) + os.sep
+        self.path = path
 
         # Normalize it
         self.normalize()
@@ -90,7 +90,7 @@ class Path:
         """
 
         # Wrong path type
-        if type(path) is not str:
+        if type(path) is not str or isFile(path):
             raise TypeError("Incorrect path type: " + str(path))
 
         # Only relative paths allowed
@@ -106,7 +106,7 @@ class Path:
 
 
 
-    def touch(self, filename = None, mode = "JSON"):
+    def touch(self, filename = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,11 +115,14 @@ class Path:
             Generate directories and (JSON) file corresponding to path.
         """
 
+        # Get file extension
+        ext = os.path.splitext(filename)[1]
+
         # Only JSON works
-        if mode != "JSON":
+        if ext != ".json":
 
             # Error
-            raise TypeError("Only allowed to touch JSON files: " + mode)
+            raise TypeError("Only allowed to touch JSON files: " + ext)
 
         # Get string from path
         path = self.path
@@ -175,8 +178,14 @@ class Path:
             if not os.path.exists(path):
                 return
 
+        # Otherwise
+        else:
+
+            # Create new path
+            path = Path(path).path
+
         # Get all child files/directories within path
-        children = map(lambda p: path + p, os.listdir(path))
+        children = [path + p for p in os.listdir(path)]
 
         # Loop on them
         for p in children:
@@ -186,7 +195,7 @@ class Path:
                                       filename is not None and
                                       os.path.basename(p) == filename):
 
-                # Give user info
+                # Info
                 # print "Deleting file '" + os.path.basename(p) + "'..."
 
                 # Remove it
@@ -196,12 +205,12 @@ class Path:
             elif os.path.isdir(p):
 
                 # Delete further
-                self.delete(filename, p + os.sep, n + 1)
+                self.delete(filename, p, n + 1)
 
         # Not deleting a specific file
         if filename is None:
 
-            # Give user info
+            # Info
             # print "Deleting directory '" + str(path) + "'..."
 
             # Delete directory
@@ -215,7 +224,8 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SCAN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Scan for a specific file recursively within a directory.
+            Scan for a specific file recursively within a directory and return
+            paths to directories, which contain said file.
         """
 
         # Top level scan
@@ -231,22 +241,28 @@ class Path:
             if not os.path.exists(path):
                 return []
 
-        # Give user info
+        # Otherwise
+        else:
+
+            # Create new path
+            path = Path(path).path
+
+        # Info
         # print "Scanning for '" + str(filename) + "' in '" + str(path) + "'..."
 
         # Get all child files/directories within path
-        children = map(lambda p: path + p, os.listdir(path))
+        children = [path + p for p in os.listdir(path)]
 
         # Loop on them
         for p in children:
 
             # If file and name fits
             if os.path.isfile(p) and os.path.basename(p) == filename:
-                results.append(os.path.dirname(p))
+                results.append(Path(os.path.dirname(p)))
 
             # If directory
             elif os.path.isdir(p):
-                self.scan(filename, p + os.sep, results, n + 1)
+                self.scan(filename, p, results, n + 1)
 
         # End of top level scan
         if n == 1:
@@ -257,6 +273,19 @@ class Path:
 
 
 # FUNCTIONS
+def isFile(path):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISFILE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Check if string path leads to a file.
+    """
+
+    return "." in os.path.basename(path)
+
+
+
 def getDate(path):
 
     """
@@ -302,8 +331,7 @@ def formatDate(date):
     if type(date) is datetime.datetime or type(date) is datetime.date:
 
         # Format date
-        return datetime.datetime.strftime(date,
-            os.path.join("%Y", "%m", "%d"))
+        return datetime.datetime.strftime(date, "%Y/%m/%d")
 
     # Raise error
     raise NotImplementedError("Incorrect date object type: " + type(date))
@@ -339,11 +367,11 @@ def main():
 
     # Create, and find
     path.touch("test.json")
-    print path.scan("test.json")
+    print [p.path for p in path.scan("test.json")]
 
     # Scan from top and delete
     path = Path("./Test")
-    print path.scan("test.json")
+    print [p.path for p in path.scan("test.json")]
     path.delete()
 
     # Get date from path

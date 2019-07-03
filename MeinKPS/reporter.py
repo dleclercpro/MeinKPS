@@ -80,7 +80,7 @@ class Reporter:
 
         # Convert paths to dates
         if directories:
-            return [path.getDate(path.Path(d)) for d in directories]
+            return [path.getDate(d) for d in directories]
 
         # Give user info
         Logger.debug("No dated report found for '" + name + "'.")
