@@ -30,15 +30,18 @@ import datetime
 
 
 
-# CONSTANTS
-SRC = os.getcwd() + os.sep
-
-
-
 # CLASSES
 class Path:
 
-    def __init__(self, path = SRC):
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PATH
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Normalized path object with 2 components (string and list) which always
+        points to a directory.
+    """
+
+    def __init__(self, path = "./"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -76,6 +79,7 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Create corresponding absolute array/string path pair.
         """
 
         # List
@@ -94,6 +98,7 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             EXPAND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Expand path with another path.
         """
 
         # String
@@ -122,16 +127,152 @@ class Path:
 
 
 
-    def exists(self):
+    def touch(self, filename = None, mode = "JSON"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXISTS
+            TOUCH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Check if path exists.
+            Generate directories and (JSON) file corresponding to path.
         """
-        
-        return os.path.exists(self.string)
+
+        # Only JSON works
+        if mode != "JSON":
+
+            # Error
+            raise TypeError("Only allowed to touch JSON files: " + mode)
+
+        # Get string from path
+        path = self.string
+
+        # If directories do not exist
+        if not os.path.exists(path):
+
+            # Info
+            # print "Making path '" + path + "'..."
+
+            # Make it
+            os.makedirs(path, 0777)
+
+        # Look for file
+        if filename is not None:
+
+            # Complete path with filename
+            path += filename
+
+            # If it does not exist
+            if not os.path.exists(path):
+
+                # Info
+                # print "Making file '" + path + "'..."
+
+                # Create it
+                with open(path, "w") as f:
+
+                    # Dump empty dict
+                    json.dump({}, f)
+
+                # Give permissions
+                os.chmod(path, 0777)
+
+
+
+    def delete(self, filename = None, path = None, n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DELETE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Top level scan
+        if n == 1:
+
+            # Get string from path
+            path = self.string
+
+            # No path
+            if not os.path.exists(path):
+                return
+
+        # Get all child files/directories within path
+        children = map(lambda p: path + p, os.listdir(path))
+
+        # Loop on them
+        for p in children:
+
+            # If file and name fits
+            if os.path.isfile(p) and (filename is None or
+                                      filename is not None and
+                                      os.path.basename(p) == filename):
+
+                # Give user info
+                # print "Deleting file '" + os.path.basename(p) + "'..."
+
+                # Remove it
+                os.remove(p)
+
+            # If directory
+            elif os.path.isdir(p):
+
+                # Delete further
+                self.delete(filename, p + os.sep, n + 1)
+
+        # Not deleting a specific file
+        if filename is None:
+
+            # Give user info
+            # print "Deleting directory '" + str(path) + "'..."
+
+            # Delete directory
+            os.rmdir(path)
+
+
+
+    def scan(self, filename, path = None, results = None, n = 1):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SCAN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Scan for a specific file recursively within a directory.
+        """
+
+        # Top level scan
+        if n == 1:
+
+            # Get string from path
+            path = self.string
+
+            # Initialize results
+            results = []
+
+            # No path
+            if not os.path.exists(path):
+                return []
+
+        # Give user info
+        # print "Scanning for '" + str(filename) + "' in '" + str(path) + "'..."
+
+        # Get all child files/directories within path
+        children = map(lambda p: path + p, os.listdir(path))
+
+        # Loop on them
+        for p in children:
+
+            # If file and name fits
+            if os.path.isfile(p) and os.path.basename(p) == filename:
+                results.append(os.path.dirname(p))
+
+            # If directory
+            elif os.path.isdir(p):
+                self.scan(filename, p + os.sep, results, n + 1)
+
+        # End of top level scan
+        if n == 1:
+
+            # Return results
+            return results
 
 
 
@@ -168,10 +309,9 @@ def split(path):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         SPLIT
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Split string path into array of directories and possibly a file as
+        its last element.
     """
-
-    if not isString(path):
-        raise TypeError("Incorrect path type (string needed): " + path)
 
     return [p for p in path.split(os.sep) if p != ""]
 
@@ -183,165 +323,24 @@ def merge(path):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         MERGE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Note: first slash only works for Linux.
+        Merge an array of directories and possibly a file into a string
+        path.
     """
 
-    if not isList(path):
-        raise TypeError("Incorrect path type (list needed): " + path)
-
-    # return os.sep + os.path.join(*path)
     return os.path.join(*path)
 
 
 
-def touch(path, filename = None, mode = "JSON"):
+def getDate(path):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        TOUCH
+        GETDATE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Get date from 3 parent directories.
     """
 
-    # Only JSON works
-    if mode != "JSON":
-
-        # Error
-        raise TypeError("Only allowed to touch JSON files: " + mode)
-
-    # Get string from path
-    path = path.string
-
-    # If directories do not exist
-    if not os.path.exists(path):
-
-        # Info
-        # print "Making path '" + path.string + "'..."
-
-        # Make it
-        os.makedirs(path.string, 0777)
-
-    # Look for file
-    if filename is not None:
-
-        # Complete path with filename
-        path += filename
-
-        # If it does not exist
-        if not os.path.exists(path):
-
-            # Info
-            # print "Making file '" + path + "'..."
-
-            # Create it
-            with open(path, "w") as f:
-
-                # Dump empty dict
-                json.dump({}, f)
-
-            # Give permissions
-            os.chmod(path, 0777)
-
-
-
-def delete(path, filename = None, n = 1):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        DELETE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Top level scan
-    if n == 1:
-
-        # No path
-        if not path.exists():
-            return
-
-    # Get string from path
-    path = path.string
-
-    # Get all files/directories from path
-    files = os.listdir(path)
-
-    # Loop on them
-    for f in map(lambda p: path + p, files):
-
-        # If file and name fits
-        if os.path.isfile(f) and (filename is None or
-                                    filename is not None and
-                                    os.path.basename(f) == filename):
-
-            # Give user info
-            print "Deleting file '" + os.path.basename(f) + "'..."
-
-            # Remove it
-            os.remove(f)
-
-        # If directory
-        elif os.path.isdir(f):
-
-            # Delete further
-            delete(Path(f), filename, n + 1)
-
-    # Not deleting a specific file
-    if filename is None:
-
-        # Give user info
-        print "Deleting directory '" + str(path) + "'..."
-
-        # Delete directory
-        os.rmdir(path)
-
-
-
-def scan(path, filename, results = None, n = 1):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SCAN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Top level scan
-    if n == 1:
-
-        # Initialize results
-        results = []
-
-        # No path
-        if not path.exists():
-            return []
-
-    # Get string from path
-    path = path.string
-
-    # Give user info
-    print "Scanning for '" + str(path) + str(filename) + "'..."
-
-    # Get all files/directories from path
-    files = os.listdir(path)
-
-    # Loop on them
-    for f in map(lambda p: path + p, files):
-
-        # If file and name fits
-        if os.path.isfile(f) and os.path.basename(f) == filename:
-
-            # Store path
-            results.append(os.path.dirname(f))
-
-        # If directory
-        elif os.path.isdir(f):
-
-            # Scan further
-            scan(Path(f), filename, results, n + 1)
-
-    # End of top level scan
-    if n == 1:
-
-        # Return results
-        return results
+    return datetime.date(*[int(d) for d in path.list[-3:]])
 
 
 
@@ -366,37 +365,6 @@ def formatDate(date):
 
 
 
-def getDate(path):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        GETDATE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Initialize date
-    date = []
-
-    # Get string from path
-    path = path.string
-
-    # Loop 3 directories up to get corresponding date
-    for i in range(3):
-
-        # Split path
-        path = os.path.split(path)
-
-        # Add date component
-        date.append(int(path))
-
-    # Reverse date to get format YYYY.MM.DD
-    date.reverse()
-
-    # Return datetime object
-    return datetime.date(*date)
-
-
-
 def main():
 
     """
@@ -405,32 +373,33 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Create empty path
+    path = Path()
+    print "Created path: " + path.string
+
     # Create new path
-    path = Path("./Test")
+    path = Path("Test")
     print "Created path: " + path.string
 
     # Expand path
     path.expand("1/2")
-    #print "Expanded path to: " + path.string
+    print "Expanded path to: " + path.string
 
     # Expand path
     path.expand(["3", "4"])
-    #print "Expanded path to: " + path.string
+    print "Expanded path to: " + path.string
 
     # Search for file
-    print scan(path, "test.json")
+    print path.scan("test.json")
 
     # Create, and find
-    touch(path, "test.json")
-    print scan(path, "test.json")
+    path.touch("test.json")
+    print path.scan("test.json")
 
-    # Scan from top
+    # Scan from top and delete
     path = Path("./Test")
-    print scan(path, "test.json")
-
-    # Delete
-    path = Path("./Test")
-    delete(path)
+    print path.scan("test.json")
+    path.delete()
 
 
 

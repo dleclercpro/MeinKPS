@@ -40,7 +40,7 @@ LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 # CLASSES
 class Logger(object):
 
-    def __init__(self, name, level = "INFO"):
+    def __init__(self, name, report = "loop.log", level = "INFO"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,7 +58,7 @@ class Logger(object):
         self.format = "[{:%H:%M:%S.%f}] [{:>17}] [{:>8}] --- {}"
 
         # Define report
-        self.report = "loop.log"
+        self.report = report
 
 
 
@@ -80,11 +80,10 @@ class Logger(object):
             msg = self.format.format(now, self.name, level, msg)
 
             # Define log directory
-            directory = path.Path()
-            directory.expand(["Reports", path.formatDate(now)])
+            directory = path.Path(["Reports", path.formatDate(now)])
 
             # Touch it
-            path.touch(directory)
+            directory.touch()
 
             # Log message
             with open(directory.string + self.report, "a") as f:
@@ -172,9 +171,6 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
-
-    # Get current time
-    now = datetime.datetime.now()
 
     # Instanciate logger
     logger = Logger(__name__)

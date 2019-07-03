@@ -60,12 +60,10 @@ class Reporter:
         """
 
         # Define source path
-        self.src = path.Path()
-        self.src.expand("Reports")
+        self.src = path.Path("Reports")
 
         # Define export path
-        self.export = path.Path()
-        self.export.expand("Reports/Export")
+        self.export = path.Path(["Reports", "Export"])
 
 
 
@@ -78,16 +76,14 @@ class Reporter:
         """
 
         # Scan for all possible report directories
-        directories = path.scan(self.src, name)
-
-        # If no possible reports found
-        if not directories:
-
-            # Give user info
-            Logger.debug("No dated report found for '" + name + "'.")
+        directories = self.src.scan(name)
 
         # Convert paths to dates
-        return [path.getDate(path.Path(d)) for d in directories]
+        if directories:
+            return [path.getDate(path.Path(d)) for d in directories]
+
+        # Give user info
+        Logger.debug("No dated report found for '" + name + "'.")
 
 
 
@@ -112,13 +108,13 @@ class Reporter:
             date = path.formatDate(date)
 
             # Update path to report
-            directory = path.Path(directory + date).string
+            directory = path.Path([directory, date]).string
 
         # If report can be generated in case it doesn't exist yet
         if touch:
 
             # Touch it
-            path.touch(path.Path(directory), name)
+            path.Path(directory).touch(name)
 
         # Generate new report
         report = Report(name, directory, date)
@@ -620,7 +616,7 @@ class Report:
             directory = self.directory
 
         # Make sure report exists
-        path.touch(path.Path(directory), self.name)
+        path.Path(directory).touch(self.name)
 
         # Rewrite report
         with open(directory + self.name, "w") as f:
