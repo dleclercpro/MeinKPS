@@ -108,7 +108,7 @@ class Reporter:
             date = path.formatDate(date)
 
             # Update path to report
-            directory = path.Path([directory, date]).path
+            directory = path.Path(directory + date).path
 
         # If report can be generated in case it doesn't exist yet
         if touch:

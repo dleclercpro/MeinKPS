@@ -30,6 +30,11 @@ import datetime
 
 
 
+# CONSTANTS
+SRC = os.getcwd() + os.sep
+
+
+
 # CLASSES
 class Path:
 
@@ -265,7 +270,7 @@ def getDate(path):
     date = []
 
     # Get string path
-    path = path.path
+    path = os.path.dirname(path.path)
 
     # Loop 3 directories up to get corresponding date
     for i in range(3):
@@ -314,32 +319,37 @@ def main():
     """
 
     # Create empty path
-    path = Path()
-    print "Created path: " + path.path
+    #path = Path()
+    #print "Created path: " + path.path
 
     # Create new path
-    path = Path("Test")
-    print "Created path: " + path.path
+    #path = Path("Test")
+    #print "Created path: " + path.path
 
     # Expand path
-    path.expand("1/2")
-    print "Expanded path to: " + path.path
+    #path.expand("1/2")
+    #print "Expanded path to: " + path.path
 
     # Expand path
-    path.expand("3/4")
-    print "Expanded path to: " + path.path
+    #path.expand("3/4")
+    #print "Expanded path to: " + path.path
 
     # Search for file
-    print path.scan("test.json")
+    #print path.scan("test.json")
 
     # Create, and find
-    path.touch("test.json")
-    print path.scan("test.json")
+    #path.touch("test.json")
+    #print path.scan("test.json")
 
     # Scan from top and delete
-    path = Path("./Test")
-    print path.scan("test.json")
-    path.delete()
+    #path = Path("./Test")
+    #print path.scan("test.json")
+    #path.delete()
+
+    # Get date
+    path = Path("Test")
+    path.expand("2019/07/03")
+    print getDate(path)
 
 
 

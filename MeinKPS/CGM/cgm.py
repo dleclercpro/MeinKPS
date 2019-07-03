@@ -232,7 +232,7 @@ class CGM(object):
         except:
 
             # Reset USB ports
-            os.system("sudo sh " + path.Path("reset.sh").path)
+            os.system("sudo sh " + path.SRC + "reset.sh")
 
             # Wait until devices are back
             time.sleep(5)
