@@ -80,13 +80,13 @@ class Logger(object):
             msg = self.format.format(now, self.name, level, msg)
 
             # Define log directory
-            directory = path.Path(["Reports", path.formatDate(now)])
+            directory = path.Path("Reports/" + path.formatDate(now))
 
             # Touch it
             directory.touch()
 
             # Log message
-            with open(directory.string + self.report, "a") as f:
+            with open(directory.path + self.report, "a") as f:
 
                 # Do it and add new line
                 f.write(msg + "\n")

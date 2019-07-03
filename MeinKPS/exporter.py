@@ -185,7 +185,7 @@ class Exporter(object):
         for report in self.reports.values():
 
             # Do it
-            report.store(Reporter.export.string)
+            report.store(Reporter.export.path)
 
 
 

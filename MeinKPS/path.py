@@ -49,27 +49,15 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize path components
-        self.string = None
-        self.list = None
-
-        # String
-        if isString(path):
-            self.string = path
-
-        # List
-        elif isList(path):
-            self.list = path
-
-        # Error
-        else:
+        # Wrong path type
+        if type(path) is not str:
             raise TypeError("Incorrect path type: " + path)
 
-        # Normalize path
-        self.normalize()
+        # Store absolute path
+        self.path = os.path.abspath(path) + os.sep
 
-        # Compute path depth
-        self.depth = len(self.list)
+        # Normalize it
+        self.normalize()
 
 
 
@@ -79,16 +67,11 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Create corresponding absolute array/string path pair.
+            Normalize path to an absolute path.
         """
 
-        # List
-        if self.list is not None:
-            self.string = merge(self.list)
-
-        # Normalize both path types
-        self.string = os.path.abspath(self.string) + os.sep
-        self.list = split(self.string)
+        # Normalized path
+        self.path = os.path.abspath(self.path) + os.sep
 
 
 
@@ -101,28 +84,19 @@ class Path:
             Expand path with another path.
         """
 
-        # String
-        if isString(path):
-            pass
-
-        # List
-        elif isList(path):
-            path = merge(path)
-
-        # Error
-        else:
-            raise TypeError("Incorrect path type: " + path)
+        # Wrong path type
+        if type(path) is not str:
+            raise TypeError("Incorrect path type: " + str(path))
 
         # Only relative paths allowed
         if os.path.isabs(path):
             raise TypeError("Path expansion only possible with relative " +
                             "paths: " + path)
 
-        # Join paths
-        self.string = os.path.join(self.string, path)
-        self.list = None
-        
-        # Normalize
+        # Join paths into one
+        self.path = os.path.join(self.path, path)
+
+        # Normalize it
         self.normalize()
 
 
@@ -143,7 +117,7 @@ class Path:
             raise TypeError("Only allowed to touch JSON files: " + mode)
 
         # Get string from path
-        path = self.string
+        path = self.path
 
         # If directories do not exist
         if not os.path.exists(path):
@@ -190,7 +164,7 @@ class Path:
         if n == 1:
 
             # Get string from path
-            path = self.string
+            path = self.path
 
             # No path
             if not os.path.exists(path):
@@ -243,7 +217,7 @@ class Path:
         if n == 1:
 
             # Get string from path
-            path = self.string
+            path = self.path
 
             # Initialize results
             results = []
@@ -278,60 +252,6 @@ class Path:
 
 
 # FUNCTIONS
-def isString(path):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISSTRING
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Make sure the inputted path is a string.
-    """
-    
-    return type(path) is str
-
-
-
-def isList(path):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISLIST
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Make sure the inputted path is a list of strings.
-    """
-    
-    return type(path) is list and all(map(lambda p: type(p) is str, path))
-
-
-
-def split(path):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        SPLIT
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Split string path into array of directories and possibly a file as
-        its last element.
-    """
-
-    return [p for p in path.split(os.sep) if p != ""]
-
-
-
-def merge(path):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MERGE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Merge an array of directories and possibly a file into a string
-        path.
-    """
-
-    return os.path.join(*path)
-
-
-
 def getDate(path):
 
     """
@@ -341,7 +261,26 @@ def getDate(path):
         Get date from 3 parent directories.
     """
 
-    return datetime.date(*[int(d) for d in path.list[-3:]])
+    # Initialize date
+    date = []
+
+    # Get string path
+    path = path.path
+
+    # Loop 3 directories up to get corresponding date
+    for i in range(3):
+
+        # Split path
+        path, dirname = os.path.split(path)
+
+        # Add date component
+        date.append(int(dirname))
+
+    # Reverse date to get format YYYY.MM.DD
+    date.reverse()
+
+    # Return datetime object
+    return datetime.date(*date)
 
 
 
@@ -359,7 +298,7 @@ def formatDate(date):
 
         # Format date
         return datetime.datetime.strftime(date,
-            os.path.join("%Y", "%m", "%d", ""))
+            os.path.join("%Y", "%m", "%d"))
 
     # Raise error
     raise NotImplementedError("Incorrect date object type: " + type(date))
@@ -376,19 +315,19 @@ def main():
 
     # Create empty path
     path = Path()
-    print "Created path: " + path.string
+    print "Created path: " + path.path
 
     # Create new path
     path = Path("Test")
-    print "Created path: " + path.string
+    print "Created path: " + path.path
 
     # Expand path
     path.expand("1/2")
-    print "Expanded path to: " + path.string
+    print "Expanded path to: " + path.path
 
     # Expand path
-    path.expand(["3", "4"])
-    print "Expanded path to: " + path.string
+    path.expand("3/4")
+    print "Expanded path to: " + path.path
 
     # Search for file
     print path.scan("test.json")

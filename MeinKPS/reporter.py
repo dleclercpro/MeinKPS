@@ -63,7 +63,7 @@ class Reporter:
         self.src = path.Path("Reports")
 
         # Define export path
-        self.export = path.Path(["Reports", "Export"])
+        self.export = path.Path("Reports/Export")
 
 
 
@@ -99,7 +99,7 @@ class Reporter:
         if directory is None:
 
             # Define source
-            directory = self.src.string
+            directory = self.src.path
 
         # Otherwise
         if date is not None:
@@ -108,7 +108,7 @@ class Reporter:
             date = path.formatDate(date)
 
             # Update path to report
-            directory = path.Path([directory, date]).string
+            directory = path.Path([directory, date]).path
 
         # If report can be generated in case it doesn't exist yet
         if touch:
