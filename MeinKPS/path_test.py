@@ -31,9 +31,15 @@ import path
 
 
 # FUNCTIONS
-def getDirAndFilePath(dirname, filename = ""):
-    dirpath = path.SRC + dirname
-    filepath = dirpath + os.sep + filename
+def getDirAndFilePathFromSrc(dirname = "", filename = ""):
+    dirpath, filepath = "", ""
+
+    if dirname:
+        dirpath = path.SRC + dirname
+        
+        if filename:
+            filepath = dirpath + os.sep + filename
+            
     return dirpath, filepath
 
 
@@ -106,7 +112,7 @@ def test_touch_dir():
     """
 
     dirname = "test"
-    dirpath = getDirAndFilePath(dirname)[0]
+    dirpath = getDirAndFilePathFromSrc(dirname)[0]
 
     _path = path.Path(dirname)
     _path.touch()
@@ -127,7 +133,7 @@ def test_touch_file():
 
     dirname = "test"
     filename = "test.json"
-    filepath = getDirAndFilePath(dirname, filename)[1]
+    filepath = getDirAndFilePathFromSrc(dirname, filename)[1]
 
     _path = path.Path(dirname)
     _path.touch(filename)
@@ -191,7 +197,7 @@ def test_scan_non_existent_dir():
 
     dirname = "test"
     filename = "test.json"
-    dirpath = getDirAndFilePath(dirname, filename)[0]
+    dirpath = getDirAndFilePathFromSrc(dirname, filename)[0]
 
     _path = path.Path(dirname)
 
@@ -210,7 +216,7 @@ def test_scan_non_existent_file():
 
     dirname = "test"
     filename = "test.json"
-    filepath = getDirAndFilePath(dirname, filename)[1]
+    filepath = getDirAndFilePathFromSrc(dirname, filename)[1]
 
     _path = path.Path(dirname)
     _path.touch()
@@ -232,7 +238,7 @@ def test_delete():
 
     dirname = "test"
     filename = "test.json"
-    dirpath, filepath = getDirAndFilePath(dirname, filename)
+    dirpath, filepath = getDirAndFilePathFromSrc(dirname, filename)
 
     _path = path.Path(dirname)
     _path.touch(filename)
@@ -257,7 +263,7 @@ def test_delete_recursive():
     rootname = "test"
     dirname = rootname + os.sep + "1/2/3"
     filename = "test.json"
-    dirpath, filepath = getDirAndFilePath(dirname, filename)
+    dirpath, filepath = getDirAndFilePathFromSrc(dirname, filename)
 
     _path = path.Path(dirname)
     _path.touch(filename)
