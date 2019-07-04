@@ -30,6 +30,15 @@ import path
 
 
 
+# FUNCTIONS
+def getDirAndFilePath(dirname, filename = ""):
+    dirpath = path.SRC + dirname
+    filepath = dirpath + os.sep + filename
+    return dirpath, filepath
+
+
+
+# TESTS
 def test_empty():
 
     """
@@ -62,8 +71,18 @@ def test_backslash():
     """
 
     with pytest.raises(TypeError):
-        _path = path.Path()
-        _path.expand("1\\2")
+        _path = path.Path("1\\2")
+
+
+
+def test_list():
+
+    """
+    Test path as list.
+    """
+
+    with pytest.raises(TypeError):
+        _path = path.Path(["1", "2"])
 
 
 
@@ -74,16 +93,16 @@ def test_touch_directory():
     """
 
     dirname = "test"
-    dirpath = path.SRC + dirname
+    dirpath = getDirAndFilePath(dirname)[0]
 
     _path = path.Path(dirname)
     _path.touch()
 
-    exists = os.path.isdir(dirpath)
+    existed = os.path.isdir(dirpath)
 
-    os.rmdir(dirpath)
+    _path.delete()
 
-    assert exists
+    assert existed
 
 
 
@@ -95,18 +114,16 @@ def test_touch_file():
 
     dirname = "test"
     filename = "test.json"
-    dirpath = path.SRC + dirname
-    filepath = dirpath + os.sep + filename
+    filepath = getDirAndFilePath(dirname, filename)[1]
 
     _path = path.Path(dirname)
     _path.touch(filename)
 
-    exists = os.path.isfile(filepath)
+    existed = os.path.isfile(filepath)
 
-    os.remove(filepath)
-    os.rmdir(dirpath)
+    _path.delete()
 
-    assert exists
+    assert existed
 
 
 
@@ -118,18 +135,15 @@ def test_scan():
 
     dirname = "test"
     filename = "test.json"
-    dirpath = path.SRC + dirname
-    filepath = dirpath + os.sep + filename
 
     _path = path.Path(dirname)
     _path.touch(filename)
 
-    exists = len(_path.scan(filename)) > 0
+    found = len(_path.scan(filename)) > 0
 
-    os.remove(filepath)
-    os.rmdir(dirpath)
+    _path.delete()
 
-    assert exists
+    assert found
 
 
 
@@ -140,45 +154,19 @@ def test_scan_recursively():
     empty list.
     """
 
-    dirname = "test/1/2/3"
+    rootname = "test"
+    dirname = rootname + os.sep + "1/2/3"
     filename = "test.json"
-    dirpath = path.SRC + dirname
-    filepath = dirpath + os.sep + filename
 
     _path = path.Path(dirname)
     _path.touch(filename)
 
-    _path = path.Path("test")
-    exists = len(_path.scan(filename)) > 0
+    _path = path.Path(rootname)
+    found = len(_path.scan(filename)) > 0
 
-    os.remove(filepath)
-    os.rmdir(path.SRC + "test/1/2/3")
-    os.rmdir(path.SRC + "test/1/2")
-    os.rmdir(path.SRC + "test/1")
-    os.rmdir(path.SRC + "test")
+    _path.delete()
 
-    assert exists
-
-
-
-def test_scan_non_existent_file():
-
-    """
-    Scanning directory for a non-existent file should return an empty list.
-    """
-
-    dirname = "test"
-    filename = "test.json"
-    dirpath = path.SRC + dirname
-
-    _path = path.Path(dirname)
-    _path.touch()
-
-    exists = len(_path.scan(filename)) > 0
-
-    os.rmdir(dirpath)
-
-    assert not exists
+    assert found
 
 
 
@@ -190,13 +178,36 @@ def test_scan_non_existent_path():
 
     dirname = "test"
     filename = "test.json"
-    dirpath = path.SRC + dirname
+    dirpath = getDirAndFilePath(dirname, filename)[0]
 
     _path = path.Path(dirname)
 
-    exists = len(_path.scan(filename)) > 0
+    existed = os.path.isdir(dirpath)
+    found = len(_path.scan(filename)) > 0
 
-    assert not os.path.isdir(dirpath) and not exists
+    assert not existed and not found
+
+
+
+def test_scan_non_existent_file():
+
+    """
+    Scanning directory for a non-existent file should return an empty list.
+    """
+
+    dirname = "test"
+    filename = "test.json"
+    filepath = getDirAndFilePath(dirname, filename)[1]
+
+    _path = path.Path(dirname)
+    _path.touch()
+
+    existed = os.path.isfile(filepath)
+    found = len(_path.scan(filename)) > 0
+
+    _path.delete()
+
+    assert not existed and not found
 
 
 
@@ -208,8 +219,7 @@ def test_delete():
 
     dirname = "test"
     filename = "test.json"
-    dirpath = path.SRC + dirname
-    filepath = dirpath + os.sep + filename
+    dirpath, filepath = getDirAndFilePath(dirname, filename)
 
     _path = path.Path(dirname)
     _path.touch(filename)
@@ -231,16 +241,17 @@ def test_delete_recursively():
     no trace.
     """
 
-    dirname = "test/1/2/3"
+    rootname = "test"
+    dirname = rootname + os.sep + "1/2/3"
     filename = "test.json"
-    dirpath = path.SRC + dirname
-    filepath = dirpath + os.sep + filename
+    dirpath, filepath = getDirAndFilePath(dirname, filename)
 
     _path = path.Path(dirname)
     _path.touch(filename)
 
     existed = os.path.isdir(dirpath) and os.path.isfile(filepath)
 
+    _path = path.Path(rootname)
     _path.delete()
 
     deleted = not os.path.isdir(dirpath)
