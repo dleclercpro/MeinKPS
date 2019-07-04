@@ -46,7 +46,7 @@ class Path:
         points to a directory.
     """
 
-    def __init__(self, path = "./"):
+    def __init__(self, path = SRC):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,7 +55,7 @@ class Path:
         """
 
         # Wrong path type
-        if type(path) is not str or isFile(path):
+        if not isValid(path):
             raise TypeError("Incorrect path type: " + path)
 
         # Store absolute path
@@ -90,7 +90,7 @@ class Path:
         """
 
         # Wrong path type
-        if type(path) is not str or isFile(path):
+        if not isValid(path):
             raise TypeError("Incorrect path type: " + str(path))
 
         # Only relative paths allowed
@@ -115,20 +115,11 @@ class Path:
             Generate directories and (JSON) file corresponding to path.
         """
 
-        # Get file extension
-        ext = os.path.splitext(filename)[1]
-
-        # Only JSON works
-        if ext != ".json":
-
-            # Error
-            raise TypeError("Only allowed to touch JSON files: " + ext)
-
         # Get string from path
         path = self.path
 
         # If directories do not exist
-        if not os.path.exists(path):
+        if not os.path.isdir(path):
 
             # Info
             # print "Making path '" + path + "'..."
@@ -139,11 +130,20 @@ class Path:
         # Look for file
         if filename is not None:
 
+            # Get file extension
+            ext = os.path.splitext(filename)[1]
+
+            # Only JSON works
+            if ext != ".json":
+
+                # Error
+                raise TypeError("Only allowed to touch JSON files: " + ext)
+
             # Complete path with filename
             path += filename
 
             # If it does not exist
-            if not os.path.exists(path):
+            if not os.path.isfile(path):
 
                 # Info
                 # print "Making file '" + path + "'..."
@@ -159,13 +159,13 @@ class Path:
 
 
 
-    def delete(self, filename = None, path = None, n = 1):
+    def delete(self, path = None, n = 1):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DELETE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Recursively delete path or given file.
+            Recursively delete path.
         """
 
         # Top level scan
@@ -175,7 +175,7 @@ class Path:
             path = self.path
 
             # No path
-            if not os.path.exists(path):
+            if not os.path.isdir(path):
                 return
 
         # Otherwise
@@ -191,9 +191,7 @@ class Path:
         for p in children:
 
             # If file and name fits
-            if os.path.isfile(p) and (filename is None or
-                                      filename is not None and
-                                      os.path.basename(p) == filename):
+            if os.path.isfile(p):
 
                 # Info
                 # print "Deleting file '" + os.path.basename(p) + "'..."
@@ -205,16 +203,10 @@ class Path:
             elif os.path.isdir(p):
 
                 # Delete further
-                self.delete(filename, p, n + 1)
+                self.delete(p, n + 1)
 
-        # Not deleting a specific file
-        if filename is None:
-
-            # Info
-            # print "Deleting directory '" + str(path) + "'..."
-
-            # Delete directory
-            os.rmdir(path)
+        # Delete directory
+        os.rmdir(path)
 
 
 
@@ -238,7 +230,7 @@ class Path:
             results = []
 
             # No path
-            if not os.path.exists(path):
+            if not os.path.isdir(path):
                 return []
 
         # Otherwise
@@ -273,16 +265,16 @@ class Path:
 
 
 # FUNCTIONS
-def isFile(path):
+def isValid(path):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISFILE
+        ISVALID
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Check if string path leads to a file.
+        Check if input is a valid path.
     """
 
-    return "." in os.path.basename(path)
+    return type(path) is str and not "\\" in path
 
 
 
@@ -345,43 +337,6 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
-
-    # Create empty path
-    path = Path()
-    print "Created path: " + path.path
-
-    # Create new path
-    path = Path("Test")
-    print "Created path: " + path.path
-
-    # Expand path
-    path.expand("1/2")
-    print "Expanded path to: " + path.path
-
-    # Expand path
-    path.expand("3/4")
-    print "Expanded path to: " + path.path
-
-    # Search for file
-    print path.scan("test.json")
-
-    # Create, and find
-    path.touch("test.json")
-    print [p.path for p in path.scan("test.json")]
-
-    # Scan from top and delete
-    path = Path("./Test")
-    print [p.path for p in path.scan("test.json")]
-    path.delete()
-
-    # Get date from path
-    path = Path("Test")
-    path.expand("2019/07/03")
-    print getDate(path)
-
-    # Format date in path
-    now = datetime.datetime.now()
-    print formatDate(now)
 
 
 
