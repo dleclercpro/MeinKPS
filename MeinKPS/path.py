@@ -138,7 +138,7 @@ class Path:
             # print "Making path '" + path + "'..."
 
             # Make it
-            os.makedirs(path, 0777)
+            os.makedirs(path, 0o777)
 
         # Look for file
         if filename is not None:
@@ -168,7 +168,7 @@ class Path:
                     json.dump({}, f)
 
                 # Give permissions
-                os.chmod(path, 0777)
+                os.chmod(path, 0o777)
 
 
 
