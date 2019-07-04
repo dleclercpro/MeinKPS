@@ -67,11 +67,24 @@ def test_expand():
 def test_backslash():
 
     """
-    Test path with backslashes.
+    Backslashes in path should not be a problem.
     """
 
-    with pytest.raises(TypeError):
-        _path = path.Path("1\\2")
+    _path = path.Path("1\\2")
+
+    assert _path.path == path.SRC + "1" + os.sep + "2" + os.sep
+
+
+
+def test_mixed_slashes():
+
+    """
+    Mixed slashes in path should not be a problem.
+    """
+
+    _path = path.Path("1/2\\3")
+
+    assert _path.path == path.SRC + "1" + os.sep + "2" + os.sep + "3" + os.sep
 
 
 
@@ -86,7 +99,7 @@ def test_list():
 
 
 
-def test_touch_directory():
+def test_touch_dir():
 
     """
     Test touching a directory.
@@ -147,7 +160,7 @@ def test_scan():
 
 
 
-def test_scan_recursively():
+def test_scan_recursive():
 
     """
     Scanning directory recursively for a file which exists should NOT return an
@@ -170,7 +183,7 @@ def test_scan_recursively():
 
 
 
-def test_scan_non_existent_path():
+def test_scan_non_existent_dir():
 
     """
     Scanning non-existent directory for a file should return an empty list.
@@ -234,7 +247,7 @@ def test_delete():
 
 
 
-def test_delete_recursively():
+def test_delete_recursive():
 
     """
     Creating, then recursively deleting directories and their files should leave

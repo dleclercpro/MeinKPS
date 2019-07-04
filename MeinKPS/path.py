@@ -54,15 +54,29 @@ class Path:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Wrong path type
-        if not isValid(path):
-            raise TypeError("Incorrect path type: " + path)
-
-        # Store absolute path
-        self.path = path
+        # Prepare path
+        self.path = self.prepare(path)
 
         # Normalize it
         self.normalize()
+
+
+
+    def prepare(self, path):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Prepare path: check its type and replace backslashes.
+        """
+
+        # Wrong path type
+        if not type(path) is str:
+            raise TypeError("String path expected. Got: " + type(path))
+
+        # Replace backslashes
+        return path.replace("\\", "/")
 
 
 
@@ -89,9 +103,8 @@ class Path:
             Expand path with another path.
         """
 
-        # Wrong path type
-        if not isValid(path):
-            raise TypeError("Incorrect path type: " + str(path))
+        # Prepare path
+        path = self.prepare(path)
 
         # Only relative paths allowed
         if os.path.isabs(path):
@@ -265,19 +278,6 @@ class Path:
 
 
 # FUNCTIONS
-def isValid(path):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISVALID
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Check if input is a valid path.
-    """
-
-    return type(path) is str and not "\\" in path
-
-
-
 def getDate(path):
 
     """
@@ -337,6 +337,9 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
+
+    # Create path
+    _path = Path()
 
 
 
