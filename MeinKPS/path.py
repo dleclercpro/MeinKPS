@@ -278,13 +278,13 @@ class Path:
 
 
 # FUNCTIONS
-def getDate(path):
+def toDate(path):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        GETDATE
+        TODATE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Get date from 3 parent directories.
+        Infer date from 3 parent directories.
     """
 
     # Initialize date
@@ -307,26 +307,6 @@ def getDate(path):
 
     # Return datetime object
     return datetime.date(*date)
-
-
-
-def formatDate(date):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        FORMATDATE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Using a date object, format and return it as follows: YYYY/MM/DD/
-    """
-    
-    # If datetime object
-    if type(date) is datetime.datetime or type(date) is datetime.date:
-
-        # Format date
-        return datetime.datetime.strftime(date, "%Y/%m/%d")
-
-    # Raise error
-    raise NotImplementedError("Incorrect date object type: " + type(date))
 
 
 

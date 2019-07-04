@@ -259,6 +259,27 @@ def decodeTime(x):
 
 
 
+def formatDate(date):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        FORMATDATE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Using a date object, return corresponding string in following format:
+        YYYY/MM/DD/
+    """
+    
+    # If datetime object
+    if type(date) is datetime.datetime or type(date) is datetime.date:
+
+        # Format date
+        return datetime.datetime.strftime(date, "%Y/%m/%d")
+
+    # Raise error
+    raise NotImplementedError("Incorrect date object type: " + type(date))
+
+
+
 def formatTime(t):
 
     """

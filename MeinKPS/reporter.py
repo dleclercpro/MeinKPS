@@ -44,7 +44,7 @@ import errors
 
 
 # Instanciate logger
-Logger = logger.Logger("reporter.py")
+Logger = logger.Logger("reporter.py", level = "DEBUG")
 
 
 
@@ -73,6 +73,7 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             GETDATES
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Get corresponding date objects for each dated report.
         """
 
         # Scan for all possible report directories
@@ -80,7 +81,7 @@ class Reporter:
 
         # Convert paths to dates
         if directories:
-            return [path.getDate(d) for d in directories]
+            return [path.toDate(d) for d in directories]
 
         # Give user info
         Logger.debug("No dated report found for '" + name + "'.")
@@ -93,28 +94,26 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             GETREPORT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Get report object.
         """
 
         # Default directory
         if directory is None:
 
             # Define source
-            directory = self.src.path
+            directory = self.src
 
-        # Otherwise
+        # Given date
         if date is not None:
 
-            # Format date
-            date = path.formatDate(date)
-
-            # Update path to report
-            directory = path.Path(directory + date).path
+            # Add date to path
+            directory.expand(lib.formatDate(date))
 
         # If report can be generated in case it doesn't exist yet
         if touch:
 
             # Touch it
-            path.Path(directory).touch(name)
+            directory.touch(name)
 
         # Generate new report
         report = Report(name, directory, date)
@@ -493,6 +492,10 @@ class Reporter:
 
 class Report:
 
+    """
+    Report object based on given JSON file.
+    """
+
     def __init__(self, name = None, directory = None, date = None, json = {}):
 
         """
@@ -515,6 +518,7 @@ class Report:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RESET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Reset report's JSON.
         """
 
         # Give user info
@@ -532,16 +536,15 @@ class Report:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             ERASE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Erase content of report's JSON file.
         """
 
         # Give user info
-        Logger.debug("Erasing report: '" + self.name + "' (" + str(self.date) +
-                     ")")
+        Logger.debug("Erasing report: '" + self.name + "' (" +
+                     str(self.date) + ")")
 
-        # Reset JSON
+        # Reset and store JSON
         self.reset()
-
-        # Store it
         self.store()
 
 
@@ -552,14 +555,50 @@ class Report:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             UPDATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Merge report's JSON with given JSON.
         """
 
         # Give user info
-        Logger.debug("Updating report: '" + self.name + "' (" + str(self.date) +
-                     ")")
+        Logger.debug("Updating report: '" + self.name + "' (" +
+                     str(self.date) + ")")
 
         # Update JSON
         self.json = lib.mergeDicts(self.json, json)
+
+
+
+    def get(self, branch, json = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Get value in report according to given branch.
+        """
+
+        # Top level
+        if json is None:
+            json = self.json
+
+        # Get current key
+        key = branch[0]
+
+        # Entry exists
+        if key in json:
+            entry = json[key]
+
+            # Dive deeper in JSON
+            if len(branch) > 1:
+                return self.get(branch[1:], entry)
+
+            # Found entry
+            else:
+                Logger.debug("Entry found.")
+                Logger.debug(lib.JSONize(entry))
+                return entry
+
+        Logger.debug("No matching entry found.")
+        return None
 
 
 
@@ -569,20 +608,24 @@ class Report:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Load content of report's JSON file.
         """
 
         # Give user info
-        Logger.debug("Loading report: '" + self.name + "' (" + str(self.date) +
-                     ")")
+        Logger.debug("Loading report: '" + self.name + "' (" +
+                     str(self.date) + ")")
 
         # Try opening report
         try:
 
             # Open report
-            with open(self.directory + self.name, "r") as f:
+            with open(self.directory.path + self.name, "r") as f:
 
                 # Load JSON
                 self.json = json.load(f)
+
+            # Give user info
+            Logger.debug("Report loaded.")
 
         # In case of error
         except:
@@ -592,9 +635,6 @@ class Report:
             self.erase()
             #raise errors.NoReport(self.name, self.date)
 
-        # Give user info
-        Logger.debug("Report loaded.")
-
 
 
     def store(self, directory = None):
@@ -603,23 +643,22 @@ class Report:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             STORE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Store current JSON to report's JSON file.
         """
 
         # Give user info
-        Logger.debug("Storing report: '" + self.name + "' (" + str(self.date) +
-                     ")")
+        Logger.debug("Storing report: '" + self.name + "' (" +
+                     str(self.date) + ")")
 
         # If no directory given
         if directory is None:
-
-            # Use stored directory
             directory = self.directory
 
         # Make sure report exists
-        path.Path(directory).touch(self.name)
+        directory.touch(self.name)
 
         # Rewrite report
-        with open(directory + self.name, "w") as f:
+        with open(directory.path + self.name, "w") as f:
 
             # Dump JSON
             json.dump(self.json, f,
@@ -639,7 +678,7 @@ class Report:
 
         # Show report
         Logger.debug(lib.JSONize({"Name": self.name,
-                                  "Directory": self.directory,
+                                  "Directory": self.directory.path,
                                   "Date": self.date,
                                   "JSON": self.json}))
 
@@ -659,6 +698,10 @@ def main():
     # Instanciate a reporter for me
     reporter = Reporter()
 
+    # Get pump report
+    report = reporter.getReport("pump.json", None, None, False)
+    print report.get(["Settings", "Max Bolus"])
+
     # Get basal profile from pump report
     #reporter.get("pump.json", [], "Basal Profile (Standard)")
 
@@ -666,10 +709,10 @@ def main():
     #reporter.get("BG.json", [], None, now)
 
     # Get most recent data
-    json = reporter.getRecent(now, "BG.json", [], 3, True)
+    #json = reporter.getRecent(now, "BG.json", [], 3, True)
 
     # Print data
-    print lib.JSONize(json)
+    #print lib.JSONize(json)
 
     # Increment loop
     #reporter.increment("loop.json", ["Status"], "N")

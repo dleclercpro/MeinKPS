@@ -28,6 +28,7 @@ import datetime
 
 
 # USER LIBRARIES
+import lib
 import path
 
 
@@ -80,7 +81,7 @@ class Logger(object):
             msg = self.format.format(now, self.name, level, msg)
 
             # Define log directory
-            directory = path.Path("Reports/" + path.formatDate(now))
+            directory = path.Path("Reports/" + lib.formatDate(now))
 
             # Touch it
             directory.touch()
