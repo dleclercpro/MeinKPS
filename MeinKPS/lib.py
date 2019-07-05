@@ -397,7 +397,7 @@ def merge(base, new, n = 1):
         Merge dictionaries together.
     """
 
-    # On start
+    # Start
     if n == 1:
 
         # Check if dict given as input
@@ -412,43 +412,32 @@ def merge(base, new, n = 1):
     # Loop over keys
     for key, value in new.items():
 
-        # If dict/list
-        if type(value) is dict:
+        # Key exists
+        if key in base:
 
-            # If key does not exist in base
-            if key not in base:
+            # Both current values are of same type:
+            if type(base[key]) is type(value):
 
-                # Generate new entry
-                base[key] = {}
+                # Both dicts: dive in deeper
+                if type(value) is dict:
+                    merge(base[key], value, n + 1)
 
-            # Dive in
-            merge(base[key], value, n + 1)
+                # Otherwise: entry mismatch
+                elif base[key] != value:
+                    raise errors.MismatchEntryValue()
 
-        # Otherwise
-        else:
-
-            # If key does not exist in base
-            if key not in base:
-
-                # Add key
-                base[key] = value
-
-            # Otherwise
+            # Otherwise: type mismatch
             else:
+                raise errors.MismatchEntryType()
 
-                # Info
-                # print "Key already exists: " + str(key) + " -> " + str(value)
+        # Otherwise: generate new entry
+        else:
+            base[key] = value
 
-                # Mismatch
-                if base[key] != value:
-
-                    # Error
-                    raise errors.MismatchKeyValue()
-
-    # On end
+    # End
     if n == 1:
 
-        # Return it
+        # Return merged dicts
         return base
 
 
