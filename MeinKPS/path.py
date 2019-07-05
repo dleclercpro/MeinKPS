@@ -181,7 +181,7 @@ class Path:
             Recursively delete path.
         """
 
-        # Top level scan
+        # Start
         if n == 1:
 
             # Get string from path
@@ -233,7 +233,7 @@ class Path:
             paths to directories, which contain said file.
         """
 
-        # Top level scan
+        # Start
         if n == 1:
 
             # Get string from path
@@ -269,7 +269,7 @@ class Path:
             elif os.path.isdir(p):
                 self.scan(filename, p, results, n + 1)
 
-        # End of top level scan
+        # End
         if n == 1:
 
             # Return results
