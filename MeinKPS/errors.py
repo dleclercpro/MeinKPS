@@ -44,6 +44,9 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize info
+        self.info = ""
+
         # Initialize error logging level
         self.level = "ERROR"
 
@@ -637,6 +640,70 @@ class NoSection(ReporterError):
 
 
 
+class BrokenBranch(ReporterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Branch is invalid. Should be a non empty list filled " +
+                     "only with strings: " + self.args[0])
+
+
+
+class InvalidBranch(ReporterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Report '" + self.args[0] + "' has no branch: " +
+                     self.args[1])
+
+
+
+class NoOverwritingAdd(ReporterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Cannot add value in report '" + self.args[0] + "' " +
+                     "without overwriting tip of branch: " + self.args[1])
+
+
+
+class NoTouchingAdd(ReporterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Cannot add value in report '" + self.args[0] + "' " +
+                     "without touching parts of branch: " + self.args[1])
+
+
+
 # Profile errors
 class NoProfileData(ProfileError):
 
@@ -810,7 +877,7 @@ class BadFunctionCall(BaseError):
 
 
 
-class MismatchKeyValue(BaseError):
+class MismatchEntryValue(BaseError):
 
     def prepare(self):
 
@@ -821,7 +888,23 @@ class MismatchKeyValue(BaseError):
         """
 
         # Define error info
-        self.info = "Cannot merge dicts: (key, value) sets mismatch."
+        self.info = "Cannot merge dicts: conflicting values for given entry."
+
+
+
+class MismatchEntryType(BaseError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("Cannot merge dicts: conflicting types for given " +
+                     "entry's values.")
 
 
 

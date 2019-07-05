@@ -48,6 +48,11 @@ Logger = logger.Logger("reporter.py", level = "DEBUG")
 
 
 
+# CONSTANTS
+LOADING_ATTEMPTS = 2
+
+
+
 # CLASSES
 class Reporter:
 
@@ -83,7 +88,7 @@ class Reporter:
         if directories:
             return [path.toDate(d) for d in directories]
 
-        # Give user info
+        # Info
         Logger.debug("No dated report found for '" + name + "'.")
 
 
@@ -140,7 +145,7 @@ class Reporter:
         # First level section is whole report
         section = report.json
 
-        # Give user info
+        # Info
         Logger.debug("Getting section: " + " > ".join(["."] + branch))
 
         # Loop through whole report to find section
@@ -155,7 +160,7 @@ class Reporter:
                 # Make section if desired
                 if make:
                 
-                    # Give user info
+                    # Info
                     Logger.debug("Section not found. Making it...")
 
                     # Create it
@@ -170,7 +175,7 @@ class Reporter:
             # Update section
             section = section[b]
 
-        # Give user info
+        # Info
         Logger.debug("Section found.")
 
         # Show section
@@ -189,7 +194,7 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Getting entry: " + str(key))
 
         # Look if entry exists
@@ -198,7 +203,7 @@ class Reporter:
             # Get corresponding value
             value = section[key]
 
-            # Give user info
+            # Info
             Logger.debug("Entry found.")
 
             # Show value
@@ -210,7 +215,7 @@ class Reporter:
         # Otherwise
         else:
 
-            # Give user info
+            # Info
             Logger.debug("No matching entry found.")
 
             # Return nothing
@@ -226,7 +231,7 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding entry:")
 
         # Show entry
@@ -238,7 +243,7 @@ class Reporter:
         # Look if entry is already in report
         if key in section and not overwrite:
 
-            # Give user info
+            # Info
             Logger.debug("Entry already exists.")
 
             # Entry was not modified
@@ -253,13 +258,13 @@ class Reporter:
             # If overwritten
             if overwrite:
 
-                # Give user info
+                # Info
                 Logger.debug("Entry overwritten.")
 
             # Otherwise
             else:
 
-                # Give user info
+                # Info
                 Logger.debug("Entry added.")
 
             # Entry was modified
@@ -275,7 +280,7 @@ class Reporter:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Deleting entry: " + str(key))
 
         # If it does, delete it
@@ -284,12 +289,12 @@ class Reporter:
             # Delete entry
             del section[key]
 
-            # Give user info
+            # Info
             Logger.debug("Entry deleted.")
 
         else:
 
-            # Give user info
+            # Info
             Logger.debug("No such entry.")
 
 
@@ -490,7 +495,7 @@ class Reporter:
 
 
 
-class Report:
+class Report(object):
 
     """
     Report object based on given JSON file.
@@ -521,84 +526,31 @@ class Report:
             Reset report's JSON.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Resetting report: '" + self.name + "' (" +
                      str(self.date) + ")")
 
         # Reset JSON
         self.json = {}
-
-
-
-    def erase(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ERASE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Erase content of report's JSON file.
-        """
-
-        # Give user info
-        Logger.debug("Erasing report: '" + self.name + "' (" +
-                     str(self.date) + ")")
-
-        # Reset and store JSON
-        self.reset()
         self.store()
 
 
 
-    def update(self, json):
+    def merge(self, json):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            UPDATE
+            MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Merge report's JSON with given JSON.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Updating report: '" + self.name + "' (" +
                      str(self.date) + ")")
 
         # Update JSON
         self.json = lib.mergeDicts(self.json, json)
-
-
-
-    def get(self, branch, json = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GET
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Get value in report according to given branch.
-        """
-
-        # Top level
-        if json is None:
-            json = self.json
-
-        # Get current key
-        key = branch[0]
-
-        # Entry exists
-        if key in json:
-            entry = json[key]
-
-            # Dive deeper in JSON
-            if len(branch) > 1:
-                return self.get(branch[1:], entry)
-
-            # Found entry
-            else:
-                Logger.debug("Entry found.")
-                Logger.debug(lib.JSONize(entry))
-                return entry
-
-        Logger.debug("No matching entry found.")
-        return None
 
 
 
@@ -611,29 +563,36 @@ class Report:
             Load content of report's JSON file.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Loading report: '" + self.name + "' (" +
                      str(self.date) + ")")
 
-        # Try opening report
-        try:
+        # Loading
+        for i in range(LOADING_ATTEMPTS):
 
-            # Open report
-            with open(self.directory.path + self.name, "r") as f:
+            # Info
+            Logger.debug("Loading attempt: " + str(i + 1) + "/" +
+                                               str(LOADING_ATTEMPTS))
 
-                # Load JSON
-                self.json = json.load(f)
+            # Try opening report
+            try:
 
-            # Give user info
-            Logger.debug("Report loaded.")
+                # Open report
+                with open(self.directory.path + self.name, "r") as f:
 
-        # In case of error
-        except:
+                    # Load JSON
+                    self.json = json.load(f)
 
-            # No report
-            # FIXME: just reset report to empty JSON object
-            self.erase()
-            #raise errors.NoReport(self.name, self.date)
+                # Success
+                Logger.debug("Report loaded.")
+                return
+
+            # In case of error
+            except:
+
+                # Reset report
+                self.reset()
+                self.store()
 
 
 
@@ -646,7 +605,7 @@ class Report:
             Store current JSON to report's JSON file.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Storing report: '" + self.name + "' (" +
                      str(self.date) + ")")
 
@@ -684,6 +643,310 @@ class Report:
 
 
 
+    def get(self, branch):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            GET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Get value in report according to given series of keys (aka branch).
+        """
+
+        # Test branch
+        if isBranchBroken(branch):
+            raise errors.BrokenBranch(str(branch))
+
+        # Initialize json
+        json = self.json
+
+        # Dive in JSON according to branch
+        for key in branch:
+
+            # Key exists
+            if key in json:
+
+                # Last key of branch (actual key of entry)
+                if key == branch[-1]:
+                    return json[key]
+
+                # Key leads to another dict: dive deeper
+                elif type(json[key]) is dict:
+                    json = json[key]
+
+        # Branch is invalid
+        raise errors.InvalidBranch(self.name, str(branch))
+
+
+
+    def add(self, branch, value, overwrite = False, touch = False):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ADD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Add entry to report at the tip of given branch. Touch will allow
+            to create parts of the branch that could eventually be missing,
+            while overwrite allows to wipe and rewrite preexisting entries/
+            branches.
+        """
+
+        # Test branch
+        if isBranchBroken(branch):
+            raise errors.BrokenBranch(str(branch))
+
+        # Overwrite is stronger than touch (if overwriting allowed, creating new
+        # parts of report should be also allowed)
+        if overwrite:
+            touch = True
+
+        # Initialize JSON
+        json = self.json
+
+        # Dive in JSON according to branch
+        for key in branch:
+
+            # Last key of branch (actual key of entry)
+            if key == branch[-1]:
+                
+                # Key does not exist or can be overwritten
+                if not key in json or overwrite:
+                    json[key] = value
+                    return
+
+                # Otherwise
+                else:
+                    raise errors.NoOverwritingAdd(self.name, str(branch))
+
+            # Otherwise
+            else:
+                
+                # Key is missing
+                if not key in json:
+
+                    # Can touch it
+                    if touch:
+                        json[key] = {}
+
+                    # Otherwise
+                    else:
+                        raise errors.NoTouchingAdd(self.name, str(branch))
+
+                # Key exists, but doesn't lead to a dict
+                if type(json[key]) is not dict:
+
+                    # However, overwriting is allowed
+                    if overwrite:
+                        json[key] = {}
+
+                    # Otherwise
+                    else:
+                        raise errors.NoOverwritingAdd(self.name, str(branch))
+
+                # Dive deeper in JSON
+                json = json[key]
+
+        # Branch is invalid
+        raise errors.InvalidBranch(self.name, str(branch))
+
+
+
+    def increment(self, branch):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INCREMENT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Increment the tip of the branch by one.
+        """
+
+        # Try reading value
+        n = self.get(branch)
+
+        # Make sure it is a number
+        if not type(n) is int:
+            raise TypeError("Can only increment integers. Found: " + str(n))
+
+        # Update value
+        self.add(branch, n + 1, True)
+
+
+
+class BGReport(Report):
+    pass
+
+
+
+class PumpReport(Report):
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        Logger.debug("Resetting report: '" + self.name + "' (" +
+                     str(self.date) + ")")
+
+        # Reset to default
+        self.json = {
+            "BG Targets": {},
+            "Basal Profile (A)": {},
+            "Basal Profile (B)": {},
+            "Basal Profile (Standard)": {},
+            "CSF": {},
+            "ISF": {},
+            "Power": "1970.01.01 - 00:00:00",
+            "Properties": {
+                "Firmware": "",
+                "Model": 0
+            },
+            "Settings": {
+                "DIA": 0,
+                "Max Basal": 0,
+                "Max Bolus": 0
+            },
+            "Units": {
+                "BG": "mmol/L",
+                "Carbs": "g",
+                "TB": "U/h"
+            }
+        }
+
+        # Store it
+        self.store()
+
+
+
+class CGMReport(Report):
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        Logger.debug("Resetting report: '" + self.name + "' (" +
+                     str(self.date) + ")")
+
+        # Reset to default
+        self.json = {
+            "Clock Mode": "24h",
+            "Language": "English",
+            "Transmitter ID": "",
+            "Units": "mmol/L"
+        }
+
+        # Store it
+        self.store()
+
+
+
+class StickReport(Report):
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        Logger.debug("Resetting report: '" + self.name + "' (" +
+                     str(self.date) + ")")
+
+        # Reset to default
+        self.json = {
+            "Frequency": [
+                    917.5,
+                    "1970.01.01 - 00:00:00"
+                ]
+        }
+
+        # Store it
+        self.store()
+
+
+
+class TreatmentsReport(Report):
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        Logger.debug("Resetting report: '" + self.name + "' (" +
+                     str(self.date) + ")")
+
+        # Reset to default
+        self.json = {
+            "Boluses": {},
+            "IOB": {},
+            "Net Basals": {}
+        }
+
+        # Store it
+        self.store()
+
+
+
+class HistoryReport(Report):
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        Logger.debug("Resetting report: '" + self.name + "' (" +
+                     str(self.date) + ")")
+
+        # Reset to default
+        self.json = {
+            "CGM": {
+                "Battery Levels": {},
+                "Calibrations": {},
+                "Sensor Statuses": {}
+            },
+            "Pump": {
+                "Battery Levels": {},
+                "Reservoir Levels": {}
+            }
+        }
+
+        # Store it
+        self.store()
+
+
+
+# FUNCTIONS
+def isBranchBroken(branch):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISBRANCHBROKEN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        A branch is a list of keys, which lead to a value in a dict. It should
+        never be empty, and all its values should be strings.
+    """
+
+    return len(branch) == 0 or not all([type(b) is str for b in branch])
+
+
+
 def main():
 
     """
@@ -700,7 +963,10 @@ def main():
 
     # Get pump report
     report = reporter.getReport("pump.json", None, None, False)
-    print report.get(["Settings", "Max Bolus"])
+    report.get(["Settings", "Max Bolus"])
+    report.add(["Settings", "Max Bolus", "Test", "Hello"], 255, True)
+    report.increment(["Settings", "Max Bolus", "Test", "Hello"])
+    report.show()
 
     # Get basal profile from pump report
     #reporter.get("pump.json", [], "Basal Profile (Standard)")
