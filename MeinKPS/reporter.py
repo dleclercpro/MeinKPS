@@ -49,6 +49,7 @@ Logger = logger.Logger("reporter.py", level = "DEBUG")
 
 
 # CONSTANTS
+SRC = path.Path("Reports")
 LOADING_ATTEMPTS = 2
 
 
@@ -495,13 +496,16 @@ class Reporter:
 
 
 
+
+
+
 class Report(object):
 
     """
     Report object based on given JSON file.
     """
 
-    def __init__(self, name = None, directory = None, date = None, json = {}):
+    def __init__(self, name = None, date = None, directory = SRC, json = {}):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -750,6 +754,42 @@ class Report(object):
 
 
 
+    def delete(self, branch):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DELETE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Delete entry from report at the tip of given branch.
+        """
+
+        # Test branch
+        if isBranchBroken(branch):
+            raise errors.BrokenBranch(str(branch))
+
+        # Initialize json
+        json = self.json
+
+        # Dive in JSON according to branch
+        for key in branch:
+
+            # Key exists
+            if key in json:
+
+                # Last key of branch (actual key of entry)
+                if key == branch[-1]:
+                    del json[key]
+                    return
+
+                # Key leads to another dict: dive deeper
+                elif type(json[key]) is dict:
+                    json = json[key]
+
+        # Branch is invalid
+        raise errors.InvalidBranch(self.name, str(branch))
+
+
+
     def increment(self, branch):
 
         """
@@ -771,12 +811,36 @@ class Report(object):
 
 
 
+
+
+
 class BGReport(Report):
-    pass
+
+    def __init__(self, date):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(BGReport, self).__init__("BG.json", date)
 
 
 
 class PumpReport(Report):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(PumpReport, self).__init__("pump.json")
+
+
 
     def reset(self):
 
@@ -822,6 +886,18 @@ class PumpReport(Report):
 
 class CGMReport(Report):
 
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(CGMReport, self).__init__("CGM.json")
+
+
+
     def reset(self):
 
         """
@@ -848,6 +924,18 @@ class CGMReport(Report):
 
 
 class StickReport(Report):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(StickReport, self).__init__("stick.json")
+
+
 
     def reset(self):
 
@@ -876,6 +964,18 @@ class StickReport(Report):
 
 class TreatmentsReport(Report):
 
+    def __init__(self, date):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(TreatmentsReport, self).__init__("treatments.json", date)
+
+
+
     def reset(self):
 
         """
@@ -901,6 +1001,18 @@ class TreatmentsReport(Report):
 
 
 class HistoryReport(Report):
+
+    def __init__(self, date):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(HistoryReport, self).__init__("history.json", date)
+
+
 
     def reset(self):
 
@@ -958,15 +1070,17 @@ def main():
     # Get current time
     now = datetime.datetime.now() - datetime.timedelta(days = 0)
 
-    # Instanciate a reporter for me
-    reporter = Reporter()
-
     # Get pump report
-    report = reporter.getReport("pump.json", None, None, False)
-    report.get(["Settings", "Max Bolus"])
-    report.add(["Settings", "Max Bolus", "Test", "Hello"], 255, True)
-    report.increment(["Settings", "Max Bolus", "Test", "Hello"])
-    report.show()
+    pumpReport = PumpReport()
+    pumpReport.load()
+    pumpReport.get(["Settings", "Max Bolus"])
+    pumpReport.add(["Settings", "Max Bolus", "Test"], 0, True)
+    pumpReport.increment(["Settings", "Max Bolus", "Test"])
+    pumpReport.show()
+    #pumpReport.delete(["Settings", "Max Bolus", "Test"])
+    #pumpReport.show()
+    pumpReport.add(["Settings", "Max Bolus"], 35.0, True)
+    pumpReport.show()
 
     # Get basal profile from pump report
     #reporter.get("pump.json", [], "Basal Profile (Standard)")
