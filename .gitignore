@@ -1,2 +1,5 @@
 Reports
 Exports
+*.pyc
+.vscode
+.pytest_cache
