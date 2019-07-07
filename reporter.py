@@ -1086,7 +1086,7 @@ def isBranchBroken(branch):
 
 
 
-def getReportDates(report, src = PATH_REPORTS):
+def getReportDates(reportType, src = PATH_REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1096,18 +1096,18 @@ def getReportDates(report, src = PATH_REPORTS):
     """
 
     # Test report
-    if not issubclass(report, Report):
+    if not issubclass(reportType, Report):
         raise TypeError("Report class needed.")
 
     # Scan for reports with same name within given source directory
-    directories = src.scan(report.name)
+    directories = src.scan(reportType.name)
 
     # Convert paths to dates
     if directories:
         return [path.toDate(d) for d in directories]
 
     # Info
-    Logger.debug("No dated report found for '" + report.name + "'.")
+    Logger.debug("No dated report found for '" + reportType.name + "'.")
 
 
 
