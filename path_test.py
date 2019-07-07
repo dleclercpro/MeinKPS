@@ -4,7 +4,7 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    test_path
+    Title:    path_test
 
     Author:   David Leclerc
 
@@ -36,10 +36,10 @@ def getDirAndFilePathFromSrc(dirname = "", filename = ""):
 
     if dirname:
         dirpath = path.SRC + dirname
-        
+
         if filename:
             filepath = dirpath + os.sep + filename
-            
+
     return dirpath, filepath
 
 
