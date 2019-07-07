@@ -26,6 +26,8 @@
 # - Disconnect Pi safely (do not break JSON files)
 # - When adding an entry with the overwrite argument, only said entry can be
 #   overwritten and not the whole section (see BG Targets)?
+# - Scan for corrupted directory/file structure (e.g. should this report be
+#   there?)
 
 
 
@@ -49,7 +51,8 @@ Logger = logger.Logger("reporter.py", level = "DEBUG")
 
 
 # CONSTANTS
-SRC = path.Path("Reports")
+PATH_REPORTS = path.Path("Reports")
+PATH_EXPORTS = path.Path("Exports")
 LOADING_ATTEMPTS = 2
 
 
@@ -69,7 +72,7 @@ class Reporter:
         self.src = path.Path("Reports")
 
         # Define export path
-        self.export = path.Path("Reports/Export")
+        self.export = path.Path("Exports")
 
 
 
@@ -505,19 +508,51 @@ class Report(object):
     Report object based on given JSON file.
     """
 
-    def __init__(self, name = None, date = None, directory = SRC, json = {}):
+    # Define report name
+    name = None
+
+
+
+    def __init__(self, date = None, directory = PATH_REPORTS, json = {}):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Initialize report based on its name, its eventual date, its source
+            directory, and its JSON content.
         """
 
+        # Test path
+        if not isinstance(directory, path.Path):
+            raise TypeError("Need path.")
+
         # Initialize report attributes
-        self.name = name
-        self.directory = directory
         self.date = date
         self.json = json
+        self.directory = directory
+
+        # Dated report
+        if date is not None:
+            self.directory.expand(lib.formatDate(date))
+
+
+
+    def erase(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ERASE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Erase report's content.
+        """
+
+        # Info
+        Logger.debug("Erasing report: '" + self.name + "' (" + str(self.date) +
+                     ")")
+
+        # Erase JSON
+        self.json = {}
 
 
 
@@ -527,7 +562,7 @@ class Report(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RESET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Reset report's JSON.
+            Reset report's content and store it.
         """
 
         # Info
@@ -535,12 +570,12 @@ class Report(object):
                      str(self.date) + ")")
 
         # Reset JSON
-        self.json = {}
+        self.erase()
         self.store()
 
 
 
-    def merge(self, json):
+    def merge(self, report):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -549,9 +584,13 @@ class Report(object):
             Merge report's JSON with given JSON.
         """
 
+        # Test report
+        if not isinstance(report, Report):
+            raise TypeError("Need report to merge.")
+
         # Info
-        Logger.debug("Updating report: '" + self.name + "' (" +
-                     str(self.date) + ")")
+        Logger.debug("Merging '" + self.name + "' (" + str(self.date) + ") " +
+                     "with '" + report.name + "' (" + str(report.date) + ")")
 
         # Update JSON
         self.json = lib.mergeDicts(self.json, json)
@@ -568,8 +607,8 @@ class Report(object):
         """
 
         # Info
-        Logger.debug("Loading report: '" + self.name + "' (" +
-                     str(self.date) + ")")
+        Logger.debug("Loading report: '" + self.name + "' (" + str(self.date) +
+                     ")")
 
         # Loading
         for i in range(LOADING_ATTEMPTS):
@@ -600,7 +639,7 @@ class Report(object):
 
 
 
-    def store(self, directory = None):
+    def store(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -610,18 +649,14 @@ class Report(object):
         """
 
         # Info
-        Logger.debug("Storing report: '" + self.name + "' (" +
-                     str(self.date) + ")")
-
-        # If no directory given
-        if directory is None:
-            directory = self.directory
+        Logger.debug("Storing report: '" + self.name + "' (" + str(self.date) +
+                     ")")
 
         # Make sure report exists
-        directory.touch(self.name)
+        self.directory.touch(self.name)
 
         # Rewrite report
-        with open(directory.path + self.name, "w") as f:
+        with open(self.directory.path + self.name, "w") as f:
 
             # Dump JSON
             json.dump(self.json, f,
@@ -647,7 +682,7 @@ class Report(object):
 
 
 
-    def get(self, branch):
+    def get(self, branch = []):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -659,6 +694,10 @@ class Report(object):
         # Test branch
         if isBranchBroken(branch):
             raise errors.BrokenBranch(str(branch))
+
+        # Empty branch: return whole report
+        if branch == []:
+            return self.json
 
         # Initialize json
         json = self.json
@@ -682,7 +721,7 @@ class Report(object):
 
 
 
-    def add(self, branch, value, overwrite = False, touch = False):
+    def add(self, value, branch = [], overwrite = False, touch = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -702,6 +741,26 @@ class Report(object):
         # parts of report should be also allowed)
         if overwrite:
             touch = True
+
+        # Empty branch: replace the whole report
+        if branch == []:
+
+            # Value is dict
+            if type(value) is dict:
+
+                # Overwriting allowed
+                if overwrite:
+                    self.json = value
+                    return
+
+                # Otherwise
+                else:
+                    raise errors.NoOverwritingAdd(self.name, str(branch))
+
+            # Otherwise
+            else:
+                raise TypeError("Cannot replace report's content with a " +
+                                "non-dict object.")
 
         # Initialize JSON
         json = self.json
@@ -754,7 +813,7 @@ class Report(object):
 
 
 
-    def delete(self, branch):
+    def delete(self, branch = []):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -767,7 +826,12 @@ class Report(object):
         if isBranchBroken(branch):
             raise errors.BrokenBranch(str(branch))
 
-        # Initialize json
+        # Empty branch: erase whole report
+        if branch == []:
+            self.json = {}
+            return
+
+        # Initialize JSON
         json = self.json
 
         # Dive in JSON according to branch
@@ -799,6 +863,11 @@ class Report(object):
             Increment the tip of the branch by one.
         """
 
+        # Test branch: no empty branch allowed (cannot increment the root of a
+        # report's content)
+        if isBranchBroken(branch) or branch == []:
+            raise errors.BrokenBranch(str(branch))
+
         # Try reading value
         n = self.get(branch)
 
@@ -807,7 +876,7 @@ class Report(object):
             raise TypeError("Can only increment integers. Found: " + str(n))
 
         # Update value
-        self.add(branch, n + 1, True)
+        self.add(n + 1, branch, True)
 
 
 
@@ -816,29 +885,15 @@ class Report(object):
 
 class BGReport(Report):
 
-    def __init__(self, date):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        super(BGReport, self).__init__("BG.json", date)
+    # Define report name
+    name = "BG.json"
 
 
 
 class PumpReport(Report):
 
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        super(PumpReport, self).__init__("pump.json")
+    # Define report name
+    name = "pump.json"
 
 
 
@@ -886,15 +941,8 @@ class PumpReport(Report):
 
 class CGMReport(Report):
 
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        super(CGMReport, self).__init__("CGM.json")
+    # Define report name
+    name = "CGM.json"
 
 
 
@@ -925,15 +973,8 @@ class CGMReport(Report):
 
 class StickReport(Report):
 
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        super(StickReport, self).__init__("stick.json")
+    # Define report name
+    name = "stick.json"
 
 
 
@@ -964,15 +1005,8 @@ class StickReport(Report):
 
 class TreatmentsReport(Report):
 
-    def __init__(self, date):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        super(TreatmentsReport, self).__init__("treatments.json", date)
+    # Define report name
+    name = "treatments.json"
 
 
 
@@ -1002,15 +1036,8 @@ class TreatmentsReport(Report):
 
 class HistoryReport(Report):
 
-    def __init__(self, date):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        super(HistoryReport, self).__init__("history.json", date)
+    # Define report name
+    name = "history.json"
 
 
 
@@ -1051,11 +1078,92 @@ def isBranchBroken(branch):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ISBRANCHBROKEN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        A branch is a list of keys, which lead to a value in a dict. It should
-        never be empty, and all its values should be strings.
+        A branch is a list of keys, which lead to a value in a dict. All its
+        values should be strings.
     """
 
-    return len(branch) == 0 or not all([type(b) is str for b in branch])
+    return not(type(branch) is list and all([type(b) is str for b in branch]))
+
+
+
+def getReportDates(report, src = PATH_REPORTS):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        GETREPORTDATES
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Get corresponding date objects for a dated report.
+    """
+
+    # Test report
+    if not issubclass(report, Report):
+        raise TypeError("Report class needed.")
+
+    # Scan for reports with same name within given source directory
+    directories = src.scan(report.name)
+
+    # Convert paths to dates
+    if directories:
+        return [path.toDate(d) for d in directories]
+
+    # Info
+    Logger.debug("No dated report found for '" + report.name + "'.")
+
+
+
+def getRecentReports(now, reportType, branch, n = 2, strict = False):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        GETRECENTREPORTS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Get the "n" most recent report parts, according to the tip of the given
+        branch (this can be the whole report if the branch is an empty list).
+                
+        If "strict" is true, "n" defines the number of days from today the
+        function will try looking back for content. Otherwise, it will try to
+        find "n" reports, no matter how old they are.
+    """
+
+    # Test report
+    if not issubclass(reportType, Report):
+        raise TypeError("Report class needed.")
+
+    # Get current date
+    today = now.date()
+    
+    # Initialize oldest possible date
+    oldest = datetime.date(1970, 1, 1)
+
+    # Strict search: look up to "n" days before
+    if strict:
+        oldest = today - datetime.timedelta(days = n - 1)
+
+    # Get dates of reports
+    dates = [d for d in getReportDates(reportType) if oldest <= d <= today]
+
+    # Not enough reports
+    if len(dates) < n:
+        Logger.warning("Could not gather " + str(n) + " most recent reports.")
+
+        # Update number of reports
+        n = len(dates)
+
+    # Initialize dict for merged JSON
+    json = {}
+
+    # Loop on found dates, starting with the latest one
+    for date in sorted(dates, reverse = True)[-n:]:
+
+        # Initialize and load report
+        report = reportType(date)
+        report.load()
+
+        # Merge entries
+        json = lib.mergeDicts(json, report.get(branch))
+
+    # Return entries
+    return json
 
 
 
@@ -1071,16 +1179,19 @@ def main():
     now = datetime.datetime.now() - datetime.timedelta(days = 0)
 
     # Get pump report
-    pumpReport = PumpReport()
-    pumpReport.load()
-    pumpReport.get(["Settings", "Max Bolus"])
-    pumpReport.add(["Settings", "Max Bolus", "Test"], 0, True)
-    pumpReport.increment(["Settings", "Max Bolus", "Test"])
-    pumpReport.show()
+    #pumpReport = PumpReport()
+    #pumpReport.load()
+    #pumpReport.get(["Settings", "Max Bolus"])
+    #pumpReport.add(0, ["Settings", "Max Bolus", "Test"], True)
+    #pumpReport.increment(["Settings", "Max Bolus", "Test"])
+    #pumpReport.show()
     #pumpReport.delete(["Settings", "Max Bolus", "Test"])
     #pumpReport.show()
-    pumpReport.add(["Settings", "Max Bolus"], 35.0, True)
-    pumpReport.show()
+    #pumpReport.add(35.0, ["Settings", "Max Bolus"], True)
+    #pumpReport.show()
+
+    #print getReportDates(BGReport)
+    print getRecentReports(now, BGReport, [], 4)
 
     # Get basal profile from pump report
     #reporter.get("pump.json", [], "Basal Profile (Standard)")

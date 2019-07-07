@@ -651,8 +651,7 @@ class BrokenBranch(ReporterError):
         """
 
         # Define error info
-        self.info = ("Branch is invalid. Should be a non empty list filled " +
-                     "only with strings: " + self.args[0])
+        self.info = "Branch is invalid: " + self.args[0]
 
 
 

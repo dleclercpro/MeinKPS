@@ -44,6 +44,8 @@ class Path:
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Normalized path object with 2 components (string and list) which always
         points to a directory.
+        
+        Note: all paths given as arguments in class' methods should be strings.
     """
 
     def __init__(self, path = SRC):
@@ -184,18 +186,12 @@ class Path:
         # Start
         if n == 1:
 
-            # Get string from path
+            # Get string version of path
             path = self.path
 
             # No path
             if not os.path.isdir(path):
                 return
-
-        # Otherwise
-        else:
-
-            # Create new path
-            path = Path(path).path
 
         # Get all child files/directories within path
         children = [path + p for p in os.listdir(path)]
@@ -216,7 +212,7 @@ class Path:
             elif os.path.isdir(p):
 
                 # Delete further
-                self.delete(p, n + 1)
+                self.delete(Path(p).path, n + 1)
 
         # Delete directory
         os.rmdir(path)
@@ -236,7 +232,7 @@ class Path:
         # Start
         if n == 1:
 
-            # Get string from path
+            # Get string version of path
             path = self.path
 
             # Initialize results
@@ -245,12 +241,6 @@ class Path:
             # No path
             if not os.path.isdir(path):
                 return []
-
-        # Otherwise
-        else:
-
-            # Create new path
-            path = Path(path).path
 
         # Info
         # print "Scanning for '" + str(filename) + "' in '" + str(path) + "'..."
@@ -267,7 +257,7 @@ class Path:
 
             # If directory
             elif os.path.isdir(p):
-                self.scan(filename, p, results, n + 1)
+                self.scan(filename, Path(p).path, results, n + 1)
 
         # End
         if n == 1:
