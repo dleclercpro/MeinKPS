@@ -65,7 +65,7 @@ class Report(object):
     Report object based on given JSON file.
     """
 
-    def __init__(self, name, date = None, directory = PATH_REPORTS, json = {}):
+    def __init__(self, name, directory = PATH_REPORTS, json = {}):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,25 +79,14 @@ class Report(object):
         if type(name) is not str:
             raise TypeError("Name should be a string.")
 
-        # Test date
-        if (date is not None and
-            type(date) is not datetime.date and
-            type(date) is not datetime.datetime):
-            raise TypeError("Date should be a datetime object.")
-
         # Test path
         if not isinstance(directory, path.Path):
             raise TypeError("Path should be a path instance.")
 
         # Initialize report attributes
         self.name = name
-        self.date = date.date() if type(date) is datetime.datetime else date
         self.json = json
         self.directory = path.Path(directory.path)
-
-        # Dated report
-        if date is not None:
-            self.directory.expand(lib.formatDate(date))
 
 
 
@@ -110,15 +99,7 @@ class Report(object):
             String representation of report.
         """
 
-        # Prepare string
-        string = "'" + self.name + "'"
-
-        # Add date
-        if self.date is not None:
-            string += " (" + lib.formatDate(self.date) + ")"
-
-        # Return for printing
-        return string
+        return "'" + self.name + "'"
 
 
 
@@ -131,11 +112,9 @@ class Report(object):
             String representation of report's content.
         """
 
-        # Return for printing
         return lib.JSONize({
             "Name": self.name,
             "Directory": self.directory.path,
-            "Date": self.date,
             "JSON": self.json
         })
 
@@ -479,10 +458,71 @@ class Report(object):
 
 
 
+class DatedReport(Report):
+
+    """
+    Dated report object based on given JSON file.
+    """
+
+    def __init__(self, name, date, directory = PATH_REPORTS, json = {}):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(DatedReport, self).__init__(name, directory, json)
+
+        # Test date
+        if (type(date) is not datetime.date and
+            type(date) is not datetime.datetime):
+            raise TypeError("Date should be a datetime object.")
+
+        # Define date
+        self.date = date.date() if type(date) is datetime.datetime else date
+        
+        # Expand path
+        self.directory.expand(lib.formatDate(date))
 
 
 
-class BGReport(Report):
+    def __repr__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            REPR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            String representation of report.
+        """
+
+        return (super(DatedReport, self).__repr__() + " (" +
+                lib.formatDate(self.date) + ")")
+
+
+
+    def __str__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            String representation of report's content.
+        """
+
+        return lib.JSONize(lib.merge(super(DatedReport, self).__str__(),
+               { "Date": self.date }))
+
+
+
+
+
+
+class BGReport(DatedReport):
+
+    name = "BG.json"
+
+
 
     def __init__(self, date):
 
@@ -492,11 +532,15 @@ class BGReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(BGReport, self).__init__("BG.json", date)
+        super(BGReport, self).__init__(self.name, date)
 
 
 
 class PumpReport(Report):
+
+    name = "pump.json"
+
+
 
     def __init__(self):
 
@@ -506,7 +550,7 @@ class PumpReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(PumpReport, self).__init__("pump.json")
+        super(PumpReport, self).__init__(self.name)
 
 
 
@@ -553,6 +597,10 @@ class PumpReport(Report):
 
 class CGMReport(Report):
 
+    name = "CGM.json"
+
+
+
     def __init__(self):
 
         """
@@ -561,7 +609,7 @@ class CGMReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(CGMReport, self).__init__("CGM.json")
+        super(CGMReport, self).__init__(self.name)
 
 
 
@@ -591,6 +639,10 @@ class CGMReport(Report):
 
 class StickReport(Report):
 
+    name = "stick.json"
+
+
+
     def __init__(self):
 
         """
@@ -599,7 +651,7 @@ class StickReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(StickReport, self).__init__("stick.json")
+        super(StickReport, self).__init__(self.name)
 
 
 
@@ -627,7 +679,11 @@ class StickReport(Report):
 
 
 
-class TreatmentsReport(Report):
+class TreatmentsReport(DatedReport):
+
+    name = "treatments.json"
+
+
 
     def __init__(self, date):
 
@@ -637,7 +693,7 @@ class TreatmentsReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(TreatmentsReport, self).__init__("treatments.json", date)
+        super(TreatmentsReport, self).__init__(self.name, date)
 
 
 
@@ -664,7 +720,11 @@ class TreatmentsReport(Report):
 
 
 
-class HistoryReport(Report):
+class HistoryReport(DatedReport):
+
+    name = "history.json"
+
+
 
     def __init__(self, date):
 
@@ -674,7 +734,7 @@ class HistoryReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(HistoryReport, self).__init__("history.json", date)
+        super(HistoryReport, self).__init__(self.name, date)
 
 
 
@@ -709,6 +769,10 @@ class HistoryReport(Report):
 
 class LoopReport(Report):
 
+    name = "loop.json"
+
+
+
     def __init__(self):
 
         """
@@ -717,7 +781,7 @@ class LoopReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(LoopReport, self).__init__("loop.json")
+        super(LoopReport, self).__init__(self.name)
 
 
 
@@ -866,8 +930,16 @@ def getRecent(now, reportType, branch, n = 2, strict = False):
         report = reportType(date)
         report.load()
 
-        # Merge entries
-        json = lib.mergeDicts(json, report.get(branch))
+        # Get new entries
+        try:
+            new = report.get(branch)
+
+        # Keep going if no data
+        except errors.InvalidBranch:
+            new = {}
+
+        # Merge old and new entries
+        json = lib.mergeDicts(json, new)        
 
     # Return entries
     return json
@@ -887,12 +959,12 @@ def main():
 
     # Get reports
     reports = {
-        "bg": BGReport(now),
+        #"bg": BGReport(now),
         "stick": StickReport(),
         "pump": PumpReport(),
         "cgm": CGMReport(),
-        "treatments": TreatmentsReport(now),
-        "history": HistoryReport(now),
+        #"treatments": TreatmentsReport(now),
+        #"history": HistoryReport(now),
         "loop": LoopReport(),
     }
 
@@ -913,10 +985,10 @@ def main():
     print lib.JSONize(getRecent(now, BGReport, [], 4))
 
     # Get basal profile from pump report
-    print reports["pump"].get(["Basal Profile (Standard)"])
+    print lib.JSONize(reports["pump"].get(["Basal Profile (Standard)"]))
 
     # Get BGs of today
-    print lib.JSONize(reports["bg"].get())
+    #print lib.JSONize(reports["bg"].get())
 
     # Get most recent data
     print lib.JSONize(getRecent(now, BGReport, [], 3))
@@ -926,6 +998,9 @@ def main():
     reports["loop"].increment(["Status", "N"])
     reports["loop"].store()
     print reports["loop"]
+
+    # Get carbs
+    print getRecent(now, TreatmentsReport, ["Carbs"], 1)
 
 
 
