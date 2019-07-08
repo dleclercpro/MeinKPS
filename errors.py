@@ -666,28 +666,11 @@ class InvalidBranch(ReporterError):
         """
 
         # Define error info
-        self.info = ("Report '" + self.args[0] + "' has no branch: " +
-                     self.args[1])
+        self.info = self.args[0] + " has no branch: " + self.args[1]
 
 
 
-class NoOverwritingAdd(ReporterError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Cannot add value in report '" + self.args[0] + "' " +
-                     "without overwriting tip of branch: " + self.args[1])
-
-
-
-class NoTouchingAdd(ReporterError):
+class NoOverwriting(ReporterError):
 
     def prepare(self):
 
@@ -698,8 +681,22 @@ class NoTouchingAdd(ReporterError):
         """
 
         # Define error info
-        self.info = ("Cannot add value in report '" + self.args[0] + "' " +
-                     "without touching parts of branch: " + self.args[1])
+        self.info = "Cannot overwrite " + self.args[0] + " at " + self.args[1]
+
+
+
+class NoTouching(ReporterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "Cannot touch " + self.args[0] + " at " + self.args[1]
 
 
 

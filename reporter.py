@@ -32,6 +32,7 @@
 
 
 # LIBRARIES
+import os
 import json
 import datetime
 
@@ -140,20 +141,16 @@ class Report(object):
 
 
 
-    def erase(self):
+    def exists(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ERASE
+            EXISTS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Erase report's content.
+            Check whether file associated with report exists.
         """
 
-        # Info
-        Logger.debug("Erasing report: " + repr(self))
-
-        # Erase JSON
-        self.json = {}
+        return os.path.isfile(self.directory.path + self.name)
 
 
 
@@ -175,24 +172,50 @@ class Report(object):
 
 
 
-    def merge(self, report):
+    def erase(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MERGE
+            ERASE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Merge report's JSON with given JSON.
+            Erase report's content.
         """
-
-        # Test report
-        if not isinstance(report, Report):
-            raise TypeError("Need report to merge.")
 
         # Info
-        Logger.debug("Merging " + repr(self) + " with " + repr(report))
+        Logger.debug("Erasing report: " + repr(self))
 
-        # Update JSON
-        self.json = lib.mergeDicts(self.json, json)
+        # Erase JSON
+        self.json = {}
+
+
+
+    def store(self, overwrite = True):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Store current JSON to report's JSON file.
+        """
+
+        # Overwrite right check
+        if self.exists() and not overwrite:
+            raise errors.NoOverwriting(repr(self), str([]))
+
+        # Info
+        Logger.debug("Storing report: " + repr(self))
+
+        # Make sure report exists
+        self.directory.touch(self.name)
+
+        # Rewrite report
+        with open(self.directory.path + self.name, "w") as f:
+
+            # Dump JSON
+            json.dump(self.json, f,
+                      indent = 4,
+                      separators = (",", ": "),
+                      sort_keys = True)
 
 
 
@@ -233,37 +256,34 @@ class Report(object):
 
                 # Strict loading
                 if strict:
-                    raise IOError(repr(self) + " does not exist.")
+                    break
 
                 # Reset report
                 self.reset()
-                self.store()
+
+        # No loading possible
+        raise IOError("Could not load " + repr(self))
 
 
 
-    def store(self):
+    def merge(self, report):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
+            MERGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Store current JSON to report's JSON file.
+            Merge report's JSON with given JSON.
         """
+
+        # Test report
+        if not isinstance(report, Report):
+            raise TypeError("Need report to merge.")
 
         # Info
-        Logger.debug("Storing report: " + repr(self))
+        Logger.debug("Merging " + repr(self) + " with " + repr(report))
 
-        # Make sure report exists
-        self.directory.touch(self.name)
-
-        # Rewrite report
-        with open(self.directory.path + self.name, "w") as f:
-
-            # Dump JSON
-            json.dump(self.json, f,
-                      indent = 4,
-                      separators = (",", ": "),
-                      sort_keys = True)
+        # Update JSON
+        self.json = lib.mergeDicts(self.json, json)
 
 
 
@@ -302,7 +322,7 @@ class Report(object):
                     json = json[key]
 
         # Branch is invalid
-        raise errors.InvalidBranch(self.name, str(branch))
+        raise errors.InvalidBranch(repr(self), str(branch))
 
 
 
@@ -331,21 +351,17 @@ class Report(object):
         if branch == []:
 
             # Value is dict
-            if type(value) is dict:
-
-                # Overwriting allowed
-                if overwrite:
-                    self.json = value
-                    return
-
-                # Otherwise
-                else:
-                    raise errors.NoOverwritingAdd(self.name, str(branch))
-
-            # Otherwise
-            else:
+            if type(value) is not dict:
                 raise TypeError("Cannot replace report's content with a " +
                                 "non-dict object.")
+
+            # Overwriting not allowed
+            if not overwrite:
+                raise errors.NoOverwriting(repr(self), str(branch))
+
+            # Replace whole content
+            self.json = value
+            return
 
         # Initialize JSON
         json = self.json
@@ -363,7 +379,7 @@ class Report(object):
 
                 # Otherwise
                 else:
-                    raise errors.NoOverwritingAdd(self.name, str(branch))
+                    raise errors.NoOverwriting(repr(self), str(branch))
 
             # Otherwise
             else:
@@ -371,30 +387,28 @@ class Report(object):
                 # Key is missing
                 if not key in json:
 
-                    # Can touch it
-                    if touch:
-                        json[key] = {}
+                    # No touching
+                    if not touch:
+                        raise errors.NoTouching(repr(self), str(branch))
 
-                    # Otherwise
-                    else:
-                        raise errors.NoTouchingAdd(self.name, str(branch))
+                    # Touch
+                    json[key] = {}
 
                 # Key exists, but doesn't lead to a dict
                 if type(json[key]) is not dict:
 
-                    # However, overwriting is allowed
-                    if overwrite:
-                        json[key] = {}
+                    # No overwriting
+                    if not overwrite:
+                        raise errors.NoOverwriting(repr(self), str(branch))
 
-                    # Otherwise
-                    else:
-                        raise errors.NoOverwritingAdd(self.name, str(branch))
+                    # Overwrite
+                    json[key] = {}                    
 
                 # Dive deeper in JSON
                 json = json[key]
 
         # Branch is invalid
-        raise errors.InvalidBranch(self.name, str(branch))
+        raise errors.InvalidBranch(repr(self), str(branch))
 
 
 
@@ -435,7 +449,7 @@ class Report(object):
                     json = json[key]
 
         # Branch is invalid
-        raise errors.InvalidBranch(self.name, str(branch))
+        raise errors.InvalidBranch(repr(self), str(branch))
 
 
 
