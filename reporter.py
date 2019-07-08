@@ -64,12 +64,7 @@ class Report(object):
     Report object based on given JSON file.
     """
 
-    # Define report name
-    name = None
-
-
-
-    def __init__(self, date = None, directory = PATH_REPORTS, json = {}):
+    def __init__(self, name, date = None, directory = PATH_REPORTS, json = {}):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,15 +74,24 @@ class Report(object):
             directory, and its JSON content.
         """
 
+        # Test name
+        if type(name) is not str:
+            raise TypeError("Name should be a string.")
+
+        # Test date
+        if (date is not None and
+            type(date) is not datetime.date and
+            type(date) is not datetime.datetime):
+            raise TypeError("Date should be a datetime object.")
+
         # Test path
         if not isinstance(directory, path.Path):
-            raise TypeError("Need path.")
+            raise TypeError("Path should be a path instance.")
 
         # Initialize report attributes
-        self.date = date
+        self.name = name
+        self.date = date.date() if type(date) is datetime.datetime else date
         self.json = json
-
-        # Create new path object for report
         self.directory = path.Path(directory.path)
 
         # Dated report
@@ -192,7 +196,7 @@ class Report(object):
 
 
 
-    def load(self):
+    def load(self, strict = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -226,6 +230,10 @@ class Report(object):
 
             # In case of error
             except:
+
+                # Strict loading
+                if strict:
+                    raise IOError(repr(self) + " does not exist.")
 
                 # Reset report
                 self.reset()
@@ -462,11 +470,6 @@ class Report(object):
 
 class BGReport(Report):
 
-    # Define report name
-    name = "BG.json"
-
-
-
     def __init__(self, date):
 
         """
@@ -475,16 +478,11 @@ class BGReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(BGReport, self).__init__(date)
+        super(BGReport, self).__init__("BG.json", date)
 
 
 
 class PumpReport(Report):
-
-    # Define report name
-    name = "pump.json"
-
-
 
     def __init__(self):
 
@@ -494,7 +492,7 @@ class PumpReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(PumpReport, self).__init__()
+        super(PumpReport, self).__init__("pump.json")
 
 
 
@@ -541,11 +539,6 @@ class PumpReport(Report):
 
 class CGMReport(Report):
 
-    # Define report name
-    name = "CGM.json"
-
-
-
     def __init__(self):
 
         """
@@ -554,7 +547,7 @@ class CGMReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(CGMReport, self).__init__()
+        super(CGMReport, self).__init__("CGM.json")
 
 
 
@@ -584,11 +577,6 @@ class CGMReport(Report):
 
 class StickReport(Report):
 
-    # Define report name
-    name = "stick.json"
-
-
-
     def __init__(self):
 
         """
@@ -597,7 +585,7 @@ class StickReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(StickReport, self).__init__()
+        super(StickReport, self).__init__("stick.json")
 
 
 
@@ -627,11 +615,6 @@ class StickReport(Report):
 
 class TreatmentsReport(Report):
 
-    # Define report name
-    name = "treatments.json"
-
-
-
     def __init__(self, date):
 
         """
@@ -640,7 +623,7 @@ class TreatmentsReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(TreatmentsReport, self).__init__(date)
+        super(TreatmentsReport, self).__init__("treatments.json", date)
 
 
 
@@ -669,11 +652,6 @@ class TreatmentsReport(Report):
 
 class HistoryReport(Report):
 
-    # Define report name
-    name = "history.json"
-
-
-
     def __init__(self, date):
 
         """
@@ -682,7 +660,7 @@ class HistoryReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(HistoryReport, self).__init__(date)
+        super(HistoryReport, self).__init__("history.json", date)
 
 
 
@@ -717,11 +695,6 @@ class HistoryReport(Report):
 
 class LoopReport(Report):
 
-    # Define report name
-    name = "loop.json"
-
-
-
     def __init__(self):
 
         """
@@ -730,7 +703,7 @@ class LoopReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(LoopReport, self).__init__()
+        super(LoopReport, self).__init__("loop.json")
 
 
 

@@ -284,7 +284,7 @@ def toDate(path):
     path = os.path.dirname(path.path)
 
     # Loop 3 directories up to get corresponding date
-    for i in range(3):
+    for _ in range(3):
 
         # Split path
         path, dirname = os.path.split(path)
@@ -292,7 +292,7 @@ def toDate(path):
         # Add date component
         date.append(int(dirname))
 
-    # Reverse date to get format YYYY.MM.DD
+    # Reverse date to get format YYYY.MM.DD#
     date.reverse()
 
     # Return datetime object

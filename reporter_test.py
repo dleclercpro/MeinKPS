@@ -27,6 +27,7 @@ import pytest
 
 # USER LIBRARIES
 import lib
+import path
 import reporter
 
 
@@ -36,6 +37,45 @@ import reporter
 
 
 # TESTS
+def test_load_non_existent_report():
+
+    """
+    Load a non existent report.
+    """
+
+    report = reporter.Report("test.json")
+    
+    with pytest.raises(IOError):
+        report.load()
+
+
+
+def test_create_report():
+
+    """
+    Load a non existent report.
+    """
+
+    now = datetime.datetime.now()
+    today = datetime.date.today()
+    name = "test.json"
+    json = {
+        "A": 0
+    }
+    
+    report = reporter.Report(name, now, path.Path(), json)
+
+    assert (
+        report.name == "test.json" and
+        report.date == today and
+        report.directory.path == path.Path(lib.formatDate(today)).path and
+        report.json == {
+            "A": 0
+        }
+    )
+
+
+
 def test_merge():
 
     """

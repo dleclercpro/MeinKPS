@@ -372,7 +372,7 @@ def nMax(x, n = 1):
     X = []
 
     # Find n max values in x
-    for i in range(n):
+    for _ in range(n):
 
         # Get index of max value
         j = np.argmax(x)
