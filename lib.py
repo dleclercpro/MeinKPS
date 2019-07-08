@@ -401,10 +401,8 @@ def merge(base, new, n = 1):
     if n == 1:
 
         # Check if dict given as input
-        if type(new) is not dict:
-
-            # Exit
-            sys.exit("Only dicts can be merged.")
+        if type (base) is not dict or type(new) is not dict:
+            raise TypeError("Only dicts can be merged.")
 
         # Copy base in order to not overwrite it
         base = copy.deepcopy(base)
@@ -424,11 +422,11 @@ def merge(base, new, n = 1):
 
                 # Otherwise: entry mismatch
                 elif base[key] != value:
-                    raise errors.MismatchEntryValue()
+                    raise ValueError("Cannot merge dicts: conflicting values.")
 
             # Otherwise: type mismatch
             else:
-                raise errors.MismatchEntryType()
+                raise TypeError("Cannot merge dicts: conflicting types.")
 
         # Otherwise: generate new entry
         else:
@@ -452,9 +450,7 @@ def mergeDicts(*args):
 
     # Verify number of args
     if len(args) < 2:
-
-        # Exit
-        sys.exit("Feed at least 2 dictionaries to merge.")
+        raise IOError("Feed at least 2 dictionaries to merge.")
 
     # Destructure dicts
     base, args = args[0], args[1:]

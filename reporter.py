@@ -449,7 +449,7 @@ class Report(object):
         n = self.get(branch)
 
         # Make sure it is a number
-        if not type(n) is int:
+        if type(n) is not int:
             raise TypeError("Can only increment integers. Found: " + str(n))
 
         # Update value
@@ -800,7 +800,7 @@ def isBranchBroken(branch):
         values should be strings.
     """
 
-    return not(type(branch) is list and all([type(b) is str for b in branch]))
+    return type(branch) is not list or not all([type(b) is str for b in branch])
 
 
 
@@ -913,31 +913,32 @@ def main():
     for name in reports:
         reports[name].load()
 
-    #reports["pump"].get(["Settings", "Max Bolus"])
-    #reports["pump"].add(0, ["Settings", "Max Bolus", "Test"], True)
-    #reports["pump"].increment(["Settings", "Max Bolus", "Test"])
-    #print reports["pump"]
-    #reports["pump"].delete(["Settings", "Max Bolus", "Test"])
-    #print reports["pump"]
-    #reports["pump"].add(35.0, ["Settings", "Max Bolus"], True)
-    #print reports["pump"]
+    reports["pump"].get(["Settings", "Max Bolus"])
+    reports["pump"].add(0, ["Settings", "Max Bolus", "Test"], True)
+    reports["pump"].increment(["Settings", "Max Bolus", "Test"])
+    print reports["pump"]
+    reports["pump"].delete(["Settings", "Max Bolus", "Test"])
+    print reports["pump"]
+    reports["pump"].add(35.0, ["Settings", "Max Bolus"], True)
+    print reports["pump"]
 
-    #print getReportDates(BGReport)
-    #print getRecent(now, BGReport, [], 4)
+    print getReportDates(BGReport)
+    print lib.JSONize(getRecent(now, BGReport, [], 4))
 
     # Get basal profile from pump report
-    #print reports["pump"].get(["Basal Profile (Standard)"])
+    print reports["pump"].get(["Basal Profile (Standard)"])
 
     # Get BGs of today
-    #print lib.JSONize(reports["bg"].get())
+    print lib.JSONize(reports["bg"].get())
 
     # Get most recent data
-    #print lib.JSONize(getRecent(now, BGReport, [], 3))
+    print lib.JSONize(getRecent(now, BGReport, [], 3))
 
     # Increment loop
-    #print reports["loop"]
-    #reports["loop"].increment(["Status", "N"])
-    #print reports["loop"]
+    print reports["loop"]
+    reports["loop"].increment(["Status", "N"])
+    reports["loop"].store()
+    print reports["loop"]
 
 
 

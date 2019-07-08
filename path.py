@@ -74,7 +74,7 @@ class Path:
         """
 
         # Wrong path type
-        if not type(path) is str:
+        if type(path) is not str:
             raise TypeError("String path expected. Got: " + type(path))
 
         # Replace backslashes
