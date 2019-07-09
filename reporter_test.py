@@ -33,30 +33,33 @@ import reporter
 
 
 
-# FUNCTIONS
-
-
-
 # CONSTANTS
 PATH_TESTS = path.Path("Test")
 
 
 
-# CLASSES
-class Report(reporter.Report):
+# FUNCTIONS
+def getReport(json = {}):
+    return reporter.Report("test.json", path.Path("Test"), json)
 
-    def __init__(self, json = {}):
-
-        super(Report, self).__init__("test.json", path.Path("Test"), json)
-
+def getDatedReport(date, json = {}):
+    return reporter.DatedReport("test.json", date, path.Path("Test"), json)
 
 
-class DatedReport(reporter.DatedReport):
 
-    def __init__(self, date, json = {}):
+# FIXTURES
+@pytest.fixture()
+def setup_and_teardown():
 
-        super(DatedReport, self).__init__("test.json", date,
-                                              path.Path("Test"), json)
+    """
+    Setup and teardown for tests which store reports.
+    """
+
+    PATH_TESTS.touch()
+
+    yield
+    
+    PATH_TESTS.delete()
 
 
 
@@ -67,7 +70,7 @@ def test_load_non_existent_report():
     Load a non existent report.
     """
     
-    report = Report()
+    report = getReport()
     
     with pytest.raises(IOError):
         report.load()
@@ -83,7 +86,7 @@ def test_create_report():
     key = "A"
     value = 0
 
-    report = Report({ key: value })
+    report = getReport({ key: value })
 
     assert (report.name == "test.json" and
             report.directory.path == PATH_TESTS.path and
@@ -103,7 +106,7 @@ def test_create_dated_report():
     key = "A"
     value = 0
 
-    report = DatedReport(now, { key: value })
+    report = getDatedReport(now, { key: value })
     reportPath = path.Path(PATH_TESTS.path + lib.formatDate(today))
 
     assert (report.name == "test.json" and
@@ -113,22 +116,20 @@ def test_create_dated_report():
 
 
 
-def test_store_report():
+def test_store_report(setup_and_teardown):
 
     """
     Store a report.
     """
     
-    report = Report()
+    report = getReport()
     report.store()
 
     assert report.exists()
 
-    PATH_TESTS.delete()
 
 
-
-def test_store_dated_report():
+def test_store_dated_report(setup_and_teardown):
 
     """
     Store a dated report.
@@ -136,22 +137,20 @@ def test_store_dated_report():
 
     today = datetime.date.today()
 
-    report = DatedReport(today)
+    report = getDatedReport(today)
     report.store()
 
     assert report.exists()
 
-    PATH_TESTS.delete()
 
 
-
-def test_store_overwrite_report():
+def test_store_overwrite_report(setup_and_teardown):
 
     """
     Overwrite previous JSON file while storing a report.
     """
 
-    report = Report()
+    report = getReport()
     report.reset()
 
     report.add(0, ["A"], touch = True)
@@ -161,8 +160,6 @@ def test_store_overwrite_report():
     report.load()
 
     assert report.exists() and report.get(["A"]) == 0
-
-    PATH_TESTS.delete()
 
 
 
@@ -175,7 +172,7 @@ def test_get():
     key = "A"
     value = 0
 
-    report = Report({ key: value })
+    report = getReport({ key: value })
     
     assert report.get([key]) == value
 
@@ -190,7 +187,7 @@ def test_add():
     key = "A"
     value = 0
 
-    report = Report()
+    report = getReport()
 
     with pytest.raises(errors.InvalidBranch):
         report.get([key])
@@ -211,8 +208,7 @@ def test_add_overwrite():
     value = 0
     newValue = 1
 
-    report = Report()
-    report.load(strict = False)
+    report = getReport()
 
     report.add(value, [key], touch = True)
     
@@ -227,7 +223,7 @@ def test_add_overwrite():
 
 
 
-def test_add_dated_entries():
+def test_add_dated_entries(setup_and_teardown):
 
     """
     Add multiple dated entries to corresponding dated reports.
@@ -239,9 +235,9 @@ def test_add_dated_entries():
 
     values = [6.2, 6.0, 5.8]
 
-    reporter.addDatedEntries(DatedReport, [], dict(zip(dates, values)))
+    reporter.addDatedEntries(reporter.BGReport, [], dict(zip(dates, values)))
 
-    reports = [DatedReport(d) for d in dates]
+    reports = [reporter.BGReport(d) for d in dates]
 
     for report in reports:
         report.load(strict = False)
@@ -256,8 +252,6 @@ def test_add_dated_entries():
         assert (len(json.keys()) == 1 and
                 key == lib.formatTime(dates[i]) and
                 value == values[i])
-
-    PATH_TESTS.delete()
 
 
 
