@@ -65,7 +65,7 @@ class DatedReport(reporter.DatedReport):
 
 
 # FIXTURES
-@pytest.fixture()
+@pytest.fixture
 def setup_and_teardown():
 
     """
