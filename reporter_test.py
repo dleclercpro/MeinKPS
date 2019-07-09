@@ -27,6 +27,7 @@ import pytest
 
 # USER LIBRARIES
 import lib
+import errors
 import path
 import reporter
 
@@ -36,17 +37,37 @@ import reporter
 
 
 
+# CONSTANTS
+PATH_TESTS = path.Path("Test")
+
+
+
+# CLASSES
+class Report(reporter.Report):
+
+    def __init__(self, json = {}):
+
+        super(Report, self).__init__("test.json", path.Path("Test"), json)
+
+
+
+class DatedReport(reporter.DatedReport):
+
+    def __init__(self, date, json = {}):
+
+        super(DatedReport, self).__init__("test.json", date,
+                                              path.Path("Test"), json)
+
+
+
 # TESTS
 def test_load_non_existent_report():
 
     """
     Load a non existent report.
     """
-
-    name = "test.json"
-    directory = path.Path("Test")
     
-    report = reporter.Report(name, None, directory)
+    report = Report()
     
     with pytest.raises(IOError):
         report.load()
@@ -59,18 +80,14 @@ def test_create_report():
     Create a report.
     """
 
-    name = "test.json"
-    directory = path.Path("Test")
-    json = {
-        "A": 0
-    }
-    
-    report = reporter.Report(name, None, directory, json)
-    
+    key = "A"
+    value = 0
+
+    report = Report({ key: value })
+
     assert (report.name == "test.json" and
-            report.date == None and
-            report.directory.path == directory.path and
-            report.json == {"A": 0})
+            report.directory.path == PATH_TESTS.path and
+            report.json == { key: value })
 
 
 
@@ -83,20 +100,16 @@ def test_create_dated_report():
     now = datetime.datetime.now()
     today = datetime.date.today()
 
-    name = "test.json"
-    directory = path.Path("Test")
-    json = {
-        "A": 0
-    }
-    
-    report = reporter.Report(name, now, directory, json)
-    
-    directory.expand(lib.formatDate(today))
+    key = "A"
+    value = 0
+
+    report = DatedReport(now, { key: value })
+    reportPath = path.Path(PATH_TESTS.path + lib.formatDate(today))
 
     assert (report.name == "test.json" and
             report.date == today and
-            report.directory.path == directory.path and
-            report.json == {"A": 0})
+            report.json == { key: value } and 
+            report.directory.path == reportPath.path)
 
 
 
@@ -105,14 +118,13 @@ def test_store_report():
     """
     Store a report.
     """
-
-    name = "test.json"
-    directory = path.Path("Test")
     
-    report = reporter.Report(name, None, directory)
+    report = Report()
     report.store()
 
     assert report.exists()
+
+    PATH_TESTS.delete()
 
 
 
@@ -124,34 +136,128 @@ def test_store_dated_report():
 
     today = datetime.date.today()
 
-    name = "test.json"
-    directory = path.Path("Test")
-    
-    report = reporter.Report(name, today, directory)
+    report = DatedReport(today)
     report.store()
 
     assert report.exists()
 
+    PATH_TESTS.delete()
 
 
-def test_store_report_overwrite():
+
+def test_store_overwrite_report():
 
     """
-    Overwrite a report.
+    Overwrite previous JSON file while storing a report.
     """
 
-    name = "test.json"
-    directory = path.Path("Test")
-    
-    report = reporter.Report(name, None, directory)
-    report.store()
-
-    assert report.exists()
+    report = Report()
+    report.reset()
 
     report.add(0, ["A"], touch = True)
-    report.store()
+    report.store(overwrite = True)
+    
+    report.erase()
+    report.load()
 
     assert report.exists() and report.get(["A"]) == 0
+
+    PATH_TESTS.delete()
+
+
+
+def test_get():
+
+    """
+    Get something from report.
+    """
+
+    key = "A"
+    value = 0
+
+    report = Report({ key: value })
+    
+    assert report.get([key]) == value
+
+
+
+def test_add():
+
+    """
+    Add something to report.
+    """
+
+    key = "A"
+    value = 0
+
+    report = Report()
+
+    with pytest.raises(errors.InvalidBranch):
+        report.get([key])
+
+    report.add(value, [key], touch = True)
+    
+    assert report.get([key]) == value
+
+
+
+def test_add_overwrite():
+
+    """
+    Add something to report while overwriting previous content.
+    """
+
+    key = "A"
+    value = 0
+    newValue = 1
+
+    report = Report()
+    report.load(strict = False)
+
+    report.add(value, [key], touch = True)
+    
+    assert report.get([key]) == value
+
+    with pytest.raises(errors.NoOverwriting):
+        report.add(newValue, [key])
+
+    report.add(newValue, [key], overwrite = True)
+    
+    assert report.get([key]) == newValue
+
+
+
+def test_add_dated_entries():
+
+    """
+    Add multiple dated entries to corresponding dated reports.
+    """
+
+    dates = [datetime.datetime(1970, 1, 1, 0, 0, 0),
+             datetime.datetime(1970, 1, 2, 0, 0, 0),
+             datetime.datetime(1970, 1, 3, 0, 0, 0)]
+
+    values = [6.2, 6.0, 5.8]
+
+    reporter.addDatedEntries(DatedReport, [], dict(zip(dates, values)))
+
+    reports = [DatedReport(d) for d in dates]
+
+    for report in reports:
+        report.load(strict = False)
+
+    for i in range(len(dates)):
+        report = reports[i]
+        date = dates[i]
+        key = lib.formatTime(date)
+        value = report.get([key])
+        json = report.get([])
+
+        assert (len(json.keys()) == 1 and
+                key == lib.formatTime(dates[i]) and
+                value == values[i])
+
+    PATH_TESTS.delete()
 
 
 

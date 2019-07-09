@@ -191,6 +191,7 @@ class Path:
 
             # No path
             if not os.path.isdir(path):
+                # print "No need to delete a non existing path."
                 return
 
         # Get all child files/directories within path

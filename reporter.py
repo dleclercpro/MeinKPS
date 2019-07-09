@@ -522,8 +522,6 @@ class BGReport(DatedReport):
 
     name = "BG.json"
 
-
-
     def __init__(self, date):
 
         """
@@ -539,8 +537,6 @@ class BGReport(DatedReport):
 class PumpReport(Report):
 
     name = "pump.json"
-
-
 
     def __init__(self):
 
@@ -599,8 +595,6 @@ class CGMReport(Report):
 
     name = "CGM.json"
 
-
-
     def __init__(self):
 
         """
@@ -640,8 +634,6 @@ class CGMReport(Report):
 class StickReport(Report):
 
     name = "stick.json"
-
-
 
     def __init__(self):
 
@@ -683,8 +675,6 @@ class TreatmentsReport(DatedReport):
 
     name = "treatments.json"
 
-
-
     def __init__(self, date):
 
         """
@@ -723,8 +713,6 @@ class TreatmentsReport(DatedReport):
 class HistoryReport(DatedReport):
 
     name = "history.json"
-
-
 
     def __init__(self, date):
 
@@ -770,8 +758,6 @@ class HistoryReport(DatedReport):
 class LoopReport(Report):
 
     name = "loop.json"
-
-
 
     def __init__(self):
 
@@ -840,6 +826,46 @@ class LoopReport(Report):
 
 
 
+class FTPReport(Report):
+
+    name = "ftp.json"
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(FTPReport, self).__init__(self.name)
+
+
+
+    def reset(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RESET
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Info
+        Logger.debug("Resetting report: " + repr(self))
+
+        # Reset to default
+        self.json = {
+            "Host": "",
+            "User": "",
+            "Password": "",
+            "Path": ""
+        }
+
+        # Store it
+        self.store()
+
+
+
 # FUNCTIONS
 def isBranchBroken(branch):
 
@@ -880,7 +906,8 @@ def getReportDates(reportType, src = PATH_REPORTS):
 
 
 
-def getRecent(now, reportType, branch, n = 2, strict = False):
+# TODO
+def getRecent(now, reportType, branch, n = 1, strict = False):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -946,6 +973,43 @@ def getRecent(now, reportType, branch, n = 2, strict = False):
 
 
 
+def addDatedEntries(reportType, branch, entries):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ADDDATEDENTRIES
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Test report
+    if not issubclass(reportType, DatedReport):
+        raise TypeError("Cannot add dated values to non dated report.")
+
+    # Test values
+    if not all([type(e) is datetime.datetime for e in entries]):
+        raise TypeError("Cannot add non dated values to dated report.")
+
+    # Initialize needed reports
+    reports = {}
+
+    # Get all concerned dates
+    dates = lib.uniqify([e.date() for e in entries])
+
+    # Each date corresponds to a report
+    for date in dates:
+        reports[date] = reportType(date)
+        reports[date].load(False)
+
+    # Add values to reports
+    for key, value in entries.items():
+        reports[key.date()].add(value, branch + [lib.formatTime(key)])
+
+    # Store reports
+    for date, report in reports.items():
+        report.store()
+
+
+
 def main():
 
     """
@@ -972,35 +1036,42 @@ def main():
     for name in reports:
         reports[name].load()
 
-    reports["pump"].get(["Settings", "Max Bolus"])
-    reports["pump"].add(0, ["Settings", "Max Bolus", "Test"], True)
-    reports["pump"].increment(["Settings", "Max Bolus", "Test"])
-    print reports["pump"]
-    reports["pump"].delete(["Settings", "Max Bolus", "Test"])
-    print reports["pump"]
-    reports["pump"].add(35.0, ["Settings", "Max Bolus"], True)
-    print reports["pump"]
+    #reports["pump"].get(["Settings", "Max Bolus"])
+    #reports["pump"].add(0, ["Settings", "Max Bolus", "Test"], True)
+    #reports["pump"].increment(["Settings", "Max Bolus", "Test"])
+    #print reports["pump"]
+    #reports["pump"].delete(["Settings", "Max Bolus", "Test"])
+    #print reports["pump"]
+    #reports["pump"].add(35.0, ["Settings", "Max Bolus"], True)
+    #print reports["pump"]
 
-    print getReportDates(BGReport)
-    print lib.JSONize(getRecent(now, BGReport, [], 4))
+    #print getReportDates(BGReport)
+    #print lib.JSONize(getRecent(now, BGReport, [], 4))
 
     # Get basal profile from pump report
-    print lib.JSONize(reports["pump"].get(["Basal Profile (Standard)"]))
+    #print lib.JSONize(reports["pump"].get(["Basal Profile (Standard)"]))
 
     # Get BGs of today
     #print lib.JSONize(reports["bg"].get())
 
     # Get most recent data
-    print lib.JSONize(getRecent(now, BGReport, [], 3))
+    #print lib.JSONize(getRecent(now, BGReport, [], 3))
 
     # Increment loop
-    print reports["loop"]
-    reports["loop"].increment(["Status", "N"])
-    reports["loop"].store()
-    print reports["loop"]
+    #print reports["loop"]
+    #reports["loop"].increment(["Status", "N"])
+    #reports["loop"].store()
+    #print reports["loop"]
 
     # Get carbs
-    print getRecent(now, TreatmentsReport, ["Carbs"], 1)
+    #print getRecent(now, TreatmentsReport, ["Carbs"], 3)
+
+    # Add BG values
+    addDatedEntries(BGReport, [], {
+        datetime.datetime(2019, 7, 29, 0, 0, 0): 6.2,
+        datetime.datetime(2019, 7, 30, 0, 0, 0): 6.0,
+        datetime.datetime(2019, 7, 31, 0, 0, 0): 5.8,
+    })
 
 
 
