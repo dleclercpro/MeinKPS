@@ -41,18 +41,26 @@ PATH_TESTS = path.Path("Test")
 # CLASSES
 class Report(reporter.Report):
 
+    name = "test.json"
+
     def __init__(self, json = None):
 
-        super(Report, self).__init__("test.json", path.Path("Test"), json)
+        super(Report, self).__init__(self.name,
+            path.Path("Test"),
+            json)
 
 
 
 class DatedReport(reporter.DatedReport):
 
+    name = "test.json"
+
     def __init__(self, date, json = None):
 
-        super(DatedReport, self).__init__("test.json", date, path.Path("Test"),
-                                          json)
+        super(DatedReport, self).__init__(self.name,
+            date,
+            path.Path("Test"),
+            json)
 
 
 
@@ -224,6 +232,57 @@ def test_add_overwrite():
     report.add(newValue, [key], overwrite = True)
     
     assert report.get([key]) == newValue
+
+
+
+def test_get_report_dates(setup_and_teardown):
+
+    """
+    Get dates for stored dated reports.
+    """
+
+    dates = [datetime.datetime(1975, 1, 1, 0, 0, 0),
+             datetime.datetime(1980, 2, 2, 0, 0, 0),
+             datetime.datetime(1985, 3, 3, 0, 0, 0)]
+
+    reports = [DatedReport(d) for d in dates]
+
+    for report in reports:
+        report.store()
+
+    reportDates = reporter.getReportDates(DatedReport, PATH_TESTS)
+
+    assert (len(dates) == len(reportDates) and
+            all([d.date() in reportDates for d in dates]))
+
+
+
+def test_get_recent(setup_and_teardown):
+
+    """
+    Get recent reports/parts of reports.
+    """
+
+    now = datetime.datetime.now()
+
+    dates = [datetime.datetime(1975, 1, 1, 0, 0, 0),
+             datetime.datetime(1980, 2, 2, 0, 0, 0),
+             datetime.datetime(1985, 3, 3, 0, 0, 0)]
+
+    reports = [DatedReport(d) for d in dates]
+
+    for report in reports:
+        report.add(0, [lib.formatDate(report.date)])
+        report.store()
+
+    emptyResults = reporter.getRecent(DatedReport, now, [], 3, True, PATH_TESTS)
+    
+    assert len(emptyResults) == 0
+
+    results = reporter.getRecent(DatedReport, now, [], 3, False, PATH_TESTS)
+
+    assert (len(results) == len(dates) and
+            all([results[lib.formatDate(d)] == 0 for d in dates]))
 
 
 

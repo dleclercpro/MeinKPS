@@ -918,7 +918,8 @@ def getReportDates(reportClass, src = PATH_REPORTS):
 
 
 # TODO
-def getRecent(now, reportClass, branch, n = 1, strict = False):
+def getRecent(reportClass, now, branch, n = 1, strict = False,
+              src = PATH_REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -947,7 +948,8 @@ def getRecent(now, reportClass, branch, n = 1, strict = False):
         oldest = today - datetime.timedelta(days = n - 1)
 
     # Get dates of reports
-    dates = [d for d in getReportDates(reportClass) if oldest <= d <= today]
+    dates = getReportDates(reportClass, src)
+    dates = [d for d in dates if oldest <= d <= today]
     nDates = len(dates)
 
     # Not enough reports
@@ -1057,7 +1059,7 @@ def main():
     #print reports["pump"]
 
     #print getReportDates(BGReport)
-    #print lib.JSONize(getRecent(now, BGReport, [], 4))
+    #print lib.JSONize(getRecent(BGReport, now, [], 4))
 
     # Get basal profile from pump report
     #print lib.JSONize(reports["pump"].get(["Basal Profile (Standard)"]))
@@ -1066,7 +1068,7 @@ def main():
     #print lib.JSONize(reports["bg"].get())
 
     # Get most recent data
-    #print lib.JSONize(getRecent(now, BGReport, [], 3))
+    #print lib.JSONize(getRecent(BGReport, now, [], 3))
 
     # Increment loop
     #print reports["loop"]
@@ -1075,7 +1077,7 @@ def main():
     #print reports["loop"]
 
     # Get carbs
-    #print getRecent(now, TreatmentsReport, ["Carbs"], 3)
+    #print getRecent(TreatmentsReport, now, ["Carbs"], 3)
 
     # Add BG values
     #addDatedEntries(BGReport, [], {
