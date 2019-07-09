@@ -237,6 +237,7 @@ class Path:
             path = self.path
 
             # Initialize results
+            # Call-by-reference for n > 1
             results = []
 
             # No path
