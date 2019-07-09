@@ -65,7 +65,7 @@ class Report(object):
     Report object based on given JSON file.
     """
 
-    def __init__(self, name, directory = PATH_REPORTS, json = {}):
+    def __init__(self, name, directory = PATH_REPORTS, json = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,6 +82,14 @@ class Report(object):
         # Test path
         if not isinstance(directory, path.Path):
             raise TypeError("Path should be a path instance.")
+
+        # Default JSON
+        if json is None:
+            json = {}
+
+        # Test JSON
+        elif type(json) is not dict:
+            raise TypeError("JSON should be a dict object.")
 
         # Initialize report attributes
         self.name = name
@@ -464,7 +472,7 @@ class DatedReport(Report):
     Dated report object based on given JSON file.
     """
 
-    def __init__(self, name, date, directory = PATH_REPORTS, json = {}):
+    def __init__(self, name, date, directory = PATH_REPORTS, json = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -496,8 +504,7 @@ class DatedReport(Report):
             String representation of report.
         """
 
-        return (super(DatedReport, self).__repr__() + " (" +
-                lib.formatDate(self.date) + ")")
+        return "'" + self.name + "' (" + lib.formatDate(self.date) + ")"
 
 
 
@@ -510,8 +517,12 @@ class DatedReport(Report):
             String representation of report's content.
         """
 
-        return lib.JSONize(lib.merge(super(DatedReport, self).__str__(),
-               { "Date": self.date }))
+        return lib.JSONize({
+            "Name": self.name,
+            "Date": lib.formatDate(self.date),
+            "Directory": self.directory.path,
+            "JSON": self.json
+        })
 
 
 
@@ -1024,12 +1035,12 @@ def main():
     # Get reports
     reports = {
         #"bg": BGReport(now),
-        "stick": StickReport(),
-        "pump": PumpReport(),
-        "cgm": CGMReport(),
+        #"stick": StickReport(),
+        #"pump": PumpReport(),
+        #"cgm": CGMReport(),
         #"treatments": TreatmentsReport(now),
         #"history": HistoryReport(now),
-        "loop": LoopReport(),
+        #"loop": LoopReport(),
     }
 
     # Load them
@@ -1067,11 +1078,11 @@ def main():
     #print getRecent(now, TreatmentsReport, ["Carbs"], 3)
 
     # Add BG values
-    addDatedEntries(BGReport, [], {
-        datetime.datetime(2019, 7, 29, 0, 0, 0): 6.2,
-        datetime.datetime(2019, 7, 30, 0, 0, 0): 6.0,
-        datetime.datetime(2019, 7, 31, 0, 0, 0): 5.8,
-    })
+    #addDatedEntries(BGReport, [], {
+    #    datetime.datetime(2019, 7, 29, 0, 0, 0): 6.2,
+    #    datetime.datetime(2019, 7, 30, 0, 0, 0): 6.0,
+    #    datetime.datetime(2019, 7, 31, 0, 0, 0): 5.8,
+    #})
 
 
 

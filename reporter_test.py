@@ -38,12 +38,21 @@ PATH_TESTS = path.Path("Test")
 
 
 
-# FUNCTIONS
-def getReport(json = {}):
-    return reporter.Report("test.json", path.Path("Test"), json)
+# CLASSES
+class Report(reporter.Report):
 
-def getDatedReport(date, json = {}):
-    return reporter.DatedReport("test.json", date, path.Path("Test"), json)
+    def __init__(self, json = None):
+
+        super(Report, self).__init__("test.json", path.Path("Test"), json)
+
+
+
+class DatedReport(reporter.DatedReport):
+
+    def __init__(self, date, json = None):
+
+        super(DatedReport, self).__init__("test.json", date, path.Path("Test"),
+                                          json)
 
 
 
@@ -58,7 +67,7 @@ def setup_and_teardown():
     PATH_TESTS.touch()
 
     yield
-    
+
     PATH_TESTS.delete()
 
 
@@ -70,7 +79,7 @@ def test_load_non_existent_report():
     Load a non existent report.
     """
     
-    report = getReport()
+    report = Report()
     
     with pytest.raises(IOError):
         report.load()
@@ -83,14 +92,11 @@ def test_create_report():
     Create a report.
     """
 
-    key = "A"
-    value = 0
-
-    report = getReport({ key: value })
+    report = Report()
 
     assert (report.name == "test.json" and
             report.directory.path == PATH_TESTS.path and
-            report.json == { key: value })
+            report.json == {})
 
 
 
@@ -103,15 +109,13 @@ def test_create_dated_report():
     now = datetime.datetime.now()
     today = datetime.date.today()
 
-    key = "A"
-    value = 0
-
-    report = getDatedReport(now, { key: value })
+    report = DatedReport(now)
+    
     reportPath = path.Path(PATH_TESTS.path + lib.formatDate(today))
 
     assert (report.name == "test.json" and
             report.date == today and
-            report.json == { key: value } and 
+            report.json == {} and 
             report.directory.path == reportPath.path)
 
 
@@ -122,7 +126,7 @@ def test_store_report(setup_and_teardown):
     Store a report.
     """
     
-    report = getReport()
+    report = Report()
     report.store()
 
     assert report.exists()
@@ -137,7 +141,7 @@ def test_store_dated_report(setup_and_teardown):
 
     today = datetime.date.today()
 
-    report = getDatedReport(today)
+    report = DatedReport(today)
     report.store()
 
     assert report.exists()
@@ -150,7 +154,7 @@ def test_store_overwrite_report(setup_and_teardown):
     Overwrite previous JSON file while storing a report.
     """
 
-    report = getReport()
+    report = Report()
     report.reset()
 
     report.add(0, ["A"], touch = True)
@@ -172,7 +176,7 @@ def test_get():
     key = "A"
     value = 0
 
-    report = getReport({ key: value })
+    report = Report({ key: value })
     
     assert report.get([key]) == value
 
@@ -187,7 +191,7 @@ def test_add():
     key = "A"
     value = 0
 
-    report = getReport()
+    report = Report()
 
     with pytest.raises(errors.InvalidBranch):
         report.get([key])
@@ -208,7 +212,7 @@ def test_add_overwrite():
     value = 0
     newValue = 1
 
-    report = getReport()
+    report = Report()
 
     report.add(value, [key], touch = True)
     
@@ -235,9 +239,9 @@ def test_add_dated_entries(setup_and_teardown):
 
     values = [6.2, 6.0, 5.8]
 
-    reporter.addDatedEntries(reporter.BGReport, [], dict(zip(dates, values)))
+    reporter.addDatedEntries(DatedReport, [], dict(zip(dates, values)))
 
-    reports = [reporter.BGReport(d) for d in dates]
+    reports = [DatedReport(d) for d in dates]
 
     for report in reports:
         report.load(strict = False)
