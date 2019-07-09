@@ -165,7 +165,7 @@ def test_store_overwrite_report(setup_and_teardown):
     report = Report()
     report.reset()
 
-    report.add(0, ["A"], touch = True)
+    report.add(0, ["A"])
     report.store(overwrite = True)
     
     report.erase()
@@ -188,6 +188,8 @@ def test_get():
     
     assert report.get([key]) == value
 
+    assert report.get([]) == { key: value }
+
 
 
 def test_add():
@@ -204,7 +206,7 @@ def test_add():
     with pytest.raises(errors.InvalidBranch):
         report.get([key])
 
-    report.add(value, [key], touch = True)
+    report.add(value, [key])
     
     assert report.get([key]) == value
 
@@ -220,9 +222,7 @@ def test_add_overwrite():
     value = 0
     newValue = 1
 
-    report = Report()
-
-    report.add(value, [key], touch = True)
+    report = Report({ key: value })
     
     assert report.get([key]) == value
 
@@ -307,14 +307,11 @@ def test_add_dated_entries(setup_and_teardown):
 
     for i in range(len(dates)):
         report = reports[i]
-        date = dates[i]
-        key = lib.formatTime(date)
+        key = lib.formatTime(dates[i])
         value = report.get([key])
         json = report.get([])
 
-        assert (len(json.keys()) == 1 and
-                key == lib.formatTime(dates[i]) and
-                value == values[i])
+        assert len(json.keys()) == 1 and value == values[i]
 
 
 

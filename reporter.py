@@ -313,26 +313,20 @@ class Report(object):
 
 
 
-    def add(self, value, branch = [], overwrite = False, touch = False):
+    def add(self, value, branch = [], overwrite = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             ADD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Add entry to report at the tip of given branch. Touch will allow
-            to create parts of the branch that could eventually be missing,
-            while overwrite allows to wipe and rewrite preexisting entries/
-            branches.
+            Add entry to report at the tip of given branch. Create parts of
+            branch that might eventually be missing. Overwrite allows to wipe
+            and rewrite preexisting entries.
         """
 
         # Test branch
         if isBranchBroken(branch):
             raise errors.BrokenBranch(str(branch))
-
-        # Overwrite is stronger than touch (if overwriting allowed, creating new
-        # parts of report should be also allowed)
-        if overwrite:
-            touch = True
 
         # Empty branch: replace the whole report
         if branch == []:
@@ -359,14 +353,13 @@ class Report(object):
             # Last key of branch (actual key of entry)
             if key == branch[-1]:
                 
-                # Key does not exist or can be overwritten
-                if not key in json or overwrite:
-                    json[key] = value
-                    return
-
-                # Otherwise
-                else:
+                # Key exists, but can't be overwritten
+                if key in json and not overwrite:
                     raise errors.NoOverwriting(repr(self), str(branch))
+                
+                # (Over)write
+                json[key] = value
+                return
 
             # Otherwise
             else:
@@ -374,15 +367,11 @@ class Report(object):
                 # Key is missing
                 if not key in json:
 
-                    # No touching
-                    if not touch:
-                        raise errors.NoTouching(repr(self), str(branch))
-
                     # Touch
                     json[key] = {}
 
                 # Key exists, but doesn't lead to a dict
-                if type(json[key]) is not dict:
+                elif type(json[key]) is not dict:
 
                     # No overwriting
                     if not overwrite:
