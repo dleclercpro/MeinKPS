@@ -41,7 +41,6 @@ import reporter
 
 # Define instances
 Logger = logger.Logger("calculator.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -387,8 +386,9 @@ def snooze(now, duration = 2):
         FIXME: take carbs dynamics into consideration!
     """
 
-    # Get last carbs
-    lastCarbs = Reporter.getRecent(now, "treatments.json", ["Carbs"], 1)
+    # Get last carbs (no need to go further than the past 2 days)
+    lastCarbs = reporter.getRecent(reporter.TreatmentsReport, now, ["Carbs"], 2,
+                                   True)
 
     # Snooze criteria (no temping after eating)
     if lastCarbs:

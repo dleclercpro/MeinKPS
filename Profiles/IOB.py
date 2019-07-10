@@ -39,7 +39,6 @@ import calculator as calc
 
 # Define instances
 Logger = logger.Logger("Profiles/IOB.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -60,7 +59,7 @@ class IOB(base.DotProfile):
         self.units = "U"
 
         # Define report info
-        self.report = "treatments.json"
+        self.report = reporter.TreatmentsReport
         self.branch = ["IOB"]
 
 
@@ -179,4 +178,5 @@ class FutureIOB(IOB, base.FutureProfile):
         Logger.debug("Adding current IOB to report: '" + self.report + "'...")
 
         # Add entry
-        Reporter.add(self.report, self.branch, {self.T[0]: round(self.y[0], 2)})
+        reporter.addDatedEntries(self.report, self.branch,
+            { self.T[0]: round(self.y[0], 2) })

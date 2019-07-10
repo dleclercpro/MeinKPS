@@ -39,7 +39,6 @@ import calculator as calc
 
 # Define instances
 Logger = logger.Logger("Profiles/BG.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -57,13 +56,13 @@ class BG(base.DotProfile):
         super(BG, self).__init__()
 
         # Read units
-        self.units = Reporter.get("pump.json", ["Units"], "BG")
+        self.units = reporter.PumpReport().get(["Units", "BG"])
 
         # Define plot y-axis default limits
         self.ylim = [0, 15] if self.units == "mmol/L" else [0, 270]
 
         # Define report info
-        self.report = "BG.json"
+        self.report = reporter.BGReport
 
 
 

@@ -31,13 +31,13 @@ import datetime
 import lib
 import logger
 import reporter
-from Profiles import *
+from Profiles import (base, bolus, basal, TB, net, BG, BGTargets, ISF, CSF,
+                      IOB, COB, IDC, resume, suspend)
 
 
 
 # Define instances
 Logger = logger.Logger("exporter.py", "DEBUG")
-Reporter = reporter.Reporter()
 
 
 
@@ -56,34 +56,24 @@ class Exporter(object):
         self.now = None
 
         # Initialize reports
-        self.reports = {"BG": reporter.Report("BG.json"),
-                        "history": reporter.Report("history.json"),
-                        "treatments": reporter.Report("treatments.json"),
-                        "pump": reporter.Report("pump.json")}
+        self.reports = {
+            "bgs": None,
+            "history": None,
+            "treatments": None,
+            "pump": None
+        }
 
-        # Initialize net profile
-        self.net = net.Net()
-
-        # Initialize recent BGs
-        self.BGs = None
-
-        # Initialize recent boluses
-        self.boluses = None
-
-        # Initialize recent IOBs
-        self.IOBs = None
-
-        # Initialize recent history
-        self.history = None
-
-        # Initialize recent sensor statuses
-        self.statuses = None
-
-        # Initialize recent sensor calibrations
-        self.calibrations = None
-
-        # Initialize pump data
-        self.pump = None
+        # Initialize data
+        self.data = {
+            "bgs": None,
+            "pump": None,
+            "net": net.Net(),
+            "boluses": None,
+            "iobs": None,
+            "history": None,
+            "statuses": None,
+            "calibrations": None
+        }
 
 
 
@@ -99,28 +89,31 @@ class Exporter(object):
         Logger.debug("Reading recent data...")
 
         # Get recent BGs
-        self.BGs = Reporter.getRecent(self.now, "BG.json", [])
-
-        # Get recent boluses
-        self.boluses = Reporter.getRecent(self.now, "treatments.json",
-                                          ["Boluses"])
-
-        # Get recent IOBs
-        self.IOBs = Reporter.getRecent(self.now, "treatments.json", ["IOB"])
-
-        # Get recent history
-        self.history = Reporter.getRecent(self.now, "history.json", [], 1)
-
-        # Get recent sensor statuses
-        self.statuses = Reporter.getRecent(self.now, "history.json",
-                                           ["CGM", "Sensor Statuses"])
-
-        # Get recent calibrations
-        self.calibrations = Reporter.getRecent(self.now, "history.json",
-                                               ["CGM", "Calibrations"])
+        self.data["bgs"] = reporter.getRecent(reporter.BGReport,
+            self.now, [], 2)
 
         # Get pump data
-        self.pump = Reporter.get("pump.json", [])
+        self.data["pump"] = reporter.PumpReport().get([])
+
+        # Get recent boluses
+        self.data["boluses"] = reporter.getRecent(reporter.TreatmentsReport,
+            self.now, ["Boluses"], 2)
+
+        # Get recent IOBs
+        self.data["iobs"] = reporter.getRecent(reporter.TreatmentsReport,
+            self.now, ["IOB"], 2)
+
+        # Get recent history
+        self.data["history"] = reporter.getRecent(reporter.HistoryReport,
+            self.now, [], 2)
+
+        # Get recent sensor statuses
+        self.data["statuses"] = reporter.getRecent(reporter.HistoryReport,
+            self.now, ["CGM", "Sensor Statuses"], 2)
+
+        # Get recent calibrations
+        self.data["calibrations"] = reporter.getRecent(reporter.HistoryReport,
+            self.now, ["CGM", "Calibrations"], 2)
 
 
 
@@ -133,23 +126,35 @@ class Exporter(object):
         """
 
         # Info
-        Logger.debug("Building recent data structures...")
+        Logger.debug("Filling recent data structures...")
 
         # Fill BG report
-        self.reports["BG"].update(self.BGs)
+        self.reports["bgs"] = reporter.Report("BG.json",
+            reporter.PATH_EXPORTS,
+            self.data["bgs"])
 
         # Fill treatments report
-        self.reports["treatments"].update({"Net Basals": self.net,
-                                           "Boluses": self.boluses,
-                                           "IOB": self.IOBs})
+        self.reports["treatments"] = reporter.Report("treatments.json",
+            reporter.PATH_EXPORTS, {
+                "Net Basals": self.data["net"],
+                "Boluses": self.data["boluses"],
+                "IOB": self.data["iobs"]
+            })
 
         # Fill history report
-        self.reports["history"].update(lib.mergeDicts(self.history, {"CGM": {
-            "Sensor Statuses": self.statuses,
-            "Calibrations": self.calibrations}}))
+        self.reports["history"] = reporter.Report("history.json",
+            reporter.PATH_EXPORTS,
+            lib.mergeDicts(self.data["history"], {
+                "CGM": {
+                    "Sensor Statuses": self.data["statuses"],
+                    "Calibrations": self.data["calibrations"]
+                }
+            }))
 
         # Fill pump report
-        self.reports["pump"].update(self.pump)
+        self.reports["pump"] = reporter.Report("pump.json",
+            reporter.PATH_EXPORTS,
+            self.data["pump"])
 
 
 
@@ -168,14 +173,14 @@ class Exporter(object):
         past = now - datetime.timedelta(hours = hours)
 
         # Build it for last 24 hours
-        self.net.build(past, self.now, suspend.Suspend(), resume.Resume(),
-                                       basal.Basal(), TB.TB())
+        self.data["net"].build(past, self.now,
+            suspend.Suspend(), resume.Resume(), basal.Basal(), TB.TB())
 
         # Format net profile
-        self.net = dict(zip([lib.formatTime(T) for T in self.net.T],
-                            [round(y, 2) for y in self.net.y]))
+        self.net = dict(zip([lib.formatTime(T) for T in self.data["net"].T],
+                            [round(y, 2) for y in self.data["net"].y]))
 
-        # Get data
+        # Get report data
         self.get()
 
         # Fill reports
@@ -183,9 +188,7 @@ class Exporter(object):
 
         # Store reports to exports directory
         for report in self.reports.values():
-
-            # Do it
-            report.store(Reporter.export.path)
+            report.store()
 
 
 

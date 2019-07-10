@@ -41,7 +41,6 @@ import reporter
 
 # Define instances
 Logger = logger.Logger("Profiles/base.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -61,7 +60,8 @@ class Profile(object):
         # Initialize units
         self.units = None
 
-        # Initialize report info
+        # Initialize report and branch
+        # Report is either a report class, or a report object
         self.report = None
         self.branch = []
 
@@ -1027,7 +1027,7 @@ class PastProfile(Profile):
                 try:
 
                     # Get current data
-                    data = Reporter.get(self.report, self.branch, None, day)
+                    data = self.report(day).get(self.branch)
 
                     # Load data
                     self.data = lib.mergeDicts(self.data, data)
@@ -1042,7 +1042,8 @@ class PastProfile(Profile):
         else:
 
             # Load data
-            self.data = Reporter.getRecent(self.norm, self.report, self.branch)
+            self.data = reporter.getRecent(self.report, self.norm,
+                self.branch, 2)
 
         # Give user info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
@@ -1089,7 +1090,7 @@ class DailyProfile(StepProfile):
         Logger.debug("Loading...")
 
         # Load data
-        self.data = Reporter.get(self.report, self.branch)
+        self.data = self.report.get(self.branch)
 
         # Give user info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")

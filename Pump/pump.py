@@ -50,7 +50,6 @@ from Stick import stick
 
 # Define instances
 Logger = logger.Logger("Pump/pump.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -226,6 +225,9 @@ class Power(PumpComponent):
         # Instanciate corresponding command
         self.command = commands.Power(pump)
 
+        # Define report
+        self.report = reporter.PumpReport()
+
 
 
     def read(self):
@@ -237,7 +239,7 @@ class Power(PumpComponent):
         """
 
         # Read last time pump's radio transmitter was powered up
-        self.value = lib.formatTime(Reporter.get("pump.json", [], "Power"))
+        self.value = lib.formatTime(self.report.get(["Power"]))
 
 
 
@@ -1175,7 +1177,8 @@ class Bolus(PumpComponent):
         now = datetime.datetime.now()
 
         # Get recent boluses
-        boluses = Reporter.getRecent(now, "treatments.json", ["Boluses"])
+        boluses = reporter.getRecent(reporter.TreatmentsReport, now,
+            ["Boluses"])
 
         # Get latest bolus time
         t = max(boluses)

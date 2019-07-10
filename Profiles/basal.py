@@ -28,11 +28,6 @@ import reporter
 
 
 
-# Define instances
-Reporter = reporter.Reporter()
-
-
-
 class Basal(base.DailyProfile, base.PastProfile):
 
     def __init__(self, profile = "Standard"):
@@ -49,9 +44,9 @@ class Basal(base.DailyProfile, base.PastProfile):
         # Define units
         self.units = "U/h"
 
-        # Read theoretical max
-        self.max = Reporter.get("pump.json", ["Settings"], "Max Basal")
-
         # Define report info
-        self.report = "pump.json"
+        self.report = reporter.PumpReport()
         self.branch = ["Basal Profile (" + profile + ")"]
+
+        # Read theoretical max
+        self.max = self.report.get(["Settings", "Max Basal"])

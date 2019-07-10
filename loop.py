@@ -46,7 +46,6 @@ from Profiles import *
 
 # Define instances
 Logger = logger.Logger("loop.py")
-Reporter = reporter.Reporter()
 Exporter = exporter.Exporter()
 Uploader = uploader.Uploader()
 
@@ -72,14 +71,14 @@ class Loop(object):
         self.pump = pump.Pump(stick.Stick())
 
         # Get DIA
-        self.DIA = Reporter.get("pump.json", ["Settings"], "DIA")
+        self.DIA = reporter.PumpReport().get(["Settings", "DIA"])
 
         # Define report
-        self.report = "loop.json"
+        self.report = reporter.LoopReport()
 
 
 
-    def do(self, task, path, key, *args):
+    def do(self, task, branch, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,7 +90,7 @@ class Loop(object):
         task(*args)
 
         # Update loop log
-        Reporter.increment(self.report, path, key)
+        self.report.increment(branch)
 
 
 
@@ -135,11 +134,10 @@ class Loop(object):
         self.t0 = datetime.datetime.now()
 
         # Update last loop time
-        Reporter.add(self.report, ["Status"],
-                     {"Time": lib.formatTime(self.t0)}, True)
+        self.report.add(["Status", "Time"], lib.formatTime(self.t0), True)
 
         # Update loop iterations
-        Reporter.increment(self.report, ["Status"], "N")
+        self.report.increment(["Status", "N"])
 
         # Start CGM
         self.cgm.start()
@@ -164,9 +162,8 @@ class Loop(object):
         self.t1 = datetime.datetime.now()
 
         # Update loop infos
-        Reporter.add(self.report, ["Status"],
-                                  {"Duration": (self.t1 - self.t0).seconds},
-                                  True)
+        self.report.add(["Status", "Duration"], (self.t1 - self.t0).seconds,
+                        True)
 
         # Stop CGM
         self.cgm.stop()
@@ -185,16 +182,16 @@ class Loop(object):
         """
 
         # Read BGs (last 24 hours)
-        self.do(self.cgm.dumpBG, ["CGM"], "BG", 8)
+        self.do(self.cgm.dumpBG, ["CGM", "BG"], 8)
 
         # Read battery
-        self.do(self.cgm.battery.read, ["CGM"], "Battery")
+        self.do(self.cgm.battery.read, ["CGM", "Battery"])
 
         # Read sensor events
-        self.do(self.cgm.databases["Sensor"].read, ["CGM"], "Sensor")
+        self.do(self.cgm.databases["Sensor"].read, ["CGM", "Sensor"])
 
         # Read calibrations
-        self.do(self.cgm.databases["Calibration"].read, ["CGM"], "Calibration")
+        self.do(self.cgm.databases["Calibration"].read, ["CGM", "Calibration"])
 
         # Reading done
         return True
@@ -210,28 +207,28 @@ class Loop(object):
         """
 
         # Read battery level
-        self.do(self.pump.battery.read, ["Pump"], "Battery")
+        self.do(self.pump.battery.read, ["Pump", "Battery"])
 
         # Read remaining amount of insulin
-        self.do(self.pump.reservoir.read, ["Pump"], "Reservoir")
+        self.do(self.pump.reservoir.read, ["Pump", "Reservoir"])
 
         # Read pump settings
-        self.do(self.pump.settings.read, ["Pump"], "Settings")
+        self.do(self.pump.settings.read, ["Pump", "Settings"])
 
         # Read ISF
-        self.do(self.pump.ISF.read, ["Pump"], "ISF")
+        self.do(self.pump.ISF.read, ["Pump", "ISF"])
 
         # Read CSF
-        self.do(self.pump.CSF.read, ["Pump"], "CSF")
+        self.do(self.pump.CSF.read, ["Pump", "CSF"])
 
         # Read BG targets
-        self.do(self.pump.BGTargets.read, ["Pump"], "BG Targets")
+        self.do(self.pump.BGTargets.read, ["Pump", "BG Targets"])
 
         # Read basal
-        self.do(self.pump.basal.read, ["Pump"], "Basal", "Standard")
+        self.do(self.pump.basal.read, ["Pump", "Basal", "Standard"])
 
         # Update history
-        self.do(self.pump.history.update, ["Pump"], "History")
+        self.do(self.pump.history.update, ["Pump", "History"])
 
         # Reading done
         return True

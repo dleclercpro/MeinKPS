@@ -31,13 +31,13 @@ import datetime
 # USER LIBRARIES
 import lib
 import logger
+import errors
 import reporter
 
 
 
 # Define instances
 Logger = logger.Logger("Pump/records.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -50,9 +50,6 @@ class Record(object):
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Initialize record's report
-        self.report = None
 
         # Initialize record's bytes
         self.bytes = None
@@ -269,10 +266,7 @@ class SuspendRecord(Record):
         self.criteria = lambda x: x[0] == self.code and x[1] == 0
 
         # Initialize rest of record
-        super(self.__class__, self).__init__(pump)
-
-        # Define record's report
-        self.report = "treatments.json"
+        super(SuspendRecord, self).__init__(pump)
 
 
 
@@ -285,7 +279,7 @@ class SuspendRecord(Record):
         """
 
         # Decode record time
-        super(self.__class__, self).decode()
+        super(SuspendRecord, self).decode()
         
         # Store suspend value
         self.values.append(0)
@@ -301,11 +295,12 @@ class SuspendRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding suspend time to report: '" + self.report + "'...")
+        Logger.debug("Adding suspend time to: " +
+            repr(reporter.TreatmentsReport))
 
         # Add entries
-        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t,
-                                                               self.values)))
+        reporter.addDatedEntries(reporter.TreatmentsReport,
+            ["Suspend/Resume"], dict(zip(self.t, self.values)))
 
 
 
@@ -329,10 +324,7 @@ class ResumeRecord(Record):
         self.criteria = lambda x: x[0] == self.code and x[1] == 0
 
         # Initialize rest of record
-        super(self.__class__, self).__init__(pump)
-
-        # Define record's report
-        self.report = "treatments.json"
+        super(ResumeRecord, self).__init__(pump)
 
 
 
@@ -345,7 +337,7 @@ class ResumeRecord(Record):
         """
 
         # Decode record time
-        super(self.__class__, self).decode()
+        super(ResumeRecord, self).decode()
         
         # Store suspend value
         self.values.append(1)
@@ -361,11 +353,12 @@ class ResumeRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding resume time to report: '" + self.report + "'...")
+        Logger.debug("Adding resume time to: " +
+            repr(reporter.TreatmentsReport))
 
         # Add entries
-        Reporter.add(self.report, ["Suspend/Resume"], dict(zip(self.t,
-                                                               self.values)))
+        reporter.addDatedEntries(reporter.TreatmentsReport,
+            ["Suspend/Resume"], dict(zip(self.t, self.values)))
 
 
 
@@ -400,10 +393,7 @@ class TBRecord(Record):
                                    minDuration <= x[9] <= maxDuration)
 
         # Initialize rest of record
-        super(self.__class__, self).__init__(pump)
-
-        # Define record's report
-        self.report = "treatments.json"
+        super(TBRecord, self).__init__(pump)
 
 
 
@@ -416,7 +406,7 @@ class TBRecord(Record):
         """
 
         # Decode record time
-        super(self.__class__, self).decode()
+        super(TBRecord, self).decode()
 
         # Decode TB rate and units
         if self.body[0] >= 0 and self.body[0] < 8:
@@ -456,11 +446,11 @@ class TBRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding TBs to report: '" + self.report + "'...")
+        Logger.debug("Adding TBs to: " + repr(reporter.TreatmentsReport))
 
         # Add entries
-        Reporter.add(self.report, ["Temporary Basals"], dict(zip(self.t,
-                                                                 self.values)))
+        reporter.addDatedEntries(reporter.TreatmentsReport,
+            ["Temporary Basals"], dict(zip(self.t, self.values)))
 
 
 
@@ -495,10 +485,7 @@ class BolusRecord(Record):
                                    x[3] == 0)
 
         # Initialize rest of record
-        super(self.__class__, self).__init__(pump)
-
-        # Define record's report
-        self.report = "treatments.json"
+        super(BolusRecord, self).__init__(pump)
 
 
 
@@ -515,7 +502,7 @@ class BolusRecord(Record):
         """
 
         # Decode record time
-        super(self.__class__, self).decode()
+        super(BolusRecord, self).decode()
 
         # Decode bolus
         bolus = round(self.head[2] * self.pump.bolus.stroke, 1)
@@ -534,10 +521,11 @@ class BolusRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding boluses to report: '" + self.report + "'...")
+        Logger.debug("Adding boluses to: " + repr(reporter.TreatmentsReport))
 
         # Add entries
-        Reporter.add(self.report, ["Boluses"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(reporter.TreatmentsReport,
+            ["Boluses"], dict(zip(self.t, self.values)))
 
 
 
@@ -577,10 +565,7 @@ class CarbsRecord(Record):
         self.criteria = lambda x: x[0] == self.code
 
         # Initialize rest of record
-        super(self.__class__, self).__init__(pump)
-
-        # Define record's report
-        self.report = "treatments.json"
+        super(CarbsRecord, self).__init__(pump)
 
 
 
@@ -595,7 +580,7 @@ class CarbsRecord(Record):
         """
 
         # Decode record time
-        super(self.__class__, self).decode()
+        super(CarbsRecord, self).decode()
 
         # Define an indicator dictionary to decode BG and carb bytes
         # <i>: [<BGU>, <CU>, <larger BG>, <larger C>]
@@ -694,10 +679,11 @@ class CarbsRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding carbs to report: '" + self.report + "'...")
+        Logger.debug("Adding carbs to: '" + repr(reporter.TreatmentsReport))
 
         # Add entries
-        Reporter.add(self.report, ["Carbs"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(reporter.TreatmentsReport,
+            ["Carbs"], dict(zip(self.t, self.values)))
 
 
 

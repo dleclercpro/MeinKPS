@@ -28,11 +28,6 @@ import base
 
 
 
-# Instanciate a reporter
-Reporter = reporter.Reporter()
-
-
-
 class ISF(base.DailyProfile):
 
     def __init__(self):
@@ -47,11 +42,11 @@ class ISF(base.DailyProfile):
         super(ISF, self).__init__()
         
         # Define report info
-        self.report = "pump.json"
+        self.report = reporter.PumpReport()
         self.branch = ["ISF"]
 
         # Read units
-        self.units = Reporter.get(self.report, ["Units"], "BG") + "/U"
+        self.units = self.report.get(["Units", "BG"]) + "/U"
 
 
 

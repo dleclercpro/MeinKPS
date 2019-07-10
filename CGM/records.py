@@ -30,13 +30,13 @@ import datetime
 # USER LIBRARIES
 import lib
 import logger
+import errors
 import reporter
 
 
 
 # Define instances
 Logger = logger.Logger("CGM/records.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -177,10 +177,7 @@ class BGRecord(Record):
         """
 
         # Initialize record
-        super(self.__class__, self).__init__(cgm)
-
-        # Define record's report
-        self.report = "BG.json"
+        super(BGRecord, self).__init__(cgm)
 
         # Define record size
         self.size = 13
@@ -221,7 +218,7 @@ class BGRecord(Record):
         """
 
         # Initialize decoding
-        super(self.__class__, self).decode()
+        super(BGRecord, self).decode()
 
         # Decode BG
         BG = lib.unpack(self.bytes[-1][8:10], "<") & 1023
@@ -299,10 +296,10 @@ class BGRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding BG records to report: '" + self.report + "'...")
+        Logger.debug("Adding BG records to report: " + repr(reporter.BGReport))
 
         # Add entries
-        Reporter.add(self.report, [], self.filter())
+        reporter.addDatedEntries(reporter.BGReport, [], self.filter())
 
 
 
@@ -317,10 +314,7 @@ class SensorRecord(Record):
         """
 
         # Initialize record
-        super(self.__class__, self).__init__(cgm)
-
-        # Define record's report
-        self.report = "history.json"
+        super(SensorRecord, self).__init__(cgm)
 
         # Define record size
         self.size = 15
@@ -347,7 +341,7 @@ class SensorRecord(Record):
         """
 
         # Initialize decoding
-        super(self.__class__, self).decode()
+        super(SensorRecord, self).decode()
 
         # Decode sensor status
         status = self.statuses[self.bytes[-1][12]]
@@ -370,12 +364,12 @@ class SensorRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding sensor statuses to report: '" + self.report +
-                     "'...")
+        Logger.debug("Adding sensor statuses to report: " +
+            repr(reporter.HistoryReport))
 
         # Add entries
-        Reporter.add(self.report, ["CGM", "Sensor Statuses"],
-                     dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(reporter.HistoryReport,
+            ["CGM", "Sensor Statuses"], dict(zip(self.t, self.values)))
 
 
 
@@ -390,10 +384,7 @@ class CalibrationRecord(Record):
         """
 
         # Initialize record
-        super(self.__class__, self).__init__(cgm)
-
-        # Define record's report
-        self.report = "history.json"
+        super(CalibrationRecord, self).__init__(cgm)
 
         # Define record size
         self.size = 16
@@ -409,7 +400,7 @@ class CalibrationRecord(Record):
         """
 
         # Initialize decoding
-        super(self.__class__, self).decode()
+        super(CalibrationRecord, self).decode()
 
         # Decode BG
         BG = round(lib.unpack(self.bytes[-1][8:10], "<") / 18.0, 1)
@@ -432,12 +423,12 @@ class CalibrationRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding sensor calibrations to report: '" + self.report +
-                     "'...")
+        Logger.debug("Adding sensor calibrations to report: " +
+            repr(reporter.HistoryReport))
 
         # Add entries
-        Reporter.add(self.report, ["CGM", "Calibrations"],
-                     dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(reporter.HistoryReport,
+            ["CGM", "Calibrations"], dict(zip(self.t, self.values)))
 
 
 
@@ -452,7 +443,7 @@ class EventRecord(Record):
         """
 
         # Initialize record
-        super(self.__class__, self).__init__(cgm)
+        super(EventRecord).__init__(cgm)
 
         # Define record size
         self.size = 20

@@ -28,11 +28,6 @@ import base
 
 
 
-# Instanciate a reporter
-Reporter = reporter.Reporter()
-
-
-
 class BGTargets(base.DailyProfile, base.FutureProfile):
 
     def __init__(self):
@@ -47,8 +42,8 @@ class BGTargets(base.DailyProfile, base.FutureProfile):
         super(BGTargets, self).__init__()
 
         # Define report info
-        self.report = "pump.json"
+        self.report = reporter.PumpReport()
         self.branch = ["BG Targets"]
 
         # Read units
-        self.units = Reporter.get(self.report, ["Units"], "BG")
+        self.units = self.report.get(, ["Units", "BG"])

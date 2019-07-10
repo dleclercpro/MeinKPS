@@ -50,11 +50,6 @@ from Profiles import *
 
 
 
-# Instanciate a reporter
-Reporter = reporter.Reporter()
-
-
-
 def IAC(t, args):
 
     """
@@ -291,11 +286,8 @@ def plotInsulinActivity():
     profileT = np.array(calc.net.T)
     profileY = np.array(calc.net.y)
 
-    # Load pump report
-    Reporter.load("pump.json")
-
     # Read DIA
-    DIA = Reporter.getEntry(["Settings"], "DIA")
+    DIA = reporter.PumpReport().get(["Settings", "DIA"])
 
     # Define timestep (h)
     dt = 5 / 60.

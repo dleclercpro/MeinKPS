@@ -37,7 +37,6 @@ import base
 
 # Define instances
 Logger = logger.Logger("Profiles/COB.py")
-Reporter = reporter.Reporter()
 
 
 

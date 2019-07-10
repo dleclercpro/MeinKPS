@@ -48,7 +48,6 @@ from Pump import packets
 
 # Define instances
 Logger = logger.Logger("Stick/stick.py")
-Reporter = reporter.Reporter()
 
 
 
@@ -121,7 +120,7 @@ class Stick(object):
                           "CHANNR"]
 
         # Define report
-        self.report = "stick.json"
+        self.report = reporter.StickReport()
 
 
 
@@ -540,13 +539,13 @@ class Stick(object):
 
         # Give user info
         Logger.debug("Adding pump's last optimized frequency to '" +
-                     self.report + "'...")
+                     repr(self.report) + "'...")
 
         # Get current formatted time
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        Reporter.add(self.report, [], {"Frequency": [f, now]}, True)
+        self.report.add([f, now], ["Frequency"], True)
 
 
 
@@ -563,7 +562,7 @@ class Stick(object):
         now = datetime.datetime.now()
 
         # Get last frequency optimization
-        entry = Reporter.get(self.report, [], "Frequency")
+        entry = self.report.get(["Frequency"])
 
         # Entry exists
         if entry:

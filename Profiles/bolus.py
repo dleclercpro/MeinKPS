@@ -33,11 +33,6 @@ import reporter
 
 
 
-# Define instances
-Reporter = reporter.Reporter()
-
-
-
 class Bolus(base.PastProfile, base.StepProfile):
 
     def __init__(self):
@@ -61,10 +56,10 @@ class Bolus(base.PastProfile, base.StepProfile):
         self.rate = 90.0
 
         # Read theoretical max
-        self.max = Reporter.get("pump.json", ["Settings"], "Max Bolus")
+        self.max = reporter.PumpReport().get(["Settings", "Max Bolus"])
 
         # Define report info
-        self.report = "treatments.json"
+        self.report = reporter.TreatmentsReport
         self.branch = ["Boluses"]
 
 

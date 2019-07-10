@@ -36,7 +36,6 @@ import reporter
 
 # Define instances
 Logger = logger.Logger("uploader.py", "DEBUG")
-Reporter = reporter.Reporter()
 
 
 
@@ -51,8 +50,8 @@ class Uploader(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
-        pass
+        # Define report
+        self.report = reporter.FTPReport()
 
 
 
@@ -129,17 +128,17 @@ class Uploader(object):
         """
 
         # Instanciate an FTP object
-        ftp = ftplib.FTP(Reporter.get("FTP.json", [], "Host"),
-                         Reporter.get("FTP.json", [], "User"),
-                         Reporter.get("FTP.json", [], "Password"))
+        ftp = ftplib.FTP(self.report.get(["Host"]),
+                         self.report.get(["User"]),
+                         self.report.get(["Password"]))
 
         # Move to directory
-        ftp.cwd(Reporter.get("FTP.json", [], "Path"))
+        ftp.cwd(self.report.get(["Path"]))
 
-        # Define file paths
-        path = Reporter.export.path
+        # Define path to files
+        path = reporter.PATH_EXPORTS.path
 
-        # Upload files within path
+        # Upload files
         self.upload(ftp, path, "json")
 
 

@@ -28,11 +28,6 @@ import base
 
 
 
-# Instanciate a reporter
-Reporter = reporter.Reporter()
-
-
-
 class CSF(base.DailyProfile, base.FutureProfile):
 
     def __init__(self):
@@ -47,11 +42,11 @@ class CSF(base.DailyProfile, base.FutureProfile):
         super(CSF, self).__init__()
 
         # Define report info
-        self.report = "pump.json"
+        self.report = reporter.PumpReport()
         self.branch = ["CSF"]
 
         # Read units
-        units = Reporter.get(self.report, ["Units"], "Carbs")
+        units = self.report.get(["Units", "Carbs"])
 
         # In case of grams
         if units == "g":
