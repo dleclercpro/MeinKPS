@@ -235,6 +235,36 @@ def test_add_overwrite():
 
 
 
+def test_increment():
+
+    """
+    Increment a report's field.
+    """
+
+    key = "A"
+    value = 0
+    keyString = "B"
+    valueString = "0"
+
+    report = Report({
+        key: value,
+        keyString: valueString
+    })
+    
+    assert report.get([key]) == value
+
+    with pytest.raises(errors.BrokenBranch):
+        report.increment([])
+
+    with pytest.raises(TypeError):
+        report.increment([keyString])
+
+    report.increment([key])
+    
+    assert report.get([key]) == value + 1
+
+
+
 def test_get_report_dates(setup_and_teardown):
 
     """
