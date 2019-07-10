@@ -256,6 +256,9 @@ class SuspendRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define report type
+        self.reportType = reporter.TreatmentsReport
+
         # Define record characteristics
         self.code = 30
         self.sizes = {"Head": 2,
@@ -295,12 +298,11 @@ class SuspendRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding suspend time to: " +
-            repr(reporter.TreatmentsReport))
+        Logger.debug("Adding suspend time to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.TreatmentsReport,
-            ["Suspend/Resume"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(self.reportType, ["Suspend/Resume"],
+            dict(zip(self.t, self.values)))
 
 
 
@@ -313,6 +315,9 @@ class ResumeRecord(Record):
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define report type
+        self.reportType = reporter.TreatmentsReport
 
         # Define record characteristics
         self.code = 31
@@ -353,12 +358,11 @@ class ResumeRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding resume time to: " +
-            repr(reporter.TreatmentsReport))
+        Logger.debug("Adding resume time to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.TreatmentsReport,
-            ["Suspend/Resume"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(self.reportType, ["Suspend/Resume"],
+            dict(zip(self.t, self.values)))
 
 
 
@@ -371,6 +375,9 @@ class TBRecord(Record):
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define report type
+        self.reportType = reporter.TreatmentsReport
 
         # Define record characteristics
         self.code = 51
@@ -446,11 +453,11 @@ class TBRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding TBs to: " + repr(reporter.TreatmentsReport))
+        Logger.debug("Adding TBs to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.TreatmentsReport,
-            ["Temporary Basals"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(self.reportType, ["Temporary Basals"],
+            dict(zip(self.t, self.values)))
 
 
 
@@ -467,6 +474,9 @@ class BolusRecord(Record):
               Last byte in criteria corresponds to duration of bolus in
               30m blocks (max 8h)?
         """
+
+        # Define report type
+        self.reportType = reporter.TreatmentsReport
 
         # Define record characteristics
         self.code = 1
@@ -521,11 +531,11 @@ class BolusRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding boluses to: " + repr(reporter.TreatmentsReport))
+        Logger.debug("Adding boluses to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.TreatmentsReport,
-            ["Boluses"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(self.reportType, ["Boluses"],
+            dict(zip(self.t, self.values)))
 
 
 
@@ -555,6 +565,9 @@ class CarbsRecord(Record):
                  correspond to calibration BGs...
         """
 
+        # Define report type
+        self.reportType = reporter.TreatmentsReport
+
         # Define record characteristics
         self.code = 91
         self.sizes = {"Head": 2,
@@ -575,8 +588,7 @@ class CarbsRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        TODO: decode rest of record (this is actually a bolus wizard record)
+            TODO: decode rest of record (this is actually a bolus wizard record)
         """
 
         # Decode record time
@@ -606,27 +618,19 @@ class CarbsRecord(Record):
         # BGs
         # mmol/L
         if BGU == "mmol/L":
-
-            # Store it
             mBGU = 1.0
 
         # mg/dL
         elif BGU == "mg/dL":
-
-            # Store it
             mBGU = 0
 
         # Carbs
         # exchange
         if CU == "exchange":
-
-            # Store it
             mCU = 1.0
 
         # g
         elif CU == "g":
-
-            # Store it
             mCU = 0
 
         # Define number of bytes to add for larger BGs and Cs
@@ -635,31 +639,21 @@ class CarbsRecord(Record):
             
             # Extra number of bytes depends on BG units
             if BGU == "mmol/L":
-
-                # Store it
                 mBG = 256
 
             elif BGU == "mg/dL":
-
-                # Store it
                 mBG = 512
 
         # Smaller BG
         else:
-
-            # Store it
             mBG = 0
 
         # Larger carbs
         if largerC:
-
-            # Store it
             mC = 256
 
         # Smaller carbs
         else:
-
-            # Store it
             mC = 0
 
         # Decode record
@@ -679,11 +673,11 @@ class CarbsRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding carbs to: '" + repr(reporter.TreatmentsReport))
+        Logger.debug("Adding carbs to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.TreatmentsReport,
-            ["Carbs"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(self.reportType, ["Carbs"],
+            dict(zip(self.t, self.values)))
 
 
 

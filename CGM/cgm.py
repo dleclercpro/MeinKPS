@@ -100,7 +100,7 @@ class CGM(object):
                           "Settings": databases.SettingsDatabase(self)}
 
         # Define report
-        self.report = reporter.CGMReport()
+        self.report = reporter.REPORTS["cgm"]
 
 
 
@@ -367,6 +367,9 @@ class Battery(object):
         self.commands = {"ReadLevel": commands.ReadBatteryLevel(cgm),
                          "ReadState": commands.ReadBatteryState(cgm)}
 
+        # Define report type
+        self.reportType = reporter.HistoryReport
+
 
 
     def read(self):
@@ -414,12 +417,11 @@ class Battery(object):
         """
 
         # Give user info
-        Logger.debug("Storing battery level to report: " + 
-            repr(reporter.HistoryReport))
+        Logger.debug("Storing battery level to: " + repr(self.reportType))
 
         # Add entry
-        reporter.addDatedEntries(reporter.HistoryReport,
-            ["CGM", "Battery Levels"], {self.t: self.level})
+        reporter.addDatedEntries(self.reportType, ["CGM", "Battery Levels"],
+            { self.t: self.level })
 
 
 
@@ -458,7 +460,7 @@ class Language(object):
         self.command = commands.ReadLanguage(cgm)
 
         # Define report
-        self.report = reporter.CGMReport()
+        self.report = reporter.REPORTS["cgm"]
 
 
 
@@ -494,7 +496,7 @@ class Language(object):
         """
 
         # Give user info
-        Logger.debug("Storing language to report: " + repr(self.report))
+        Logger.debug("Storing language to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.value, ["Language"], True)
@@ -528,7 +530,7 @@ class Clock(object):
                          "ReadMode": commands.ReadClockMode(cgm)}
 
         # Define report
-        self.report = reporter.CGMReport()
+        self.report = reporter.REPORTS["cgm"]
 
 
 
@@ -577,7 +579,7 @@ class Clock(object):
         """
 
         # Give user info
-        Logger.debug("Storing clock mode to report: " + repr(self.report))
+        Logger.debug("Storing clock mode to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.mode, ["Clock Mode"], True)
@@ -604,7 +606,7 @@ class Units(object):
         self.command = commands.ReadUnits(cgm)
 
         # Define report
-        self.report = reporter.CGMReport()
+        self.report = reporter.REPORTS["cgm"]
 
 
 
@@ -640,7 +642,7 @@ class Units(object):
         """
 
         # Give user info
-        Logger.debug("Storing BG units to report: " + repr(self.report))
+        Logger.debug("Storing BG units to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.value, ["Units"], True)
@@ -696,7 +698,7 @@ class Transmitter(object):
         self.command = commands.ReadTransmitterID(cgm)
 
         # Define report
-        self.report = reporter.CGMReport()
+        self.report = reporter.REPORTS["cgm"]
 
 
 
@@ -731,8 +733,7 @@ class Transmitter(object):
         """
 
         # Give user info
-        Logger.debug("Storing transmitter ID to report: '" + self.report +
-                     "'...")
+        Logger.debug("Storing transmitter ID to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.id, ["Transmitter ID"], True)

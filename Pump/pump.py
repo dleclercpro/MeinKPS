@@ -226,7 +226,7 @@ class Power(PumpComponent):
         self.command = commands.Power(pump)
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -938,8 +938,6 @@ class TB(PumpComponent):
 
         # No TB given
         if TB is None:
-
-            # Set it to read one
             TB = self.value
 
         # Info
@@ -1018,15 +1016,11 @@ class TB(PumpComponent):
         # Round rate
         # U/h
         if TB["Units"] == "U/h":
-
-            # Do it
             TB["Rate"] = round(round(TB["Rate"] / self.pump.basal.stroke) *
                                                   self.pump.basal.stroke, 2)
 
         # %
         elif TB["Units"] == "%":
-
-            # Do it
             TB["Rate"] = round(TB["Rate"])
 
         # Round duration
@@ -1075,33 +1069,24 @@ class TB(PumpComponent):
         # Choose command depending on units
         # U/h
         if TB["Units"] == "U/h":
-
-            # Run command
             self.commands["Set Absolute"].run(TB["Rate"], TB["Duration"])
 
         # %
         elif TB["Units"] == "%":
-
-            # Run command
             self.commands["Set Percentage"].run(TB["Rate"], TB["Duration"])
 
         # Info
         Logger.info("Verifying if TB was correctly enacted...")
 
-        # Verify that the TB was correctly issued by reading current TB on
-        # pump
+        # Verify that the TB was correctly issued by reading current TB
         self.read()
 
         # Compare to expectedly set TB
         if TB == self.value:
-
-            # Info
             Logger.info("TB correctly enacted.")
 
         # Otherwise
         else:
-
-            # Raise error
             raise errors.TBFail()
 
 
@@ -1126,15 +1111,15 @@ class TB(PumpComponent):
         # Check units of TB
         # U/h
         if units == "U/h":
-
-            # Cancel TB
             self.set(0, units, 0, True)
 
         # %
         elif units == "%":
-
-            # Cancel TB
             self.set(100, units, 0, True)
+
+        # Bad units
+        else:
+            raise ValueError("Bad TB units.")
 
 
 

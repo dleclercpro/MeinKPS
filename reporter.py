@@ -23,9 +23,6 @@
 """
 
 # TO-DO'S
-# - Disconnect Pi safely (do not break JSON files)
-# - When adding an entry with the overwrite argument, only said entry can be
-#   overwritten and not the whole section (see BG Targets)?
 # - Scan for corrupted directory/file structure (e.g. should this report be
 #   there?)
 
@@ -284,8 +281,8 @@ class Report(object):
         """
 
         # Test branch
-        if isBranchBroken(branch):
-            raise errors.BrokenBranch(str(branch))
+        if not isBranchValid(branch):
+            raise errors.InvalidBranch(str(branch))
 
         # Empty branch: return whole report
         if branch == []:
@@ -309,7 +306,7 @@ class Report(object):
                     json = json[key]
 
         # Branch is invalid
-        raise errors.InvalidBranch(repr(self), str(branch))
+        raise errors.MissingBranch(repr(self), str(branch))
 
 
 
@@ -325,8 +322,8 @@ class Report(object):
         """
 
         # Test branch
-        if isBranchBroken(branch):
-            raise errors.BrokenBranch(str(branch))
+        if not isBranchValid(branch):
+            raise errors.InvalidBranch(str(branch))
 
         # Empty branch: replace the whole report
         if branch == []:
@@ -384,7 +381,7 @@ class Report(object):
                 json = json[key]
 
         # Branch is invalid
-        raise errors.InvalidBranch(repr(self), str(branch))
+        raise errors.MissingBranch(repr(self), str(branch))
 
 
 
@@ -398,8 +395,8 @@ class Report(object):
         """
 
         # Test branch
-        if isBranchBroken(branch):
-            raise errors.BrokenBranch(str(branch))
+        if not isBranchValid(branch):
+            raise errors.InvalidBranch(str(branch))
 
         # Empty branch: erase whole report
         if branch == []:
@@ -425,7 +422,7 @@ class Report(object):
                     json = json[key]
 
         # Branch is invalid
-        raise errors.InvalidBranch(repr(self), str(branch))
+        raise errors.MissingBranch(repr(self), str(branch))
 
 
 
@@ -440,8 +437,8 @@ class Report(object):
 
         # Test branch: no empty branch allowed (cannot increment the root of a
         # report's content)
-        if isBranchBroken(branch) or branch == []:
-            raise errors.BrokenBranch(str(branch))
+        if not isBranchValid(branch) or branch == []:
+            raise errors.InvalidBranch(str(branch))
 
         # Try reading value
         n = self.get(branch)
@@ -593,7 +590,7 @@ class PumpReport(Report):
 
 class CGMReport(Report):
 
-    name = "CGM.json"
+    name = "cgm.json"
 
     def __init__(self):
 
@@ -866,18 +863,21 @@ class FTPReport(Report):
 
 
 
+
+
+
 # FUNCTIONS
-def isBranchBroken(branch):
+def isBranchValid(branch):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISBRANCHBROKEN
+        ISBRANCHVALID
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         A branch is a list of keys, which lead to a value in a dict. All its
         values should be strings.
     """
 
-    return type(branch) is not list or not all([type(b) is str for b in branch])
+    return type(branch) is list and all([type(b) is str for b in branch])
 
 
 
@@ -963,7 +963,7 @@ def getRecent(reportType, now, branch, n = 1, strict = False,
             new = report.get(branch)
 
         # Keep going if no data
-        except errors.InvalidBranch:
+        except errors.MissingBranch:
             new = {}
 
         # Merge old and new entries
@@ -1008,6 +1008,28 @@ def addDatedEntries(reportType, branch, entries):
     # Store reports
     for date, report in reports.items():
         report.store()
+
+
+
+
+
+
+# Report instances (for external imports)
+REPORTS = {
+    "pump": PumpReport(),
+    "cgm": CGMReport(),
+    "stick": StickReport(),
+    "loop": LoopReport(),
+    "ftp": FTPReport()
+}
+
+# Load them
+# TODO: test if loaded for each external import of module
+for report in REPORTS.values():
+    report.load(False)
+
+
+
 
 
 

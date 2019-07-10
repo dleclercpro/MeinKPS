@@ -51,7 +51,7 @@ class Uploader(object):
         """
 
         # Define report
-        self.report = reporter.FTPReport()
+        self.report = reporter.REPORTS["ftp"]
 
 
 

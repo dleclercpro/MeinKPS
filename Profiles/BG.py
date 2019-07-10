@@ -56,18 +56,29 @@ class BG(base.DotProfile):
         super(BG, self).__init__()
 
         # Read units
-        self.units = reporter.PumpReport().get(["Units", "BG"])
+        self.units = reporter.REPORTS["pump"].get(["Units", "BG"])
 
         # Define plot y-axis default limits
         self.ylim = [0, 15] if self.units == "mmol/L" else [0, 270]
 
-        # Define report info
-        self.report = reporter.BGReport
-
 
 
 class PastBG(BG, base.PastProfile):
-    pass
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(PastBG, self).__init__()
+
+        # Define report properties
+        self.reportType = reporter.BGReport
+        self.branch = []
 
 
 
@@ -247,7 +258,8 @@ def main():
     """
 
     # Instanciate a BG profile
-    BG = FutureBG()
+    pastBG = PastBG()
+    futureBG = FutureBG()
 
 
 

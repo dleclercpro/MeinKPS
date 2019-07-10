@@ -203,7 +203,7 @@ def test_add():
 
     report = Report()
 
-    with pytest.raises(errors.InvalidBranch):
+    with pytest.raises(errors.MissingBranch):
         report.get([key])
 
     report.add(value, [key])
@@ -253,7 +253,7 @@ def test_increment():
     
     assert report.get([key]) == value
 
-    with pytest.raises(errors.BrokenBranch):
+    with pytest.raises(errors.InvalidBranch):
         report.increment([])
 
     with pytest.raises(TypeError):

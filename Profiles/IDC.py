@@ -57,6 +57,33 @@ class IDC(object):
 
 
 
+    def f(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Gives fraction of active insulin remaining in body t hours after
+            enacting it.
+        """
+
+        raise NotImplementedError
+
+
+
+    def F(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Note: implicit integration of IDC. Only makes sense when taking dF.
+        """
+
+        raise NotImplementedError
+
+
+
     def correct(self, t):
 
         """
@@ -225,7 +252,7 @@ class TriangleModelIDC(IDC):
             Modelization of IDC based on a triangle IAC. The IAC is given by the
             following formula (with negative times since injection):
 
-                ÌAC(t) = m_0 * t + b_0 for t = [-DIA, -PIA]
+                IAC(t) = m_0 * t + b_0 for t = [-DIA, -PIA]
                          m_1 * t + b_1 for t = [-PIA, 0]
 
             where the units of IAC are given by [/h].
@@ -313,11 +340,12 @@ class TriangleModelIDC(IDC):
             where S_a^b represents the integral on time of f(t) from a to b.
         """
 
+        # Define integral
+        def I(t, m, b, c):
+            return m * t ** 3 / 6 + b * t ** 2 / 2 + c * t
+
         # Correct time
         t = self.correct(t)
-
-        # Define integral
-        I = lambda t, m, b, c: m * t ** 3 / 6 + b * t ** 2 / 2 + c * t
 
         # Initialize result
         F = 0
@@ -403,9 +431,7 @@ class WalshIDC(FourthOrderIDC):
 
         # Bad DIA
         else:
-
-            # Raise error
-            raise errors.BadDIA(DIA)
+            raise ValueError("Bad DIA: " + str(DIA))
 
 
 

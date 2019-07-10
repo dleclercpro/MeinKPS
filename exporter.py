@@ -93,7 +93,7 @@ class Exporter(object):
             self.now, [], 2)
 
         # Get pump data
-        self.data["pump"] = reporter.PumpReport().get([])
+        self.data["pump"] = reporter.REPORTS["pump"].get([])
 
         # Get recent boluses
         self.data["boluses"] = reporter.getRecent(reporter.TreatmentsReport,

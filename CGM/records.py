@@ -50,7 +50,8 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize record's report
+        # Initialize report properties
+        self.reportType = None
         self.report = None
 
         # Initialize record size
@@ -119,8 +120,6 @@ class Record(object):
 
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
-
-            # Raise error
             raise errors.BadCGMRecordCRC(expectedCRC, computedCRC)
 
 
@@ -150,7 +149,7 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        pass
+        raise NotImplementedError
 
 
 
@@ -162,7 +161,7 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        pass
+        raise NotImplementedError
 
 
 
@@ -206,6 +205,9 @@ class BGRecord(Record):
 
         # Define if conversion from mg/dL to mmol/L is needed
         self.convert = True
+
+        # Define report type
+        self.reportType = reporter.BGReport
 
 
 
@@ -296,10 +298,10 @@ class BGRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding BG records to report: " + repr(reporter.BGReport))
+        Logger.debug("Adding BG records to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.BGReport, [], self.filter())
+        reporter.addDatedEntries(self.reportType, [], self.filter())
 
 
 
@@ -329,6 +331,9 @@ class SensorRecord(Record):
                          7: "Started",
                          8: "BadTransmitter",
                          9: "ManufacturingMode"}
+
+        # Define report type
+        self.reportType = reporter.HistoryReport
 
 
 
@@ -364,12 +369,11 @@ class SensorRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding sensor statuses to report: " +
-            repr(reporter.HistoryReport))
+        Logger.debug("Adding sensor statuses to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.HistoryReport,
-            ["CGM", "Sensor Statuses"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(self.reportType, ["CGM", "Sensor Statuses"],
+            dict(zip(self.t, self.values)))
 
 
 
@@ -388,6 +392,9 @@ class CalibrationRecord(Record):
 
         # Define record size
         self.size = 16
+
+        # Define report type
+        self.reportType = reporter.HistoryReport
 
 
 
@@ -423,12 +430,11 @@ class CalibrationRecord(Record):
         """
 
         # Give user info
-        Logger.debug("Adding sensor calibrations to report: " +
-            repr(reporter.HistoryReport))
+        Logger.debug("Adding sensor calibrations to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(reporter.HistoryReport,
-            ["CGM", "Calibrations"], dict(zip(self.t, self.values)))
+        reporter.addDatedEntries(self.reportType, ["CGM", "Calibrations"],
+            dict(zip(self.t, self.values)))
 
 
 

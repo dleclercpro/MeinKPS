@@ -30,6 +30,7 @@ import datetime
 # USER LIBRARIES
 import errors
 import base
+import reporter
 
 
 
@@ -49,8 +50,8 @@ class TB(base.PastProfile, base.StepProfile):
         # Renitialize units
         self.units = "U/h"
 
-        # Define report info
-        self.report = "treatments.json"
+        # Define report properties
+        self.reportType = reporter.TreatmentsReport
         self.branch = ["Temporary Basals"]
 
 
@@ -77,9 +78,7 @@ class TB(base.PastProfile, base.StepProfile):
 
             # Verify units
             if self.y[i][1] != "U/h":
-
-                # Only support U/h for now
-                raise errors.BadTBUnits()
+                raise ValueError("Bad TB units. Only 'U/h' supported now.")
 
             # Get rate
             self.y[i] = self.y[i][0]

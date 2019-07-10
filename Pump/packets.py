@@ -679,9 +679,8 @@ class FromPumpPacket(FromPacket, PumpPacket):
 
         # Verify CRC
         if computedCRC != expectedCRC:
-
-            # Raise error
-            raise errors.BadPumpPacketCRC(expectedCRC, computedCRC)
+            raise ValueError("Bad CRC (corrupted packet). Expected: " +
+                str(expectedCRC) + ". Computed: " + str(computedCRC) + ".")
 
         # Return CRC
         return computedCRC

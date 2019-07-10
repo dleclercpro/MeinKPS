@@ -24,6 +24,7 @@
 
 # USER LIBRARIES
 import base
+import reporter
 
 
 
@@ -46,12 +47,22 @@ class Resume(base.PastProfile, base.StepProfile):
         # Define units
         self.units = "U/h"
 
-        # Load latest data available
-        self.strict = False
-
-        # Define report info
-        self.report = "treatments.json"
+        # Define report properties
+        self.reportType = reporter.TreatmentsReport
         self.branch = ["Suspend/Resume"]
+
+
+
+    def load(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOAD
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Load latest data available
+        super(Resume, self).load(False)
 
 
 

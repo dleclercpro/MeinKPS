@@ -287,7 +287,7 @@ def plotInsulinActivity():
     profileY = np.array(calc.net.y)
 
     # Read DIA
-    DIA = reporter.PumpReport().get(["Settings", "DIA"])
+    DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
 
     # Define timestep (h)
     dt = 5 / 60.

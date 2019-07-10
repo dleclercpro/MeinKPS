@@ -71,10 +71,10 @@ class Loop(object):
         self.pump = pump.Pump(stick.Stick())
 
         # Get DIA
-        self.DIA = reporter.PumpReport().get(["Settings", "DIA"])
+        self.DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
 
         # Define report
-        self.report = reporter.LoopReport()
+        self.report = reporter.REPORTS["loop"]
 
 
 

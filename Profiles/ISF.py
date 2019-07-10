@@ -41,8 +41,8 @@ class ISF(base.DailyProfile):
         # Start initialization
         super(ISF, self).__init__()
         
-        # Define report info
-        self.report = reporter.PumpReport()
+        # Define report properties
+        self.report = reporter.REPORTS["pump"]
         self.branch = ["ISF"]
 
         # Read units

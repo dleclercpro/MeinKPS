@@ -58,8 +58,8 @@ class IOB(base.DotProfile):
         # Define units
         self.units = "U"
 
-        # Define report info
-        self.report = reporter.TreatmentsReport
+        # Define report properties
+        self.reportType = reporter.TreatmentsReport
         self.branch = ["IOB"]
 
 
@@ -175,8 +175,8 @@ class FutureIOB(IOB, base.FutureProfile):
         """
 
         # Give user info
-        Logger.debug("Adding current IOB to report: '" + self.report + "'...")
+        Logger.debug("Adding current IOB to: " + repr(self.reportType))
 
         # Add entry
-        reporter.addDatedEntries(self.report, self.branch,
+        reporter.addDatedEntries(self.reportType, self.branch,
             { self.T[0]: round(self.y[0], 2) })

@@ -37,11 +37,6 @@ import matplotlib.pyplot as plt
 
 
 
-# USER LIBRARIES
-import errors
-
-
-
 # CONSTANTS
 # CRC8
 CRC8_TABLE = [0,   155, 173, 54,  193, 90,  108, 247,

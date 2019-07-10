@@ -120,7 +120,7 @@ class Stick(object):
                           "CHANNR"]
 
         # Define report
-        self.report = reporter.StickReport()
+        self.report = reporter.REPORTS["stick"]
 
 
 

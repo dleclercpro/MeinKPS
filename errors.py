@@ -292,22 +292,6 @@ class BadPumpPacketEnding(InvalidPumpPacket):
 
 
 
-class BadPumpPacketCRC(InvalidPumpPacket):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Bad CRC (corrupted packet). Expected: " + self.args[0] +
-                     ". Computed: " + self.args[1] + ".")
-
-
-
 # Pump errors
 class NoPump(PumpError):
 
@@ -341,22 +325,6 @@ class NoHistory(PumpError):
         # Define error info
         self.info = ("No pump history data read yet. Make sure to do that " +
                      "before trying to find records.")
-
-
-
-class BadHistoryPageCRC(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Bad history page CRC. Expected: " + self.args[0] + ". " +
-                     "Computed: " + self.args[1] + ".")
 
 
 
@@ -585,62 +553,7 @@ class BadCGMRecordCRC(CGMError):
 
 
 # Reporter errors
-class BadPath(ReporterError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Bad path given as input to reporter. Make sure it is a " +
-                     "list, otherwise finding corresponding section just " +
-                     "won't work.")
-
-
-
-class NoReport(ReporterError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error logging level
-        self.level = "DEBUG"
-
-        # Define error info
-        self.info = ("Report '" + self.args[0] + "' (" + self.args[1] +
-                     ") not loaded.")
-
-
-
-class NoSection(ReporterError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error logging level
-        self.level = "DEBUG"
-
-        # Define error info
-        self.info = ("Neither was a matching section found nor did the " +
-                     "reporter create it.")
-
-
-
-class BrokenBranch(ReporterError):
+class InvalidBranch(ReporterError):
 
     def prepare(self):
 
@@ -655,7 +568,7 @@ class BrokenBranch(ReporterError):
 
 
 
-class InvalidBranch(ReporterError):
+class MissingBranch(ReporterError):
 
     def prepare(self):
 
@@ -716,21 +629,6 @@ class NoProfileData(ProfileError):
 
 
 
-class BadDIA(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("No IDC found for DIA = " + self.args[0] + " h.")
-
-
-
 class BadInsulinAge(ProfileError):
 
     def prepare(self):
@@ -743,68 +641,6 @@ class BadInsulinAge(ProfileError):
 
         # Define error info
         self.info = ("Given insulin age is too new.")
-
-
-
-class NoNorm(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Profile t-axis cannot be normalized: profile does not " +
-                     "have a norm.")
-
-
-
-class BadTypeNormalization(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Time axis can only be normalized using a datetime " +
-                     "object.")
-
-
-
-class ProfileAxesLengthMismatch(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Cannot compute f(t): axes' length do not fit.")
-
-
-
-class BadTBUnits(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Bad TB units (%).")
 
 
 
@@ -855,21 +691,6 @@ class BadTime(BaseError):
 
         # Define error info
         self.info = "Bad time."
-
-
-
-class BadFunctionCall(BaseError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = "The value of f(" + self.args[0] + ") does not exist."
 
 
 

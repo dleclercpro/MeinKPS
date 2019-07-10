@@ -41,8 +41,8 @@ class CSF(base.DailyProfile, base.FutureProfile):
         # Start initialization
         super(CSF, self).__init__()
 
-        # Define report info
-        self.report = reporter.PumpReport()
+        # Define report properties
+        self.report = reporter.REPORTS["pump"]
         self.branch = ["CSF"]
 
         # Read units
@@ -50,12 +50,12 @@ class CSF(base.DailyProfile, base.FutureProfile):
 
         # In case of grams
         if units == "g":
-
-            # Adapt units
             self.units = "g/U"
 
         # In case of exchanges
         elif units == "exchange":
-
-            # Adapt units
             self.units = "U/exchange"
+
+        # Bad units
+        else:
+            raise ValueError("Bad CSF units.")

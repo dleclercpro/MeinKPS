@@ -60,11 +60,6 @@ class Profile(object):
         # Initialize units
         self.units = None
 
-        # Initialize report and branch
-        # Report is either a report class, or a report object
-        self.report = None
-        self.branch = []
-
 
 
     def reset(self):
@@ -174,8 +169,7 @@ class Profile(object):
             Load profile data.
         """
 
-        # N/A for abstract profile class
-        pass
+        raise NotImplementedError
 
 
 
@@ -283,15 +277,13 @@ class Profile(object):
 
             # If no time reference
             if T is None:
-
-                # Exit
-                raise errors.NoNorm()
+                raise ValueError("Profile t-axis cannot be normalized: " +
+                    "profile does not have a norm.")
 
         # Before using given reference time, verify its type
         if type(T) is not datetime.datetime:
-
-            # Exit
-            raise errors.BadTypeNormalization()
+            raise TypeError("Time axis can only be normalized using a " +
+                "datetime object.")
 
         # Initialize normalized axis
         t = []
@@ -711,9 +703,7 @@ class StepProfile(Profile):
 
         # Make sure axes fit
         if n != len(self.y) - 1:
-
-            # Exit
-            raise errors.ProfileAxesLengthMismatch()
+            raise IOError("Cannot compute f(t): axes' length do not fit.")
 
         # Compute profile value
         for i in range(n):
@@ -735,9 +725,8 @@ class StepProfile(Profile):
 
         # Check if result could be found
         if index is None:
-
-            # Error
-            raise errors.BadFunctionCall(lib.formatTime(t))
+            raise ValueError("The value of f(" + lib.formatTime(t) + ") " +
+                "does not exist.")
 
         # Compute corresponding value
         y = self.y[index]
@@ -963,6 +952,9 @@ class DotProfile(Profile):
 
 
 
+
+
+
 class PastProfile(Profile):
 
     def __init__(self):
@@ -976,9 +968,9 @@ class PastProfile(Profile):
         # Start initializing
         super(PastProfile, self).__init__()
 
-        # Define whether data should strictly be loaded within given time range
-        # or try and find the latest available
-        self.strict = True
+        # Initialize report properties (past profiles use dated reports)
+        self.reportType = None
+        self.branch = []
 
 
 
@@ -994,56 +986,39 @@ class PastProfile(Profile):
         # Start defining
         super(PastProfile, self).define(start, end)
 
-        # Compute dT
-        dT = end - start
-
         # Define norm
         self.norm = end
 
+        # Compute time difference
+        dT = end - start
+
         # Define plot x-axis default limits
-        self.xlim = [lib.normalizeTime(t, end) for t in [end - dT, end + dT]]
+        self.xlim = [lib.normalizeTime(t, end) for t in
+            [end - dT, end + dT]]
 
 
 
-    def load(self):
+    def load(self, strict = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Load profile components from specified report(s).
+            Load profile components from specified dated report(s).
+
+            'strict' defines whether data should strictly be loaded within
+            given time range or try and find the latest available.
         """
 
         # Give user info
         Logger.debug("Loading...")
 
-        # If strictly looking for dates within range of profile
-        if self.strict:
+        # Number of reports needed
+        n = len(self.days) if strict else 2
 
-            # Get corresponding reports
-            for day in self.days:
-
-                # Try getting data
-                try:
-
-                    # Get current data
-                    data = self.report(day).get(self.branch)
-
-                    # Load data
-                    self.data = lib.mergeDicts(self.data, data)
-
-                # Otherwise
-                except:
-
-                    # Skip
-                    pass
-
-        # If looking for last stored data
-        else:
-
-            # Load data
-            self.data = reporter.getRecent(self.report, self.norm,
-                self.branch, 2)
+        # Load data
+        self.data = reporter.getRecent(self.reportType, self.norm,
+            self.branch, n, strict)
 
         # Give user info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
@@ -1063,20 +1038,37 @@ class FutureProfile(Profile):
 
         # Start defining
         super(FutureProfile, self).define(start, end)
-
-        # Compute dT
-        dT = end - start
         
         # Define norm
         self.norm = start
 
+        # Compute time difference
+        dT = end - start
+
         # Define plot x-axis default limits
-        self.xlim = [lib.normalizeTime(t, start) for t in [start - dT,
-                                                           start + dT]]
+        self.xlim = [lib.normalizeTime(t, start) for t in
+            [start - dT, start + dT]]
 
 
 
 class DailyProfile(StepProfile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initializing
+        super(DailyProfile, self).__init__()
+
+        # Initialize report properties
+        self.report = None
+        self.branch = []
+
+
 
     def load(self):
 

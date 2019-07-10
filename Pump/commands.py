@@ -616,7 +616,7 @@ class Power(SetCommand, BigCommand):
         self.code = "5D"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
         # Define prelude command
         self.commands["Init"] = PowerInit(pump)
@@ -688,8 +688,7 @@ class Power(SetCommand, BigCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's last power up to '" + repr(self.report) +
-                     "'...")
+        Logger.debug("Adding pump last power up to: " + repr(self.report))
 
         # Get current formatted time
         now = lib.formatTime(datetime.datetime.now())
@@ -756,7 +755,7 @@ class ReadModel(GetCommand):
         self.code = "8D"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -788,7 +787,7 @@ class ReadModel(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's model to '" + repr(self.report) + "'...")
+        Logger.debug("Adding pump model to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.response, ["Properties", "Model"], True)
@@ -812,7 +811,7 @@ class ReadFirmware(GetCommand):
         self.code = "74"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -844,7 +843,7 @@ class ReadFirmware(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's firmware to '" + repr(self.report) + "'...")
+        Logger.debug("Adding pump firmware to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.response, ["Properties", "Firmware"], True)
@@ -866,6 +865,9 @@ class ReadBattery(GetCommand):
 
         # Define code
         self.code = "72"
+
+        # Define report type
+        self.reportType = reporter.HistoryReport
 
 
 
@@ -894,15 +896,14 @@ class ReadBattery(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's battery level to '" + repr(self.report) +
-                     "'...")
+        Logger.debug("Adding pump battery level to: " + repr(self.reportType))
 
         # Get current time
         now = datetime.datetime.now()
 
         # Add entry
-        reporter.addDatedEntries(reporter.HistoryReport,
-            ["Pump", "Battery Levels"], { now: self.response })
+        reporter.addDatedEntries(self.reportType, ["Pump", "Battery Levels"],
+            { now: self.response })
 
 
 
@@ -921,6 +922,9 @@ class ReadReservoir(GetCommand):
 
         # Define code
         self.code = "73"
+
+        # Define report type
+        self.reportType = reporter.HistoryReport
 
 
 
@@ -950,15 +954,14 @@ class ReadReservoir(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's reservoir level to '" + repr(self.report) +
-                     "'...")
+        Logger.debug("Adding pump reservoir level to: " + repr(self.reportType))
 
         # Get current time
         now = datetime.datetime.now()
 
         # Add entry
-        reporter.addDatedEntries(reporter.HistoryReport,
-            ["Pump", "Reservoir Levels"], { now: self.response })
+        reporter.addDatedEntries(self.reportType, ["Pump", "Reservoir Levels"],
+            { now: self.response })
 
 
 
@@ -1015,7 +1018,7 @@ class ReadSettings(GetCommand):
         self.code = "C0"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -1047,7 +1050,7 @@ class ReadSettings(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's settings to '" + repr(self.report) + "'...")
+        Logger.debug("Adding pump settings to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.response, ["Settings"], True)
@@ -1071,7 +1074,7 @@ class ReadBGUnits(GetCommand):
         self.code = "89"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -1110,7 +1113,7 @@ class ReadBGUnits(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's BG units to '" + repr(self.report) + "'...")
+        Logger.debug("Adding pump BG units to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.response, ["Units", "BG"], True)
@@ -1134,7 +1137,7 @@ class ReadCarbsUnits(GetCommand):
         self.code = "88"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -1173,8 +1176,7 @@ class ReadCarbsUnits(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's carb units to '" + repr(self.report) +
-                     "'...")
+        Logger.debug("Adding pump carb units to: " + repr(self.report))
 
         # Add entry
         self.report.add(self.response, ["Units", "Carbs"], True)
@@ -1198,7 +1200,7 @@ class ReadBGTargets(GetCommand):
         self.code = "9F"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -1273,8 +1275,7 @@ class ReadBGTargets(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's BG targets to '" + repr(self.report) +
-                     "'...")
+        Logger.debug("Adding pump BG targets to: " + repr(self.report))
 
         # Store BG units
         self.report.add(self.response["Units"], ["Units", "BG"], True)
@@ -1301,7 +1302,7 @@ class ReadFactors(GetCommand):
         super(ReadFactors, self).__init__(pump)
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -1398,15 +1399,15 @@ class ReadISF(ReadFactors):
         # Decode units
         # mg/dL
         if payload[0] == 1:
-
-            # Store them
             self.response["Units"] = "mg/dL/U"
 
         # mmol/L
         elif payload[0] == 2:
-
-            # Store them
             self.response["Units"] = "mmol/L/U"
+
+        # Bad units
+        else:
+            raise ValueError("Bad ISF units.")
 
 
 
@@ -1419,7 +1420,7 @@ class ReadISF(ReadFactors):
         """
 
         # Give user info
-        Logger.debug("Adding pump's ISF(s) to '" + repr(self.report) + "'...")
+        Logger.debug("Adding pump ISF(s) to: " + repr(self.report))
 
         # Store BG units (without insulin units)
         self.report.add(self.response["Units"][:-2], ["Units", "BG"], True)
@@ -1464,15 +1465,15 @@ class ReadCSF(ReadFactors):
         # Decode units
         # mg/dL
         if payload[0] == 1:
-
-            # Store them
             self.response["Units"] = "g/U"
 
         # mmol/L
         elif payload[0] == 2:
-
-            # Store them
             self.response["Units"] = "U/exchange"
+
+        # Bad units
+        else:
+            raise ValueError("Bad CSF units.")
 
 
 
@@ -1485,7 +1486,7 @@ class ReadCSF(ReadFactors):
         """
 
         # Give user info
-        Logger.debug("Adding pump's CSF(s) to '" + repr(self.report) + "'...")
+        Logger.debug("Adding pump CSF(s) to: " + repr(self.report))
 
         # Zip times and factors
         response = dict(zip(self.response["Times"], self.response["Factors"]))
@@ -1525,7 +1526,7 @@ class ReadBasalProfile(GetBigCommand):
         super(ReadBasalProfile, self).__init__(pump)
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
         # Define profile name
         self.name = None
@@ -1609,8 +1610,8 @@ class ReadBasalProfile(GetBigCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's basal profile '" + self.name + "' to '" + 
-                     self.report + "'...")
+        Logger.debug("Adding pump basal profile '" + self.name + "' to: " + 
+            repr(self.report))
 
         # Zip times and rates
         response = dict(zip(self.response["Times"], self.response["Rates"]))
@@ -1737,7 +1738,7 @@ class ReadTB(GetCommand):
         self.code = "98"
 
         # Define report
-        self.report = reporter.PumpReport()
+        self.report = reporter.REPORTS["pump"]
 
 
 
@@ -1791,7 +1792,7 @@ class ReadTB(GetCommand):
         """
 
         # Give user info
-        Logger.debug("Adding pump's TB units to '" + repr(self.report) + "'...")
+        Logger.debug("Adding pump TB units to: " + repr(self.report))
 
         # Store TB units
         self.report.add(self.response["Units"], ["Units", "TB"], True)
@@ -1909,9 +1910,8 @@ class ReadHistoryPage(GetBigCommand):
 
         # Compare CRCs
         if computedCRC != expectedCRC:
-
-            # Raise error
-            raise errors.BadHistoryPageCRC(expectedCRC, computedCRC)
+            raise ValueError("Bad history page CRC. Expected: " +
+                str(expectedCRC) + ". Computed: " + str(computedCRC) + ".")
 
 
 
@@ -2219,17 +2219,13 @@ class SetTBUnits(SetCommand, BigCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try
+        # Get unit corresponding byte
         try:
-
-            # Get unit corresponding byte
             units = ["U/h", "%"].index(units)
 
-        # Except
-        except ValueError:
-
-            # Raise error
-            raise IOError("Bad TB units.")
+        # Bad units
+        except:
+            raise ValueError("Bad TB units.")
 
         # Define number of bytes to read from payload
         self.parameters = ["01"] + 64 * ["00"]
