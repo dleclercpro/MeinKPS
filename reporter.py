@@ -881,7 +881,7 @@ def isBranchBroken(branch):
 
 
 
-def getReportDates(reportClass, src = PATH_REPORTS):
+def getReportDates(reportType, src = PATH_REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -891,23 +891,22 @@ def getReportDates(reportClass, src = PATH_REPORTS):
     """
 
     # Test report
-    if not issubclass(reportClass, Report):
+    if not issubclass(reportType, Report):
         raise TypeError("Report class needed.")
 
     # Scan for reports with same name within given source directory
-    directories = src.scan(reportClass.name)
+    directories = src.scan(reportType.name)
 
     # Convert paths to dates
     if directories:
         return [path.toDate(d) for d in directories]
 
     # Info
-    Logger.debug("No dated report found for '" + reportClass.name + "'.")
+    Logger.debug("No dated report found for '" + reportType.name + "'.")
 
 
 
-# TODO
-def getRecent(reportClass, now, branch, n = 1, strict = False,
+def getRecent(reportType, now, branch, n = 1, strict = False,
               src = PATH_REPORTS):
 
     """
@@ -923,7 +922,7 @@ def getRecent(reportClass, now, branch, n = 1, strict = False,
     """
 
     # Test report
-    if not issubclass(reportClass, Report):
+    if not issubclass(reportType, Report):
         raise TypeError("Report class needed.")
 
     # Get current date
@@ -937,7 +936,7 @@ def getRecent(reportClass, now, branch, n = 1, strict = False,
         oldest = today - datetime.timedelta(days = n - 1)
 
     # Get dates of reports
-    dates = getReportDates(reportClass, src)
+    dates = getReportDates(reportType, src)
     dates = [d for d in dates if oldest <= d <= today]
     nDates = len(dates)
 
@@ -956,7 +955,7 @@ def getRecent(reportClass, now, branch, n = 1, strict = False,
     for date in sorted(dates, reverse = True)[-n:]:
 
         # Initialize and load report
-        report = reportClass(date)
+        report = reportType(date)
         report.load()
 
         # Get new entries
@@ -975,7 +974,7 @@ def getRecent(reportClass, now, branch, n = 1, strict = False,
 
 
 
-def addDatedEntries(reportClass, branch, entries):
+def addDatedEntries(reportType, branch, entries):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -984,7 +983,7 @@ def addDatedEntries(reportClass, branch, entries):
     """
 
     # Test report
-    if not issubclass(reportClass, DatedReport):
+    if not issubclass(reportType, DatedReport):
         raise TypeError("Cannot add dated values to non dated report.")
 
     # Test values
@@ -999,7 +998,7 @@ def addDatedEntries(reportClass, branch, entries):
 
     # Each date corresponds to a report
     for date in dates:
-        reports[date] = reportClass(date)
+        reports[date] = reportType(date)
         reports[date].load(False)
 
     # Add values to reports
