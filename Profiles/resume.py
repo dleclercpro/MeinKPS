@@ -23,12 +23,13 @@
 """
 
 # USER LIBRARIES
-import base
 import reporter
+from step import StepProfile
+from past import PastProfile
 
 
 
-class Resume(base.PastProfile, base.StepProfile):
+class Resume(PastProfile, StepProfile):
 
     def __init__(self):
 

@@ -24,14 +24,12 @@
 
 # LIBRARIES
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
 
 # USER LIBRARIES
 import lib
-import errors
 
 
 
@@ -99,11 +97,9 @@ class IDC(object):
             # Bring it back up
             t = -self.DIA
 
-        # If too new
+        # If too new: bring it back down
         elif t > 0:
-
-            # Bring it back down
-            raise errors.BadInsulinAge()
+            raise ValueError("Given insulin age is too new.")
 
         # Return verified time
         return t
@@ -376,7 +372,7 @@ class TriangleModelIDC(IDC):
             F += self.F(T)
 
         # Compute it
-        F += I(t) - I(T)
+        F += I(t, m, b, c) - I(T, m, b, c)
 
         # Return it
         return F

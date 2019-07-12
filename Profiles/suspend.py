@@ -23,12 +23,13 @@
 """
 
 # USER LIBRARIES
-import base
 import reporter
+from step import StepProfile
+from past import PastProfile
 
 
 
-class Suspend(base.PastProfile, base.StepProfile):
+class Suspend(PastProfile, StepProfile):
 
     def __init__(self):
 

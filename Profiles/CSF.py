@@ -24,11 +24,12 @@
 
 # USER LIBRARIES
 import reporter
-import base
+from daily import DailyProfile
+from future import FutureProfile
 
 
 
-class CSF(base.DailyProfile, base.FutureProfile):
+class CSF(DailyProfile, FutureProfile):
 
     def __init__(self):
 

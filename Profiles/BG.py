@@ -32,8 +32,10 @@ import numpy as np
 # USER LIBRARIES
 import logger
 import reporter
-import base
-import calculator as calc
+import calculator
+from dot import DotProfile
+from past import PastProfile
+from future import FutureProfile
 
 
 
@@ -42,7 +44,7 @@ Logger = logger.Logger("Profiles/BG.py")
 
 
 
-class BG(base.DotProfile):
+class BG(DotProfile):
 
     def __init__(self):
 
@@ -63,7 +65,7 @@ class BG(base.DotProfile):
 
 
 
-class PastBG(BG, base.PastProfile):
+class PastBG(BG, PastProfile):
 
     def __init__(self):
 
@@ -82,7 +84,7 @@ class PastBG(BG, base.PastProfile):
 
 
 
-class FutureBG(BG, base.FutureProfile):
+class FutureBG(BG, FutureProfile):
 
     def __init__(self):
 
@@ -123,7 +125,7 @@ class FutureBG(BG, base.FutureProfile):
         Logger.debug("Building 'FutureBG'...")
 
         # Ensure there is one BG recent enough to accurately predict decay
-        calc.countValidBGs(past, 15, 1)
+        calculator.countValidBGs(past, 15, 1)
 
         # Initialize BG
         BG = past.y[-1]
@@ -145,7 +147,7 @@ class FutureBG(BG, base.FutureProfile):
         net = copy.deepcopy(net)
 
         # Compute initial IOB
-        IOB0 = calc.computeIOB(net, IDC)
+        IOB0 = calculator.computeIOB(net, IDC)
 
         # Read number of steps in prediction
         n = len(self.t) - 1
@@ -194,7 +196,7 @@ class FutureBG(BG, base.FutureProfile):
                     net.t[k] -= dt
 
                 # Compute new IOB
-                IOB = calc.computeIOB(net, IDC)
+                IOB = calculator.computeIOB(net, IDC)
 
                 # Compute dIOB
                 dIOB = IOB - IOB0

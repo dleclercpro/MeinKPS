@@ -28,12 +28,13 @@ import datetime
 
 
 # USER LIBRARIES
-import base
 import reporter
+from step import StepProfile
+from past import PastProfile
 
 
 
-class Bolus(base.PastProfile, base.StepProfile):
+class Bolus(PastProfile, StepProfile):
 
     def __init__(self):
 

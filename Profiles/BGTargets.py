@@ -24,11 +24,12 @@
 
 # USER LIBRARIES
 import reporter
-import base
+from daily import DailyProfile
+from future import FutureProfile
 
 
 
-class BGTargets(base.DailyProfile, base.FutureProfile):
+class BGTargets(DailyProfile, FutureProfile):
 
     def __init__(self):
 

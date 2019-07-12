@@ -23,12 +23,13 @@
 """
 
 # USER LIBRARIES
-import base
 import reporter
+from daily import DailyProfile
+from past import PastProfile
 
 
 
-class Basal(base.DailyProfile, base.PastProfile):
+class Basal(DailyProfile, PastProfile):
 
     def __init__(self, profile = "Standard"):
 

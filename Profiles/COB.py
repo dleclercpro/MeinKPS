@@ -22,16 +22,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-# LIBRARIES
-import numpy as np
-
-
-
 # USER LIBRARIES
-import lib
 import logger
-import reporter
-import base
+from dot import DotProfile
+from past import PastProfile
+from future import FutureProfile
 
 
 
@@ -40,8 +35,8 @@ Logger = logger.Logger("Profiles/COB.py")
 
 
 
-class PastCOB(base.PastProfile, base.DotProfile):
+class PastCOB(PastProfile, DotProfile):
     pass
 
-class FutureCOB(base.FutureProfile, base.DotProfile):
+class FutureCOB(FutureProfile, DotProfile):
     pass

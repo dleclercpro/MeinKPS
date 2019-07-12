@@ -24,7 +24,8 @@
 
 # USER LIBRARIES
 import logger
-import base
+from step import StepProfile
+from past import PastProfile
 
 
 
@@ -33,7 +34,7 @@ Logger = logger.Logger("Profiles/net.py")
 
 
 
-class Net(base.PastProfile, base.StepProfile):
+class Net(PastProfile, StepProfile):
 
     def __init__(self):
 

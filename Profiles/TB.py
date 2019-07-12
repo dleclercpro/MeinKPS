@@ -28,13 +28,13 @@ import datetime
 
 
 # USER LIBRARIES
-import errors
-import base
 import reporter
+from step import StepProfile
+from past import PastProfile
 
 
 
-class TB(base.PastProfile, base.StepProfile):
+class TB(PastProfile, StepProfile):
 
     def __init__(self):
 

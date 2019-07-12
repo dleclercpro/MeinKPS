@@ -32,8 +32,10 @@ import copy
 # USER LIBRARIES
 import logger
 import reporter
-import base
-import calculator as calc
+import calculator
+from dot import DotProfile
+from past import PastProfile
+from future import FutureProfile
 
 
 
@@ -42,7 +44,7 @@ Logger = logger.Logger("Profiles/IOB.py")
 
 
 
-class IOB(base.DotProfile):
+class IOB(DotProfile):
 
     def __init__(self):
 
@@ -64,12 +66,12 @@ class IOB(base.DotProfile):
 
 
 
-class PastIOB(IOB, base.PastProfile):
+class PastIOB(IOB, PastProfile):
     pass
 
 
 
-class FutureIOB(IOB, base.FutureProfile):
+class FutureIOB(IOB, FutureProfile):
 
     def __init__(self):
 
@@ -119,7 +121,7 @@ class FutureIOB(IOB, base.FutureProfile):
         for i in range(n):
 
             # Compute new IOB and store it
-            self.y.append(calc.computeIOB(net, IDC))
+            self.y.append(calculator.computeIOB(net, IDC))
 
             # Move net insulin profile into the past
             for j in range(m):

@@ -629,21 +629,6 @@ class NoProfileData(ProfileError):
 
 
 
-class BadInsulinAge(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Given insulin age is too new.")
-
-
-
 class MissingBGs(ProfileError):
 
     def prepare(self):

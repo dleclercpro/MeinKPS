@@ -24,11 +24,13 @@
 
 # USER LIBRARIES
 import reporter
-import base
+from daily import DailyProfile
+from past import PastProfile
+from future import FutureProfile
 
 
 
-class ISF(base.DailyProfile):
+class ISF(DailyProfile):
 
     def __init__(self):
 
@@ -50,10 +52,10 @@ class ISF(base.DailyProfile):
 
 
 
-class PastISF(ISF, base.PastProfile):
+class PastISF(ISF, PastProfile):
     pass
 
 
 
-class FutureISF(ISF, base.FutureProfile):
+class FutureISF(ISF, FutureProfile):
     pass
