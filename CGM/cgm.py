@@ -499,7 +499,7 @@ class Language(object):
         Logger.debug("Storing language to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.value, ["Language"], True)
+        self.report.set(self.value, ["Language"], True)
 
 
 
@@ -582,7 +582,7 @@ class Clock(object):
         Logger.debug("Storing clock mode to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.mode, ["Clock Mode"], True)
+        self.report.set(self.mode, ["Clock Mode"], True)
 
 
 
@@ -645,7 +645,7 @@ class Units(object):
         Logger.debug("Storing BG units to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.value, ["Units"], True)
+        self.report.set(self.value, ["Units"], True)
 
 
 
@@ -736,7 +736,7 @@ class Transmitter(object):
         Logger.debug("Storing transmitter ID to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.id, ["Transmitter ID"], True)
+        self.report.set(self.id, ["Transmitter ID"], True)
 
 
 

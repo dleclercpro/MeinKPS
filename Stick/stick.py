@@ -545,7 +545,7 @@ class Stick(object):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        self.report.add([f, now], ["Frequency"], True)
+        self.report.set([f, now], ["Frequency"], True)
 
 
 

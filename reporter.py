@@ -310,13 +310,13 @@ class Report(object):
 
 
 
-    def add(self, value, branch = [], overwrite = False):
+    def set(self, value, branch = [], overwrite = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ADD
+            SET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Add entry to report at the tip of given branch. Create parts of
+            Set entry to report at the tip of given branch. Create parts of
             branch that might eventually be missing. Overwrite allows to wipe
             and rewrite preexisting entries.
         """
@@ -448,7 +448,7 @@ class Report(object):
             raise TypeError("Can only increment integers. Found: " + str(n))
 
         # Update value
-        self.add(n + 1, branch, True)
+        self.set(n + 1, branch, True)
 
 
 
@@ -907,7 +907,7 @@ def getReportDates(reportType, src = PATH_REPORTS):
 
 
 def getRecent(reportType, now, branch, n = 1, strict = False,
-              src = PATH_REPORTS):
+    src = PATH_REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1003,7 +1003,7 @@ def addDatedEntries(reportType, branch, entries):
 
     # Add values to reports
     for key, value in entries.items():
-        reports[key.date()].add(value, branch + [lib.formatTime(key)])
+        reports[key.date()].set(value, branch + [lib.formatTime(key)])
 
     # Store reports
     for date, report in reports.items():
@@ -1040,61 +1040,6 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
-
-    # Get current time
-    now = datetime.datetime.now() - datetime.timedelta(days = 0)
-
-    # Get reports
-    reports = {
-        #"bg": BGReport(now),
-        #"stick": StickReport(),
-        #"pump": PumpReport(),
-        #"cgm": CGMReport(),
-        #"treatments": TreatmentsReport(now),
-        #"history": HistoryReport(now),
-        #"loop": LoopReport(),
-    }
-
-    # Load them
-    for name in reports:
-        reports[name].load()
-
-    #reports["pump"].get(["Settings", "Max Bolus"])
-    #reports["pump"].add(0, ["Settings", "Max Bolus", "Test"], True)
-    #reports["pump"].increment(["Settings", "Max Bolus", "Test"])
-    #print reports["pump"]
-    #reports["pump"].delete(["Settings", "Max Bolus", "Test"])
-    #print reports["pump"]
-    #reports["pump"].add(35.0, ["Settings", "Max Bolus"], True)
-    #print reports["pump"]
-
-    #print getReportDates(BGReport)
-    #print lib.JSONize(getRecent(BGReport, now, [], 4))
-
-    # Get basal profile from pump report
-    #print lib.JSONize(reports["pump"].get(["Basal Profile (Standard)"]))
-
-    # Get BGs of today
-    #print lib.JSONize(reports["bg"].get())
-
-    # Get most recent data
-    #print lib.JSONize(getRecent(BGReport, now, [], 3))
-
-    # Increment loop
-    #print reports["loop"]
-    #reports["loop"].increment(["Status", "N"])
-    #reports["loop"].store()
-    #print reports["loop"]
-
-    # Get carbs
-    #print getRecent(TreatmentsReport, now, ["Carbs"], 3)
-
-    # Add BG values
-    #addDatedEntries(BGReport, [], {
-    #    datetime.datetime(2019, 7, 29, 0, 0, 0): 6.2,
-    #    datetime.datetime(2019, 7, 30, 0, 0, 0): 6.0,
-    #    datetime.datetime(2019, 7, 31, 0, 0, 0): 5.8,
-    #})
 
 
 

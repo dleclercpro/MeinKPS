@@ -42,6 +42,8 @@ Logger = logger.Logger("Profiles/profile.py")
 
 class Profile(object):
 
+    name = None
+
     def __init__(self):
 
         """
@@ -50,11 +52,23 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize zero (default value)
+        # Initialize zero (default y-axis value)
         self.zero = None
 
         # Initialize units
         self.units = None
+
+
+
+    def __repr__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            REPR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        return "'" + self.__class__.__name__ + "'"
 
 
 
@@ -67,19 +81,13 @@ class Profile(object):
             Reset profile data.
         """
 
-        # Give user info
-        Logger.debug("Resetting...")
+        # Info
+        Logger.debug("Resetting: " + repr(self))
 
-        # Reset time axis
+        # Reset axes
         self.T = []
-
-        # Reset normalized time axis
         self.t = []
-
-        # Reset y-axis
         self.y = []
-
-        # Reset derivative
         self.dydt = []
 
         # Reset start/end times
@@ -107,10 +115,12 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Build profile, from 'start' to 'end'. This method calls a reset,
+            so the same profile object can be rebuilt on-the-fly.
         """
 
-        # Give user info
-        Logger.debug("Building '" + self.__class__.__name__ + "'...")
+        # Info
+        Logger.debug("Building: " + repr(self))
 
         # Reset profile
         self.reset()
@@ -135,8 +145,12 @@ class Profile(object):
             Based on profile type, define its time references.
         """
 
-        # Give user info
-        Logger.debug("Defining time references...")
+        # Test start/end types
+        if type(start) is not datetime.datetime or type(start) is not type(end):
+            raise TypeError("Start/end times have to be datetime objects.")
+
+        # Info
+        Logger.debug("Defining time references of: " + repr(self))
 
         # Define start/end times
         self.start = start
@@ -175,20 +189,15 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECOUPLE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Decouple profile data into components.
+            Decouple profile data into components: convert string time values to
+            datetime objects and get corresponding y-axis value.
         """
 
-        # Give user info
-        Logger.debug("Decoupling components...")
+        # Info
+        Logger.debug("Decoupling components of: " + repr(self))
 
         # Decouple components
-        for t in sorted(self.data):
-
-            # Get time and convert it to datetime object if possible
-            self.T.append(lib.formatTime(t))
-
-            # Get value
-            self.y.append(self.data[t])
+        [self.T, self.y] = lib.unzip(sorted(self.data.items()))
 
 
 
@@ -198,62 +207,43 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             CUT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Cut remaining excess entries in profile.
+            Cut off all values that do not fit within [a, b]. Keep track of the
+            last entry before start of profile.
         """
 
-        # Give user info
-        Logger.debug("Cutting...")
+        # Test limit types
+        if type(a) is not datetime.datetime or type(a) is not type(b):
+            raise TypeError("Limit times to use while cutting profile have " +
+                "to be datetime objects.")
 
-        # If no start given
+        # Info
+        Logger.debug("Cutting: " + repr(self))
+
+        # No start given
         if a is None:
-
-            # Set default start limit
             a = self.start
 
-        # If no end given
+        # No end given
         if b is None:
-
-            # Set default end limit
             b = self.end
 
-        # Initialize cut-off profile components
-        T = []
-        y = []
+        # Group axes and filter them
+        data = zip(self.T, self.y)
+        previousData = [x for x in data if x[0] < a]
+        filteredData = [x for x in data if a <= x[0] <= b]
 
-        # Initialize last step value before beginning of profile
-        last = None
-
-        # Get number of steps
-        n = len(self.T)
+        # Find last value before beginning of profile
+        last = previousData[-1][1] if previousData else None
 
         # Cut-off steps outside of start and end limits
-        for i in range(n):
-
-            # Update last step
-            if self.T[i] < a:
-
-                # Store last value
-                last = self.y[i]
-
-            # Inclusion criteria
-            elif a <= self.T[i] <= b:
-
-                # Add time
-                T.append(self.T[i])
-
-                # Add value
-                y.append(self.y[i])
-
-        # Update profile
-        self.T = T
-        self.y = y
+        [self.T, self.y] = lib.unzip(filteredData)
 
         # Return core infos
         return [a, b, last]
 
 
 
-    def normalize(self, T = None):
+    def normalize(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -262,39 +252,16 @@ class Profile(object):
             Normalize profile's time axis.
         """
 
-        # Give user info
-        Logger.debug("Normalizing...")
-
-        # Verify if norm was left empty
-        if T is None:
-
-            # Get time reference
-            T = self.norm
-
-            # If no time reference
-            if T is None:
-                raise ValueError("Profile t-axis cannot be normalized: " +
-                    "profile does not have a norm.")
-
         # Before using given reference time, verify its type
-        if type(T) is not datetime.datetime:
+        if self.norm is None or type(self.norm) is not datetime.datetime:
             raise TypeError("Time axis can only be normalized using a " +
                 "datetime object.")
 
-        # Initialize normalized axis
-        t = []
+        # Info
+        Logger.debug("Normalizing: " + repr(self))
 
-        # Get number of steps in profile
-        n = len(self.T)
-
-        # Normalize time
-        for i in range(n):
-
-            # Add step (h)
-            t.append(lib.normalizeTime(self.T[i], T))
-
-        # Update normalized axis
-        self.t = t
+        # Normalize time to hours since norm
+        self.t = [lib.normalizeTime(T, self.norm) for T in self.T]
 
 
 
@@ -325,7 +292,7 @@ class Profile(object):
             # If profile exists
             if nx > 0 and nx == ny:
 
-                # Give user info
+                # Info
                 Logger.debug(p)
 
                 # Show profile
@@ -349,7 +316,7 @@ class Profile(object):
                         # Format it
                         y = round(y, 2)
 
-                    # Give user info
+                    # Info
                     Logger.debug(str(y) + " - (" + str(t) + ")")
 
 
@@ -366,30 +333,24 @@ class Profile(object):
         ax = plt.subplot(size[0], size[1], n)
 
         # Define title
-        title = title or self.__class__.__name__
+        title = title or repr(self)
 
         # Define axis labels
         x = "(h)"
         y = "(" + self.units + ")"
 
-        # Set title
+        # Set title and labels
         ax.set_title(title, fontweight = "semibold")
-
-        # Set axis labels
         ax.set_xlabel(x)
         ax.set_ylabel(y)
 
-        # If x-axis limits defined
+        # Set x-axis limits
         if self.xlim:
-
-            # Set x-axis limit
             ax.set_xlim(min(ax.get_xlim()[0], self.xlim[0]),
                         max(ax.get_xlim()[1], self.xlim[1]))
 
-        # If y-axis limits defined
+        # Set y-axis limits
         if self.ylim:
-
-            # Set y-axis limit
             ax.set_ylim([min(ax.get_ylim()[0], self.ylim[0]),
                          max(ax.get_ylim()[1], self.ylim[1])])
 
@@ -405,12 +366,6 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
-
-    # Get current time
-    now = datetime.datetime.now()
-
-    # Get older time
-    then = now - datetime.timedelta(days = 1)
 
 
 

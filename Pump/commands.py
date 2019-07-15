@@ -694,7 +694,7 @@ class Power(SetCommand, BigCommand):
         now = lib.formatTime(datetime.datetime.now())
 
         # Add entry
-        self.report.add(now, ["Power"], True)
+        self.report.set(now, ["Power"], True)
 
 
 
@@ -790,7 +790,7 @@ class ReadModel(GetCommand):
         Logger.debug("Adding pump model to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.response, ["Properties", "Model"], True)
+        self.report.set(self.response, ["Properties", "Model"], True)
 
 
 
@@ -846,7 +846,7 @@ class ReadFirmware(GetCommand):
         Logger.debug("Adding pump firmware to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.response, ["Properties", "Firmware"], True)
+        self.report.set(self.response, ["Properties", "Firmware"], True)
 
 
 
@@ -1053,7 +1053,7 @@ class ReadSettings(GetCommand):
         Logger.debug("Adding pump settings to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.response, ["Settings"], True)
+        self.report.set(self.response, ["Settings"], True)
 
 
 
@@ -1116,7 +1116,7 @@ class ReadBGUnits(GetCommand):
         Logger.debug("Adding pump BG units to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.response, ["Units", "BG"], True)
+        self.report.set(self.response, ["Units", "BG"], True)
 
 
 
@@ -1179,7 +1179,7 @@ class ReadCarbsUnits(GetCommand):
         Logger.debug("Adding pump carb units to: " + repr(self.report))
 
         # Add entry
-        self.report.add(self.response, ["Units", "Carbs"], True)
+        self.report.set(self.response, ["Units", "Carbs"], True)
 
 
 
@@ -1278,13 +1278,13 @@ class ReadBGTargets(GetCommand):
         Logger.debug("Adding pump BG targets to: " + repr(self.report))
 
         # Store BG units
-        self.report.add(self.response["Units"], ["Units", "BG"], True)
+        self.report.set(self.response["Units"], ["Units", "BG"], True)
 
         # Zip times and targets
         response = dict(zip(self.response["Times"], self.response["Targets"]))
 
         # Store targets
-        self.report.add(response, ["BG Targets"], True)
+        self.report.set(response, ["BG Targets"], True)
 
 
 
@@ -1423,13 +1423,13 @@ class ReadISF(ReadFactors):
         Logger.debug("Adding pump ISF(s) to: " + repr(self.report))
 
         # Store BG units (without insulin units)
-        self.report.add(self.response["Units"][:-2], ["Units", "BG"], True)
+        self.report.set(self.response["Units"][:-2], ["Units", "BG"], True)
 
         # Zip times and factors
         response = dict(zip(self.response["Times"], self.response["Factors"]))
 
         # Store factors
-        self.report.add(response, ["ISF"], True)
+        self.report.set(response, ["ISF"], True)
 
 
 
@@ -1492,7 +1492,7 @@ class ReadCSF(ReadFactors):
         response = dict(zip(self.response["Times"], self.response["Factors"]))
 
         # Store factors
-        self.report.add(response, ["CSF"], True)
+        self.report.set(response, ["CSF"], True)
 
         # Update units for carbs (without insulin units)
         # g/U
@@ -1508,7 +1508,7 @@ class ReadCSF(ReadFactors):
             units = self.response["Units"][2:]
 
         # Store carb units
-        self.report.add(units, ["Units", "Carbs"], True)
+        self.report.set(units, ["Units", "Carbs"], True)
 
 
 
@@ -1617,7 +1617,7 @@ class ReadBasalProfile(GetBigCommand):
         response = dict(zip(self.response["Times"], self.response["Rates"]))
 
         # Store basal
-        self.report.add(response, ["Basal Profile (" + self.name + ")"], True)
+        self.report.set(response, ["Basal Profile (" + self.name + ")"], True)
 
 
 
@@ -1795,7 +1795,7 @@ class ReadTB(GetCommand):
         Logger.debug("Adding pump TB units to: " + repr(self.report))
 
         # Store TB units
-        self.report.add(self.response["Units"], ["Units", "TB"], True)
+        self.report.set(self.response["Units"], ["Units", "TB"], True)
 
 
 

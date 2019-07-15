@@ -36,11 +36,12 @@ import logger
 import reporter
 import exporter
 import uploader
-import calculator as calc
+import calculator
 from CGM import cgm
 from Stick import stick
 from Pump import pump
-from Profiles import *
+from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
+    suspend, resume, idc)
 
 
 
@@ -134,7 +135,7 @@ class Loop(object):
         self.t0 = datetime.datetime.now()
 
         # Update last loop time
-        self.report.add(["Status", "Time"], lib.formatTime(self.t0), True)
+        self.report.set(lib.formatTime(self.t0), ["Status", "Time"], True)
 
         # Update loop iterations
         self.report.increment(["Status", "N"])
@@ -161,9 +162,11 @@ class Loop(object):
         # Define ending time
         self.t1 = datetime.datetime.now()
 
+        # Get loop length
+        dt = (self.t1 - self.t0).seconds
+
         # Update loop infos
-        self.report.add(["Status", "Duration"], (self.t1 - self.t0).seconds,
-                        True)
+        self.report.set(dt, ["Status", "Duration"], True)
 
         # Stop CGM
         self.cgm.stop()
@@ -248,27 +251,28 @@ class Loop(object):
         future = now + datetime.timedelta(hours = self.DIA)
 
         # Instanciate profiles
-        profiles = {"IDC": IDC.WalshIDC(self.DIA),
+        profiles = {"IDC": idc.WalshIDC(self.DIA),
                     "Suspend": suspend.Suspend(),
                     "Resume": resume.Resume(),
                     "Basal": basal.Basal(),
-                    "TB": TB.TB(),
+                    "TB": tb.TB(),
                     "Bolus": bolus.Bolus(),
                     "Net": net.Net(),
-                    "BGTargets": BGTargets.BGTargets(),
-                    "FutureISF": ISF.FutureISF(),
-                    "CSF": CSF.CSF(),
-                    "PastIOB": IOB.PastIOB(),
-                    "FutureIOB": IOB.FutureIOB(),
-                    "PastBG": BG.PastBG(),
-                    "FutureBG": BG.FutureBG()}
+                    "BGTargets": targets.BGTargets(),
+                    "FutureISF": isf.FutureISF(),
+                    "CSF": csf.CSF(),
+                    "PastIOB": iob.PastIOB(),
+                    "FutureIOB": iob.FutureIOB(),
+                    "PastBG": bg.PastBG(),
+                    "FutureBG": bg.FutureBG()}
         
         # Build net insulin profile
-        profiles["Net"].build(past, now, profiles["Suspend"],
-                                         profiles["Resume"],
-                                         profiles["Basal"],
-                                         profiles["TB"],
-                                         profiles["Bolus"])
+        profiles["Net"].build(past, now,
+            profiles["Suspend"],
+            profiles["Resume"],
+            profiles["Basal"],
+            profiles["TB"],
+            profiles["Bolus"])
 
         # Build past profiles
         profiles["PastIOB"].build(past, now)
@@ -280,23 +284,27 @@ class Loop(object):
         #profiles["CSF"].build(now, future)
 
         # Build prediction profiles
-        profiles["FutureIOB"].build(dt, profiles["Net"], profiles["IDC"])
-        profiles["FutureBG"].build(dt, profiles["Net"],
-                                       profiles["IDC"],
-                                       profiles["FutureISF"],
-                                       profiles["PastBG"])
+        profiles["FutureIOB"].build(dt,
+            profiles["Net"],
+            profiles["IDC"])
+        profiles["FutureBG"].build(dt,
+            profiles["Net"],
+            profiles["IDC"],
+            profiles["FutureISF"],
+            profiles["PastBG"])
 
         # Compute BG dynamics
-        BGDynamics = calc.computeBGDynamics(profiles["PastBG"],
-                                            profiles["FutureBG"],
-                                            profiles["BGTargets"],
-                                            profiles["FutureIOB"],
-                                            profiles["FutureISF"])
+        BGDynamics = calculator.computeBGDynamics(profiles["PastBG"],
+            profiles["FutureBG"],
+            profiles["BGTargets"],
+            profiles["FutureIOB"],
+            profiles["FutureISF"])
 
         # Return TB recommendation
-        return calc.recommendTB(BGDynamics, profiles["Basal"],
-                                            profiles["FutureISF"],
-                                            profiles["IDC"])
+        return calculator.recommendTB(BGDynamics,
+            profiles["Basal"],
+            profiles["FutureISF"],
+            profiles["IDC"])
 
 
 
@@ -315,15 +323,15 @@ class Loop(object):
         dia = datetime.timedelta(hours = self.DIA)
 
         # Instanciate profiles
-        profiles = {"IDC": IDC.WalshIDC(self.DIA),
+        profiles = {"IDC": idc.WalshIDC(self.DIA),
                     "Suspend": None,
                     "Resume": None,
                     "Basal": None,
                     "TB": None,
                     "Bolus": None,
                     "Net": None,
-                    "PastISF": ISF.PastISF(),
-                    "PastBG": BG.PastBG()}
+                    "PastISF": isf.PastISF(),
+                    "PastBG": bg.PastBG()}
 
         # Build past BG profile
         profiles["PastBG"].build(past, now)
@@ -348,7 +356,7 @@ class Loop(object):
             profiles["Suspend"] = suspend.Suspend()
             profiles["Resume"] = resume.Resume()
             profiles["Basal"] = basal.Basal()
-            profiles["TB"] = TB.TB()
+            profiles["TB"] = tb.TB()
             profiles["Bolus"] = bolus.Bolus()
             profiles["Net"] = net.Net()
 
@@ -360,7 +368,7 @@ class Loop(object):
                                                     profiles["Bolus"])
 
             # Do it
-            IOBs.append(calc.computeIOB(profiles["Net"], profiles["IDC"]))
+            IOBs.append(calculator.computeIOB(profiles["Net"], profiles["IDC"]))
 
             # Show IOB
             print "IOB(" + lib.formatTime(T[i]) + ") = " + fmt.IOB(IOBs[-1])
@@ -538,9 +546,6 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
     """
-
-    # Get current time
-    now = datetime.datetime(2017, 8, 30, 0, 0, 0)
 
     # Instanciate a loop
     loop = Loop()

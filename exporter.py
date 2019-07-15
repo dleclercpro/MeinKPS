@@ -31,8 +31,8 @@ import datetime
 import lib
 import logger
 import reporter
-from Profiles import (base, bolus, basal, TB, net, BG, BGTargets, ISF, CSF,
-                      IOB, COB, IDC, resume, suspend)
+from Profiles import (bolus, basal, tb, net, bg, targets, isf, csf, iob, cob,
+    idc, resume, suspend)
 
 
 
@@ -93,7 +93,7 @@ class Exporter(object):
             self.now, [], 2)
 
         # Get pump data
-        self.data["pump"] = reporter.REPORTS["pump"].get([])
+        self.data["pump"] = reporter.REPORTS["pump"].get()
 
         # Get recent boluses
         self.data["boluses"] = reporter.getRecent(reporter.TreatmentsReport,
@@ -174,7 +174,7 @@ class Exporter(object):
 
         # Build it for last 24 hours
         self.data["net"].build(past, self.now,
-            suspend.Suspend(), resume.Resume(), basal.Basal(), TB.TB())
+            suspend.Suspend(), resume.Resume(), basal.Basal(), tb.TB())
 
         # Format net profile
         self.net = dict(zip([lib.formatTime(T) for T in self.data["net"].T],

@@ -388,7 +388,7 @@ def snooze(now, duration = 2):
 
     # Get last carbs (no need to go further than the past 2 days)
     lastCarbs = reporter.getRecent(reporter.TreatmentsReport, now, ["Carbs"], 2,
-                                   True)
+        True)
 
     # Snooze criteria (no temping after eating)
     if lastCarbs:

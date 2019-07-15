@@ -165,7 +165,7 @@ def test_store_overwrite_report(setup_and_teardown):
     report = Report()
     report.reset()
 
-    report.add(0, ["A"])
+    report.set(0, ["A"])
     report.store(overwrite = True)
     
     report.erase()
@@ -206,7 +206,7 @@ def test_add():
     with pytest.raises(errors.MissingBranch):
         report.get([key])
 
-    report.add(value, [key])
+    report.set(value, [key])
     
     assert report.get([key]) == value
 
@@ -227,9 +227,9 @@ def test_add_overwrite():
     assert report.get([key]) == value
 
     with pytest.raises(errors.NoOverwriting):
-        report.add(newValue, [key])
+        report.set(newValue, [key])
 
-    report.add(newValue, [key], overwrite = True)
+    report.set(newValue, [key], overwrite = True)
     
     assert report.get([key]) == newValue
 
@@ -302,7 +302,7 @@ def test_get_recent(setup_and_teardown):
     reports = [DatedReport(d) for d in dates]
 
     for report in reports:
-        report.add(0, [lib.formatDate(report.date)])
+        report.set(0, [lib.formatDate(report.date)])
         report.store()
 
     emptyResults = reporter.getRecent(DatedReport, now, [], 3, True, PATH_TESTS)
