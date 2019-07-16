@@ -43,10 +43,10 @@ class Report(reporter.Report):
 
     name = "test.json"
 
-    def __init__(self, json = None):
+    def __init__(self, directory = path.Path("Test"), json = None):
 
         super(Report, self).__init__(self.name,
-            path.Path("Test"),
+            directory,
             json)
 
 
@@ -55,11 +55,11 @@ class DatedReport(reporter.DatedReport):
 
     name = "test.json"
 
-    def __init__(self, date, json = None):
+    def __init__(self, date, directory = path.Path("Test"), json = None):
 
         super(DatedReport, self).__init__(self.name,
             date,
-            path.Path("Test"),
+            directory,
             json)
 
 
@@ -184,7 +184,7 @@ def test_get():
     key = "A"
     value = 0
 
-    report = Report({ key: value })
+    report = Report(json = { key: value })
     
     assert report.get([key]) == value
 
@@ -222,7 +222,7 @@ def test_add_overwrite():
     value = 0
     newValue = 1
 
-    report = Report({ key: value })
+    report = Report(json = { key: value })
     
     assert report.get([key]) == value
 
@@ -246,7 +246,7 @@ def test_increment():
     keyString = "B"
     valueString = "0"
 
-    report = Report({
+    report = Report(json = {
         key: value,
         keyString: valueString
     })
@@ -318,17 +318,27 @@ def test_get_recent(setup_and_teardown):
 
 def test_get_dated_entries(setup_and_teardown):
 
-    # TODO
-
     """
     Get multiple dated entries from corresponding dated reports.
     """
 
-    dates = [datetime.datetime(1970, 1, 1, 0, 0, 0),
-             datetime.datetime(1970, 1, 2, 0, 0, 0),
-             datetime.datetime(1970, 1, 3, 0, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 3, 0, 0, 0)]
 
-    assert True
+    dates = [d.date() for d in datetimes]
+
+    values = [6.2, 6.0, 5.8]
+
+    entries = dict(zip(datetimes, values))
+    formattedEntries = dict(zip([lib.formatTime(d) for d in datetimes], values))
+
+    branch = ["A", "B"]
+
+    reporter.addDatedEntries(DatedReport, branch, entries)
+    storedEntries = reporter.getDatedEntries(DatedReport, dates, branch)
+
+    assert formattedEntries == storedEntries
 
 
 
@@ -338,13 +348,17 @@ def test_add_dated_entries(setup_and_teardown):
     Add multiple dated entries to corresponding dated reports.
     """
 
-    dates = [datetime.datetime(1970, 1, 1, 0, 0, 0),
-             datetime.datetime(1970, 1, 2, 0, 0, 0),
-             datetime.datetime(1970, 1, 3, 0, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 3, 0, 0, 0)]
+
+    dates = [d.date() for d in datetimes]
 
     values = [6.2, 6.0, 5.8]
 
-    reporter.addDatedEntries(DatedReport, [], dict(zip(dates, values)))
+    entries = dict(zip(datetimes, values))
+
+    reporter.addDatedEntries(DatedReport, [], entries)
 
     reports = [DatedReport(d) for d in dates]
 
