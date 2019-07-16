@@ -60,10 +60,11 @@ class Resume(PastProfile, StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Load latest available resume command.
         """
 
-        # Load latest data available
-        super(Resume, self).load(False)
+        # Load data
+        self.data = reporter.getRecent(self.reportType, self.norm, self.branch)
 
 
 

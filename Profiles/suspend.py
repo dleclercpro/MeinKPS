@@ -60,10 +60,11 @@ class Suspend(PastProfile, StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Load latest available suspend command.
         """
 
-        # Load latest data available
-        super(Suspend, self).load(False)
+        # Load data
+        self.data = reporter.getRecent(self.reportType, self.norm, self.branch)
 
 
 

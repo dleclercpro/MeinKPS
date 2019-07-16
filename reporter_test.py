@@ -316,6 +316,22 @@ def test_get_recent(setup_and_teardown):
 
 
 
+def test_get_dated_entries(setup_and_teardown):
+
+    # TODO
+
+    """
+    Get multiple dated entries from corresponding dated reports.
+    """
+
+    dates = [datetime.datetime(1970, 1, 1, 0, 0, 0),
+             datetime.datetime(1970, 1, 2, 0, 0, 0),
+             datetime.datetime(1970, 1, 3, 0, 0, 0)]
+
+    assert True
+
+
+
 def test_add_dated_entries(setup_and_teardown):
 
     """

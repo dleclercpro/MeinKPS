@@ -519,7 +519,7 @@ class BGReport(DatedReport):
 
     name = "BG.json"
 
-    def __init__(self, date):
+    def __init__(self, date, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -527,7 +527,7 @@ class BGReport(DatedReport):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(BGReport, self).__init__(self.name, date)
+        super(BGReport, self).__init__(self.name, date, directory)
 
 
 
@@ -535,7 +535,7 @@ class PumpReport(Report):
 
     name = "pump.json"
 
-    def __init__(self):
+    def __init__(self, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -543,7 +543,7 @@ class PumpReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(PumpReport, self).__init__(self.name)
+        super(PumpReport, self).__init__(self.name, directory)
 
 
 
@@ -592,7 +592,7 @@ class CGMReport(Report):
 
     name = "cgm.json"
 
-    def __init__(self):
+    def __init__(self, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -600,7 +600,7 @@ class CGMReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(CGMReport, self).__init__(self.name)
+        super(CGMReport, self).__init__(self.name, directory)
 
 
 
@@ -632,7 +632,7 @@ class StickReport(Report):
 
     name = "stick.json"
 
-    def __init__(self):
+    def __init__(self, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -640,7 +640,7 @@ class StickReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(StickReport, self).__init__(self.name)
+        super(StickReport, self).__init__(self.name, directory)
 
 
 
@@ -672,7 +672,7 @@ class TreatmentsReport(DatedReport):
 
     name = "treatments.json"
 
-    def __init__(self, date):
+    def __init__(self, date, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -680,7 +680,7 @@ class TreatmentsReport(DatedReport):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(TreatmentsReport, self).__init__(self.name, date)
+        super(TreatmentsReport, self).__init__(self.name, date, directory)
 
 
 
@@ -711,7 +711,7 @@ class HistoryReport(DatedReport):
 
     name = "history.json"
 
-    def __init__(self, date):
+    def __init__(self, date, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -719,7 +719,7 @@ class HistoryReport(DatedReport):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(HistoryReport, self).__init__(self.name, date)
+        super(HistoryReport, self).__init__(self.name, date, directory)
 
 
 
@@ -756,7 +756,7 @@ class LoopReport(Report):
 
     name = "loop.json"
 
-    def __init__(self):
+    def __init__(self, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -764,7 +764,7 @@ class LoopReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(LoopReport, self).__init__(self.name)
+        super(LoopReport, self).__init__(self.name, directory)
 
 
 
@@ -827,7 +827,7 @@ class FTPReport(Report):
 
     name = "ftp.json"
 
-    def __init__(self):
+    def __init__(self, directory = PATH_REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -835,7 +835,7 @@ class FTPReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(FTPReport, self).__init__(self.name)
+        super(FTPReport, self).__init__(self.name, directory)
 
 
 
@@ -890,9 +890,9 @@ def getReportDates(reportType, src = PATH_REPORTS):
         Get corresponding date objects for a dated report.
     """
 
-    # Test report
-    if not issubclass(reportType, Report):
-        raise TypeError("Report class needed.")
+    # Test report type
+    if not issubclass(reportType, DatedReport):
+        raise TypeError("Dated report type needed.")
 
     # Scan for reports with same name within given source directory
     directories = src.scan(reportType.name)
@@ -902,28 +902,33 @@ def getReportDates(reportType, src = PATH_REPORTS):
         return [path.toDate(d) for d in directories]
 
     # Info
-    Logger.debug("No dated report found for '" + reportType.name + "'.")
+    Logger.debug("No dated report found for: " + repr(reportType))
 
 
 
 def getRecent(reportType, now, branch, n = 1, strict = False,
     src = PATH_REPORTS):
 
+    # TODO
+    # This won't work with finding recent reports with a specific VALUE at the
+    # tip of the given branch. This would allow finding last suspend/resume
+    # entries in treatments report.
+
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         GETRECENT
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Get the "n" most recent report parts, according to the tip of the given
-        branch (this can be the whole report if the branch is an empty list).
+        Get the "n" most recent reports which INCLUDE given branch (this can
+        mean the whole report if the branch is an empty list).
                 
-        If "strict" is true, "n" defines the number of days from today the
-        function will try looking back for content. Otherwise, it will try to
-        find "n" reports, no matter how old they are.
+        If "strict" is set to "True", "n" defines the number of days from today
+        the function will try looking back for content. Otherwise, it will try
+        to find "n" reports, no matter how old they are.
     """
 
-    # Test report
-    if not issubclass(reportType, Report):
-        raise TypeError("Report class needed.")
+    # Test report type
+    if not issubclass(reportType, DatedReport):
+        raise TypeError("Dated report type needed.")
 
     # Get current date
     today = now.date()
@@ -937,44 +942,92 @@ def getRecent(reportType, now, branch, n = 1, strict = False,
 
     # Get dates of reports
     dates = getReportDates(reportType, src)
-    dates = [d for d in dates if oldest <= d <= today]
-    nDates = len(dates)
+    filteredDates = [d for d in dates if oldest <= d <= today]
 
-    # Not enough reports
-    if nDates < n:
-        Logger.warning("Could not gather " + str(n) + " most recent reports. " +
-                       "Found: " + str(nDates))
-
-        # Update number of reports
-        n = nDates
-
-    # Initialize dict for merged JSON
+    # Initialize dict for merged entries
     json = {}
 
+    # Initialize number of reports found with given branch
+    nReportsFoundWithBranch = 0
+
     # Loop on found dates, starting with the latest one
-    for date in sorted(dates, reverse = True)[-n:]:
+    for date in sorted(filteredDates, reverse = True):
 
         # Initialize and load report
-        report = reportType(date)
+        report = reportType(date, src)
         report.load()
 
-        # Get new entries
+        # Get and merge new entries
         try:
-            new = report.get(branch)
+            json = lib.mergeDicts(json, report.get(branch))
+            nReportsFoundWithBranch += 1
 
-        # Keep going if no data
+        # Keep going if branch is missing from current report
         except errors.MissingBranch:
-            new = {}
+            pass
 
-        # Merge old and new entries
-        json = lib.mergeDicts(json, new)        
+        # Enough data found
+        if nReportsFoundWithBranch == n:
+            break
+
+    # Not enough reports
+    if nReportsFoundWithBranch < n:
+        Logger.warning("Could not find " + str(n) + " recent reports with " +
+            "given branch. Found: " + str(nReportsFoundWithBranch))
 
     # Return entries
     return json
 
 
 
-def addDatedEntries(reportType, branch, entries):
+def getDatedEntries(reportType, dates, branch, strict = False,
+    src = PATH_REPORTS):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        GETDATEDENTRIES
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Try to get entries in dated reports with given dates.
+
+        If "strict" is set to "True", then each report HAS to include the given
+        branch.
+    """
+
+    # Test report type
+    if not issubclass(reportType, DatedReport):
+        raise TypeError("Dated report type needed.")
+
+    # Test dates
+    if not all([type(d) is datetime.date for d in dates]):
+        raise TypeError("Can only find dated reports with date objects.")
+
+    # Initialize dict for merged entries
+    json = {}
+
+    # Loop on given dates
+    for date in dates:
+
+        # Initialize and load report
+        report = reportType(date, src)
+        report.load()
+
+        # Get and merge new entries
+        try:
+            json = lib.mergeDicts(json, report.get(branch))
+
+        # Branch is missing from current report
+        except errors.MissingBranch as e:
+            
+            # Strict search: re-throw error
+            if strict:
+                raise e
+
+    # Return entries
+    return json
+
+
+
+def addDatedEntries(reportType, branch, entries, src = PATH_REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -982,7 +1035,7 @@ def addDatedEntries(reportType, branch, entries):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Test report
+    # Test report type
     if not issubclass(reportType, DatedReport):
         raise TypeError("Cannot add dated values to non dated report.")
 
@@ -998,7 +1051,7 @@ def addDatedEntries(reportType, branch, entries):
 
     # Each date corresponds to a report
     for date in dates:
-        reports[date] = reportType(date)
+        reports[date] = reportType(date, src)
         reports[date].load(False)
 
     # Add values to reports

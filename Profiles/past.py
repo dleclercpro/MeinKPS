@@ -78,7 +78,7 @@ class PastProfile(Profile):
 
 
 
-    def load(self, strict = True):
+    def load(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,14 +91,11 @@ class PastProfile(Profile):
         """
 
         # Give user info
-        Logger.debug("Loading...")
-
-        # Number of reports needed
-        n = len(self.days) if strict else 2
+        Logger.debug("Loading data for: " + repr(self))
 
         # Load data
-        self.data = reporter.getRecent(self.reportType, self.norm,
-            self.branch, n, strict)
+        self.data = reporter.getDatedEntries(self.reportType, self.days,
+            self.branch)
 
         # Give user info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")

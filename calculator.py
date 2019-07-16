@@ -386,9 +386,13 @@ def snooze(now, duration = 2):
         FIXME: take carbs dynamics into consideration!
     """
 
+    # Compute dates
+    today = now.date()
+    yesterday = today - datetime.timedelta(days = 1)
+
     # Get last carbs (no need to go further than the past 2 days)
-    lastCarbs = reporter.getRecent(reporter.TreatmentsReport, now, ["Carbs"], 2,
-        True)
+    lastCarbs = reporter.getDatedEntries(reporter.TreatmentsReport,
+        [yesterday, today], ["Carbs"])
 
     # Snooze criteria (no temping after eating)
     if lastCarbs:

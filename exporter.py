@@ -88,32 +88,48 @@ class Exporter(object):
         # Info
         Logger.debug("Reading recent data...")
 
-        # Get recent BGs
-        self.data["bgs"] = reporter.getRecent(reporter.BGReport,
-            self.now, [], 2)
+        # Define dates
+        today = self.now.date()
+        yesterday = today - datetime.timedelta(days = 1)
 
         # Get pump data
         self.data["pump"] = reporter.REPORTS["pump"].get()
 
+        # Get recent BGs
+        self.data["bgs"] = reporter.getDatedEntries(
+            reporter.BGReport,
+            [yesterday, today],
+            [])
+
         # Get recent boluses
-        self.data["boluses"] = reporter.getRecent(reporter.TreatmentsReport,
-            self.now, ["Boluses"], 2)
+        self.data["boluses"] = reporter.getDatedEntries(
+            reporter.TreatmentsReport,
+            [yesterday, today],
+            ["Boluses"])
 
         # Get recent IOBs
-        self.data["iobs"] = reporter.getRecent(reporter.TreatmentsReport,
-            self.now, ["IOB"], 2)
+        self.data["iobs"] = reporter.getDatedEntries(
+            reporter.TreatmentsReport,
+            [yesterday, today],
+            ["IOB"])
 
         # Get recent history
-        self.data["history"] = reporter.getRecent(reporter.HistoryReport,
-            self.now, [], 2)
+        self.data["history"] = reporter.getDatedEntries(
+            reporter.HistoryReport,
+            [yesterday, today],
+            [])
 
         # Get recent sensor statuses
-        self.data["statuses"] = reporter.getRecent(reporter.HistoryReport,
-            self.now, ["CGM", "Sensor Statuses"], 2)
+        self.data["statuses"] = reporter.getDatedEntries(
+            reporter.HistoryReport,
+            [yesterday, today],
+            ["CGM", "Sensor Statuses"])
 
         # Get recent calibrations
-        self.data["calibrations"] = reporter.getRecent(reporter.HistoryReport,
-            self.now, ["CGM", "Calibrations"], 2)
+        self.data["calibrations"] = reporter.getDatedEntries(
+            reporter.HistoryReport,
+            [yesterday, today],
+            ["CGM", "Calibrations"])
 
 
 

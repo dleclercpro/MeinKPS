@@ -1166,10 +1166,10 @@ class Bolus(PumpComponent):
             ["Boluses"])
 
         # Get latest bolus time
-        t = max(boluses)
+        lastTime = max(boluses)
 
         # Get last bolus
-        self.value = boluses[t]
+        self.value = boluses[lastTime]
 
 
 
