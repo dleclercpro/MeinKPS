@@ -52,14 +52,14 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize resettable components
+        self.reset()
+
         # Initialize zero (default y-axis value)
         self.zero = None
 
         # Initialize units
         self.units = None
-
-        # Initialize resettable components
-        self.reset()
 
 
 
@@ -148,27 +148,28 @@ class Profile(object):
             Based on profile type, define its time references.
         """
 
+        # Info
+        Logger.debug("Defining time references of: " + repr(self))
+
         # Test start/end types
         if type(start) is not datetime.datetime or type(start) is not type(end):
             raise TypeError("Start/end times have to be datetime objects.")
-
-        # Info
-        Logger.debug("Defining time references of: " + repr(self))
 
         # Define start/end times
         self.start = start
         self.end = end
 
+        # Initialize days covered by profile
+        self.days = []
+
         # First day to cover for always one before start date
         day = start.date() - datetime.timedelta(days = 1)
 
-        # Fill them until end date is reached
+        # Fill days until end date is reached
         while day <= end.date():
-
-            # Add day
             self.days.append(day)
 
-            # Update it
+            # Update day
             day += datetime.timedelta(days = 1)
 
 
@@ -214,11 +215,6 @@ class Profile(object):
             last entry before start of profile.
         """
 
-        # Test limit types
-        if type(a) is not datetime.datetime or type(a) is not type(b):
-            raise TypeError("Limit times to use while cutting profile have " +
-                "to be datetime objects.")
-
         # Info
         Logger.debug("Cutting: " + repr(self))
 
@@ -229,6 +225,11 @@ class Profile(object):
         # No end given
         if b is None:
             b = self.end
+
+        # Test limit types
+        if type(a) is not datetime.datetime or type(a) is not type(b):
+            raise TypeError("Limit times to use while cutting profile have " +
+                "to be datetime objects.")
 
         # Group axes and filter them
         data = zip(self.T, self.y)
@@ -255,13 +256,13 @@ class Profile(object):
             Normalize profile's time axis.
         """
 
+        # Info
+        Logger.debug("Normalizing: " + repr(self))
+
         # Before using given reference time, verify its type
         if self.norm is None or type(self.norm) is not datetime.datetime:
             raise TypeError("Time axis can only be normalized using a " +
                 "datetime object.")
-
-        # Info
-        Logger.debug("Normalizing: " + repr(self))
 
         # Normalize time to hours since norm
         self.t = [lib.normalizeTime(T, self.norm) for T in self.T]
@@ -274,53 +275,38 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SHOW
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Show profile components.
+            Print various versions of profile.
         """
 
-        # Define profile dictionary
-        profiles = {"Standard t-axis": [self.T, self.y],
-                    "Normalized t-axis": [self.t, self.y],
-                    "Derivative": [self.t[:-1], self.dydt]}
+        # Define axes dictionary
+        versions = {"Standard t-axis": zip(self.T, self.y),
+                    "Normalized t-axis": zip(self.t, self.y),
+                    "Derivative": zip(self.t[:-1], self.dydt)}
 
         # Loop on each profile component
-        for p in profiles:
+        for version, entries in versions.items():
 
-            # Get axes
-            axes = profiles[p]
+            # If not empty
+            if entries:
+                Logger.debug(repr(self) + " - " + version)
 
-            # Read number of entries
-            nx = len(axes[0])
-            ny = len(axes[1])
+                # Show entries
+                for entry in entries:
 
-            # If profile exists
-            if nx > 0 and nx == ny:
-
-                # Info
-                Logger.debug(p)
-
-                # Show profile
-                for i in range(nx):
-
-                    # Get time
-                    t = axes[0][i]
+                    # Get time and value
+                    t = entry[0]
+                    y = entry[1]
 
                     # Format time if necessary
                     if type(t) is not float:
-
-                        # Format it
                         t = lib.formatTime(t)
-
-                    # Get value
-                    y = axes[1][i]
 
                     # Format value if necessary
                     if type(y) is float or type(y) is np.float64:
-
-                        # Format it
                         y = round(y, 2)
 
                     # Info
-                    Logger.debug(str(y) + " - (" + str(t) + ")")
+                    Logger.debug(str(y) + " (" + str(t) + ")")
 
 
 
