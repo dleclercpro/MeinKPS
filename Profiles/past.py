@@ -25,6 +25,7 @@
 # USER LIBRARIES
 import lib
 import logger
+import path
 import reporter
 from profile import Profile
 
@@ -78,7 +79,7 @@ class PastProfile(Profile):
 
 
 
-    def load(self):
+    def load(self, strict = False, src = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +96,7 @@ class PastProfile(Profile):
 
         # Load data
         self.data = reporter.getDatedEntries(self.reportType, self.days,
-            self.branch)
+            self.branch, strict, src)
 
         # Give user info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")

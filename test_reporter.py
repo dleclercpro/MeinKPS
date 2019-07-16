@@ -33,17 +33,13 @@ import reporter
 
 
 
-# CONSTANTS
-PATH_TESTS = path.Path("Test")
-
-
-
 # CLASSES
 class Report(reporter.Report):
 
     name = "test.json"
 
-    def __init__(self, directory = PATH_TESTS, json = None):
+    def __init__(self, directory = path.TESTS, json = None):
+
         super(Report, self).__init__(self.name, directory, json)
 
 
@@ -52,7 +48,8 @@ class DatedReport(reporter.DatedReport):
 
     name = "test.json"
 
-    def __init__(self, date, directory = PATH_TESTS, json = None):
+    def __init__(self, date, directory = path.TESTS, json = None):
+        
         super(DatedReport, self).__init__(self.name, date, directory, json)
 
 
@@ -65,11 +62,11 @@ def setup_and_teardown():
     Setup and teardown for tests which store reports.
     """
 
-    PATH_TESTS.touch()
+    path.TESTS.touch()
 
     yield
 
-    PATH_TESTS.delete()
+    path.TESTS.delete()
 
 
 
@@ -96,7 +93,7 @@ def test_create_report():
     report = Report()
 
     assert (report.name == "test.json" and
-            report.directory.path == PATH_TESTS.path and
+            report.directory.path == path.TESTS.path and
             report.json == {})
 
 
@@ -112,7 +109,7 @@ def test_create_dated_report():
 
     report = DatedReport(now)
     
-    reportPath = path.Path(PATH_TESTS.path + lib.formatDate(today))
+    reportPath = path.Path(path.TESTS.path + lib.formatDate(today))
 
     assert (report.name == "test.json" and
             report.date == today and
@@ -293,7 +290,7 @@ def test_get_report_dates(setup_and_teardown):
         report = DatedReport(d)
         report.store()
 
-    reportDates = reporter.getReportDates(DatedReport, PATH_TESTS)
+    reportDates = reporter.getReportDates(DatedReport, path.TESTS)
 
     assert (len(datetimes) == len(reportDates) and
             all([d.date() in reportDates for d in datetimes]))
@@ -325,14 +322,14 @@ def test_get_recent(setup_and_teardown):
 
     # Look for values in last 3 days (strict search)
     emptyResults = reporter.getRecent(DatedReport, now, branch, 3, True,
-        PATH_TESTS)
+        path.TESTS)
     
     # Results should be empty
     assert len(emptyResults) == 0
 
     # Look for values in 3 most recent available reports
     results = reporter.getRecent(DatedReport, now, branch, 3, False,
-        PATH_TESTS)
+        path.TESTS)
 
     # There should be as many entries in merged results, as there were reports
     # instanciated. The values should also fit.
@@ -365,12 +362,12 @@ def test_get_dated_entries(setup_and_teardown):
 
     # Add dated entries to corresponding reports (the latter will be created
     # if needed)
-    reporter.addDatedEntries(DatedReport, branch, entries, PATH_TESTS)
+    reporter.addDatedEntries(DatedReport, branch, entries, path.TESTS)
 
     # Try and find entries in given dated reports
     # Search for entries strictly: none should be missing!
     storedEntries = reporter.getDatedEntries(DatedReport, dates, branch, True,
-        PATH_TESTS)
+        path.TESTS)
 
     assert storedEntries == formattedEntries
 
@@ -394,7 +391,7 @@ def test_add_dated_entries(setup_and_teardown):
 
     # Add dated entries to corresponding reports (the latter will be created
     # if needed)
-    reporter.addDatedEntries(DatedReport, branch, entries, PATH_TESTS)
+    reporter.addDatedEntries(DatedReport, branch, entries, path.TESTS)
 
     for d in datetimes:
 

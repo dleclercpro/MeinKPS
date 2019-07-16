@@ -155,6 +155,10 @@ class Profile(object):
         if type(start) is not datetime.datetime or type(start) is not type(end):
             raise TypeError("Start/end times have to be datetime objects.")
 
+        # Does time order make sense?
+        if not start < end:
+            raise ValueError("Start has to be before end time.")
+
         # Define start/end times
         self.start = start
         self.end = end

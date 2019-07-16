@@ -44,13 +44,11 @@ import errors
 
 
 # Instanciate logger
-Logger = logger.Logger("reporter.py", level = "DEBUG")
+Logger = logger.Logger("reporter.py")
 
 
 
 # CONSTANTS
-PATH_REPORTS = path.Path("Reports")
-PATH_EXPORTS = path.Path("Exports")
 LOADING_ATTEMPTS = 2
 
 
@@ -62,7 +60,7 @@ class Report(object):
     Report object based on given JSON file.
     """
 
-    def __init__(self, name, directory = PATH_REPORTS, json = None):
+    def __init__(self, name, directory = path.REPORTS, json = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -458,7 +456,7 @@ class DatedReport(Report):
     Dated report object based on given JSON file.
     """
 
-    def __init__(self, name, date, directory = PATH_REPORTS, json = None):
+    def __init__(self, name, date, directory = path.REPORTS, json = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -519,7 +517,7 @@ class BGReport(DatedReport):
 
     name = "BG.json"
 
-    def __init__(self, date, directory = PATH_REPORTS):
+    def __init__(self, date, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -535,7 +533,7 @@ class PumpReport(Report):
 
     name = "pump.json"
 
-    def __init__(self, directory = PATH_REPORTS):
+    def __init__(self, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -592,7 +590,7 @@ class CGMReport(Report):
 
     name = "cgm.json"
 
-    def __init__(self, directory = PATH_REPORTS):
+    def __init__(self, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -632,7 +630,7 @@ class StickReport(Report):
 
     name = "stick.json"
 
-    def __init__(self, directory = PATH_REPORTS):
+    def __init__(self, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -672,7 +670,7 @@ class TreatmentsReport(DatedReport):
 
     name = "treatments.json"
 
-    def __init__(self, date, directory = PATH_REPORTS):
+    def __init__(self, date, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -711,7 +709,7 @@ class HistoryReport(DatedReport):
 
     name = "history.json"
 
-    def __init__(self, date, directory = PATH_REPORTS):
+    def __init__(self, date, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -756,7 +754,7 @@ class LoopReport(Report):
 
     name = "loop.json"
 
-    def __init__(self, directory = PATH_REPORTS):
+    def __init__(self, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -827,7 +825,7 @@ class FTPReport(Report):
 
     name = "ftp.json"
 
-    def __init__(self, directory = PATH_REPORTS):
+    def __init__(self, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -881,7 +879,7 @@ def isBranchValid(branch):
 
 
 
-def getReportDates(reportType, src = PATH_REPORTS):
+def getReportDates(reportType, src = path.REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -907,7 +905,7 @@ def getReportDates(reportType, src = PATH_REPORTS):
 
 
 def getRecent(reportType, now, branch, n = 1, strict = False,
-    src = PATH_REPORTS):
+    src = path.REPORTS):
 
     # TODO
     # This won't work with finding recent reports with a specific VALUE at the
@@ -981,7 +979,7 @@ def getRecent(reportType, now, branch, n = 1, strict = False,
 
 
 def getDatedEntries(reportType, dates, branch, strict = False,
-    src = PATH_REPORTS):
+    src = path.REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1027,7 +1025,7 @@ def getDatedEntries(reportType, dates, branch, strict = False,
 
 
 
-def addDatedEntries(reportType, branch, entries, src = PATH_REPORTS):
+def addDatedEntries(reportType, branch, entries, src = path.REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

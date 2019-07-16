@@ -146,12 +146,12 @@ class Exporter(object):
 
         # Fill BG report
         self.reports["bgs"] = reporter.Report("BG.json",
-            reporter.PATH_EXPORTS,
+            reporter.path.EXPORTS,
             self.data["bgs"])
 
         # Fill treatments report
         self.reports["treatments"] = reporter.Report("treatments.json",
-            reporter.PATH_EXPORTS, {
+            reporter.path.EXPORTS, {
                 "Net Basals": self.data["net"],
                 "Boluses": self.data["boluses"],
                 "IOB": self.data["iobs"]
@@ -159,7 +159,7 @@ class Exporter(object):
 
         # Fill history report
         self.reports["history"] = reporter.Report("history.json",
-            reporter.PATH_EXPORTS,
+            reporter.path.EXPORTS,
             lib.mergeDicts(self.data["history"], {
                 "CGM": {
                     "Sensor Statuses": self.data["statuses"],
@@ -169,7 +169,7 @@ class Exporter(object):
 
         # Fill pump report
         self.reports["pump"] = reporter.Report("pump.json",
-            reporter.PATH_EXPORTS,
+            reporter.path.EXPORTS,
             self.data["pump"])
 
 

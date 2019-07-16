@@ -302,6 +302,13 @@ def toDate(path):
 
 
 
+# Define default paths
+REPORTS = Path("Reports")
+EXPORTS = Path("Exports")
+TESTS = Path("Tests")
+
+
+
 def main():
 
     """

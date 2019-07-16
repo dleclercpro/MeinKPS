@@ -136,7 +136,7 @@ class Uploader(object):
         ftp.cwd(self.report.get(["Path"]))
 
         # Define path to files
-        path = reporter.PATH_EXPORTS.path
+        path = reporter.path.EXPORTS.path
 
         # Upload files
         self.upload(ftp, path, "json")
