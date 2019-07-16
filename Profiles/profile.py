@@ -58,6 +58,9 @@ class Profile(object):
         # Initialize units
         self.units = None
 
+        # Initialize resettable components
+        self.reset()
+
 
 
     def __repr__(self):

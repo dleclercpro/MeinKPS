@@ -4,7 +4,7 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    reporter_test
+    Title:    test_reporter
 
     Author:   David Leclerc
 
@@ -43,11 +43,8 @@ class Report(reporter.Report):
 
     name = "test.json"
 
-    def __init__(self, directory = path.Path("Test"), json = None):
-
-        super(Report, self).__init__(self.name,
-            directory,
-            json)
+    def __init__(self, directory = PATH_TESTS, json = None):
+        super(Report, self).__init__(self.name, directory, json)
 
 
 
@@ -55,12 +52,8 @@ class DatedReport(reporter.DatedReport):
 
     name = "test.json"
 
-    def __init__(self, date, directory = path.Path("Test"), json = None):
-
-        super(DatedReport, self).__init__(self.name,
-            date,
-            directory,
-            json)
+    def __init__(self, date, directory = PATH_TESTS, json = None):
+        super(DatedReport, self).__init__(self.name, date, directory, json)
 
 
 
@@ -162,16 +155,20 @@ def test_store_overwrite_report(setup_and_teardown):
     Overwrite previous JSON file while storing a report.
     """
 
+    key = "A"
+    value = 0
+    branch = [key]
+
     report = Report()
     report.reset()
 
-    report.set(0, ["A"])
+    report.set(value, branch)
     report.store(overwrite = True)
     
     report.erase()
     report.load()
 
-    assert report.exists() and report.get(["A"]) == 0
+    assert report.exists() and report.get(branch) == value
 
 
 
@@ -184,11 +181,15 @@ def test_get():
     key = "A"
     value = 0
 
+    branch = [key]
+
     report = Report(json = { key: value })
     
-    assert report.get([key]) == value
+    # Test getting tip of branch
+    assert report.get(branch) == value
 
-    assert report.get([]) == { key: value }
+    # Test getting whole report
+    assert report.get() == { key: value }
 
 
 
@@ -201,14 +202,18 @@ def test_add():
     key = "A"
     value = 0
 
+    branch = [key]
+
     report = Report()
 
+    # Missing branch should raise an error
     with pytest.raises(errors.MissingBranch):
-        report.get([key])
+        report.get(branch)
 
-    report.set(value, [key])
+    # Add value at tip of branch
+    report.set(value, branch)
     
-    assert report.get([key]) == value
+    assert report.get(branch) == value
 
 
 
@@ -222,16 +227,20 @@ def test_add_overwrite():
     value = 0
     newValue = 1
 
+    branch = [key]
+
     report = Report(json = { key: value })
     
-    assert report.get([key]) == value
+    assert report.get(branch) == value
 
+    # Overwriting forbidden should raise an error
     with pytest.raises(errors.NoOverwriting):
-        report.set(newValue, [key])
+        report.set(newValue, branch)
 
-    report.set(newValue, [key], overwrite = True)
+    # Allow overwriting
+    report.set(newValue, branch, overwrite = True)
     
-    assert report.get([key]) == newValue
+    assert report.get(branch) == newValue
 
 
 
@@ -246,22 +255,26 @@ def test_increment():
     keyString = "B"
     valueString = "0"
 
+    branch = [key]
+
     report = Report(json = {
         key: value,
         keyString: valueString
     })
     
-    assert report.get([key]) == value
+    assert report.get(branch) == value
 
+    # Impossible to increment whole report: key needed
     with pytest.raises(errors.InvalidBranch):
         report.increment([])
 
+    # Can only increment branches leading to numbers
     with pytest.raises(TypeError):
         report.increment([keyString])
 
-    report.increment([key])
+    report.increment(branch)
     
-    assert report.get([key]) == value + 1
+    assert report.get(branch) == value + 1
 
 
 
@@ -271,48 +284,60 @@ def test_get_report_dates(setup_and_teardown):
     Get dates for stored dated reports.
     """
 
-    dates = [datetime.datetime(1975, 1, 1, 0, 0, 0),
+    datetimes = [datetime.datetime(1975, 1, 1, 0, 0, 0),
              datetime.datetime(1980, 2, 2, 0, 0, 0),
              datetime.datetime(1985, 3, 3, 0, 0, 0)]
 
-    reports = [DatedReport(d) for d in dates]
-
-    for report in reports:
+    # Instanciate empty reports and store them
+    for d in datetimes:
+        report = DatedReport(d)
         report.store()
 
     reportDates = reporter.getReportDates(DatedReport, PATH_TESTS)
 
-    assert (len(dates) == len(reportDates) and
-            all([d.date() in reportDates for d in dates]))
+    assert (len(datetimes) == len(reportDates) and
+            all([d.date() in reportDates for d in datetimes]))
 
 
 
 def test_get_recent(setup_and_teardown):
 
     """
-    Get recent reports/parts of reports.
+    Get entries in recent reports.
     """
 
     now = datetime.datetime.now()
 
-    dates = [datetime.datetime(1975, 1, 1, 0, 0, 0),
+    datetimes = [datetime.datetime(1975, 1, 1, 0, 0, 0),
              datetime.datetime(1980, 2, 2, 0, 0, 0),
              datetime.datetime(1985, 3, 3, 0, 0, 0)]
 
-    reports = [DatedReport(d) for d in dates]
+    values = [6.2, 6.0, 5.8]
 
-    for report in reports:
-        report.set(0, [lib.formatDate(report.date)])
+    entries = dict(zip(datetimes, values))
+
+    branch = ["A", "B"]
+
+    for d in datetimes:
+        report = DatedReport(d)
+        report.set(entries[d], branch + [lib.formatDate(d)])
         report.store()
 
-    emptyResults = reporter.getRecent(DatedReport, now, [], 3, True, PATH_TESTS)
+    # Look for values in last 3 days (strict search)
+    emptyResults = reporter.getRecent(DatedReport, now, branch, 3, True,
+        PATH_TESTS)
     
+    # Results should be empty
     assert len(emptyResults) == 0
 
-    results = reporter.getRecent(DatedReport, now, [], 3, False, PATH_TESTS)
+    # Look for values in 3 most recent available reports
+    results = reporter.getRecent(DatedReport, now, branch, 3, False,
+        PATH_TESTS)
 
-    assert (len(results) == len(dates) and
-            all([results[lib.formatDate(d)] == 0 for d in dates]))
+    # There should be as many entries in merged results, as there were reports
+    # instanciated. The values should also fit.
+    assert (len(results) == len(datetimes) and
+        all([results[lib.formatDate(d)] == entries[d] for d in datetimes]))
 
 
 
@@ -326,19 +351,28 @@ def test_get_dated_entries(setup_and_teardown):
                  datetime.datetime(1970, 1, 2, 0, 0, 0),
                  datetime.datetime(1970, 1, 3, 0, 0, 0)]
 
+    formattedDatetimes = [lib.formatTime(d) for d in datetimes]
+
     dates = [d.date() for d in datetimes]
 
     values = [6.2, 6.0, 5.8]
 
     entries = dict(zip(datetimes, values))
-    formattedEntries = dict(zip([lib.formatTime(d) for d in datetimes], values))
+
+    formattedEntries = dict(zip(formattedDatetimes, values))
 
     branch = ["A", "B"]
 
-    reporter.addDatedEntries(DatedReport, branch, entries)
-    storedEntries = reporter.getDatedEntries(DatedReport, dates, branch)
+    # Add dated entries to corresponding reports (the latter will be created
+    # if needed)
+    reporter.addDatedEntries(DatedReport, branch, entries, PATH_TESTS)
 
-    assert formattedEntries == storedEntries
+    # Try and find entries in given dated reports
+    # Search for entries strictly: none should be missing!
+    storedEntries = reporter.getDatedEntries(DatedReport, dates, branch, True,
+        PATH_TESTS)
+
+    assert storedEntries == formattedEntries
 
 
 
@@ -352,26 +386,35 @@ def test_add_dated_entries(setup_and_teardown):
                  datetime.datetime(1970, 1, 2, 0, 0, 0),
                  datetime.datetime(1970, 1, 3, 0, 0, 0)]
 
-    dates = [d.date() for d in datetimes]
-
     values = [6.2, 6.0, 5.8]
 
     entries = dict(zip(datetimes, values))
 
-    reporter.addDatedEntries(DatedReport, [], entries)
+    branch = ["A", "B"]
 
-    reports = [DatedReport(d) for d in dates]
+    # Add dated entries to corresponding reports (the latter will be created
+    # if needed)
+    reporter.addDatedEntries(DatedReport, branch, entries, PATH_TESTS)
 
-    for report in reports:
-        report.load(strict = False)
+    for d in datetimes:
 
-    for i in range(len(dates)):
-        report = reports[i]
-        key = lib.formatTime(dates[i])
-        value = report.get([key])
-        json = report.get([])
+        # Get date
+        date = d.date()
 
-        assert len(json.keys()) == 1 and value == values[i]
+        # Instanciate and load corresponding report
+        report = DatedReport(date)
+        report.load()
+
+        # Format datetime object to get key
+        key = lib.formatTime(d)
+
+        # Get corresponding value, as well as whole JSON
+        value = report.get(branch + [key])
+        json = report.get()
+
+        # There should only be one key in JSON, and its value should be the
+        # one listed in the entries above
+        assert len(json.keys()) == 1 and value == entries[d]
 
 
 

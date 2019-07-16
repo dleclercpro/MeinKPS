@@ -4,7 +4,7 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    profile_test
+    Title:    test_profile
 
     Author:   David Leclerc
 
@@ -25,7 +25,7 @@ import pytest
 
 
 # USER LIBRARIES
-from profile import Profile
+from Profiles.profile import Profile
 
 
 
