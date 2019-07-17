@@ -123,8 +123,6 @@ class CGM(object):
 
         # If ping required
         if ping:
-
-            # Ping it
             self.ping()
 
 
@@ -182,14 +180,10 @@ class CGM(object):
 
         # No CGM found
         if self.usb is None:
-
-            # Raise error
             raise errors.NoCGM
 
         # Otherwise
         else:
-
-            # Show it
             Logger.debug( "CGM found.")
 
 
@@ -224,10 +218,10 @@ class CGM(object):
             Ping CGM to see if ready to receive commands.
         """
 
-        # Try reading clock
+        # Ping CGM...
         try:
 
-            # Do it
+            # ... by trying to read clock
             self.clock.read()
 
         # Otherwise
