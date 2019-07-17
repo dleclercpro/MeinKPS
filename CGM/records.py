@@ -449,7 +449,7 @@ class EventRecord(Record):
         """
 
         # Initialize record
-        super(EventRecord).__init__(cgm)
+        super(EventRecord, self).__init__(cgm)
 
         # Define record size
         self.size = 20

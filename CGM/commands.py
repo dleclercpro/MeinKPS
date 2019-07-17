@@ -127,9 +127,8 @@ class Command(object):
 
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
-
-            # Error
-            raise errors.BadCGMCRC(expectedCRC, computedCRC)
+            raise ValueError("Bad CRC. Expected: " + str(expectedCRC) + ". " +
+                "Computed: " + str(computedCRC) + ".")
 
 
 
@@ -144,7 +143,7 @@ class ReadDatabaseRange(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadDatabaseRange, self).__init__(cgm)
 
         # Initialize command code
         self.code = 16
@@ -162,7 +161,7 @@ class ReadDatabase(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadDatabase, self).__init__(cgm)
 
         # Initialize command code
         self.code = 17
@@ -180,7 +179,7 @@ class ReadFirmwareHeader(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadFirmwareHeader, self).__init__(cgm)
 
         # Initialize command code
         self.code = 11
@@ -198,7 +197,7 @@ class ReadTransmitterID(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadTransmitterID, self).__init__(cgm)
 
         # Initialize command code
         self.code = 25
@@ -216,7 +215,7 @@ class ReadFirmwareSettings(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadFirmwareSettings, self).__init__(cgm)
 
         # Initialize command code
         self.code = 54
@@ -234,7 +233,7 @@ class ReadBatteryLevel(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadBatteryLevel, self).__init__(cgm)
 
         # Initialize command code
         self.code = 33
@@ -252,7 +251,7 @@ class ReadBatteryState(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadBatteryState, self).__init__(cgm)
 
         # Initialize command code
         self.code = 48
@@ -270,7 +269,7 @@ class ReadLanguage(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadLanguage, self).__init__(cgm)
 
         # Initialize command code
         self.code = 27
@@ -288,7 +287,7 @@ class ReadSystemTime(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadSystemTime, self).__init__(cgm)
 
         # Initialize command code
         self.code = 34
@@ -306,7 +305,7 @@ class ReadClockMode(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadClockMode, self).__init__(cgm)
 
         # Initialize command code
         self.code = 41
@@ -324,7 +323,7 @@ class ReadUnits(Command):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReadUnits, self).__init__(cgm)
 
         # Initialize command code
         self.code = 37
