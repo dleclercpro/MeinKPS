@@ -348,13 +348,13 @@ class Report(object):
             # Last key of branch (actual key of entry)
             if key == branch[-1]:
                 
-                # Key exists, but can't be overwritten
-                if key in json and json[key] != value and not overwrite:
-                    raise errors.NoOverwriting(repr(self), str(branch))
-                
-                # (Over)write
-                json[key] = value
-                return
+                # (Over)write if possible
+                if key not in json or json[key] != value and overwrite:
+                    json[key] = value
+                    return
+
+                # Otherwise
+                raise errors.NoOverwriting(repr(self), str(branch))
 
             # Otherwise
             else:
