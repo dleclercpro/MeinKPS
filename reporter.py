@@ -348,8 +348,12 @@ class Report(object):
             # Last key of branch (actual key of entry)
             if key == branch[-1]:
                 
+                # Key/value already exists like that
+                if key in json and json[key] == value:
+                    continue
+
                 # (Over)write if possible
-                if key not in json or json[key] != value and overwrite:
+                elif key not in json or json[key] != value and overwrite:
                     json[key] = value
                     return
 
