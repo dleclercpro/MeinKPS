@@ -190,10 +190,10 @@ def test_get():
 
 
 
-def test_add():
+def test_set():
 
     """
-    Add something to report.
+    Set something to report.
     """
 
     key = "A"
@@ -207,7 +207,10 @@ def test_add():
     with pytest.raises(errors.MissingBranch):
         report.get(branch)
 
-    # Add value at tip of branch
+    # Set value at tip of branch
+    report.set(value, branch)
+
+    # Resetting same value should not cause problems
     report.set(value, branch)
     
     assert report.get(branch) == value
