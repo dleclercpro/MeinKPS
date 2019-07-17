@@ -28,10 +28,10 @@ import datetime
 
 
 # USER LIBRARIES
-from .. import lib
-from .. import logger
-from .. import errors
-from .. import reporter
+import lib
+import logger
+import errors
+import reporter
 
 
 

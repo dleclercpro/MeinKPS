@@ -29,18 +29,18 @@ import traceback
 
 
 # USER LIBRARIES
-from . import lib
-from . import fmt
-from . import errors
-from . import logger
-from . import reporter
-from . import exporter
-from . import uploader
-from . import calculator
-from .CGM import cgm
-from .Stick import stick
-from .Pump import pump
-from .Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
+import lib
+import fmt
+import errors
+import logger
+import reporter
+import exporter
+import uploader
+import calculator
+from CGM import cgm
+from Stick import stick
+from Pump import pump
+from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
     suspend, resume, idc)
 
 

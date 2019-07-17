@@ -25,8 +25,8 @@
 """
 
 # USER LIBRARIES
-from .. import lib
-from .. import logger
+import lib
+import logger
 
 
 

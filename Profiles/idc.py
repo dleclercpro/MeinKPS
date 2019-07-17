@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 
 
 # USER LIBRARIES
-from .. import lib
+import lib
 
 
 

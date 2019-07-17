@@ -23,9 +23,9 @@
 """
 
 # USER LIBRARIES
-from .. import logger
-from .step import StepProfile
-from .past import PastProfile
+import logger
+from step import StepProfile
+from past import PastProfile
 
 
 

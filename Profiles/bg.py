@@ -30,12 +30,12 @@ import numpy as np
 
 
 # USER LIBRARIES
-from .. import logger
-from .. import reporter
-from .. import calculator
-from .dot import DotProfile
-from .past import PastProfile
-from .future import FutureProfile
+import logger
+import reporter
+import calculator
+from dot import DotProfile
+from past import PastProfile
+from future import FutureProfile
 
 
 

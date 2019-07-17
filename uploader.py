@@ -29,8 +29,8 @@ import ftplib
 
 
 # USER LIBRARIES
-from . import logger
-from . import reporter
+import logger
+import reporter
 
 
 

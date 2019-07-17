@@ -23,10 +23,10 @@
 """
 
 # USER LIBRARIES
-from .. import reporter
-from .daily import DailyProfile
-from .past import PastProfile
-from .future import FutureProfile
+import reporter
+from daily import DailyProfile
+from past import PastProfile
+from future import FutureProfile
 
 
 

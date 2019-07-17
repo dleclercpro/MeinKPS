@@ -23,10 +23,10 @@
 """
 
 # USER LIBRARIES
-from .. import lib
-from .. import logger
-from . import commands
-from . import records
+import lib
+import logger
+import commands
+import records
 
 
 

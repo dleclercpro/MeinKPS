@@ -28,9 +28,9 @@ import datetime
 
 
 # USER LIBRARIES
-from .. import reporter
-from .step import StepProfile
-from .past import PastProfile
+import reporter
+from step import StepProfile
+from past import PastProfile
 
 
 

@@ -23,9 +23,9 @@
 """
 
 # USER LIBRARIES
-from .. import reporter
-from .daily import DailyProfile
-from .future import FutureProfile
+import reporter
+from daily import DailyProfile
+from future import FutureProfile
 
 
 

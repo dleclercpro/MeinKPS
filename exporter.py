@@ -28,10 +28,10 @@ import datetime
 
 
 # USER LIBRARIES
-from . import lib
-from . import logger
-from . import reporter
-from .Profiles import (bolus, basal, tb, net, bg, targets, isf, csf, iob, cob,
+import lib
+import logger
+import reporter
+from Profiles import (bolus, basal, tb, net, bg, targets, isf, csf, iob, cob,
     idc, resume, suspend)
 
 

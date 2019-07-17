@@ -23,10 +23,10 @@
 """
 
 # USER LIBRARIES
-from .. import logger
-from .dot import DotProfile
-from .past import PastProfile
-from .future import FutureProfile
+import logger
+from dot import DotProfile
+from past import PastProfile
+from future import FutureProfile
 
 
 

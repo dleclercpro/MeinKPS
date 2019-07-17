@@ -30,8 +30,8 @@ import matplotlib.pyplot as plt
 
 
 # USER LIBRARIES
-from .. import lib
-from .. import logger
+import lib
+import logger
 
 
 

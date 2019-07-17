@@ -38,13 +38,13 @@ import datetime
 
 
 # USER LIBRARIES
-from .. import lib
-from .. import logger
-from .. import errors
-from .. import reporter
-from . import commands
-from . import records
-from ..Stick import stick
+import lib
+import logger
+import errors
+import reporter
+import commands
+import records
+from Stick import stick
 
 
 

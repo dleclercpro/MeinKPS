@@ -31,13 +31,13 @@ import datetime
 
 
 # USER LIBRARIES
-from .. import lib
-from .. import logger
-from .. import errors
-from .. import path
-from .. import reporter
-from . import commands
-from . import databases
+import lib
+import logger
+import errors
+import path
+import reporter
+import commands
+import databases
 
 
 

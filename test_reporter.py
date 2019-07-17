@@ -26,10 +26,10 @@ import pytest
 
 
 # USER LIBRARIES
-from . import lib
-from . import errors
-from . import path
-from . import reporter
+import lib
+import errors
+import path
+import reporter
 
 
 

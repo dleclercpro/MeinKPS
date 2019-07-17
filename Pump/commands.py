@@ -30,11 +30,11 @@ import datetime
 
 
 # USER LIBRARIES
-from .. import lib
-from .. import logger
-from .. import errors
-from .. import reporter
-from . import packets
+import lib
+import logger
+import errors
+import reporter
+import packets
 
 
 

@@ -25,10 +25,14 @@ import pytest
 
 
 # USER LIBRARIES
-from . import path
-from . import reporter
-from .Profiles import profile, past
-from .test_reporter import DatedReport
+import path
+import reporter
+from Profiles import profile, past
+
+
+
+# TEST MODULES
+from test_reporter import DatedReport
 
 
 

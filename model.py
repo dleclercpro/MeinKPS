@@ -43,13 +43,13 @@ import scipy.special
 
 
 # USER LIBRARIES
-from . import lib
-from . import reporter
-from . import calculator
-from .Profiles.idc import WalshIDC, FiaspIDC
-from .Profiles.iob import FutureIOB
-from .Profiles.net import Net
-from .Profiles.bg import FutureBG
+import lib
+import reporter
+import calculator
+from Profiles.idc import WalshIDC, FiaspIDC
+from Profiles.iob import FutureIOB
+from Profiles.net import Net
+from Profiles.bg import FutureBG
 
 
 

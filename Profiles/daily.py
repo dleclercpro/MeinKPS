@@ -28,8 +28,8 @@ import datetime
 
 
 # USER LIBRARIES
-from .. import logger
-from .step import StepProfile
+import logger
+from step import StepProfile
 
 
 

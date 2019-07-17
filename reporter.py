@@ -36,10 +36,10 @@ import datetime
 
 
 # USER LIBRARIES
-from . import lib
-from . import path
-from . import logger
-from . import errors
+import lib
+import path
+import logger
+import errors
 
 
 

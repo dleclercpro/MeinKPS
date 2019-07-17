@@ -23,9 +23,9 @@
 """
 
 # USER LIBRARIES
-from .. import reporter
-from .daily import DailyProfile
-from .past import PastProfile
+import reporter
+from daily import DailyProfile
+from past import PastProfile
 
 
 
