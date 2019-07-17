@@ -221,11 +221,10 @@ class Database(object):
         expectedCRC = lib.unpack(self.page["Header"][-2:], "<")
         computedCRC = lib.computeCRC16(self.page["Header"][:-2])
 
-        # Exit if CRCs mismatch
+        # CRCs mismatch
         if computedCRC != expectedCRC:
-
-            # Error
-            raise errors.BadCGMCRC(expectedCRC, computedCRC)
+            raise ValueError("Bad header CRC. Expected: " + str(expectedCRC) +
+                ". Computed: " + str(computedCRC) + ".")
 
 
 
@@ -240,7 +239,7 @@ class ManufactureDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ManufactureDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 0
@@ -258,7 +257,7 @@ class FirmwareDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(FirmwareDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 1
@@ -276,7 +275,7 @@ class PCDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(PCDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 2
@@ -294,7 +293,7 @@ class BGDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(BGDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 4
@@ -315,7 +314,7 @@ class SensorDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(SensorDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 7
@@ -336,7 +335,7 @@ class ReceiverDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(ReceiverDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 8
@@ -354,7 +353,7 @@ class CalibrationDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(CalibrationDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 10
@@ -375,7 +374,7 @@ class EventsDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(EventsDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 11
@@ -396,7 +395,7 @@ class SettingsDatabase(Database):
         """
 
         # Start initialization
-        super(self.__class__, self).__init__(cgm)
+        super(SettingsDatabase, self).__init__(cgm)
 
         # Define database code
         self.code = 12

@@ -520,22 +520,6 @@ class NoCGM(CGMError):
 
 
 
-class BadCGMCRC(CGMError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Expected header CRC: " + self.args[0] + ". " +
-                     "Computed header CRC: " + self.args[1])
-
-
-
 class BadCGMRecordCRC(CGMError):
 
     def prepare(self):
