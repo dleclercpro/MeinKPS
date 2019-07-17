@@ -350,7 +350,7 @@ class Report(object):
                 
                 # Key/value already exists like that
                 if key in json and json[key] == value:
-                    continue
+                    return
 
                 # (Over)write if possible
                 elif key not in json or json[key] != value and overwrite:
