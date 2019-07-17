@@ -29,7 +29,7 @@ import datetime
 
 # USER LIBRARIES
 from .. import logger
-from step import StepProfile
+from .step import StepProfile
 
 
 

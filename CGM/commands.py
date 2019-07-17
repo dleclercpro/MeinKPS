@@ -23,9 +23,9 @@
 """
 
 # USER LIBRARIES
-import lib
-import logger
-import packets
+from .. import lib
+from .. import logger
+from . import packets
 
 
 

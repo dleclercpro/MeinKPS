@@ -4,7 +4,7 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    COB
+    Title:    cob
 
     Author:   David Leclerc
 
@@ -24,9 +24,9 @@
 
 # USER LIBRARIES
 from .. import logger
-from dot import DotProfile
-from past import PastProfile
-from future import FutureProfile
+from .dot import DotProfile
+from .past import PastProfile
+from .future import FutureProfile
 
 
 

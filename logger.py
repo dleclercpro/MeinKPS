@@ -28,8 +28,8 @@ import datetime
 
 
 # USER LIBRARIES
-import lib
-import path
+from . import lib
+from . import path
 
 
 

@@ -36,13 +36,13 @@ import numpy as np
 
 
 # USER LIBRARIES
-import lib
-import path
-import logger
-import errors
-import reporter
-import commands
-from Pump import packets
+from .. import lib
+from .. import logger
+from .. import errors
+from .. import path
+from .. import reporter
+from . import commands
+from ..Pump import packets
 
 
 

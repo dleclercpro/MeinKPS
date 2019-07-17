@@ -24,8 +24,8 @@
 
 # USER LIBRARIES
 from .. import reporter
-from step import StepProfile
-from past import PastProfile
+from .step import StepProfile
+from .past import PastProfile
 
 
 

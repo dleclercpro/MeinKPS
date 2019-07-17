@@ -4,7 +4,7 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    BG
+    Title:    bg
 
     Author:   David Leclerc
 
@@ -33,9 +33,9 @@ import numpy as np
 from .. import logger
 from .. import reporter
 from .. import calculator
-from dot import DotProfile
-from past import PastProfile
-from future import FutureProfile
+from .dot import DotProfile
+from .past import PastProfile
+from .future import FutureProfile
 
 
 

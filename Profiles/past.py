@@ -27,7 +27,7 @@ from .. import lib
 from .. import logger
 from .. import path
 from .. import reporter
-from profile import Profile
+from .profile import Profile
 
 
 

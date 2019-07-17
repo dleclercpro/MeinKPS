@@ -4,7 +4,7 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    CSF
+    Title:    csf
 
     Author:   David Leclerc
 
@@ -24,8 +24,8 @@
 
 # USER LIBRARIES
 from .. import reporter
-from daily import DailyProfile
-from future import FutureProfile
+from .daily import DailyProfile
+from .future import FutureProfile
 
 
 

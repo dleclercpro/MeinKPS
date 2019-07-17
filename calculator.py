@@ -31,11 +31,11 @@ import copy
 
 
 # USER LIBRARIES
-import fmt
-import lib
-import errors
-import logger
-import reporter
+from . import fmt
+from . import lib
+from . import errors
+from . import logger
+from . import reporter
 
 
 

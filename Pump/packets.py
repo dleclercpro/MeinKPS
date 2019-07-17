@@ -29,9 +29,9 @@ import math
 
 
 # USER LIBRARIES
-import lib
-import logger
-import errors
+from .. import lib
+from .. import logger
+from .. import errors
 
 
 

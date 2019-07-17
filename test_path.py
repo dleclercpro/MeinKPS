@@ -26,7 +26,7 @@ import pytest
 
 
 # USER LIBRARIES
-import path
+from . import path
 
 
 

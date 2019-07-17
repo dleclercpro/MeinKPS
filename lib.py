@@ -24,8 +24,6 @@
 """
 
 # LIBRARIES
-import os
-import sys
 import usb
 import copy
 import json

@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 # USER LIBRARIES
 from .. import lib
 from .. import logger
-from profile import Profile
+from .profile import Profile
 
 
 
