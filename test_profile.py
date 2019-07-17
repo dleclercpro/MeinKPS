@@ -151,6 +151,4 @@ def test_cut():
     p.define(datetimes[1], datetimes[-1])
 
     # Load entries
-    # FIXME DatedReport from test_reporter isn't considered a sub-class of
-    # DatedReport in reporter.py?
-    #p.load(src = path.TESTS)
+    p.load(src = path.TESTS)

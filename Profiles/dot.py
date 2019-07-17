@@ -28,8 +28,8 @@ import matplotlib.pyplot as plt
 
 
 # USER LIBRARIES
-import lib
-import logger
+from .. import lib
+from .. import logger
 from profile import Profile
 
 

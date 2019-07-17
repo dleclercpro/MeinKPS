@@ -44,9 +44,12 @@ import scipy.special
 
 # USER LIBRARIES
 import lib
-import calculator
 import reporter
-from Profiles import *
+import calculator
+from Profiles.idc import WalshIDC, FiaspIDC
+from Profiles.iob import FutureIOB
+from Profiles.net import Net
+from Profiles.bg import FutureBG
 
 
 
@@ -66,7 +69,7 @@ def IAC(t, args):
 
 
 
-def idc(t, args):
+def IDC(t, args):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,7 +205,7 @@ def modelInsulinActivity(t, args, PIA, DIA, MID):
                      "with $[a, b, c]$ = [" + str(round(a, 1)) + ", " +
                      str(round(b, 1)) + ", " + str(round(c, 1)) + "]")
 
-    plt.plot(t, idc(t = t, args = args),
+    plt.plot(t, IDC(t = t, args = args),
              ls = "-", lw = 1.5, c = "blue",
              label = "IDC: " + r"$F(t) = \int$" + " " + r"$f(t) \cdot dt$")
 
@@ -210,7 +213,7 @@ def modelInsulinActivity(t, args, PIA, DIA, MID):
              ls = "-", lw = 1.5, c = "purple",
              label = "Animas IDC")
 
-    walshIDC = IDC.WalshIDC(3)
+    walshIDC = WalshIDC(3)
 
     plt.plot(t, walshIDC.f(t = t),
              ls = "-", lw = 1.5, c = "red",
@@ -276,16 +279,6 @@ def plotInsulinActivity():
     # Get current time
     now = datetime.datetime.now()
 
-    # Instanciate calculator
-    calc = calculator.Calculator()
-
-    # Run calculator
-    calc.run(now)
-
-    # Link with net profile
-    profileT = np.array(calc.net.T)
-    profileY = np.array(calc.net.y)
-
     # Read DIA
     DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
 
@@ -302,6 +295,14 @@ def plotInsulinActivity():
     # Convert time axis to hours
     t /= 3600.0
 
+    # FIXME
+    # Build profiles manually
+    # Build net insulin profile
+    idc = WalshIDC(DIA)
+    iob = FutureIOB()
+    bg = FutureBG()
+    net = Net()
+
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
     fig = plt.figure(0, figsize = (10, 8))
@@ -316,19 +317,19 @@ def plotInsulinActivity():
     plt.ylabel("Insulin Activity (-)", weight = "semibold")
 
     # Add Walsh IDC to plot
-    plt.plot(-t, calc.IDC.f(t),
+    plt.plot(-t, idc.f(t),
              ls = "-", lw = 1.5, c = "red", label = "Walsh IDC")
 
     # Add insulin net profile to plot
-    plt.step(-profileT, np.append(0, profileY[:-1]),
+    plt.step(-net.T, np.append(0, net.y[:-1]),
              ls = "-", lw = 1.5, c = "black", label = "Net Profile")
 
     # Add future IOBs to plot
-    plt.plot(T, calc.IOB.y,
+    plt.plot(T, iob.y,
              ls = "-", lw = 1.5, c = "purple", label = "Future IOB")
 
     # Add eventual BGs to plot
-    plt.plot(T, calc.BG.y,
+    plt.plot(T, bg.y,
              ls = "-", lw = 1.5, c = "blue", label = "Eventual BG")
 
     # Define plot legend
@@ -399,8 +400,6 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    from Profiles import IDC
-
     DIA = 3.0
     PIA = 0.5
     MID = DIA / 2
@@ -413,25 +412,6 @@ def main():
     #modelInsulinActivity(t = t, args = args, PIA = PIA, DIA = DIA, MID = MID)
 
     #plotInsulinActivity()
-
-    walshIDC = IDC.WalshIDC(DIA)
-    fiaspIDC = IDC.TriangleIDC(DIA, PIA)
-
-    walsh = []
-    walshI = []
-    fiasp = []
-    fiaspI = []
-
-    for i in range(len(t)):
-
-        walsh += [walshIDC.f(t[i])]
-        walshI += [walshIDC.F(t[i])]
-        fiasp += [fiaspIDC.f(t[i])]
-        fiaspI += [fiaspIDC.F(t[i])]
-
-    plotFIASPIDC(t, fiasp, DIA, walsh, walshI, fiaspI)
-
-    
 
 
 

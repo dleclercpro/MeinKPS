@@ -23,7 +23,7 @@
 """
 
 # USER LIBRARIES
-import logger
+from .. import logger
 from dot import DotProfile
 from past import PastProfile
 from future import FutureProfile

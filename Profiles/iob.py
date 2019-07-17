@@ -30,9 +30,9 @@ import copy
 
 
 # USER LIBRARIES
-import logger
-import reporter
-import calculator
+from .. import logger
+from .. import reporter
+from .. import calculator
 from dot import DotProfile
 from past import PastProfile
 from future import FutureProfile

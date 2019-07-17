@@ -23,10 +23,10 @@
 """
 
 # USER LIBRARIES
-import lib
-import logger
-import path
-import reporter
+from .. import lib
+from .. import logger
+from .. import path
+from .. import reporter
 from profile import Profile
 
 

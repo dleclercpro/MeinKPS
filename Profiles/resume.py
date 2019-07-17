@@ -23,7 +23,7 @@
 """
 
 # USER LIBRARIES
-import reporter
+from .. import reporter
 from step import StepProfile
 from past import PastProfile
 

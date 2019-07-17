@@ -23,7 +23,7 @@
 """
 
 # USER LIBRARIES
-import reporter
+from .. import reporter
 from daily import DailyProfile
 from past import PastProfile
 
