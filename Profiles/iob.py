@@ -99,7 +99,7 @@ class FutureIOB(IOB, FutureProfile):
             Build prediction profile of IOB decay.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Building 'FutureIOB'...")
 
         # Reset components
@@ -176,7 +176,7 @@ class FutureIOB(IOB, FutureProfile):
             Note: only stores current IOB for later displaying purposes.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding current IOB to: " + repr(self.reportType))
 
         # Add entry

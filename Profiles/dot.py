@@ -75,7 +75,7 @@ class DotProfile(Profile):
             Derivate dot typed profiles using their normalized time axis.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Derivating...")
 
         # Derivate

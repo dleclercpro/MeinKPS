@@ -60,7 +60,7 @@ class Net(PastProfile, StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Building 'Net'...")
 
         # Reset components
@@ -102,7 +102,7 @@ class Net(PastProfile, StepProfile):
         self.t = net.t
         self.y = net.y
         
-        # Give user info
+        # Info
         Logger.debug("Net insulin profile:")
 
         # Show it

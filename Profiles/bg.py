@@ -121,7 +121,7 @@ class FutureBG(BG, FutureProfile):
             the end of insulin activity is given by dBG.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Building 'FutureBG'...")
 
         # Ensure there is one BG recent enough to accurately predict decay
@@ -130,7 +130,7 @@ class FutureBG(BG, FutureProfile):
         # Initialize BG
         BG = past.y[-1]
 
-        # Give user info
+        # Info
         Logger.debug("Step size: " + str(self.dt) + " h")
         Logger.debug("Initial BG: " + str(BG) + " " + self.units)
 

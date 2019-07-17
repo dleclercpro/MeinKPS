@@ -537,7 +537,7 @@ class Stick(object):
             Store optimized frequency.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump's last optimized frequency to '" +
                      repr(self.report) + "'...")
 

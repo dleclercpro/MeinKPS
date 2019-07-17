@@ -687,7 +687,7 @@ class Power(SetCommand, BigCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump last power up to: " + repr(self.report))
 
         # Get current formatted time
@@ -786,7 +786,7 @@ class ReadModel(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump model to: " + repr(self.report))
 
         # Add entry
@@ -842,7 +842,7 @@ class ReadFirmware(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump firmware to: " + repr(self.report))
 
         # Add entry
@@ -895,7 +895,7 @@ class ReadBattery(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump battery level to: " + repr(self.reportType))
 
         # Get current time
@@ -953,7 +953,7 @@ class ReadReservoir(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump reservoir level to: " + repr(self.reportType))
 
         # Get current time
@@ -1049,7 +1049,7 @@ class ReadSettings(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump settings to: " + repr(self.report))
 
         # Add entry
@@ -1112,7 +1112,7 @@ class ReadBGUnits(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump BG units to: " + repr(self.report))
 
         # Add entry
@@ -1175,7 +1175,7 @@ class ReadCarbsUnits(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump carb units to: " + repr(self.report))
 
         # Add entry
@@ -1274,7 +1274,7 @@ class ReadBGTargets(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump BG targets to: " + repr(self.report))
 
         # Store BG units
@@ -1419,7 +1419,7 @@ class ReadISF(ReadFactors):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump ISF(s) to: " + repr(self.report))
 
         # Store BG units (without insulin units)
@@ -1485,7 +1485,7 @@ class ReadCSF(ReadFactors):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump CSF(s) to: " + repr(self.report))
 
         # Zip times and factors
@@ -1609,7 +1609,7 @@ class ReadBasalProfile(GetBigCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump basal profile '" + self.name + "' to: " + 
             repr(self.report))
 
@@ -1791,7 +1791,7 @@ class ReadTB(GetCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding pump TB units to: " + repr(self.report))
 
         # Store TB units

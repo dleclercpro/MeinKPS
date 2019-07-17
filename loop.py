@@ -128,7 +128,7 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.info("Started loop.")
 
         # Define starting time
@@ -156,7 +156,7 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.info("Ended loop.")
 
         # Define ending time
@@ -401,7 +401,7 @@ class Loop(object):
                 # No ratio available
                 r = None
 
-            # Give user info
+            # Info
             print "dIOB: " + fmt.IOB(dIOB)
             print "dBG: " + fmt.BG(dBG)
             print "Expected dBG: " + fmt.BG(expecteddBG)

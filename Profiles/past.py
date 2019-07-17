@@ -91,14 +91,14 @@ class PastProfile(Profile):
             given time range or try and find the latest available.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Loading data for: " + repr(self))
 
         # Load data
         self.data = reporter.getDatedEntries(self.reportType, self.days,
             self.branch, strict, src)
 
-        # Give user info
+        # Info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
 
 

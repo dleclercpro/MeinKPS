@@ -65,13 +65,13 @@ class DailyProfile(StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Loading...")
 
         # Load data
         self.data = self.report.get(self.branch)
 
-        # Give user info
+        # Info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
 
 
@@ -101,7 +101,7 @@ class DailyProfile(StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Mapping time...")
 
         # Initialize profile components

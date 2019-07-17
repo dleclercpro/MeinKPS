@@ -89,7 +89,7 @@ class Record(object):
             # Extract ith record's bytes
             bytes = data[i * self.size: (i + 1) * self.size]
 
-            # Give user info
+            # Info
             Logger.debug("Record bytes: " + str(bytes))
 
             # Store them
@@ -234,7 +234,7 @@ class BGRecord(Record):
             # Decode special BG
             BG = self.special[BG]
 
-            # Give user info
+            # Info
             Logger.info("Special value: " + BG)
 
         # Deal with normal values
@@ -246,7 +246,7 @@ class BGRecord(Record):
                 # Convert them
                 BG = round(BG / 18.0, 1)
 
-            # Give user info
+            # Info
             Logger.info("BG: " + str(BG) + " " + str(trend) + " " +
                         "(" + lib.formatTime(self.t[-1]) + ")")
 
@@ -281,7 +281,7 @@ class BGRecord(Record):
             # Print special values
             else:
 
-                # Give user info
+                # Info
                 Logger.info(self.values[i]["BG"] + " (" + str(self.t[i]) + ")")
 
         # Return them
@@ -297,7 +297,7 @@ class BGRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding BG records to: " + repr(self.reportType))
 
         # Add entries
@@ -354,7 +354,7 @@ class SensorRecord(Record):
         # Store it
         self.values.append(status)
 
-        # Give user info
+        # Info
         Logger.info("Sensor status: " + str(status) + " " +
                     "(" + lib.formatTime(self.t[-1]) + ")")
 
@@ -368,7 +368,7 @@ class SensorRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding sensor statuses to: " + repr(self.reportType))
 
         # Add entries
@@ -415,7 +415,7 @@ class CalibrationRecord(Record):
         # Store it
         self.values.append(BG)
 
-        # Give user info
+        # Info
         Logger.info("BG: " + str(BG) + " " + self.cgm.units.value + " " +
                     "(" + lib.formatTime(self.t[-1]) + ")")
 
@@ -429,7 +429,7 @@ class CalibrationRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding sensor calibrations to: " + repr(self.reportType))
 
         # Add entries

@@ -102,7 +102,7 @@ class Database(object):
         # Deal with empty database
         if self.range == self.emptyRange:
 
-            # Give user info
+            # Info
             Logger.warning("Database empty.")
 
             # Exit
@@ -110,7 +110,7 @@ class Database(object):
 
         else:
 
-            # Give user info
+            # Info
             Logger.debug("Database range: " + str(self.range))
 
             # Exit
@@ -185,7 +185,7 @@ class Database(object):
             # Read database
             for i in range(start, end + 1):
 
-                # Give user info
+                # Info
                 Logger.debug("Reading database page " + str(i) + "/" +
                              str(end) + "...")
 

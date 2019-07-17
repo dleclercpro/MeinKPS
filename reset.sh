@@ -36,10 +36,10 @@ fi
 # If power bus found
 if [ -e $FILE ]; then
 
-    # Give user info
+    # Info
     echo "Power-cycling USB devices..."
 
-    # Give user info
+    # Info
     echo "Powering off..."
 
     # Power off
@@ -48,7 +48,7 @@ if [ -e $FILE ]; then
     # Wait...
     sleep 1
 
-    # Give user info
+    # Info
     echo "Powering on..."
 
     # Power on
@@ -60,7 +60,7 @@ if [ -e $FILE ]; then
 # Otherwise
 else
 
-    # Give user info
+    # Info
     echo "Could not find a known USB power control device."
 
 fi

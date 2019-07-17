@@ -106,7 +106,7 @@ class StepProfile(Profile):
             durations are defined!
         """
 
-        # Give user info
+        # Info
         Logger.debug("Injecting...")
 
         # Initialize temporary components
@@ -180,7 +180,7 @@ class StepProfile(Profile):
             Force specific profile limits after profile is cut.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Padding...")
 
         # If no previous step was found
@@ -219,7 +219,7 @@ class StepProfile(Profile):
                   to delimit the end of the last step.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Filling...")
 
         # Initialize new profile components
@@ -279,7 +279,7 @@ class StepProfile(Profile):
             Smooth profile (remove redundant steps) after it is cut and padded.
         """
 
-        # Give user info
+        # Info
         Logger.debug("Smoothing...")
 
         # Initialize components for smoothed profile
@@ -431,7 +431,7 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding:")
 
         # Do operation
@@ -447,7 +447,7 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Subtracting:")
 
         # Do operation
@@ -463,7 +463,7 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Multiplying:")
 
         # Do operation
@@ -479,7 +479,7 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Dividing:")
 
         # Do operation

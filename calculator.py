@@ -83,7 +83,7 @@ def computeIOB(net, IDC):
         # Compute active insulin remaining for current step
         IOB += r * y[i]
 
-    # Give user info
+    # Info
     Logger.debug("IOB: " + fmt.IOB(IOB))
 
     # Return IOB
@@ -150,7 +150,7 @@ def countValidBGs(pastBG, age = 30, N = 2):
     n = np.sum(np.array(pastBG.T) > pastBG.end -
                                     datetime.timedelta(minutes = age))
 
-    # Give user info
+    # Info
     Logger.debug("Found " + str(n) + " BGs within last " + str(age) + " m.")
 
     # Check for insufficient valid BGs
@@ -194,7 +194,7 @@ def linearlyProjectBG(pastBG, dt):
         (mmol/L/h).
     """
 
-    # Give user info
+    # Info
     Logger.info("Projection time: " + str(dt) + " h")
 
     # Compute derivative to use when predicting future BG
@@ -228,7 +228,7 @@ def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF, dt = 0.
         ISF:    insulin sensibility factor (mmol/L/U)
     """
 
-    # Give user info
+    # Info
     Logger.info("Computing BG dynamics...")
 
     # Read expected BG after natural decay of IOB
@@ -259,23 +259,23 @@ def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF, dt = 0.
     # Compute difference with BG target
     dBGTarget = BGTarget - eventualBG
 
-    # Give user info about current status
+    # Info about current status
     Logger.info("Current BG: " + fmt.BG(pastBG.y[-1]))
     Logger.info("Current IOB: " + fmt.IOB(futureIOB.y[0]))
 
-    # Give user info about short (dt) BG projection
+    # Info about short (dt) BG projection
     Logger.info("Projection time: " + str(dt) + " h")
     Logger.info("Expected BG (dt): " + fmt.BG(shortExpectedBG))
     Logger.info("Projected BG (dt): " + fmt.BG(shortProjectedBG))
     Logger.info("dBG (dt): " + fmt.BG(shortdBG))
 
-    # Give user info about long (DIA) BG projection
+    # Info about long (DIA) BG projection
     Logger.info("Expected BG (DIA): " + fmt.BG(expectedBG))
     Logger.info("Eventual BG (DIA): " + fmt.BG(eventualBG))
     Logger.info("BG Target (DIA): " + fmt.BG(BGTarget))
     Logger.info("dBG to BG Target (DIA): " + fmt.BG(dBGTarget))
 
-    # Give user info (BGI)
+    # Info (BGI)
     Logger.info("Expected BGI: " + fmt.BGI(expectedBGI))
     Logger.info("Current BGI: " + fmt.BGI(BGI))
     Logger.info("dBGI: " + fmt.BGI(dBGI))
@@ -304,7 +304,7 @@ def computeTB(dose, basal):
         Compute TB to enact given current basal and recommended insulin dose.
     """
 
-    # Give user info
+    # Info
     Logger.debug("Computing TB to enact...")
 
     # Find required basal difference to enact over given time
@@ -313,7 +313,7 @@ def computeTB(dose, basal):
     # Compute TB to enact using the current basal and said required difference
     TB = basal.y[-1] + dB
 
-    # Give user info
+    # Info
     Logger.info("Current basal: " + fmt.basal(basal.y[-1]))
     Logger.info("Required basal difference: " + fmt.basal(dB))
     Logger.info("Temporary basal to enact: " + fmt.basal(TB))
@@ -340,7 +340,7 @@ def limitTB(TB, basal, BG):
     # Negative TB rate
     if rate < 0 or BG <= BG_HYPO_LIMIT:
 
-        # Give user info
+        # Info
         Logger.warning("Hypo prevention mode.")
 
         # Stop insulin delivery
@@ -355,7 +355,7 @@ def limitTB(TB, basal, BG):
         # Define max basal rate allowed (U/h)
         maxRate = min(4 * basal.y[-1], 3 * maxDailyBasal, basal.max)
 
-        # Give user info
+        # Info
         Logger.info("Theoretical max basal: " + fmt.basal(basal.max))
         Logger.info("4x current basal: " + fmt.basal(4 * basal.y[-1]))
         Logger.info("3x max daily basal: " + fmt.basal(3 * maxDailyBasal))
@@ -363,7 +363,7 @@ def limitTB(TB, basal, BG):
         # TB exceeds max
         if rate > maxRate:
 
-            # Give user info
+            # Info
             Logger.warning("TB recommendation exceeds maximal basal and has " +
                            "thus been limited. Bolus would bring BG back to " +
                            "safe range more effectively.")
@@ -409,7 +409,7 @@ def snooze(now, duration = 2):
             # Compute remaining time (m)
             t = int(round((duration - dt) * 60))
 
-            # Give user info
+            # Info
             Logger.warning("Bolus snooze (" + str(duration) + " h). If no " +
                            "more bolus issued, high temping will resume in " +
                            str(t) + " m.")
@@ -432,7 +432,7 @@ def recommendTB(BGDynamics, basal, futureISF, IDC):
         security limitations.
     """
 
-    # Give user info
+    # Info
     Logger.debug("Recommending TB...")
 
     # Compute necessary insulin dose to bring back eventual BG to target
@@ -456,7 +456,7 @@ def recommendTB(BGDynamics, basal, futureISF, IDC):
         # Destructure TB
         [rate, units, duration] = TB
 
-        # Give user info
+        # Info
         Logger.info("Recommended TB: " + fmt.basal(rate) + " " +
                     "(" + str(duration) + " m)")
 

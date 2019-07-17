@@ -81,7 +81,7 @@ class Uploader(object):
                     # Skip file
                     continue
 
-                # Give user info
+                # Info
                 Logger.debug("Uploading: '" + os.getcwd() + "/" + f + "'")
 
                 # Open file
@@ -99,7 +99,7 @@ class Uploader(object):
                 # If directory does not exist
                 if f not in ftp.nlst():
 
-                    # Give user info
+                    # Info
                     Logger.debug("Making directory: '" + f + "'")
 
                     # Make directory

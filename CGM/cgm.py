@@ -252,7 +252,7 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Sending packet: " + str(bytes))
 
         # Send packet
@@ -274,7 +274,7 @@ class CGM(object):
         # Convert raw bytes
         bytes = list(raw)
 
-        # Give user info
+        # Info
         Logger.debug("Received bytes: " + str(bytes))
 
         # Return response
@@ -390,7 +390,7 @@ class Battery(object):
         self.level = lib.unpack(
             self.commands["ReadLevel"].response["Payload"], "<")
 
-        # Give user info
+        # Info
         Logger.info("Battery level: " + str(self.level))
 
         # Execute command
@@ -400,7 +400,7 @@ class Battery(object):
         self.state = self.states[lib.unpack(
             self.commands["ReadState"].response["Payload"], "<")]
 
-        # Give user info
+        # Info
         Logger.info("Battery state: " + self.state)
 
         # Store battery level
@@ -416,7 +416,7 @@ class Battery(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Storing battery level to: " + repr(self.reportType))
 
         # Add entry
@@ -479,7 +479,7 @@ class Language(object):
         self.value = self.values[lib.unpack(
             self.command.response["Payload"], "<")]
 
-        # Give user info
+        # Info
         Logger.info("Language: " + self.value)
 
         # Store it
@@ -495,7 +495,7 @@ class Language(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Storing language to: " + repr(self.report))
 
         # Add entry
@@ -552,7 +552,7 @@ class Clock(object):
         # Assign response
         self.systemTime = self.epoch + delta
 
-        # Give user info
+        # Info
         Logger.info("System time: " + lib.formatTime(self.systemTime))
 
         # Execute command
@@ -562,7 +562,7 @@ class Clock(object):
         self.mode = self.modes[lib.unpack(
             self.commands["ReadMode"].response["Payload"], "<")]
 
-        # Give user info
+        # Info
         Logger.info("Clock mode: " + self.mode)
 
         # Store clock mode
@@ -578,7 +578,7 @@ class Clock(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Storing clock mode to: " + repr(self.report))
 
         # Add entry
@@ -625,7 +625,7 @@ class Units(object):
         self.value = self.values[lib.unpack(
             self.command.response["Payload"], "<")]
 
-        # Give user info
+        # Info
         Logger.info("Units: " + self.value)
 
         # Store it
@@ -641,7 +641,7 @@ class Units(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Storing BG units to: " + repr(self.report))
 
         # Add entry
@@ -716,7 +716,7 @@ class Transmitter(object):
         # Assign response
         self.id = lib.translate(self.command.response["Payload"])
 
-        # Give user info
+        # Info
         Logger.info("Transmitter ID: " + str(self.id))
 
         # Store it
@@ -732,7 +732,7 @@ class Transmitter(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Storing transmitter ID to: " + repr(self.report))
 
         # Add entry

@@ -213,7 +213,7 @@ class Record(object):
         # Get name of record
         record = self.__class__.__name__
 
-        # Give user info
+        # Info
         Logger.info("Found " + str(n) + " '" + record + "':")
 
         # Inject None for missing record times and/or values
@@ -297,7 +297,7 @@ class SuspendRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding suspend time to: " + repr(self.reportType))
 
         # Add entries
@@ -357,7 +357,7 @@ class ResumeRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding resume time to: " + repr(self.reportType))
 
         # Add entries
@@ -452,7 +452,7 @@ class TBRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding TBs to: " + repr(self.reportType))
 
         # Add entries
@@ -530,7 +530,7 @@ class BolusRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding boluses to: " + repr(self.reportType))
 
         # Add entries
@@ -672,7 +672,7 @@ class CarbsRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Give user info
+        # Info
         Logger.debug("Adding carbs to: " + repr(self.reportType))
 
         # Add entries
