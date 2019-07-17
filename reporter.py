@@ -347,24 +347,32 @@ class Report(object):
 
             # Last key of branch (actual key of entry)
             if key == branch[-1]:
-                
-                # Key/value already exists like that
-                if key in json and json[key] == value:
-                    return
 
-                # (Over)write if possible
-                elif key not in json or json[key] != value and overwrite:
-                    json[key] = value
-                    return
+                # Key exists
+                if key in json:
+
+                    # Key/value pair is identical to previous one
+                    if json[key] == value:
+                        return
+
+                    # Overwrite is possible
+                    elif overwrite:
+                        json[key] = value
+                        return
+
+                    # Otherwise
+                    raise errors.NoOverwriting(repr(self), str(branch))
 
                 # Otherwise
-                raise errors.NoOverwriting(repr(self), str(branch))
+                else:
+                    json[key] = value
+                    return
 
             # Otherwise
             else:
                 
                 # Key is missing
-                if not key in json:
+                if key not in json:
 
                     # Touch
                     json[key] = {}
