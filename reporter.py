@@ -349,7 +349,7 @@ class Report(object):
             if key == branch[-1]:
                 
                 # Key exists, but can't be overwritten
-                if key in json and not overwrite:
+                if key in json and json[key] != value and not overwrite:
                     raise errors.NoOverwriting(repr(self), str(branch))
                 
                 # (Over)write
