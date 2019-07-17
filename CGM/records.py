@@ -149,7 +149,8 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        raise NotImplementedError
+        # Ignore if method not implemented
+        pass
 
 
 
@@ -161,7 +162,8 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        raise NotImplementedError
+        # Ignore if method not implemented
+        pass
 
 
 
