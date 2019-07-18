@@ -98,6 +98,11 @@ class PastProfile(Profile):
         self.data = reporter.getDatedEntries(self.reportType, self.days,
             self.branch, strict, src)
 
+        # No data
+        if not self.data:
+            Logger.warning("No data found for: " + repr(self))
+            return
+
         # Info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
 

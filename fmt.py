@@ -33,6 +33,9 @@ def BGI(x):
 def basal(x):
     return str(round(x, 1)) + " U/h"
 
+def bolus(x):
+    return str(round(x, 3)) + " U"
+
 def ISF(x):
     return str(round(x, 1)) + " mmol/L/U"
 

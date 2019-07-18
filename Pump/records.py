@@ -100,9 +100,7 @@ class Record(object):
 
                 # No match
                 else:
-
-                    # Raise error
-                    raise errors.InvalidRecord
+                    raise errors.BadPumpRecord
 
             # If not matching, move to next one
             except:

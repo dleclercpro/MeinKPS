@@ -120,7 +120,8 @@ class Record(object):
 
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
-            raise errors.BadCGMRecordCRC(expectedCRC, computedCRC)
+            raise ValueError("Bad record CRC. Expected: " + str(expectedCRC) +
+                ". Computed: " + str(computedCRC) + ".")
 
 
 

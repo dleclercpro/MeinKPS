@@ -361,8 +361,6 @@ class Stick(object):
 
             # If mismatch
             if self.commands["Radio Register RX"].run(reg) != byte:
-
-                # Raise error
                 raise errors.RadioRegisterTXFail
 
         # Info
@@ -463,7 +461,7 @@ class Stick(object):
                     RSSIs[f].append(pkt.RSSI["dBm"])
 
                 # On invalid packet or radio error
-                except (errors.RadioError, errors.InvalidPumpPacket):
+                except (errors.RadioError, errors.BadPumpPacket):
 
                     # Add fake low RSSI reading
                     RSSIs[f].append(-99)

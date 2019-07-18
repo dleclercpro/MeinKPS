@@ -39,6 +39,7 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import fmt
 import logger
 import errors
 import reporter
@@ -507,18 +508,12 @@ class Status(PumpComponent):
 
         # Check if pump is ready to take action
         if not self.value["Normal"]:
-
-            # Raise error
             raise errors.StatusAbnormal
 
         elif self.value["Bolusing"]:
-
-            # Raise error
             raise errors.StatusBolusing
 
         elif self.value["Suspended"]:
-
-            # Raise error
             raise errors.StatusSuspended
 
         # Info
@@ -562,15 +557,13 @@ class Settings(PumpComponent):
         # If TB is asked for, but exceeds max settings
         if (TB is not None and TB["Units"] == "U/h" and
             TB["Rate"] > self.value["Max Basal"]):
-
-            # Raise error
-            raise errors.SettingsMaxBasalExceeded
+            raise ValueError("Max basal exceeded: " + fmt.basal(TB["Rate"]) +
+                " > " + fmt.bolus(self.value["Max Basal"]))
 
         # If bolus is asked for, but exceeds max settings
         elif bolus is not None and bolus > self.value["Max Bolus"]:
-
-            # Raise error
-            raise errors.SettingsMaxBolusExceeded
+            raise ValueError("Max bolus exceeded: " + fmt.bolus(bolus) +
+                " > " + fmt.bolus(self.value["Max Bolus"]))
 
         # Info
         Logger.info("Pump's settings allow desired course of action. " +
@@ -959,15 +952,11 @@ class TB(PumpComponent):
         # Verify size of TB
         if (TB["Rate"] < {"U/h": 0, "%": 0}[TB["Units"]] or
             TB["Rate"] > {"U/h": 35, "%": 200}[TB["Units"]]):
-
-            # Raise error
-            raise errors.TBBadRate(TB)
+            raise errors.BadTBRate(TB)
 
         # Verify if duration is a multiple of 30
         if TB["Duration"] % 30:
-
-            # Raise error
-            raise errors.TBBadDuration(TB)
+            raise errors.BadTBDuration(TB)
 
         # Verify pump status
         self.pump.status.verify()
@@ -1075,6 +1064,10 @@ class TB(PumpComponent):
         elif TB["Units"] == "%":
             self.commands["Set Percentage"].run(TB["Rate"], TB["Duration"])
 
+        # Otherwise
+        else:
+            raise ValueError("Bad TB units.")
+
         # Info
         Logger.info("Verifying if TB was correctly enacted...")
 
@@ -1082,12 +1075,12 @@ class TB(PumpComponent):
         self.read()
 
         # Compare to expectedly set TB
-        if TB == self.value:
-            Logger.info("TB correctly enacted.")
-
-        # Otherwise
-        else:
+        if TB != self.value:
             raise errors.TBFail()
+
+        # Success
+        Logger.info("TB correctly enacted.")
+
 
 
 

@@ -407,14 +407,10 @@ class PumpPacket(Packet):
 
                 # If bits within packet
                 if bits != "":
-
-                    # Raise error
                     raise errors.UnmatchPumpPacketBits(word)
 
                 # If last bits do not fit
                 elif word != "0101":
-
-                    # Raise error
                     raise errors.BadPumpPacketEnding(word)
 
         # Split string in groups of 2 characters
@@ -453,8 +449,6 @@ class PumpPacket(Packet):
 
         # If number of bits not multiple of 8, encoding fails
         if n % 8 != 0:
-
-            # Raise error
             raise errors.MissingPumpPacketBits(n)
 
         # Initialize bytes
@@ -710,8 +704,6 @@ class FromPumpPacket(FromPacket, PumpPacket):
 
         # Not enough bytes
         if n < self.min:
-
-            # Raise error
             raise errors.NotEnoughPumpPacketBytes(self.min, n)
 
         # Get recipient
@@ -719,9 +711,7 @@ class FromPumpPacket(FromPacket, PumpPacket):
 
         # Packet not from pump
         if self.recipient != "A7":
-
-            # Raise error
-            raise errors.UnknownPumpPacket
+            raise errors.UnknownPacketRecipient
 
         # Get serial
         self.serial = self.bytes["Decoded"]["Hex"][1:4]

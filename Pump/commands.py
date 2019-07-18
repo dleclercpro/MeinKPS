@@ -266,8 +266,6 @@ class SetCommand(Command):
 
         # Unsuccessful
         if [pkt.code] + pkt.payload != ack:
-
-            # Raise error
             raise errors.UnsuccessfulRadioCommand
 
 
@@ -372,7 +370,7 @@ class BigCommand(Command):
                                               .packets["RX"][-1])
 
             # Radio error
-            except (errors.RadioError, errors.InvalidPumpPacket):
+            except (errors.RadioError, errors.BadPumpPacket):
 
                 # NAK
                 if self.repeat["NAK"]:
@@ -403,7 +401,7 @@ class BigCommand(Command):
             super(BigCommand, self).execute()
 
         # Radio error
-        except (errors.RadioError, errors.InvalidPumpPacket):
+        except (errors.RadioError, errors.BadPumpPacket):
 
             # NAK
             if self.repeat["NAK"]:
@@ -447,13 +445,11 @@ class BigCommand(Command):
                 # Exit
                 return
 
-            # Radio error
-            except (errors.RadioError, errors.InvalidPumpPacket):
-
-                # Ignore
+            # Ignore radio errors/bad packets
+            except (errors.RadioError, errors.BadPumpPacket):
                 pass
 
-        # Raise error
+        # Unsuccessful command
         raise errors.UnsuccessfulRadioCommand
 
 
@@ -647,7 +643,7 @@ class Power(SetCommand, BigCommand):
                 return
 
             # Except
-            except (errors.RadioError, errors.InvalidPumpPacket):
+            except (errors.RadioError, errors.BadPumpPacket):
 
                 # Ignore
                 pass

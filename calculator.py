@@ -155,9 +155,7 @@ def countValidBGs(pastBG, age = 30, N = 2):
 
     # Check for insufficient valid BGs
     if n < N:
-
-        # Exit
-        raise errors.MissingBGs()
+        raise errors.NotEnoughBGs()
 
     # Return count
     return n

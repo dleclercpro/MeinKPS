@@ -198,7 +198,7 @@ class UnsuccessfulRadioCommand(RadioError):
 
 
 # Packets errors
-class InvalidPumpPacket(RadioError):
+class BadPumpPacket(RadioError):
 
     def prepare(self):
 
@@ -213,7 +213,7 @@ class InvalidPumpPacket(RadioError):
 
 
 
-class UnknownPumpPacket(InvalidPumpPacket):
+class UnknownPacketRecipient(BadPumpPacket):
 
     def prepare(self):
 
@@ -228,7 +228,7 @@ class UnknownPumpPacket(InvalidPumpPacket):
 
 
 
-class UnmatchPumpPacketBits(InvalidPumpPacket):
+class UnmatchPumpPacketBits(BadPumpPacket):
 
     def prepare(self):
 
@@ -244,7 +244,7 @@ class UnmatchPumpPacketBits(InvalidPumpPacket):
 
 
 
-class NotEnoughPumpPacketBytes(InvalidPumpPacket):
+class NotEnoughPumpPacketBytes(BadPumpPacket):
 
     def prepare(self):
 
@@ -260,7 +260,7 @@ class NotEnoughPumpPacketBytes(InvalidPumpPacket):
 
 
 
-class MissingPumpPacketBits(InvalidPumpPacket):
+class MissingPumpPacketBits(BadPumpPacket):
 
     def prepare(self):
 
@@ -276,7 +276,7 @@ class MissingPumpPacketBits(InvalidPumpPacket):
 
 
 
-class BadPumpPacketEnding(InvalidPumpPacket):
+class BadPumpPacketEnding(BadPumpPacket):
 
     def prepare(self):
 
@@ -312,23 +312,7 @@ class NoPump(PumpError):
 
 
 
-class NoHistory(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("No pump history data read yet. Make sure to do that " +
-                     "before trying to find records.")
-
-
-
-class InvalidRecord(PumpError):
+class BadPumpRecord(PumpError):
 
     def prepare(self):
 
@@ -361,7 +345,7 @@ class TBFail(PumpError):
 
 
 
-class TBBadRate(PumpError):
+class BadTBRate(PumpError):
 
     def prepare(self):
 
@@ -372,13 +356,13 @@ class TBBadRate(PumpError):
         """
 
         # Define error info
-        self.info = ("New TB rate (" + self.args[0]["Rate"] + " " +
+        self.info = ("TB rate (" + str(self.args[0]["Rate"]) + " " +
                      self.args[0]["Units"] + ") must be within theoretical " +
                      "limits of [0, 35] U/h or [0, 200] %.")
 
 
 
-class TBBadDuration(PumpError):
+class BadTBDuration(PumpError):
 
     def prepare(self):
 
@@ -389,40 +373,8 @@ class TBBadDuration(PumpError):
         """
 
         # Define error info
-        self.info = ("New TB duration (" + self.args[0]["Duration"] + " " +
-                     "m) is incorrect. The latter must be a multiple of 30.")
-
-
-
-class BolusBadTime(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Last bolus too far away from current pump time (" +
-                     self.args[0] + " vs " + self.args[1] + ").")
-
-
-
-class BolusBadAmount(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Last bolus amount does not match with bolus to deliver " +
-                     "(" + self.args[0] + " U vs " + self.args[1] + " U).")
+        self.info = ("TB duration (" + str(self.args[0]["Duration"]) + " m) " +
+                     "is incorrect. The latter must be a multiple of 30.")
 
 
 
@@ -471,36 +423,6 @@ class StatusSuspended(PumpError):
 
 
 
-class SettingsMaxBasalExceeded(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Max basal exceeded.")
-
-
-
-class SettingsMaxBolusExceeded(PumpError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Max bolus exceeded.")
-
-
-
 # CGM errors
 class NoCGM(CGMError):
 
@@ -517,22 +439,6 @@ class NoCGM(CGMError):
 
         # Define error info
         self.info = "No CGM detected. Are you sure it's plugged in?"
-
-
-
-class BadCGMRecordCRC(CGMError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Expected CRC: " + self.args[0] + ". " +
-                     "Computed CRC: " + self.args[1])
 
 
 
@@ -582,38 +488,8 @@ class NoOverwriting(ReporterError):
 
 
 
-class NoTouching(ReporterError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = "Cannot touch " + self.args[0] + " at " + self.args[1]
-
-
-
-# Profile errors
-class NoProfileData(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("No data found for profile '" + self.args[0] + "'.")
-
-
-
-class MissingBGs(ProfileError):
+# General errors
+class NotEnoughBGs(BaseError):
 
     def prepare(self):
 
@@ -627,83 +503,4 @@ class MissingBGs(ProfileError):
         self.level = "CRITICAL"
 
         # Define error info
-        self.info = ("Not enough recent BGs.")
-
-
-
-class BadBGTime(ProfileError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Required BG expectation does not fit on time axis of " +
-                     "predicted BG profile.")
-
-
-
-# General errors
-class BadTime(BaseError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = "Bad time."
-
-
-
-class MismatchEntryValue(BaseError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = "Cannot merge dicts: conflicting values for given entry."
-
-
-
-class MismatchEntryType(BaseError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error info
-        self.info = ("Cannot merge dicts: conflicting types for given " +
-                     "entry's values.")
-
-
-
-def main():
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MAIN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-
-
-# Run this when script is called from terminal
-if __name__ == "__main__":
-    main()
+        self.info = ("Not enough recent BGs to take action.")
