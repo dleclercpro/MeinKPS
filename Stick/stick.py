@@ -204,14 +204,10 @@ class Stick(object):
 
         # No stick found
         if self.usb is None:
-
-            # Raise error
             raise errors.NoStick
 
         # Otherwise
         else:
-
-            # Show it
             Logger.debug("Stick found.")
 
 
@@ -452,7 +448,7 @@ class Stick(object):
             self.tune(f)
 
             # Sample
-            for i in range(sample):
+            for _ in range(sample):
 
                 # Try
                 try:
