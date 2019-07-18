@@ -163,7 +163,7 @@ class Profile(object):
         self.start = start
         self.end = end
 
-        # Initialize days covered by profile
+        # Reset days covered by profile
         self.days = []
 
         # First day to cover for always one before start date

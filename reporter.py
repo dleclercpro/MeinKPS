@@ -1017,16 +1017,14 @@ def getDatedEntries(reportType, dates, branch, strict = False,
     # Loop on given dates
     for date in dates:
 
-        # Initialize and load report
-        report = reportType(date, src)
-        report.load()
-
-        # Get and merge new entries
+        # Get entries for given date and merge them to previously gathered ones
         try:
+            report = reportType(date, src)
+            report.load()
             json = lib.mergeDicts(json, report.get(branch))
 
-        # Branch is missing from current report
-        except errors.MissingBranch as e:
+        # Something went wrong (e.g. missing report/branch)
+        except Exception as e:
             
             # Strict search: re-throw error
             if strict:
@@ -1087,7 +1085,6 @@ REPORTS = {
 }
 
 # Load them
-# TODO: test if loaded for each external import of module
 for report in REPORTS.values():
     report.load(False)
 
