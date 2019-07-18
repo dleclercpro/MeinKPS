@@ -873,6 +873,40 @@ class FTPReport(Report):
 
 
 
+class TestReport(Report):
+
+    name = "test.json"
+
+    def __init__(self, directory = path.TESTS, json = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Report class for testing.
+        """
+
+        super(TestReport, self).__init__(self.name, directory, json)
+
+
+
+class TestDatedReport(DatedReport):
+
+    name = "test.json"
+
+    def __init__(self, date, directory = path.TESTS, json = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Dated report class for testing.
+        """
+
+        super(TestDatedReport, self).__init__(self.name, date, directory, json)
+
+
+
 
 
 
@@ -1085,7 +1119,8 @@ REPORTS = {
 }
 
 # Load them
-for report in REPORTS.values():
+for name, report in REPORTS.items():
+    Logger.info("Loading report: " + name)
     report.load(False)
 
 

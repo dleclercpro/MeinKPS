@@ -33,27 +33,6 @@ import reporter
 
 
 
-# CLASSES
-class Report(reporter.Report):
-
-    name = "test.json"
-
-    def __init__(self, directory = path.TESTS, json = None):
-
-        super(Report, self).__init__(self.name, directory, json)
-
-
-
-class DatedReport(reporter.DatedReport):
-
-    name = "test.json"
-
-    def __init__(self, date, directory = path.TESTS, json = None):
-        
-        super(DatedReport, self).__init__(self.name, date, directory, json)
-
-
-
 # FIXTURES
 @pytest.fixture
 def setup_and_teardown():
@@ -77,7 +56,7 @@ def test_load_non_existent_report():
     Load a non existent report.
     """
     
-    report = Report()
+    report = reporter.TestReport()
     
     with pytest.raises(IOError):
         report.load()
@@ -90,7 +69,7 @@ def test_create_report():
     Create a report.
     """
 
-    report = Report()
+    report = reporter.TestReport()
 
     assert (report.name == "test.json" and
             report.directory.path == path.TESTS.path and
@@ -107,7 +86,7 @@ def test_create_dated_report():
     now = datetime.datetime.now()
     today = datetime.date.today()
 
-    report = DatedReport(now)
+    report = reporter.TestDatedReport(now)
     
     reportPath = path.Path(path.TESTS.path + lib.formatDate(today))
 
@@ -124,7 +103,7 @@ def test_store_report(setup_and_teardown):
     Store a report.
     """
     
-    report = Report()
+    report = reporter.TestReport()
     report.store()
 
     assert report.exists()
@@ -139,7 +118,7 @@ def test_store_dated_report(setup_and_teardown):
 
     today = datetime.date.today()
 
-    report = DatedReport(today)
+    report = reporter.TestDatedReport(today)
     report.store()
 
     assert report.exists()
@@ -156,7 +135,7 @@ def test_store_overwrite_report(setup_and_teardown):
     value = 0
     branch = [key]
 
-    report = Report()
+    report = reporter.TestReport()
     report.reset()
 
     report.set(value, branch)
@@ -180,7 +159,7 @@ def test_get():
 
     branch = [key]
 
-    report = Report(json = { key: value })
+    report = reporter.TestReport(json = { key: value })
     
     # Test getting tip of branch
     assert report.get(branch) == value
@@ -201,7 +180,7 @@ def test_set():
 
     branch = [key]
 
-    report = Report()
+    report = reporter.TestReport()
 
     # Missing branch should raise an error
     with pytest.raises(errors.MissingBranch):
@@ -229,7 +208,7 @@ def test_add_overwrite():
 
     branch = [key]
 
-    report = Report(json = { key: value })
+    report = reporter.TestReport(json = { key: value })
     
     assert report.get(branch) == value
 
@@ -257,7 +236,7 @@ def test_increment():
 
     branch = [key]
 
-    report = Report(json = {
+    report = reporter.TestReport(json = {
         key: value,
         keyString: valueString
     })
@@ -290,10 +269,10 @@ def test_get_report_dates(setup_and_teardown):
 
     # Instanciate empty reports and store them
     for d in datetimes:
-        report = DatedReport(d)
+        report = reporter.TestDatedReport(d)
         report.store()
 
-    reportDates = reporter.getReportDates(DatedReport, path.TESTS)
+    reportDates = reporter.getReportDates(reporter.TestDatedReport, path.TESTS)
 
     assert (len(datetimes) == len(reportDates) and
             all([d.date() in reportDates for d in datetimes]))
@@ -319,20 +298,20 @@ def test_get_recent(setup_and_teardown):
     branch = ["A", "B"]
 
     for d in datetimes:
-        report = DatedReport(d)
+        report = reporter.TestDatedReport(d)
         report.set(entries[d], branch + [lib.formatDate(d)])
         report.store()
 
     # Look for values in last 3 days (strict search)
-    emptyResults = reporter.getRecent(DatedReport, now, branch, 3, True,
-        path.TESTS)
+    emptyResults = reporter.getRecent(reporter.TestDatedReport, now, branch, 3,
+        True, path.TESTS)
     
     # Results should be empty
     assert len(emptyResults) == 0
 
     # Look for values in 3 most recent available reports
-    results = reporter.getRecent(DatedReport, now, branch, 3, False,
-        path.TESTS)
+    results = reporter.getRecent(reporter.TestDatedReport, now, branch, 3,
+        False, path.TESTS)
 
     # There should be as many entries in merged results, as there were reports
     # instanciated. The values should also fit.
@@ -365,12 +344,13 @@ def test_get_dated_entries(setup_and_teardown):
 
     # Add dated entries to corresponding reports (the latter will be created
     # if needed)
-    reporter.addDatedEntries(DatedReport, branch, entries, path.TESTS)
+    reporter.addDatedEntries(reporter.TestDatedReport, branch, entries,
+        path.TESTS)
 
     # Try and find entries in given dated reports
     # Search for entries strictly: none should be missing!
-    storedEntries = reporter.getDatedEntries(DatedReport, dates, branch, True,
-        path.TESTS)
+    storedEntries = reporter.getDatedEntries(reporter.TestDatedReport, dates,
+        branch, True, path.TESTS)
 
     assert storedEntries == formattedEntries
 
@@ -394,7 +374,8 @@ def test_add_dated_entries(setup_and_teardown):
 
     # Add dated entries to corresponding reports (the latter will be created
     # if needed)
-    reporter.addDatedEntries(DatedReport, branch, entries, path.TESTS)
+    reporter.addDatedEntries(reporter.TestDatedReport, branch, entries,
+        path.TESTS)
 
     for d in datetimes:
 
@@ -402,7 +383,7 @@ def test_add_dated_entries(setup_and_teardown):
         date = d.date()
 
         # Instanciate and load corresponding report
-        report = DatedReport(date)
+        report = reporter.TestDatedReport(date)
         report.load()
 
         # Format datetime object to get key

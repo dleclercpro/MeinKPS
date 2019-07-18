@@ -31,11 +31,6 @@ from Profiles import profile, past
 
 
 
-# TEST MODULES
-from test_reporter import DatedReport
-
-
-
 # CLASSES
 class Profile(profile.Profile):
 
@@ -51,7 +46,7 @@ class PastProfile(past.PastProfile):
 
         super(PastProfile, self).__init__()
 
-        self.reportType = DatedReport
+        self.reportType = reporter.TestDatedReport
         self.branch = []
 
 
@@ -137,22 +132,29 @@ def test_cut():
     ...
     """
 
-    datetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
-                 datetime.datetime(1970, 1, 2, 0, 0, 0),
-                 datetime.datetime(1970, 1, 3, 0, 0, 0)]
+    datetimes = [datetime.datetime(1990, 11, 30, 23, 30, 0),
+                 datetime.datetime(1990, 12, 1, 0, 0, 0),
+                 datetime.datetime(1990, 12, 1, 0, 30, 0),
+                 datetime.datetime(1990, 12, 1, 1, 0, 0),
+                 datetime.datetime(1990, 12, 1, 1, 30, 0),
+                 datetime.datetime(1990, 12, 1, 2, 0, 0),
+                 datetime.datetime(1990, 12, 1, 2, 30, 0),
+                 datetime.datetime(1990, 12, 1, 3, 0, 0)]
 
-    values = [6.2, 6.0, 5.8]
+    values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2, 5.0]
 
     entries = dict(zip(datetimes, values))
 
     branch = []
 
     # Create dated entries
-    reporter.addDatedEntries(DatedReport, branch, entries, path.TESTS)
+    reporter.addDatedEntries(reporter.TestDatedReport, branch, entries,
+        path.TESTS)
 
     # Create and define profile
     p = PastProfile()
     p.define(datetimes[1], datetimes[-1])
 
-    # Load entries
+    # Load and decouple entries
     p.load(src = path.TESTS)
+    p.decouple()
