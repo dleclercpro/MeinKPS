@@ -31,6 +31,11 @@ from Profiles import profile, past
 
 
 
+# TEST MODULES
+import test_reporter
+
+
+
 # CLASSES
 class Profile(profile.Profile):
 
@@ -46,7 +51,7 @@ class PastProfile(past.PastProfile):
 
         super(PastProfile, self).__init__()
 
-        self.reportType = reporter.TestDatedReport
+        self.reportType = test_reporter.DatedReport
         self.branch = []
 
 
@@ -148,7 +153,7 @@ def test_cut():
     branch = []
 
     # Create dated entries
-    reporter.addDatedEntries(reporter.TestDatedReport, branch, entries,
+    reporter.addDatedEntries(test_reporter.DatedReport, branch, entries,
         path.TESTS)
 
     # Create and define profile
