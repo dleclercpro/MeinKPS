@@ -188,6 +188,9 @@ class Stick(object):
         # Re-switch LED
         self.commands["LED Toggle"].run()
 
+        # Wait
+        time.sleep(1)
+
 
 
     def warn(self):
@@ -203,7 +206,11 @@ class Stick(object):
         self.commands["LED Off"].run()
 
         # Warn 10 times
-        for _ in range(N_WARNINGS):
+        for i in range(N_WARNINGS):
+
+            # Info
+            Logger.debug("Stick LED warning: " + str(i + 1) + "/" +
+                str(N_WARNINGS))
             
             # Flash LED
             self.flash()
