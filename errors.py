@@ -67,9 +67,11 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Define error logging level and info. This method has to be
+            implemented for each error.
         """
 
-        pass
+        raise NotImplementedError
 
 
 
