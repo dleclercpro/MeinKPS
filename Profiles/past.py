@@ -79,7 +79,7 @@ class PastProfile(Profile):
 
 
 
-    def load(self, strict = False, src = path.REPORTS):
+    def load(self, src = path.REPORTS, strict = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

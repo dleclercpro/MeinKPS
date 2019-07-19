@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 # USER LIBRARIES
 import lib
 import logger
+import path
 
 
 
@@ -112,7 +113,7 @@ class Profile(object):
 
 
 
-    def build(self, start, end):
+    def build(self, start, end, src = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -132,7 +133,7 @@ class Profile(object):
         self.define(start, end)
 
         # Load data
-        self.load()
+        self.load(src)
 
         # Decouple profile components
         self.decouple()
@@ -178,7 +179,7 @@ class Profile(object):
 
 
 
-    def load(self):
+    def load(self, src = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -204,8 +205,10 @@ class Profile(object):
         # Info
         Logger.debug("Decoupling components of: " + repr(self))
 
-        # Decouple components
-        [self.T, self.y] = lib.unzip(sorted(self.data.items()))
+        # Decouple data, convert string times to datetimes and sort them
+        # according to time
+        [self.T, self.y] = lib.unzip([(lib.formatTime(T), y) for (T, y) in
+            sorted(self.data.items())])
 
 
 
