@@ -161,24 +161,6 @@ class RadioRegisterTXFail(RadioError):
 
 
 
-class BadFrequencies(RadioError):
-
-    def prepare(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error logging level
-        self.level = "CRITICAL"
-
-        # Define error info
-        self.info = "Bad frequencies to scan over."
-
-
-
 class UnsuccessfulRadioCommand(RadioError):
 
     def prepare(self):
