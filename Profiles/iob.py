@@ -180,5 +180,5 @@ class FutureIOB(IOB, FutureProfile):
         Logger.debug("Adding current IOB to: " + repr(self.reportType))
 
         # Add entry
-        reporter.addDatedEntries(self.reportType, self.branch,
+        reporter.setDatedEntries(self.reportType, self.branch,
             { self.T[0]: round(self.y[0], 2) })

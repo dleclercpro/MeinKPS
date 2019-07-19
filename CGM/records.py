@@ -304,7 +304,7 @@ class BGRecord(Record):
         Logger.debug("Adding BG records to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, [], self.filter())
+        reporter.setDatedEntries(self.reportType, [], self.filter())
 
 
 
@@ -375,7 +375,7 @@ class SensorRecord(Record):
         Logger.debug("Adding sensor statuses to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, ["CGM", "Sensor Statuses"],
+        reporter.setDatedEntries(self.reportType, ["CGM", "Sensor Statuses"],
             dict(zip(self.t, self.values)))
 
 
@@ -436,7 +436,7 @@ class CalibrationRecord(Record):
         Logger.debug("Adding sensor calibrations to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, ["CGM", "Calibrations"],
+        reporter.setDatedEntries(self.reportType, ["CGM", "Calibrations"],
             dict(zip(self.t, self.values)))
 
 

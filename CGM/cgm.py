@@ -413,7 +413,7 @@ class Battery(object):
         Logger.debug("Storing battery level to: " + repr(self.reportType))
 
         # Add entry
-        reporter.addDatedEntries(self.reportType, ["CGM", "Battery Levels"],
+        reporter.setDatedEntries(self.reportType, ["CGM", "Battery Levels"],
             { self.t: self.level })
 
 
