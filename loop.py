@@ -25,6 +25,8 @@
 # LIBRARIES
 import datetime
 import traceback
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 
@@ -68,8 +70,9 @@ class Loop(object):
         self.t1 = None
 
         # Give the loop devices
+        self.stick = stick.Stick()
         self.cgm = cgm.CGM()
-        self.pump = pump.Pump(stick.Stick())
+        self.pump = pump.Pump(self.stick)
 
         # Get DIA
         self.DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
@@ -120,6 +123,51 @@ class Loop(object):
 
 
 
+    def startDevices(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STARTDEVICES
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Initialize devices so they're ready to take commands.
+        """
+
+        # Start stick
+        self.stick.start()
+
+        # Turn stick's LED on to signify active looping
+        self.stick.switchLED("ON")
+
+        # Start CGM
+        self.cgm.start()
+
+        # Start pump
+        self.pump.start()
+
+
+
+    def stopDevices(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STOPDEVICES
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Stop pump
+        self.pump.stop()
+
+        # Stop CGM
+        self.cgm.stop()
+
+        # Turn stick's LED off
+        self.stick.switchLED("OFF")
+
+        # Stop stick
+        self.stick.stop()
+
+
+
     def start(self):
 
         """
@@ -140,11 +188,8 @@ class Loop(object):
         # Update loop iterations
         self.report.increment(["Status", "N"])
 
-        # Start CGM
-        self.cgm.start()
-
-        # Start pump
-        self.pump.start()
+        # Start devices
+        self.startDevices()
 
 
 
@@ -156,8 +201,8 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Info
-        Logger.info("Ended loop.")
+        # Stop devices
+        self.stopDevices()
 
         # Define ending time
         self.t1 = datetime.datetime.now()
@@ -168,11 +213,8 @@ class Loop(object):
         # Update loop infos
         self.report.set(dt, ["Status", "Duration"], True)
 
-        # Stop CGM
-        self.cgm.stop()
-
-        # Stop pump
-        self.pump.stop()
+        # Info
+        Logger.info("Ended loop.")
 
 
 
@@ -409,8 +451,7 @@ class Loop(object):
             print "r: " + str(r)
             print
 
-        import numpy as np
-        import matplotlib.pyplot as plt
+        # Plot
         print "Mean ddBG: " + fmt.BG(np.mean(ddBGs))
         lib.initPlot()
         ax = plt.subplot(1, 1, 1)
@@ -444,22 +485,16 @@ class Loop(object):
             # Get current TB
             self.pump.TB.read()
 
-            # If TB currently set
+            # If TB currently set: cancel it
             if self.pump.TB.value["Duration"] != 0:
-
-                # Cancel it
                 self.do(self.pump.TB.cancel, ["Pump"], "TB")
 
             # Otherwise
             else:
-
-                # Exit
                 return
 
-        # Otherwise, enact recommendation
+        # Otherwise, enact TB recommendation
         else:
-
-            # Enact TB
             self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
 
         # Re-update history

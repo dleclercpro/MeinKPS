@@ -182,9 +182,8 @@ class CGM(object):
         if self.usb is None:
             raise errors.NoCGM
 
-        # Otherwise
-        else:
-            Logger.debug( "CGM found.")
+        # Info
+        Logger.debug( "CGM found.")
 
 
 

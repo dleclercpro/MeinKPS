@@ -133,8 +133,9 @@ class Pump(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start stick
-        self.stick.start(self)
+        # Tune stick to optimized frequency to establish further connections
+        # with pump
+        self.stick.tuneOptimizedFrequency(self)
 
         # Power pump's radio transmitter if necessary
         self.power.verify()
@@ -149,8 +150,8 @@ class Pump(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Stop stick
-        self.stick.stop()
+        # Nothing to do
+        pass
 
 
 
@@ -1336,8 +1337,14 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Instanciate stick
+    _stick = stick.Stick()
+
+    # Start it
+    _stick.start()
+
     # Instanciate pump
-    pump = Pump(stick.Stick())
+    pump = Pump(_stick)
 
     # Start it
     pump.start()
