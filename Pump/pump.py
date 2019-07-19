@@ -508,13 +508,13 @@ class Status(PumpComponent):
 
         # Check if pump is ready to take action
         if not self.value["Normal"]:
-            raise errors.StatusAbnormal
+            raise errors.PumpStatusAbnormal
 
         elif self.value["Bolusing"]:
-            raise errors.StatusBolusing
+            raise errors.PumpStatusBolusing
 
         elif self.value["Suspended"]:
-            raise errors.StatusSuspended
+            raise errors.PumpStatusSuspended
 
         # Info
         Logger.info("Pump's status allows desired course of action. " +

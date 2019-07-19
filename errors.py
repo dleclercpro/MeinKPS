@@ -360,7 +360,7 @@ class BadTBDuration(PumpError):
 
 
 
-class StatusAbnormal(PumpError):
+class PumpStatusAbnormal(PumpError):
 
     def prepare(self):
 
@@ -375,7 +375,7 @@ class StatusAbnormal(PumpError):
 
 
 
-class StatusBolusing(PumpError):
+class PumpStatusBolusing(PumpError):
 
     def prepare(self):
 
@@ -390,7 +390,7 @@ class StatusBolusing(PumpError):
 
 
 
-class StatusSuspended(PumpError):
+class PumpStatusSuspended(PumpError):
 
     def prepare(self):
 
