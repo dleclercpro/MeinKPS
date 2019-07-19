@@ -35,7 +35,7 @@ import reporter
 
 
 # Define instances
-Logger = logger.Logger("uploader.py", "DEBUG")
+Logger = logger.Logger("uploader.py")
 
 
 

@@ -41,7 +41,7 @@ LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 # CLASSES
 class Logger(object):
 
-    def __init__(self, name, report = "loop.log", level = "INFO"):
+    def __init__(self, name, report = "loop.log", level = "DEBUG"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

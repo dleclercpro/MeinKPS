@@ -1085,8 +1085,7 @@ REPORTS = {
 }
 
 # Load them
-for name, report in REPORTS.items():
-    Logger.info("Loading report: " + name)
+for report in REPORTS.values():
     report.load(False)
 
 
