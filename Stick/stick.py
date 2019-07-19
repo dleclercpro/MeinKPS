@@ -51,6 +51,11 @@ Logger = logger.Logger("Stick/stick.py")
 
 
 
+# CONSTANTS
+N_WARNINGS = 10
+
+
+
 # CLASSES
 class Stick(object):
 
@@ -144,15 +149,11 @@ class Stick(object):
 
         # If ping required
         if ping:
-
-            # Ping it
             self.ping()
 
-        # If pump given
+        # If pump given: check if frequency optimizing necessary
         if pump is not None:
-
-            # Check if frequency optimizing necessary
-            self.check(pump)
+            self.tuneOptimizedFrequency(pump)
 
 
 
@@ -186,6 +187,26 @@ class Stick(object):
 
         # Re-switch LED
         self.commands["LED Toggle"].run()
+
+
+
+    def warn(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            WARN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Warn user with the stick's LED.
+        """
+
+        # Turn LED off first
+        self.commands["LED Off"].run()
+
+        # Warn 10 times
+        for _ in range(N_WARNINGS):
+            
+            # Flash LED
+            self.flash()
 
 
 
@@ -368,52 +389,73 @@ class Stick(object):
 
 
 
-    def localize(self, F1, F2):
+    def tuneOptimizedFrequency(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LOCALIZE
+            TUNEOPTIMIZEDFREQUENCY
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Check if frequency optimizing required.
+        """
+
+        # Get current formatted time
+        now = datetime.datetime.now()
+
+        # Get last frequency optimization
+        entry = self.report.get(["Frequency"])
+
+        # Entry exists
+        if entry:
+
+            # Destructure frequency entry
+            [f, t] = entry
+
+            # Convert time to datetime object
+            t = lib.formatTime(t)
+
+        # No frequency stored or stick not tuned today
+        if entry is None or now.day != t.day:
+
+            # Scan for best frequency
+            f = self.scan(pump)
+
+        # Tune radio
+        self.tune(f)
+
+
+
+    def checkFrequencyRange(self, F1, F2):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CHECKFREQUENCYRANGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Test if given frequency range fits within region frequencies
             definition.
         """
 
-        # No frequencies given
-        if F1 is None and F2 is None:
+        # Check if frequency range valid
+        if not F1 < F2:
+            raise ValueError("Invalid radio frequency range: " +
+                "[" + str(F1) + ", " + str(F2) + "] MHz")
 
-            # Default region: NA
-            region = "NA"
+        # Initialize region
+        region = None
 
-            # Assign frequencies
-            [F1, F2] = self.f["Regions"][region]["Range"]
+        # Go through regions and corresponding frequency ranges
+        for reg, f in self.f["Regions"].items():
 
-        # Otherwise, test them
-        else:
+            # Check if frequency matches a specific region
+            if F1 >= min(f["Range"]) and F2 <= max(f["Range"]):
+                
+                # Store region
+                region = reg
+                break
 
-            # Go through locales
-            for region, freq in self.f["Regions"].iteritems():
-
-                # Check for correct frequencies
-                if (F1 >= min(freq["Range"]) and
-                    F2 <= max(freq["Range"])):
-
-                    # Exit
-                    break
-
-                # Reset region
-                region = None
-
-            # Bad frequencies
-            if region is None:
-
-                # Raise error
-                raise errors.BadFrequencies()
-
-        # Info
-        Logger.debug("Scanning for a " + region + " pump...")
-
-        # Return frequencies
-        return F1, F2
+        # No region found
+        if region is None:
+            raise ValueError("RF range to scan for does not correspond to " +
+                "any known region: " + "[" + str(F1) + ", " + str(F2) + "]")
 
 
 
@@ -427,8 +469,17 @@ class Stick(object):
             average RSSI) to tune radio in order to communicate with pump.
         """
 
-        # Test frequency range
-        F1, F2 = self.localize(F1, F2)
+        # No frequencies given: default to NA region
+        if F1 is None and F2 is None:
+            [F1, F2] = self.f["Regions"]["NA"]["Range"]
+
+        # Otherwise: test frequency range
+        else:
+            self.checkFrequencyRange(F1, F2)
+
+        # Info
+        Logger.debug("Scanning for pump RFs between: " +
+            "[" + str(F1) + ", " + str(F2) + "] MHz")
 
         # Initialize RSSI readings
         RSSIs = {}
@@ -476,10 +527,10 @@ class Stick(object):
         if not all(f == -99 for f in RSSIs.values()):
 
             # Optimize frequency
-            f = self.optimize(RSSIs)
+            f = self.getOptimizedFrequency(RSSIs)
 
             # Store it
-            self.store(f)
+            self.storeOptimizedFrequency(f)
 
         # Otherwise
         else:
@@ -492,11 +543,11 @@ class Stick(object):
 
 
 
-    def optimize(self, RSSIs):
+    def getOptimizedFrequency(self, RSSIs):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            OPTIMIZE
+            GETOPTIMIZEDFREQUENCY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Find out which frequency corresponds to best sample average RSSI.
         """
@@ -522,11 +573,11 @@ class Stick(object):
 
 
 
-    def store(self, f):
+    def storeOptimizedFrequency(self, f):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
+            STOREOPTIMIZEDFREQUENCY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Store optimized frequency.
         """
@@ -540,41 +591,6 @@ class Stick(object):
 
         # Add entry
         self.report.set([f, now], ["Frequency"], True)
-
-
-
-    def check(self, pump):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CHECK
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Check if frequency optimizing required.
-        """
-
-        # Get current formatted time
-        now = datetime.datetime.now()
-
-        # Get last frequency optimization
-        entry = self.report.get(["Frequency"])
-
-        # Entry exists
-        if entry:
-
-            # Destructure frequency entry
-            [f, t] = entry
-
-            # Convert time to datetime object
-            t = lib.formatTime(t)
-
-        # No frequency stored or stick not tuned today
-        if entry is None or now.day != t.day:
-
-            # Scan for best frequency
-            f = self.scan(pump)
-
-        # Tune radio
-        self.tune(f)
 
 
 
@@ -625,10 +641,13 @@ def main():
     stick.start()
 
     # Tune in to  default NA pump frequency
-    stick.tune(stick.f["Regions"]["NA"]["Default"])
+    #stick.tune(stick.f["Regions"]["NA"]["Default"])
+
+    # Warn user with LED
+    stick.warn()
 
     # Listen to radio
-    stick.listen()
+    #stick.listen()
 
 
 
