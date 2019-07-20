@@ -133,8 +133,9 @@ class Pump(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start stick
-        self.stick.start(self)
+        # Tune stick to optimized frequency to establish further connections
+        # with pump
+        self.stick.tuneOptimizedFrequency(self)
 
         # Power pump's radio transmitter if necessary
         self.power.verify()
@@ -149,8 +150,7 @@ class Pump(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Stop stick
-        self.stick.stop()
+        pass
 
 
 
@@ -508,13 +508,13 @@ class Status(PumpComponent):
 
         # Check if pump is ready to take action
         if not self.value["Normal"]:
-            raise errors.StatusAbnormal
+            raise errors.PumpStatusAbnormal
 
         elif self.value["Bolusing"]:
-            raise errors.StatusBolusing
+            raise errors.PumpStatusBolusing
 
         elif self.value["Suspended"]:
-            raise errors.StatusSuspended
+            raise errors.PumpStatusSuspended
 
         # Info
         Logger.info("Pump's status allows desired course of action. " +
@@ -1336,8 +1336,14 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
+    # Instanciate stick
+    _stick = stick.Stick()
+
+    # Start it
+    _stick.start()
+
     # Instanciate pump
-    pump = Pump(stick.Stick())
+    pump = Pump(_stick)
 
     # Start it
     pump.start()

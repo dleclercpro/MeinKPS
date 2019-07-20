@@ -182,9 +182,8 @@ class CGM(object):
         if self.usb is None:
             raise errors.NoCGM
 
-        # Otherwise
-        else:
-            Logger.debug( "CGM found.")
+        # Info
+        Logger.debug( "CGM found.")
 
 
 
@@ -414,7 +413,7 @@ class Battery(object):
         Logger.debug("Storing battery level to: " + repr(self.reportType))
 
         # Add entry
-        reporter.addDatedEntries(self.reportType, ["CGM", "Battery Levels"],
+        reporter.setDatedEntries(self.reportType, ["CGM", "Battery Levels"],
             { self.t: self.level })
 
 

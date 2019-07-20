@@ -130,7 +130,7 @@ class Stick(object):
 
 
 
-    def start(self, pump = None, ping = True):
+    def start(self, ping = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,16 +145,9 @@ class Stick(object):
         # Configure it
         self.configure()
 
-        # Turn LED on
-        self.commands["LED On"].run()
-
         # If ping required
         if ping:
             self.ping()
-
-        # If pump given: check if frequency optimizing necessary
-        if pump is not None:
-            self.tuneOptimizedFrequency(pump)
 
 
 
@@ -166,8 +159,30 @@ class Stick(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Turn LED off
-        self.commands["LED Off"].run()
+        pass
+
+
+
+    def switchLED(self, mode):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SWITCHLED
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Shortcut to private command method turning LED on/off.
+        """
+
+        # Turn on LED
+        if mode == "ON":
+            self.commands["LED On"].run()
+
+        # Turn off LED
+        elif mode == "OFF":
+            self.commands["LED Off"].run()
+
+        # Otherwise
+        else:
+            raise ValueError("Incorrect LED mode.")
 
 
 
@@ -235,9 +250,8 @@ class Stick(object):
         if self.usb is None:
             raise errors.NoStick
 
-        # Otherwise
-        else:
-            Logger.debug("Stick found.")
+        # Info
+        Logger.debug("Stick found.")
 
 
 

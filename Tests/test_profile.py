@@ -56,6 +56,22 @@ class PastProfile(past.PastProfile):
 
 
 
+# FIXTURES
+@pytest.fixture
+def setup_and_teardown():
+
+    """
+    Setup and teardown for tests which store reports.
+    """
+
+    path.TESTS.touch()
+
+    yield
+
+    path.TESTS.delete()
+
+
+
 # TESTS
 def test_define_start_end():
 
@@ -96,12 +112,8 @@ def test_missing_load():
     Basic implementation of Profile object misses load method.
     """
 
-    start = datetime.datetime(1990, 1, 1, 0, 0, 0)
-    end = datetime.datetime(1990, 1, 2, 0, 0, 0)
-
     # Create and define profile
     p = Profile()
-    p.define(start, end)
 
     # Try loading with unimplemented method
     with pytest.raises(NotImplementedError):
@@ -131,7 +143,34 @@ def test_wrong_time_order():
 
 
 
-def test_cut():
+def test_build(setup_and_teardown):
+
+    """
+    Build a past profile: instanciate it, define it, load its data and decouple
+    it.
+    """
+
+    datetimes = [datetime.datetime(1990, 12, 1, 0, 0, 0),
+                 datetime.datetime(1990, 12, 1, 0, 30, 0),
+                 datetime.datetime(1990, 12, 1, 1, 0, 0)]
+
+    values = [6.2, 6.0, 5.8]
+
+    entries = dict(zip(datetimes, values))
+
+    branch = []
+
+    # Create dated entries
+    reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
+        path.TESTS)
+
+    # Instanciate and build profile
+    p = PastProfile()
+    p.build(datetimes[1], datetimes[-1], path.TESTS)
+
+
+
+def test_cut(setup_and_teardown):
 
     """
     ...
@@ -153,13 +192,13 @@ def test_cut():
     branch = []
 
     # Create dated entries
-    reporter.addDatedEntries(test_reporter.DatedReport, branch, entries,
+    reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
         path.TESTS)
 
-    # Create and define profile
+    # Instanciate and build profile
     p = PastProfile()
-    p.define(datetimes[1], datetimes[-1])
+    p.build(datetimes[1], datetimes[-1], path.TESTS)
 
-    # Load and decouple entries
-    p.load(src = path.TESTS)
-    p.decouple()
+    # Cut it
+    p.cut()
+    assert True

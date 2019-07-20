@@ -898,7 +898,7 @@ class ReadBattery(GetCommand):
         now = datetime.datetime.now()
 
         # Add entry
-        reporter.addDatedEntries(self.reportType, ["Pump", "Battery Levels"],
+        reporter.setDatedEntries(self.reportType, ["Pump", "Battery Levels"],
             { now: self.response })
 
 
@@ -956,7 +956,7 @@ class ReadReservoir(GetCommand):
         now = datetime.datetime.now()
 
         # Add entry
-        reporter.addDatedEntries(self.reportType, ["Pump", "Reservoir Levels"],
+        reporter.setDatedEntries(self.reportType, ["Pump", "Reservoir Levels"],
             { now: self.response })
 
 

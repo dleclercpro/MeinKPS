@@ -365,7 +365,7 @@ def test_get_dated_entries(setup_and_teardown):
 
     # Add dated entries to corresponding reports (the latter will be created
     # if needed)
-    reporter.addDatedEntries(DatedReport, branch, entries,
+    reporter.setDatedEntries(DatedReport, branch, entries,
         path.TESTS)
 
     # Try and find entries in given dated reports
@@ -395,7 +395,7 @@ def test_add_dated_entries(setup_and_teardown):
 
     # Add dated entries to corresponding reports (the latter will be created
     # if needed)
-    reporter.addDatedEntries(DatedReport, branch, entries,
+    reporter.setDatedEntries(DatedReport, branch, entries,
         path.TESTS)
 
     for d in datetimes:

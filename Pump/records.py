@@ -299,7 +299,7 @@ class SuspendRecord(Record):
         Logger.debug("Adding suspend time to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, ["Suspend/Resume"],
+        reporter.setDatedEntries(self.reportType, ["Suspend/Resume"],
             dict(zip(self.t, self.values)))
 
 
@@ -359,7 +359,7 @@ class ResumeRecord(Record):
         Logger.debug("Adding resume time to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, ["Suspend/Resume"],
+        reporter.setDatedEntries(self.reportType, ["Suspend/Resume"],
             dict(zip(self.t, self.values)))
 
 
@@ -454,7 +454,7 @@ class TBRecord(Record):
         Logger.debug("Adding TBs to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, ["Temporary Basals"],
+        reporter.setDatedEntries(self.reportType, ["Temporary Basals"],
             dict(zip(self.t, self.values)))
 
 
@@ -532,7 +532,7 @@ class BolusRecord(Record):
         Logger.debug("Adding boluses to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, ["Boluses"],
+        reporter.setDatedEntries(self.reportType, ["Boluses"],
             dict(zip(self.t, self.values)))
 
 
@@ -674,7 +674,7 @@ class CarbsRecord(Record):
         Logger.debug("Adding carbs to: " + repr(self.reportType))
 
         # Add entries
-        reporter.addDatedEntries(self.reportType, ["Carbs"],
+        reporter.setDatedEntries(self.reportType, ["Carbs"],
             dict(zip(self.t, self.values)))
 
 

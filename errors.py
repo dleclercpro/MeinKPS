@@ -68,9 +68,11 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Define error logging level and info. This method has to be
+            implemented for each error.
         """
 
-        pass
+        raise NotImplementedError
 
 
 
@@ -377,7 +379,7 @@ class BadTBDuration(PumpError):
 
 
 
-class StatusAbnormal(PumpError):
+class PumpStatusAbnormal(PumpError):
 
     def prepare(self):
 
@@ -392,7 +394,7 @@ class StatusAbnormal(PumpError):
 
 
 
-class StatusBolusing(PumpError):
+class PumpStatusBolusing(PumpError):
 
     def prepare(self):
 
@@ -407,7 +409,7 @@ class StatusBolusing(PumpError):
 
 
 
-class StatusSuspended(PumpError):
+class PumpStatusSuspended(PumpError):
 
     def prepare(self):
 

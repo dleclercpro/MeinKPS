@@ -1035,11 +1035,11 @@ def getDatedEntries(reportType, dates, branch, strict = False,
 
 
 
-def addDatedEntries(reportType, branch, entries, src = path.REPORTS):
+def setDatedEntries(reportType, branch, entries, src = path.REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ADDDATEDENTRIES
+        setDatedEntries
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
