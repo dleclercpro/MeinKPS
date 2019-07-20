@@ -281,7 +281,7 @@ class MissingPumpPacketBits(BadPumpPacket):
         """
 
         # Define error logging level
-        self.level = "DEBUG"
+        self.level = "CRITICAL"
 
         # Define error info
         self.info = ("Impossible to encode number of bytes which isn't a " +
