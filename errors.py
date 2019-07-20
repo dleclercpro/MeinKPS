@@ -141,6 +141,9 @@ class RadioError(StickError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error logging level
+        self.level = "DEBUG"
+
         # Define error info
         self.info = self.args[0]
 
@@ -190,9 +193,6 @@ class UnsuccessfulRadioCommand(RadioError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Define error logging level
-        self.level = "WARNING"
-
         # Define error info
         self.info = "Radio command was unsuccessful."
 
@@ -210,7 +210,7 @@ class BadPumpPacket(RadioError):
         """
 
         # Define error logging level
-        self.level = "WARNING"
+        self.level = "DEBUG"
 
 
 
@@ -223,6 +223,9 @@ class UnknownPacketRecipient(BadPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error logging level
+        self.level = "WARNING"
 
         # Define error info
         self.info = "Unknown packet."
@@ -238,6 +241,9 @@ class UnmatchPumpPacketBits(BadPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error logging level
+        self.level = "DEBUG"
 
         # Define error info
         self.info = ("Unmatched bits before end-of-packet (corrupted " +
@@ -255,6 +261,9 @@ class NotEnoughPumpPacketBytes(BadPumpPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error logging level
+        self.level = "DEBUG"
+
         # Define error info
         self.info = ("Not enough bytes received. Expected: " + self.args[0] +
                      ". Received: " + self.args[1] + ".")
@@ -271,6 +280,9 @@ class MissingPumpPacketBits(BadPumpPacket):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Define error logging level
+        self.level = "DEBUG"
+
         # Define error info
         self.info = ("Impossible to encode number of bytes which isn't a " +
                      "multiple of 8: " + self.args[0])
@@ -286,6 +298,9 @@ class BadPumpPacketEnding(BadPumpPacket):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error logging level
+        self.level = "DEBUG"
 
         # Define error info
         self.info = ("Last bits do not correspond to expectation (0101): " +
@@ -322,6 +337,9 @@ class BadPumpRecord(PumpError):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error logging level
+        self.level = "DEBUG"
 
         # Define error info
         self.info = ("Invalid pump history record.")
@@ -468,6 +486,9 @@ class MissingBranch(ReporterError):
             PREPARE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Define error logging level
+        self.level = "DEBUG"
 
         # Define error info
         self.info = self.args[0] + " has no branch: " + self.args[1]

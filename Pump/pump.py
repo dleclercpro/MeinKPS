@@ -1349,19 +1349,19 @@ def main():
     pump.start()
 
     # Read time
-    pump.time.read()
+    #pump.time.read()
 
     # Read model
-    pump.model.read()
+    #pump.model.read()
 
     # Read firmware version
-    pump.firmware.read()
+    #pump.firmware.read()
 
     # Read battery level
-    pump.battery.read()
+    #pump.battery.read()
 
     # Read remaining amount of insulin
-    pump.reservoir.read()
+    #pump.reservoir.read()
 
     # Push buttons
     #pump.buttons.push("EASY")
@@ -1371,43 +1371,43 @@ def main():
     #pump.buttons.push("DOWN")
 
     # Read status
-    pump.status.read()
+    #pump.status.read()
     #pump.status.verify()
     #pump.status.suspend()
     #pump.status.resume()
 
     # Read settings
-    pump.settings.read()
+    #pump.settings.read()
     #pump.settings.verify()
 
     # Read set units
-    pump.units["BG"].read()
-    pump.units["Carbs"].read()
-    pump.units["TB"].read()
+    #pump.units["BG"].read()
+    #pump.units["Carbs"].read()
+    #pump.units["TB"].read()
 
     # Set TB units
     #pump.units["TB"].set("U/h")
     #pump.units["TB"].set("%")
 
     # Read BG targets
-    pump.BGTargets.read()
+    #pump.BGTargets.read()
 
     # Read insulin sensitivity factors
-    pump.ISF.read()
+    #pump.ISF.read()
 
     # Read carb sensitivity factors
-    pump.CSF.read()
+    #pump.CSF.read()
 
     # Read basal profiles
-    pump.basal.read("Standard")
-    pump.basal.read("A")
-    pump.basal.read("B")
+    #pump.basal.read("Standard")
+    #pump.basal.read("A")
+    #pump.basal.read("B")
 
     # Read daily totals
-    pump.dailyTotals.read()
+    #pump.dailyTotals.read()
 
     # Read history
-    #pump.history.read(2)
+    pump.history.read(2)
 
     # Enact bolus
     #pump.bolus.deliver(0.2)

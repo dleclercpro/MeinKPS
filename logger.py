@@ -35,13 +35,14 @@ import path
 
 # CONSTANTS
 LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+DEFAULT_LEVEL = "INFO"
 
 
 
 # CLASSES
 class Logger(object):
 
-    def __init__(self, name, report = "loop.log", level = "DEBUG"):
+    def __init__(self, name, report = "loop.log", level = DEFAULT_LEVEL):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

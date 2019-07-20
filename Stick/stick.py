@@ -607,8 +607,9 @@ class Stick(object):
         # Get current formatted time
         now = lib.formatTime(datetime.datetime.now())
 
-        # Add entry
+        # Add entry to report and store it
         self.report.set([f, now], ["Frequency"], True)
+        self.report.store()
 
 
 
