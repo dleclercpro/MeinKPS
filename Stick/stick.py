@@ -387,7 +387,7 @@ class Stick(object):
         """
 
         # Info
-        Logger.info("Tuning radio to: " + str(f) + " MHz")
+        Logger.info("Tuning radio to: " + fmt.frequency(f))
 
         # Convert frequency to corresponding value (according to datasheet)
         f = int(round(f * (2 ** 16) / self.f["Reference"]))
@@ -584,7 +584,7 @@ class Stick(object):
         f = round(lib.getMaxMiddle(x, y, 5), 3)
 
         # Info
-        Logger.info("Optimized frequency (MHz): " + str(f))
+        Logger.info("Optimized frequency: " + fmt.frequency(f))
 
         # Return best frequency
         return f

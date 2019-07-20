@@ -1407,7 +1407,7 @@ def main():
     pump.dailyTotals.read()
 
     # Read history
-    pump.history.read(2)
+    #pump.history.read(2)
 
     # Enact bolus
     #pump.bolus.deliver(0.2)

@@ -48,5 +48,8 @@ def IOB(x):
 def COB(x):
     return str(int(round(x))) + " g"
 
+def frequency(f, units = "MHz"):
+    return str(round(f, 3)) + " " + units
+
 def frequencyRange(f1, f2, units = "MHz"):
     return "[" + str(round(f1, 3)) + ", " + str(round(f2, 3)) + "] " + units
