@@ -209,7 +209,7 @@ class Stick(object):
 
 
 
-    def warn(self):
+    def warn(self, n = N_WARNINGS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -222,11 +222,10 @@ class Stick(object):
         self.commands["LED Off"].run()
 
         # Warn 10 times
-        for i in range(N_WARNINGS):
+        for i in range(n):
 
             # Info
-            Logger.debug("Stick LED warning: " + str(i + 1) + "/" +
-                str(N_WARNINGS))
+            Logger.debug("Stick LED warning: " + str(i + 1) + "/" + str(n))
             
             # Flash LED
             self.flash()
@@ -660,10 +659,10 @@ def main():
     stick.start()
 
     # Tune in to  default NA pump frequency
-    #stick.tune(stick.f["Regions"]["NA"]["Default"])
+    stick.tune(stick.f["Regions"]["NA"]["Default"])
 
     # Warn user with LED
-    stick.warn()
+    stick.warn(3)
 
     # Listen to radio
     #stick.listen()
