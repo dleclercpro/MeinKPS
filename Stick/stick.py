@@ -37,6 +37,7 @@ import numpy as np
 
 # USER LIBRARIES
 import lib
+import fmt
 import logger
 import errors
 import path
@@ -431,7 +432,7 @@ class Stick(object):
 
 
 
-    def checkFrequencyRange(self, F1, F2):
+    def checkFrequencyRange(self, f1, f2):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -441,28 +442,25 @@ class Stick(object):
             definition.
         """
 
-        # Check if frequency range valid
-        if not F1 < F2:
-            raise ValueError("Invalid radio frequency range: " +
-                "[" + str(F1) + ", " + str(F2) + "] MHz")
+        # Check if frequencies are numbers
+        if not (lib.isRealNumber(f1) and lib.isRealNumber(f2)):
+            raise TypeError("Frequencies have to be numbers: [" + str(f1) +
+                ", " + str(f2) + "]")
 
-        # Initialize region
-        region = None
+        # Check if frequency range value is valid
+        if not f1 < f2:
+            raise ValueError("Invalid radio frequency range: " +
+                fmt.frequencyRange(f1, f2))
 
         # Go through regions and corresponding frequency ranges
-        for reg, f in self.f["Regions"].items():
+        for f in self.f["Regions"].values():
 
             # Check if frequency matches a specific region
-            if F1 >= min(f["Range"]) and F2 <= max(f["Range"]):
-                
-                # Store region
-                region = reg
-                break
+            if f1 >= min(f["Range"]) and f2 <= max(f["Range"]):
+                return
 
         # No region found
-        if region is None:
-            raise ValueError("RF range to scan for does not correspond to " +
-                "any known region: " + "[" + str(F1) + ", " + str(F2) + "]")
+        raise errors.UnknownFrequencyRange(f1, f2)
 
 
 
@@ -486,7 +484,7 @@ class Stick(object):
 
         # Info
         Logger.debug("Scanning for pump RFs between: " +
-            "[" + str(F1) + ", " + str(F2) + "] MHz")
+            fmt.frequencyRange(F1, F2))
 
         # Initialize RSSI readings
         RSSIs = {}

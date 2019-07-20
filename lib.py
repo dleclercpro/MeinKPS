@@ -32,6 +32,7 @@ import math
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import sys
 
 
 
@@ -845,6 +846,36 @@ def newComputeCRC16(x):
 
     # Return CRC
     return CRC
+
+
+
+def isNumber(x):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISNUMBER
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Python 2
+    if sys.version_info[0] < 3:
+        return (isinstance(x, (int, long, float, complex)) and
+            not isinstance(x, bool))
+
+    # Python 3
+    return isinstance(x, (int, float, complex)) and not isinstance(x, bool)
+
+
+
+def isRealNumber(x):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISREALNUMBER
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+    
+    return isNumber(x) and not isinstance(x, complex)
 
 
 

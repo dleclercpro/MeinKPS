@@ -24,6 +24,7 @@
 """
 
 # USER LIBRARIES
+import fmt
 import logger
 
 
@@ -140,6 +141,22 @@ class RadioError(StickError):
 
         # Define error info
         self.info = self.args[0]
+
+
+
+class UnknownFrequencyRange(StickError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = ("RF range to scan for does not correspond to any known " +
+            "region: " + fmt.frequencyRange(self.args[0], self.args[1]))
 
 
 
