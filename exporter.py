@@ -67,7 +67,7 @@ class Exporter(object):
         self.data = {
             "bgs": None,
             "pump": None,
-            "net": net.Net(),
+            "net": None,
             "boluses": None,
             "iobs": None,
             "history": None,
@@ -91,6 +91,17 @@ class Exporter(object):
         # Define dates
         today = self.now.date()
         yesterday = today - datetime.timedelta(days = 1)
+        then = self.now - datetime.timedelta(hours = 24)
+
+        # Build net insulin profile for last 24 hours
+        _net = net.Net()
+        _net.build(then, self.now,
+            suspend.Suspend(), resume.Resume(), basal.Basal(), tb.TB())
+
+        # Format and store its data
+        self.data["net"] = dict(zip(
+            [lib.formatTime(T) for T in _net.T],
+            [round(y, 2) for y in _net.y]))
 
         # Get pump data
         self.data["pump"] = reporter.REPORTS["pump"].get()
@@ -174,7 +185,7 @@ class Exporter(object):
 
 
 
-    def run(self, now, hours = 24):
+    def run(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -184,17 +195,6 @@ class Exporter(object):
 
         # Store current time
         self.now = now
-
-        # Compute past time
-        past = now - datetime.timedelta(hours = hours)
-
-        # Build it for last 24 hours
-        self.data["net"].build(past, self.now,
-            suspend.Suspend(), resume.Resume(), basal.Basal(), tb.TB())
-
-        # Format net profile
-        self.net = dict(zip([lib.formatTime(T) for T in self.data["net"].T],
-                            [round(y, 2) for y in self.data["net"].y]))
 
         # Get report data
         self.get()

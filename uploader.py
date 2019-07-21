@@ -53,6 +53,10 @@ class Uploader(object):
         # Define report
         self.report = reporter.REPORTS["ftp"]
 
+        # Test if report is empty
+        if not self.report.isValid():
+            raise IOError("Invalid FTP report.")
+
 
 
     def upload(self, ftp, path, ext = None):
@@ -150,6 +154,12 @@ def main():
         MAIN
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
+
+    # Define uploader
+    uploader = Uploader()
+
+    # Run it
+    uploader.run()
 
 
 

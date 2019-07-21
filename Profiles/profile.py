@@ -208,8 +208,8 @@ class Profile(object):
         # Info
         Logger.debug("Decoupling components of: " + repr(self))
 
-        # Decouple data, convert string times to datetimes and sort them
-        # according to time
+        # Decouple data, convert string times to datetimes, and sort them in
+        # chronological order
         [self.T, self.y] = lib.unzip([(lib.formatTime(T), y) for (T, y) in
             sorted(self.data.items())])
 

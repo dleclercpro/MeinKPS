@@ -873,6 +873,19 @@ class FTPReport(Report):
 
 
 
+    def isValid(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ISVALID
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Check whether FTP report is filled and thus valid.
+        """
+
+        return all([field != "" for field in self.json.values()])
+
+
+
 
 
 

@@ -391,7 +391,12 @@ def unzip(z):
         Unzip lists.
     """
 
-    return [list(x) for x in zip(*z)]
+    # Non-empty list
+    if z:
+        return [list(x) for x in zip(*z)]
+
+    # Otherwise
+    return [[], []]
 
 
 
