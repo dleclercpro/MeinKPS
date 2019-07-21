@@ -62,7 +62,7 @@ class Profile(object):
         # Initialize units
         self.units = None
 
-        # Initialize report source directory
+        # Initialize source directory to load data from
         self.src = path.REPORTS
 
 
