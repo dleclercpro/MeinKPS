@@ -77,6 +77,9 @@ class Loop(object):
         # Get DIA
         self.DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
 
+        # Initialize TB recommendation
+        self.recommendation = None
+
         # Define report
         self.report = reporter.REPORTS["loop"]
 
@@ -88,6 +91,8 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DO
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Execute a task and increment its corresponding branch in the loop
+            logs, in order to keep track of loop's performance.
         """
 
         # Do task
@@ -98,27 +103,25 @@ class Loop(object):
 
 
 
-    def doTry(self, task, *args):
+    def tryAndCatch(self, task, *args):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DOTRY
+            TRYANDCATCH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Try to execute a given task and give back trace, in case it fails,
+            as well as boolean indicating whether the execution was successful
+            or not.
         """
 
         # Try task
         try:
+            task(*args)
+            return True
 
-            # Do it
-            return task(*args)
-
-        # Ignore all errors
-        except Exception as e:
-
-            # But log them
+        # Ignore all errors, but log them
+        except:
             Logger.error("\n" + traceback.format_exc())
-
-            # Return
             return False
 
 
@@ -182,11 +185,10 @@ class Loop(object):
         # Define starting time
         self.t0 = datetime.datetime.now()
 
-        # Update last loop time
+        # Update last loop time and iteration number
         self.report.set(lib.formatTime(self.t0), ["Status", "Time"], True)
-
-        # Update loop iterations
         self.report.increment(["Status", "N"])
+        self.report.store()
 
         # Start devices
         self.startDevices()
@@ -212,6 +214,7 @@ class Loop(object):
 
         # Update loop infos
         self.report.set(dt, ["Status", "Duration"], True)
+        self.report.store()
 
         # Info
         Logger.info("Ended loop.")
@@ -237,9 +240,6 @@ class Loop(object):
 
         # Read calibrations
         self.do(self.cgm.databases["Calibration"].read, ["CGM", "Calibration"])
-
-        # Reading done
-        return True
 
 
 
@@ -270,13 +270,10 @@ class Loop(object):
         self.do(self.pump.BGTargets.read, ["Pump", "BG Targets"])
 
         # Read basal
-        self.do(self.pump.basal.read, ["Pump", "Basal", "Standard"])
+        self.do(self.pump.basal.read, ["Pump", "Basal"], "Standard")
 
         # Update history
         self.do(self.pump.history.update, ["Pump", "History"])
-
-        # Reading done
-        return True
 
 
 
@@ -342,132 +339,11 @@ class Loop(object):
             profiles["FutureIOB"],
             profiles["FutureISF"])
 
-        # Return TB recommendation
-        return calculator.recommendTB(BGDynamics,
+        # Store TB recommendation
+        self.recommendation = calculator.recommendTB(BGDynamics,
             profiles["Basal"],
             profiles["FutureISF"],
             profiles["IDC"])
-
-
-
-    def autosens(self, now, t = 24):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            AUTOSENS
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define past reference time
-        past = now - datetime.timedelta(hours = t)
-
-        # Define DIA as a datetime timedelta object
-        dia = datetime.timedelta(hours = self.DIA)
-
-        # Instanciate profiles
-        profiles = {"IDC": idc.WalshIDC(self.DIA),
-                    "Suspend": None,
-                    "Resume": None,
-                    "Basal": None,
-                    "TB": None,
-                    "Bolus": None,
-                    "Net": None,
-                    "PastISF": isf.PastISF(),
-                    "PastBG": bg.PastBG()}
-
-        # Build past BG profile
-        profiles["PastBG"].build(past, now)
-        
-        # Build past ISF profile
-        profiles["PastISF"].build(past, now)
-
-        # Reference to BG time axes
-        T = profiles["PastBG"].T
-        t = profiles["PastBG"].t
-
-        # Initialize IOB arrays
-        IOBs = []
-
-        # Get number of BGs
-        n = len(T)
-
-        # Compute IOB for each BG
-        for i in range(n):
-
-            # Reset necessary profiles
-            profiles["Suspend"] = suspend.Suspend()
-            profiles["Resume"] = resume.Resume()
-            profiles["Basal"] = basal.Basal()
-            profiles["TB"] = tb.TB()
-            profiles["Bolus"] = bolus.Bolus()
-            profiles["Net"] = net.Net()
-
-            # Build net insulin profile
-            profiles["Net"].build(T[i] - dia, T[i], profiles["Suspend"],
-                                                    profiles["Resume"],
-                                                    profiles["Basal"], 
-                                                    profiles["TB"],
-                                                    profiles["Bolus"])
-
-            # Do it
-            IOBs.append(calculator.computeIOB(profiles["Net"], profiles["IDC"]))
-
-            # Show IOB
-            print "IOB(" + lib.formatTime(T[i]) + ") = " + fmt.IOB(IOBs[-1])
-
-        # Initialize dBG deviations
-        ddBGs = []
-
-        # Go through IOB and find difference between expected dBG and actual one
-        for i in range(n - 1):
-
-            # Compute dIOB
-            dIOB = IOBs[i + 1] - IOBs[i]
-
-            # Compute dBG
-            dBG = profiles["PastBG"].y[i + 1] - profiles["PastBG"].y[i]
-            expecteddBG = dIOB * profiles["PastISF"].f(t[i])
-
-            # Compute delta dBG
-            ddBGs.append(dBG - expecteddBG)
-
-            # Avoid division by zero
-            if not expecteddBG == 0:
-
-                # Compute dBG ratio
-                r = round(dBG / float(expecteddBG), 2)
-
-            # Otherwise
-            else:
-
-                # No ratio available
-                r = None
-
-            # Info
-            print "dIOB: " + fmt.IOB(dIOB)
-            print "dBG: " + fmt.BG(dBG)
-            print "Expected dBG: " + fmt.BG(expecteddBG)
-            print "ddBG: " + fmt.BG(ddBGs[i])
-            print "r: " + str(r)
-            print
-
-        # Plot
-        print "Mean ddBG: " + fmt.BG(np.mean(ddBGs))
-        lib.initPlot()
-        ax = plt.subplot(1, 1, 1)
-
-        # Define axis labels
-        x = "(h)"
-        y = "(mmol/L)"
-
-        # Set title
-        ax.set_title("dBG Deviations", fontweight = "semibold")
-
-        # Set axis labels
-        ax.set_xlabel(x)
-        ax.set_ylabel(y)
-        ax.plot(t[:-1], ddBGs, marker = "o", ms = 3.5, lw = 0, c = "red")
-        plt.show()
 
 
 
@@ -487,15 +363,11 @@ class Loop(object):
 
             # If TB currently set: cancel it
             if self.pump.TB.value["Duration"] != 0:
-                self.do(self.pump.TB.cancel, ["Pump"], "TB")
-
-            # Otherwise
-            else:
-                return
+                self.do(self.pump.TB.cancel, ["Pump", "TB"])
 
         # Otherwise, enact TB recommendation
         else:
-            self.do(self.pump.TB.set, ["Pump"], "TB", *TB)
+            self.do(self.pump.TB.set, ["Pump", "TB"], *TB)
 
         # Re-update history
         self.pump.history.update()
@@ -511,10 +383,10 @@ class Loop(object):
         """
 
         # Export preprocessed treatments
-        self.do(Exporter.run, ["Status"], "Export", self.t0)
+        self.do(Exporter.run, ["Status", "Export"], self.t0)
 
         # Upload stuff
-        self.do(Uploader.run, ["Status"], "Upload")
+        self.do(Uploader.run, ["Status", "Upload"])
 
 
 
@@ -555,22 +427,25 @@ class Loop(object):
         """
 
         # Start loop
-        self.doTry(self.start)
+        self.tryAndCatch(self.start)
 
         # If reading CGM works
-        if self.doTry(self.readCGM):
+        if self.tryAndCatch(self.readCGM):
 
             # If reading pump works
-            if self.doTry(self.readPump):
+            if self.tryAndCatch(self.readPump):
 
-                # Compute necessary TB and enact it
-                self.doTry(self.enactTB, self.doTry(self.computeTB, self.t0))
+                # Compute necessary TB
+                if self.tryAndCatch(self.computeTB, self.t0):
+
+                    # Enact it
+                    self.tryAndCatch(self.enactTB, self.recommendation)
 
             # Export recent treatments
-            self.doTry(self.export)
+            self.tryAndCatch(self.export)
 
         # Stop loop
-        self.doTry(self.stop)
+        self.tryAndCatch(self.stop)
 
 
 
@@ -590,9 +465,6 @@ def main():
 
     # Plot
     #loop.plot()
-
-    # Autosens
-    #loop.autosens(now)
 
 
 

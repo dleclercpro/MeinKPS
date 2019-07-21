@@ -149,7 +149,7 @@ class CGM(object):
         """
 
         # Info
-        Logger.info("Resetting CGM...")
+        Logger.debug("Resetting CGM...")
 
         # Reset USB interface
         self.usb.reset()
@@ -158,7 +158,7 @@ class CGM(object):
         if self.usb.is_kernel_driver_active(0):
 
             # Info
-            Logger.warning("Detaching CGM kernel...")
+            Logger.debug("Detaching CGM kernel...")
 
             # Disconnect
             self.usb.detach_kernel_driver(0)
@@ -493,6 +493,7 @@ class Language(object):
 
         # Add entry
         self.report.set(self.value, ["Language"], True)
+        self.report.store()
 
 
 
@@ -576,6 +577,7 @@ class Clock(object):
 
         # Add entry
         self.report.set(self.mode, ["Clock Mode"], True)
+        self.report.store()
 
 
 
@@ -639,6 +641,7 @@ class Units(object):
 
         # Add entry
         self.report.set(self.value, ["Units"], True)
+        self.report.store()
 
 
 
@@ -730,6 +733,7 @@ class Transmitter(object):
 
         # Add entry
         self.report.set(self.id, ["Transmitter ID"], True)
+        self.report.store()
 
 
 

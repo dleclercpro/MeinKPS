@@ -691,6 +691,7 @@ class Power(SetCommand, BigCommand):
 
         # Add entry
         self.report.set(now, ["Power"], True)
+        self.report.store()
 
 
 
@@ -787,6 +788,7 @@ class ReadModel(GetCommand):
 
         # Add entry
         self.report.set(self.response, ["Properties", "Model"], True)
+        self.report.store()
 
 
 
@@ -843,6 +845,7 @@ class ReadFirmware(GetCommand):
 
         # Add entry
         self.report.set(self.response, ["Properties", "Firmware"], True)
+        self.report.store()
 
 
 
@@ -1050,6 +1053,7 @@ class ReadSettings(GetCommand):
 
         # Add entry
         self.report.set(self.response, ["Settings"], True)
+        self.report.store()
 
 
 
@@ -1113,6 +1117,7 @@ class ReadBGUnits(GetCommand):
 
         # Add entry
         self.report.set(self.response, ["Units", "BG"], True)
+        self.report.store()
 
 
 
@@ -1176,6 +1181,7 @@ class ReadCarbsUnits(GetCommand):
 
         # Add entry
         self.report.set(self.response, ["Units", "Carbs"], True)
+        self.report.store()
 
 
 
@@ -1273,14 +1279,13 @@ class ReadBGTargets(GetCommand):
         # Info
         Logger.debug("Adding pump BG targets to: " + repr(self.report))
 
-        # Store BG units
-        self.report.set(self.response["Units"], ["Units", "BG"], True)
-
         # Zip times and targets
         response = dict(zip(self.response["Times"], self.response["Targets"]))
 
-        # Store targets
+        # Store BG units and targets
+        self.report.set(self.response["Units"], ["Units", "BG"], True)
         self.report.set(response, ["BG Targets"], True)
+        self.report.store()
 
 
 
@@ -1418,14 +1423,13 @@ class ReadISF(ReadFactors):
         # Info
         Logger.debug("Adding pump ISF(s) to: " + repr(self.report))
 
-        # Store BG units (without insulin units)
-        self.report.set(self.response["Units"][:-2], ["Units", "BG"], True)
-
         # Zip times and factors
         response = dict(zip(self.response["Times"], self.response["Factors"]))
 
-        # Store factors
+        # Store BG units and factors
+        self.report.set(self.response["Units"][:-2], ["Units", "BG"], True)
         self.report.set(response, ["ISF"], True)
+        self.report.store()
 
 
 
@@ -1487,9 +1491,6 @@ class ReadCSF(ReadFactors):
         # Zip times and factors
         response = dict(zip(self.response["Times"], self.response["Factors"]))
 
-        # Store factors
-        self.report.set(response, ["CSF"], True)
-
         # Update units for carbs (without insulin units)
         # g/U
         if self.response["Units"] == "g/U":
@@ -1503,8 +1504,10 @@ class ReadCSF(ReadFactors):
             # Define units
             units = self.response["Units"][2:]
 
-        # Store carb units
+        # Store car units and factors
         self.report.set(units, ["Units", "Carbs"], True)
+        self.report.set(response, ["CSF"], True)
+        self.report.store()
 
 
 
@@ -1614,6 +1617,7 @@ class ReadBasalProfile(GetBigCommand):
 
         # Store basal
         self.report.set(response, ["Basal Profile (" + self.name + ")"], True)
+        self.report.store()
 
 
 
@@ -1792,6 +1796,7 @@ class ReadTB(GetCommand):
 
         # Store TB units
         self.report.set(self.response["Units"], ["Units", "TB"], True)
+        self.report.store()
 
 
 

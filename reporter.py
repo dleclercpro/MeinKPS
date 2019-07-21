@@ -982,7 +982,7 @@ def getRecent(reportType, now, branch, n = 1, strict = False,
 
     # Not enough reports
     if nReportsFoundWithBranch < n:
-        Logger.warning("Could not find " + str(n) + " recent reports with " +
+        Logger.warning("Could not find " + str(n) + " recent report(s) with " +
             "given branch. Found: " + str(nReportsFoundWithBranch))
 
     # Return entries

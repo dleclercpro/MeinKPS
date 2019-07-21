@@ -79,7 +79,7 @@ class PastProfile(Profile):
 
 
 
-    def load(self, src = path.REPORTS, strict = False):
+    def load(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,7 +96,7 @@ class PastProfile(Profile):
 
         # Load data
         self.data = reporter.getDatedEntries(self.reportType, self.days,
-            self.branch, strict, src)
+            self.branch, False, self.src)
 
         # No data
         if not self.data:

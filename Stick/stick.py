@@ -387,7 +387,7 @@ class Stick(object):
         """
 
         # Info
-        Logger.info("Tuning radio to: " + fmt.frequency(f))
+        Logger.debug("Tuning radio to: " + fmt.frequency(f))
 
         # Convert frequency to corresponding value (according to datasheet)
         f = int(round(f * (2 ** 16) / self.f["Reference"]))
@@ -406,7 +406,7 @@ class Stick(object):
                 raise errors.RadioRegisterTXFail
 
         # Info
-        Logger.info("Radio tuned.")
+        Logger.debug("Radio tuned.")
 
 
 
@@ -496,7 +496,7 @@ class Stick(object):
             self.checkFrequencyRange(F1, F2)
 
         # Info
-        Logger.debug("Scanning for pump RFs between: " +
+        Logger.info("Scanning for best RF to communicate with pump between: " +
             fmt.frequencyRange(F1, F2))
 
         # Initialize RSSI readings

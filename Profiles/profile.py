@@ -62,6 +62,9 @@ class Profile(object):
         # Initialize units
         self.units = None
 
+        # Initialize report source directory
+        self.src = path.REPORTS
+
 
 
     def __repr__(self):
@@ -113,7 +116,7 @@ class Profile(object):
 
 
 
-    def build(self, start, end, src = path.REPORTS):
+    def build(self, start, end):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -133,7 +136,7 @@ class Profile(object):
         self.define(start, end)
 
         # Load data
-        self.load(src)
+        self.load()
 
         # Decouple profile components
         self.decouple()
@@ -179,7 +182,7 @@ class Profile(object):
 
 
 
-    def load(self, src = path.REPORTS):
+    def load(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
