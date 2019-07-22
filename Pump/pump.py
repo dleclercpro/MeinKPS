@@ -839,19 +839,19 @@ class Basal(PumpComponent):
         # Select profile
         # Standard
         if profile == "Standard":
-
-            # Get basal
             self.value = self.commands["Standard"].run()
 
+        # A
         elif profile == "A":
-
-            # Get basal
             self.value = self.commands["A"].run()
 
+        # B
         elif profile == "B":
-
-            # Get basal
             self.value = self.commands["B"].run()
+
+        # Otherwise
+        else:
+            raise ValueError("Invalid basal profile.")
 
         # Show it
         self.show()
