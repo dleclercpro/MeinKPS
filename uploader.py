@@ -30,6 +30,7 @@ import ftplib
 
 # USER LIBRARIES
 import logger
+import errors
 import reporter
 
 
@@ -129,7 +130,7 @@ class Uploader(object):
 
         # Test if report is empty before proceding
         if not self.report.isValid():
-            raise IOError("Invalid FTP report.")
+            raise errors.InvalidFTPReport
 
         # Instanciate an FTP object
         ftp = ftplib.FTP(self.report.get(["Host"]),

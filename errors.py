@@ -510,6 +510,24 @@ class NoOverwriting(ReporterError):
 
 
 
+class InvalidFTPReport(ReporterError):
+
+    def prepare(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PREPARE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error logging level
+        self.level = "CRITICAL"
+
+        # Define error info
+        self.info = "Invalid FTP report."
+
+
+
 # General errors
 class NotEnoughBGs(BaseError):
 
