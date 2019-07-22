@@ -338,7 +338,7 @@ class BigCommand(Command):
         """
 
         # Run prelude command given number of times
-        for i in range(self.repeat["Init"]):
+        for _ in range(self.repeat["Init"]):
 
             # Do it
             self.commands["Init"].run()
@@ -357,7 +357,7 @@ class BigCommand(Command):
         """
 
         # Run postlude command given number of times
-        for i in range(self.repeat["ACK"]):
+        for _ in range(self.repeat["ACK"]):
 
             # Try
             try:
@@ -631,21 +631,15 @@ class Power(SetCommand, BigCommand):
         """
 
         # Execute a given number of times
-        for i in range(self.repeat["Init"]):
+        for _ in range(self.repeat["Init"]):
 
-            # Try
+            # Execute command
             try:
-
-                # Execute
                 self.commands["Init"].run()
-
-                # Exit
                 return
 
-            # Except
+            # Ignore specific errors
             except (errors.RadioError, errors.BadPumpPacket):
-
-                # Ignore
                 pass
 
         # Pump does not respond

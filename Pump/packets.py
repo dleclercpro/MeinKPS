@@ -407,7 +407,7 @@ class PumpPacket(Packet):
 
                 # If bits within packet
                 if bits != "":
-                    raise errors.UnmatchPumpPacketBits(word)
+                    raise errors.CorruptedPumpPacket(word)
 
                 # If last bits do not fit
                 elif word != "0101":

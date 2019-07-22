@@ -232,7 +232,7 @@ class UnknownPacketRecipient(BadPumpPacket):
 
 
 
-class UnmatchPumpPacketBits(BadPumpPacket):
+class CorruptedPumpPacket(BadPumpPacket):
 
     def prepare(self):
 

@@ -276,13 +276,11 @@ class Power(PumpComponent):
 
             # Power up pump's RF transmitter
             self.command.run(self.session)
+            return
 
-        else:
-
-            # Info
-            Logger.info("Pump's radio transmitter is already on. " +
-                        "Remaining time: " +
-                        str(self.session - delta.seconds / 60) + " m")
+        # Info
+        Logger.info("Pump's radio transmitter is already on. Remaining time: " +
+            str(self.session - delta.seconds / 60) + " m")
 
 
 
@@ -934,8 +932,8 @@ class TB(PumpComponent):
             TB = self.value
 
         # Info
-        Logger.info("TB: [" + str(TB["Rate"]) + " " + TB["Units"] + " (" +
-                              str(TB["Duration"]) + " m)]")
+        Logger.info(str(TB["Rate"]) + " " + TB["Units"] + " (" +
+            str(TB["Duration"]) + " m)")
 
 
 
