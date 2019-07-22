@@ -42,7 +42,7 @@ import databases
 
 
 # Define instances
-Logger = logger.Logger("CGM/cgm.py")
+Logger = logger.Logger("CGM.cgm")
 
 
 

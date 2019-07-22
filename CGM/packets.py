@@ -29,7 +29,7 @@ import logger
 
 
 # Instanciate logger
-Logger = logger.Logger("CGM/packets.py")
+Logger = logger.Logger("CGM.packets")
 
 
 

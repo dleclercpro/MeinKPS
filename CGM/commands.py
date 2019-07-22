@@ -30,7 +30,7 @@ import packets
 
 
 # Instanciate logger
-Logger = logger.Logger("CGM/commands.py")
+Logger = logger.Logger("CGM.commands")
 
 
 

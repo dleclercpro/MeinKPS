@@ -32,7 +32,7 @@ from .profile import Profile
 
 
 # Define instances
-Logger = logger.Logger("Profiles/past.py")
+Logger = logger.Logger("Profiles.past")
 
 
 

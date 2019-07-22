@@ -30,7 +30,7 @@ import logger
 
 
 # Instanciate logger
-Logger = logger.Logger("errors.py")
+Logger = logger.Logger("errors")
 
 
 

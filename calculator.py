@@ -40,7 +40,7 @@ import reporter
 
 
 # Define instances
-Logger = logger.Logger("calculator.py")
+Logger = logger.Logger("calculator")
 
 
 

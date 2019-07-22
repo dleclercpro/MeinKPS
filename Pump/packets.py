@@ -45,7 +45,7 @@ TABLE = ["010101", "110001", "110010", "100011", # 0 1 2 3
 
 
 # Instanciate logger
-Logger = logger.Logger("Pump/packets.py")
+Logger = logger.Logger("Pump.packets")
 
 
 

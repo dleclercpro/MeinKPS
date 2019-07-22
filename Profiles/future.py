@@ -30,7 +30,7 @@ from .profile import Profile
 
 
 # Define instances
-Logger = logger.Logger("Profiles/future.py")
+Logger = logger.Logger("Profiles.future")
 
 
 

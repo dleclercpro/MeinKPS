@@ -37,7 +37,7 @@ import path
 
 
 # Define instances
-Logger = logger.Logger("Profiles/profile.py")
+Logger = logger.Logger("Profiles.profile")
 
 
 

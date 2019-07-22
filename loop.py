@@ -48,7 +48,7 @@ from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
 
 
 # Define instances
-Logger = logger.Logger("loop.py")
+Logger = logger.Logger("loop")
 Exporter = exporter.Exporter()
 Uploader = uploader.Uploader()
 

@@ -31,7 +31,7 @@ from future import FutureProfile
 
 
 # Define instances
-Logger = logger.Logger("Profiles/COB.py")
+Logger = logger.Logger("Profiles.cob")
 
 
 

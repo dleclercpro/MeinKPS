@@ -44,7 +44,7 @@ import errors
 
 
 # Instanciate logger
-Logger = logger.Logger("reporter.py")
+Logger = logger.Logger("reporter")
 
 
 

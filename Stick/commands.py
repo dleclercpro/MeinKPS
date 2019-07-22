@@ -31,7 +31,7 @@ import logger
 
 
 # Instanciate logger
-Logger = logger.Logger("Stick/commands.py")
+Logger = logger.Logger("Stick.commands")
 
 
 

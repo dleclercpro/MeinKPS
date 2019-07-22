@@ -37,7 +37,7 @@ from Profiles import (bolus, basal, tb, net, bg, targets, isf, csf, iob, cob,
 
 
 # Define instances
-Logger = logger.Logger("exporter.py")
+Logger = logger.Logger("exporter")
 
 
 

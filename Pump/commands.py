@@ -39,7 +39,7 @@ import packets
 
 
 # Define instances
-Logger = logger.Logger("Pump/commands.py")
+Logger = logger.Logger("Pump.commands")
 
 
 

@@ -40,7 +40,7 @@ from future import FutureProfile
 
 
 # Define instances
-Logger = logger.Logger("Profiles/BG.py")
+Logger = logger.Logger("Profiles.bg")
 
 
 

@@ -34,7 +34,7 @@ from step import StepProfile
 
 
 # Define instances
-Logger = logger.Logger("Profiles/daily.py")
+Logger = logger.Logger("Profiles.daily")
 
 
 

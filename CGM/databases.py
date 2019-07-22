@@ -31,7 +31,7 @@ import records
 
 
 # Instanciate logger
-Logger = logger.Logger("CGM/databases.py")
+Logger = logger.Logger("CGM.databases")
 
 
 

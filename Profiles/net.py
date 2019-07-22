@@ -30,7 +30,7 @@ from past import PastProfile
 
 
 # Instanciate logger
-Logger = logger.Logger("Profiles/net.py")
+Logger = logger.Logger("Profiles.net")
 
 
 
