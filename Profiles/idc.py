@@ -151,16 +151,12 @@ class IDC(object):
         # Add data to plot
         ax.plot(t, y, lw = 2, ls = "-", label = label, c = color)
 
-        # Single plot
+        # Single plot: show legend
         if size == [1, 1]:
-
-            # Show legend
             ax.legend()
 
         # Ready to show?
         if show:
-
-            # Show plot
             plt.show()
 
 

@@ -64,18 +64,11 @@ class PastProfile(Profile):
             Define profile time references.
         """
 
-        # Start defining
-        super(PastProfile, self).define(start, end)
-
         # Define norm
         self.norm = end
 
-        # Compute time difference
-        dT = end - start
-
-        # Define plot x-axis default limits
-        self.xlim = [lib.normalizeTime(t, end) for t in
-            [end - dT, end + dT]]
+        # Finish defining
+        super(PastProfile, self).define(start, end)
 
 
 

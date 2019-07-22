@@ -61,7 +61,7 @@ class Net(PastProfile, StepProfile):
         """
 
         # Info
-        Logger.debug("Building 'Net'...")
+        Logger.debug("Building: " + repr(self))
 
         # Reset components
         self.reset()

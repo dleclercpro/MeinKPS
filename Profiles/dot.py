@@ -76,7 +76,7 @@ class DotProfile(Profile):
         """
 
         # Info
-        Logger.debug("Derivating...")
+        Logger.debug("Derivating: " + repr(self))
 
         # Derivate
         self.dydt = lib.derivate(self.y, self.t)
@@ -99,16 +99,12 @@ class DotProfile(Profile):
         ax.plot(self.t, self.y, label = self.__class__.__name__,
                 marker = "o", ms = 3.5, lw = 0, c = color)
 
-        # More than one line
+        # More than one line: add legend
         if len(ax.lines) > 1:
-            
-            # Add legend
             ax.legend()
 
         # Ready to show?
         if show:
-
-            # Show plot
             plt.show()
 
 

@@ -78,17 +78,10 @@ class Resume(PastProfile, StepProfile):
             Change resume times to None before filling with net insulin profile.
         """
 
-        # Get number of steps
-        n = len(self.T)
-
         # Decouple components
-        for i in range(n):
-
-            # If resume
-            if self.y[i] == 1:
-
-                # Fill later
-                self.y[i] = None
+        # 0: Suspend
+        # 1: Resume
+        self.y = [None if y == 1 else y for y in self.y]
 
         # Fill
         super(Resume, self).fill(filler)

@@ -78,23 +78,10 @@ class Suspend(PastProfile, StepProfile):
             Change suspend times to None before filling with basal profile.
         """
 
-        # Get number of steps
-        n = len(self.T)
-
         # Decouple components
-        for i in range(n):
-
-            # If suspend
-            if self.y[i] == 0:
-
-                # Fill later
-                self.y[i] = None
-
-            # If resume
-            else:
-
-                # Replace by 0
-                self.y[i] = 0
+        # 0: Suspend
+        # 1: Resume
+        self.y = [None if y == 0 else 0 for y in self.y]
 
         # Fill
         super(Suspend, self).fill(filler)

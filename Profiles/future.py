@@ -45,18 +45,11 @@ class FutureProfile(Profile):
             Define profile time references.
         """
 
-        # Start defining
-        super(FutureProfile, self).define(start, end)
-        
         # Define norm
         self.norm = start
 
-        # Compute time difference
-        dT = end - start
-
-        # Define plot x-axis default limits
-        self.xlim = [lib.normalizeTime(t, start) for t in
-            [start - dT, start + dT]]
+        # Finish defining
+        super(FutureProfile, self).define(start, end)
 
 
 

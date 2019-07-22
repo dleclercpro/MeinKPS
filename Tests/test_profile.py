@@ -25,6 +25,7 @@ import pytest
 
 
 # USER LIBRARIES
+import lib
 import path
 import reporter
 from Profiles import profile, past
@@ -43,6 +44,8 @@ class Profile(profile.Profile):
 
         super(Profile, self).__init__()
 
+        self.src = path.TESTS
+
 
 
 class PastProfile(past.PastProfile):
@@ -51,6 +54,7 @@ class PastProfile(past.PastProfile):
 
         super(PastProfile, self).__init__()
 
+        self.src = path.TESTS
         self.reportType = test_reporter.DatedReport
         self.branch = []
 
@@ -150,13 +154,18 @@ def test_build(setup_and_teardown):
     it.
     """
 
-    datetimes = [datetime.datetime(1990, 12, 1, 0, 0, 0),
-                 datetime.datetime(1990, 12, 1, 0, 30, 0),
-                 datetime.datetime(1990, 12, 1, 1, 0, 0)]
+    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
+                 datetime.datetime(1990, 12, 2, 0, 0, 0),
+                 datetime.datetime(1990, 12, 2, 0, 30, 0),
+                 datetime.datetime(1990, 12, 2, 1, 0, 0)]
 
-    values = [6.2, 6.0, 5.8]
+    formattedDatetimes = [lib.formatTime(d) for d in datetimes]
+
+    values = [6.2, 6.0, 5.8, 5.6]
 
     entries = dict(zip(datetimes, values))
+
+    formattedEntries = dict(zip(formattedDatetimes, values))
 
     branch = []
 
@@ -164,9 +173,15 @@ def test_build(setup_and_teardown):
     reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
         path.TESTS)
 
-    # Instanciate and build profile
+    # Instanciate and build profile (exclude first and last datetimes)
     p = PastProfile()
-    p.build(datetimes[1], datetimes[-1], path.TESTS)
+    p.build(datetimes[1], datetimes[-1])
+
+    # One day before start of profile should have been added to its days
+    assert (p.days == [min(datetimes).date(), max(datetimes).date()] and
+        p.data == formattedEntries and
+        p.T == datetimes and
+        p.y == values)
 
 
 
@@ -176,16 +191,14 @@ def test_cut(setup_and_teardown):
     ...
     """
 
-    datetimes = [datetime.datetime(1990, 11, 30, 23, 30, 0),
-                 datetime.datetime(1990, 12, 1, 0, 0, 0),
-                 datetime.datetime(1990, 12, 1, 0, 30, 0),
-                 datetime.datetime(1990, 12, 1, 1, 0, 0),
-                 datetime.datetime(1990, 12, 1, 1, 30, 0),
-                 datetime.datetime(1990, 12, 1, 2, 0, 0),
-                 datetime.datetime(1990, 12, 1, 2, 30, 0),
-                 datetime.datetime(1990, 12, 1, 3, 0, 0)]
+    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
+                 datetime.datetime(1990, 12, 2, 0, 0, 0),
+                 datetime.datetime(1990, 12, 2, 0, 30, 0),
+                 datetime.datetime(1990, 12, 3, 0, 0, 0),
+                 datetime.datetime(1990, 12, 3, 0, 30, 0),
+                 datetime.datetime(1990, 12, 4, 0, 0, 0)]
 
-    values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2, 5.0]
+    values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2]
 
     entries = dict(zip(datetimes, values))
 
@@ -195,10 +208,12 @@ def test_cut(setup_and_teardown):
     reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
         path.TESTS)
 
-    # Instanciate and build profile
+    # Instanciate and build profile (exclude first and last datetimes)
     p = PastProfile()
-    p.build(datetimes[1], datetimes[-1], path.TESTS)
+    p.build(datetimes[1], datetimes[-2])
 
     # Cut it
-    p.cut()
-    assert True
+    [_, _, last] = p.cut()
+
+    # Last value before start of profile should be returned after the cut
+    assert last == values[0] and p.T == datetimes[1:-1] and p.y == values[1:-1]

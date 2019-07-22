@@ -111,20 +111,14 @@ class FutureIOB(IOB, FutureProfile):
         # Copy net insulin profile
         net = copy.deepcopy(net)
 
-        # Get number of prediction dots in IOB profile
-        n = len(self.t)
-
-        # Get number of entries in net insulin profile
-        m = len(net.t)
-
         # Compute IOB decay
-        for i in range(n):
+        for _ in range(len(self.t)):
 
             # Compute new IOB and store it
             self.y.append(calculator.computeIOB(net, IDC))
 
             # Move net insulin profile into the past
-            for j in range(m):
+            for j in range(len(net.t)):
 
                 # Update time axes
                 net.t[j] -= self.dt

@@ -28,6 +28,7 @@ import datetime
 
 
 # USER LIBRARIES
+import lib
 import logger
 from step import StepProfile
 
@@ -66,7 +67,7 @@ class DailyProfile(StepProfile):
         """
 
         # Info
-        Logger.debug("Loading...")
+        Logger.debug("Loading data for: " + repr(self))
 
         # Load data
         self.data = self.report.get(self.branch)
@@ -102,33 +103,14 @@ class DailyProfile(StepProfile):
         """
 
         # Info
-        Logger.debug("Mapping time...")
+        Logger.debug("Mapping time of: " + repr(self))
 
-        # Initialize profile components
-        T = []
-        y = []
+        # Map each time and value to profile's whole set of days
+        mappedEntries = [(datetime.datetime.combine(day, T), y)
+            for (T, y) in zip(self.T, self.y) for day in self.days]
 
-        # Get number of entries
-        n = len(self.T)
-
-        # Loop on range of days covered by profile
-        for day in self.days:
-
-            # Rebuild profile
-            for i in range(n):
-
-                # Add time
-                T.append(datetime.datetime.combine(day, self.T[i]))
-
-                # Add value
-                y.append(self.y[i])
-
-        # Zip and sort profile
-        z = sorted(zip(T, y))
-
-        # Update profile
-        self.T = [x for x, y in z]
-        self.y = [y for x, y in z]
+        # Sort entries in chronological order and store them
+        [self.T, self.y] = lib.unzip(sorted(mappedEntries))
 
 
 

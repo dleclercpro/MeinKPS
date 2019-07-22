@@ -76,14 +76,9 @@ class Bolus(PastProfile, StepProfile):
         # Start decoupling
         super(Bolus, self).decouple()
 
-        # Get number of steps
-        n = len(self.T)
+        # Compute bolus durations (delivery time) and store them
+        self.durations = [datetime.timedelta(hours = 1 / self.rate * y)
+            for y in self.y]
 
-        # Decouple components
-        for i in range(n):
-
-            # Compute delivery time
-            self.d.append(datetime.timedelta(hours = 1 / self.rate * self.y[i]))
-
-            # Convert bolus to delivery rate
-            self.y[i] = self.rate
+        # Convert boli to delivery rate
+        self.y = [self.rate for y in self.y]

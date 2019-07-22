@@ -67,14 +67,8 @@ class TB(PastProfile, StepProfile):
         # Start decoupling
         super(TB, self).decouple()
 
-        # Get number of steps
-        n = len(self.T)
-
         # Decouple components
-        for i in range(n):
-
-            # Get duration
-            self.d.append(datetime.timedelta(minutes = self.y[i][2]))
+        for i in range(len(self.T)):
 
             # Verify units
             if self.y[i][1] != "U/h":
@@ -82,3 +76,6 @@ class TB(PastProfile, StepProfile):
 
             # Get rate
             self.y[i] = self.y[i][0]
+
+            # Get duration
+            self.durations.append(datetime.timedelta(minutes = self.y[i][2]))

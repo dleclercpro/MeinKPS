@@ -61,7 +61,17 @@ class BG(DotProfile):
         self.units = reporter.REPORTS["pump"].get(["Units", "BG"])
 
         # Define plot y-axis default limits
-        self.ylim = [0, 15] if self.units == "mmol/L" else [0, 270]
+        # mmol/L
+        if self.units == "mmol/L":
+            self.ylim = [0, 15]
+        
+        # mg/dL
+        elif self.units == "mg/dL":
+            self.ylim = [0, 270]
+
+        # Otherwise
+        else:
+            raise ValueError("Bad BG units.")
 
 
 

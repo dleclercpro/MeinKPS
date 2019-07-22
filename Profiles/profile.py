@@ -170,7 +170,7 @@ class Profile(object):
         # Reset days covered by profile
         self.days = []
 
-        # First day to cover for always one before start date
+        # First day to cover (always one before start date)
         day = start.date() - datetime.timedelta(days = 1)
 
         # Fill days until end date is reached
@@ -179,6 +179,16 @@ class Profile(object):
 
             # Update day
             day += datetime.timedelta(days = 1)
+
+        # Normalized profile
+        if self.norm is not None:
+
+            # Compute time difference
+            dT = end - start
+
+            # Define plot x-axis default limits
+            self.xlim = [lib.normalizeTime(t, self.norm) for t in
+                [self.norm - dT, self.norm + dT]]
 
 
 
@@ -346,12 +356,12 @@ class Profile(object):
         # Set x-axis limits
         if self.xlim:
             ax.set_xlim(min(ax.get_xlim()[0], self.xlim[0]),
-                        max(ax.get_xlim()[1], self.xlim[1]))
+                max(ax.get_xlim()[1], self.xlim[1]))
 
         # Set y-axis limits
         if self.ylim:
             ax.set_ylim([min(ax.get_ylim()[0], self.ylim[0]),
-                         max(ax.get_ylim()[1], self.ylim[1])])
+                max(ax.get_ylim()[1], self.ylim[1])])
 
         # Return figure and subplot
         return ax

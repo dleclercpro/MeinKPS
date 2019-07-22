@@ -55,7 +55,7 @@ class StepProfile(Profile):
         super(StepProfile, self).reset()
 
         # Reset step durations
-        self.d = []
+        self.durations = []
 
 
 
@@ -70,10 +70,8 @@ class StepProfile(Profile):
         # Start building
         super(StepProfile, self).build(start, end)
 
-        # If step durations present
-        if self.d:
-
-            # Inject zeros between profile steps
+        # If step durations present: inject zeros between profile steps
+        if self.durations:
             self.inject()
 
         # Cut entries outside of time limits
@@ -81,8 +79,6 @@ class StepProfile(Profile):
 
         # Filling required?
         if filler is not None:
-
-            # Fill profile
             self.fill(filler)
 
         # Smooth profile
@@ -113,23 +109,20 @@ class StepProfile(Profile):
         T = []
         y = []
 
-        # Get number of steps
-        n = len(self.T)
-
         # Pad end of axes with infinitely far away entry in order to correctly
         # compute last step duration
         self.T.append(datetime.datetime.max)
         self.y.append(None)
 
         # Rebuild profile and inject zeros where needed
-        for i in range(n):
+        for i in range(len(self.T)):
 
             # Add step
             T.append(self.T[i])
             y.append(self.y[i])
 
             # Get current step duration
-            d = self.d[i]
+            d = self.durations[i]
 
             # Compute time between current and next steps
             dt = self.T[i + 1] - self.T[i]
@@ -183,28 +176,18 @@ class StepProfile(Profile):
         # Info
         Logger.debug("Padding...")
 
-        # If no previous step was found
+        # If no previous step was found: use profile zero (default) value
         if last is None:
-
-            # Use profile zero (default) value
             last = self.zero
 
-        # Start of profile
+        # Start of profile: extend precedent step's value
         if len(self.T) == 0 or self.T[0] != a:
-
-            # Add time
             self.T.insert(0, a)
-            
-            # Extend precedent step's value
             self.y.insert(0, last)
 
         # End of profile
         if self.T[-1] != b:
-
-            # Add time
             self.T.append(b)
-
-            # Add rate
             self.y.append(self.y[-1])
 
 
@@ -226,18 +209,12 @@ class StepProfile(Profile):
         T = []
         y = []
 
-        # Get number of steps within profile
-        m = len(self.T)
-
-        # Get number of steps within filler
-        n = len(filler.T)
-
         # Pad axes end with last entry in order to compute last step correctly
         self.T.append(self.T[-1])
         self.y.append(None)
 
         # Fill profile
-        for i in range(m):
+        for i in range(len(self.T)):
 
             # Add step time
             T.append(self.T[i])
@@ -249,7 +226,7 @@ class StepProfile(Profile):
                 y.append(filler.f(self.T[i]))
 
                 # Look for additional steps to fill
-                for j in range(n):
+                for j in range(len(filler.T)):
 
                     # Filling criteria
                     if (self.T[i] < filler.T[j] < self.T[i + 1]):
@@ -290,11 +267,8 @@ class StepProfile(Profile):
         T.append(self.T[0])
         y.append(self.y[0])
 
-        # Get number of steps in profile
-        n = len(self.T)
-
         # Look for redundancies
-        for i in range(1, n - 1):
+        for i in range(1, len(self.T) - 1):
 
             # Non-redundancy criteria
             if self.y[i] != y[-1]:
@@ -375,7 +349,7 @@ class StepProfile(Profile):
 
 
 
-    def operate(self, op, profiles):
+    def op(self, op, profiles):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -435,7 +409,7 @@ class StepProfile(Profile):
         Logger.debug("Adding:")
 
         # Do operation
-        return self.operate(lambda x, y: x + y, list(args))
+        return self.op(lambda x, y: x + y, list(args))
 
 
 
@@ -451,7 +425,7 @@ class StepProfile(Profile):
         Logger.debug("Subtracting:")
 
         # Do operation
-        return self.operate(lambda x, y: x - y, list(args))
+        return self.op(lambda x, y: x - y, list(args))
 
 
 
@@ -467,7 +441,7 @@ class StepProfile(Profile):
         Logger.debug("Multiplying:")
 
         # Do operation
-        return self.operate(lambda x, y: x * y, list(args))
+        return self.op(lambda x, y: x * y, list(args))
 
 
 
@@ -483,7 +457,7 @@ class StepProfile(Profile):
         Logger.debug("Dividing:")
 
         # Do operation
-        return self.operate(lambda x, y: x / y, list(args))
+        return self.op(lambda x, y: x / y, list(args))
 
 
 
@@ -500,19 +474,15 @@ class StepProfile(Profile):
         ax = super(StepProfile, self).plot(n, size, title)
 
         # Add data to plot
-        ax.step(self.t, self.y, where = "post", label = self.__class__.__name__,
-                lw = 2, ls = "-", c = color)
+        ax.step(self.t, self.y, where = "post", label = repr(self),
+            lw = 2, ls = "-", c = color)
 
-        # More than one line
+        # More than one line: add legend
         if len(ax.lines) > 1:
-
-            # Add legend
             ax.legend()
 
         # Ready to show?
         if show:
-
-            # Show plot
             plt.show()
 
 
