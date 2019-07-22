@@ -209,7 +209,8 @@ def linearlyProjectBG(pastBG, dt):
 
 
 
-def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF, dt = 0.5):
+def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF,
+    dt = 0.5):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

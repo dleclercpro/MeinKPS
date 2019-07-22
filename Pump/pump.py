@@ -553,7 +553,8 @@ class Settings(PumpComponent):
         self.read()
 
         # If TB is asked for, but exceeds max settings
-        if (TB is not None and TB["Units"] == "U/h" and
+        if (TB is not None and
+            TB["Units"] == "U/h" and
             TB["Rate"] > self.value["Max Basal"]):
             raise ValueError("Max basal exceeded: " + fmt.basal(TB["Rate"]) +
                 " > " + fmt.bolus(self.value["Max Basal"]))
@@ -913,27 +914,7 @@ class TB(PumpComponent):
 
     	# Info
     	Logger.info("Current TB:")
-
-        # Show it
-        self.show()
-
-
-
-    def show(self, TB = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SHOW
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # No TB given
-        if TB is None:
-            TB = self.value
-
-        # Info
-        Logger.info(str(TB["Rate"]) + " " + TB["Units"] + " (" +
-            str(TB["Duration"]) + " m)")
+        Logger.info(fmt.TB(TB))
 
 
 
@@ -996,9 +977,7 @@ class TB(PumpComponent):
 
         # Info
         Logger.info("Adjusting TB from:")
-
-        # Show TB
-        self.show(TB)
+        Logger.info(fmt.TB(TB))
 
         # Round rate
         # U/h
@@ -1016,9 +995,7 @@ class TB(PumpComponent):
 
         # Info
         Logger.info("To:")
-
-        # Show adjust TB
-        self.show(TB)
+        Logger.info(fmt.TB(TB))
 
         # Return adjusted TB
         return TB
@@ -1049,9 +1026,7 @@ class TB(PumpComponent):
 
         # Info
         Logger.info("Enacting TB:")
-
-        # Show TB
-        self.show(TB)
+        Logger.info(fmt.TB(TB))
 
         # Choose command depending on units
         # U/h

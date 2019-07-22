@@ -25,31 +25,35 @@
 """
 
 def BG(x):
-    return str(round(x, 1)) + " mmol/L"
+    return "{:.1f}".format(x) + " mmol/L"
 
 def BGI(x):
-    return str(round(x, 1)) + " mmol/L/h"
+    return "{:.1f}".format(x) + " mmol/L/h"
 
 def basal(x):
-    return str(round(x, 1)) + " U/h"
+    return "{:.3f}".format(x) + " U/h"
 
 def bolus(x):
-    return str(round(x, 3)) + " U"
+    return "{:.3f}".format(x) + " U"
 
 def ISF(x):
-    return str(round(x, 1)) + " mmol/L/U"
+    return "{:.1f}".format(x) + " mmol/L/U"
 
 def CSF(x):
-    return str(int(round(x))) + " g/U"
+    return "{:.0f}".format(x) + " g/U"
 
 def IOB(x):
-    return str(round(x, 1)) + " U"
+    return "{:.1f}".format(x) + " U"
 
 def COB(x):
-    return str(int(round(x))) + " g"
+    return "{:.0f}".format(x) + " g"
 
-def frequency(f, units = "MHz"):
-    return str(round(f, 3)) + " " + units
+def TB(TB):
+    return ("{:.3f}".format(TB["Rate"]) + " " + TB["Units"] + " " +
+        "(" + "{:.0f}".format(TB["Duration"]) + " m)")
 
-def frequencyRange(f1, f2, units = "MHz"):
-    return "[" + str(round(f1, 3)) + ", " + str(round(f2, 3)) + "] " + units
+def frequency(f):
+    return "{:.3f}".format(f) + " MHz"
+
+def frequencyRange(f1, f2):
+    return "[" + "{:.3f}".format(f1) + ", " + "{:.3f}".format(f2) + "] MHz"
