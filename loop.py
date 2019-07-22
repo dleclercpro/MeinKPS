@@ -427,25 +427,25 @@ class Loop(object):
         """
 
         # Start loop
-        self.tryAndCatch(self.start)
+        if self.tryAndCatch(self.start):
 
-        # If reading CGM works
-        if self.tryAndCatch(self.readCGM):
+            # If reading CGM works
+            if self.tryAndCatch(self.readCGM):
 
-            # If reading pump works
-            if self.tryAndCatch(self.readPump):
+                # If reading pump works
+                if self.tryAndCatch(self.readPump):
 
-                # Compute necessary TB
-                if self.tryAndCatch(self.computeTB, self.t0):
+                    # Compute necessary TB
+                    if self.tryAndCatch(self.computeTB, self.t0):
 
-                    # Enact it
-                    self.tryAndCatch(self.enactTB, self.recommendation)
+                        # Enact it
+                        self.tryAndCatch(self.enactTB, self.recommendation)
 
-            # Export recent treatments
-            self.tryAndCatch(self.export)
+                # Export recent treatments
+                self.tryAndCatch(self.export)
 
-        # Stop loop
-        self.tryAndCatch(self.stop)
+            # Stop loop
+            self.tryAndCatch(self.stop)
 
 
 
