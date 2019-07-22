@@ -305,9 +305,9 @@ def toDate(path):
 
 
 # Define default paths
-REPORTS = Path("Reports")
-EXPORTS = Path("Exports")
-TESTS = Path("Tests/Data")
+REPORTS = Path(SRC + "Reports")
+EXPORTS = Path(SRC + "Exports")
+TESTS = Path(SRC + "Tests/Data")
 
 
 
