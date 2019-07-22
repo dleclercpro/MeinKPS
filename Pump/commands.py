@@ -66,8 +66,9 @@ class Command(object):
         # Define radio timeout
         self.timeout = 250
 
-        # Define function to generate send packet
+        # Define classes to generate packets
         self.toPumpPacket = packets.ToPumpPacket
+        self.fromPumpPacket = packets.FromPumpPacket
 
         # Initialize resettable command characteristics
         self.reset()
@@ -86,12 +87,10 @@ class Command(object):
         self.response = None
 
         # Reset data
-        self.data = {"TX": [],
-                     "RX": []}
+        self.data = {"TX": [], "RX": []}
 
         # Reset packets
-        self.packets = {"TX": [],
-                        "RX": []}
+        self.packets = {"TX": [], "RX": []}
 
         # Reset parameters
         self.parameters = ["00"]
@@ -106,7 +105,6 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
         pass
 
 
@@ -119,7 +117,6 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
         pass
 
 
@@ -132,7 +129,6 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore
         pass
 
 
@@ -205,8 +201,8 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RUN
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            When command runned, its core is executed, then the received data
-            (if any) is decoded, and returned.
+            When command is run, its core is executed, then the received data
+            (if any) is decoded, then returned.
         """
 
         # Reset command
@@ -242,7 +238,7 @@ class Set(Command):
         # Initialize command
         super(Set, self).__init__(pump)
 
-        # Define function to generate receive packet
+        # Define class to generate receive packet
         self.fromPumpPacket = packets.FromPumpStatusPacket
 
 
@@ -254,9 +250,6 @@ class Set(Command):
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Initialize decoding
-        super(Set, self).decode()
 
         # Get last packet
         pkt = self.packets["RX"][-1]
@@ -271,22 +264,6 @@ class Set(Command):
 
 
 class Get(Command):
-
-    def __init__(self, pump):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize command
-        super(Get, self).__init__(pump)
-
-        # Define function to generate receive packet
-        self.fromPumpPacket = packets.FromPumpPacket
-
-
 
     def decode(self):
 
@@ -354,6 +331,8 @@ class BigCommand(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             POSTLUDE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Ask the pump to send the rest of the data a given number of times,
+            using ACKs.
         """
 
         # Run postlude command given number of times
@@ -369,20 +348,9 @@ class BigCommand(Command):
                 self.packets["RX"].append(self.commands["ACK"]
                                               .packets["RX"][-1])
 
-            # Radio error
+            # Radio error: retry (if possible)
             except (errors.RadioError, errors.BadPumpPacket):
-
-                # NAK
-                if self.repeat["NAK"]:
-
-                    # Retry
-                    self.retry()
-
-                # Otherwise
-                else:
-
-                    # Re-throw error
-                    raise
+                self.retry()
 
 
 
@@ -394,26 +362,13 @@ class BigCommand(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try
+        # Execute command core
         try:
-
-            # Execute command core
             super(BigCommand, self).execute()
 
-        # Radio error
+        # Radio error: retry (if possible)
         except (errors.RadioError, errors.BadPumpPacket):
-
-            # NAK
-            if self.repeat["NAK"]:
-
-                # Retry
-                self.retry()
-
-            # Otherwise
-            else:
-
-                # Re-throw error
-                raise
+            self.retry()
 
 
 
@@ -423,6 +378,8 @@ class BigCommand(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RETRY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Ask the pump to resend the last packet a given number of times
+            (number of allowed repetitions), using a NAK.
         """
 
         # Run NAK command given number of times
@@ -430,17 +387,17 @@ class BigCommand(Command):
 
             # Info
             Logger.debug("Retrying (NAK): " + str(i + 1) + "/" +
-                                              str(self.repeat["NAK"]))
+                str(self.repeat["NAK"]))
 
             # Try
             try:
 
-                # Do it
+                # Re-ask for packet using NAK
                 self.commands["NAK"].run()
 
                 # Store response packet
                 self.packets["RX"].append(self.commands["NAK"]
-                                              .packets["RX"][-1])
+                    .packets["RX"][-1])
 
                 # Exit
                 return
@@ -511,7 +468,7 @@ class BigGet(BigCommand):
         self.commands["ACK"].timeout = self.timeout
         self.commands["NAK"].timeout = self.timeout
 
-        # Define function to generate receive packet
+        # Define class to generate receive packet
         self.fromPumpPacket = packets.FromPumpBigPacket
 
 
@@ -557,7 +514,7 @@ class ACK(Command):
         # Define code
         self.code = "06"
 
-        # Define function to generate receive packet
+        # Define class to generate receive packet
         self.fromPumpPacket = packets.FromPumpBigPacket
 
 
@@ -578,7 +535,7 @@ class NAK(Command):
         # Define code
         self.code = "15"
 
-        # Define function to generate receive packet
+        # Define class to generate receive packet
         self.fromPumpPacket = packets.FromPumpBigPacket
 
 
@@ -1570,14 +1527,10 @@ class ReadBasalProfile(BigGet):
 
             # Basal profile not initialized
             if i == 0 and entry == [0, 0, 63]:
-
-                # Exit
                 break
 
             # No more data in payload
             if sum(entry) == 0 or len(entry) != length:
-
-                # Exit
                 break
 
             # Decode time (m)
@@ -1982,16 +1935,12 @@ class PushButton(Set, BigCommand):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Try
+        # Get button corresponding byte
         try:
-
-            # Get button corresponding byte
             button = ["EASY", "ESC", "ACT", "UP", "DOWN"].index(button)
 
-        # Except
+        # Bad button
         except ValueError:
-
-            # Raise error
             raise IOError("Bad button.")
 
         # Define number of bytes to read from payload
