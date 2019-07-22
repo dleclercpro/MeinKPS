@@ -601,8 +601,8 @@ class Stick(object):
         """
 
         # Info
-        Logger.debug("Adding pump's last optimized frequency to '" +
-                     repr(self.report) + "'...")
+        Logger.debug("Adding pump's last optimized frequency to: " +
+            repr(self.report))
 
         # Get current formatted time
         now = lib.formatTime(datetime.datetime.now())
