@@ -31,7 +31,9 @@ import datetime
 
 
 # CONSTANTS
-SRC = os.getcwd() + os.sep
+# Warning: other modules depend on this file (path.py) being located at the root
+# of the project!
+SRC = os.path.dirname(os.path.abspath(__file__)) + os.sep
 
 
 
