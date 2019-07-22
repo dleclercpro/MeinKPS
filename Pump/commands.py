@@ -111,68 +111,6 @@ class Command(object):
 
 
 
-    def send(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SEND
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Generate packet to send to pump
-        pkt = self.toPumpPacket(self.code, self.parameters)
-
-        # Show it
-        #pkt.show()
-
-        # Store it
-        self.packets["TX"].append(pkt)
-
-        # Send encoded packet
-        self.pump.stick.commands["Radio TX/RX"].run(pkt.bytes["Encoded"],
-                                                    self.timeout)
-
-
-
-    def receive(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            RECEIVE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Store data
-        self.data["RX"].append(self.pump.stick.commands["Radio TX/RX"]
-                                              .data["RX"])
-
-        # Parse data into packet
-        pkt = self.fromPumpPacket(self.data["RX"][-1])
-
-        # Show it
-        pkt.show()
-
-        # Store it
-        self.packets["RX"].append(pkt)
-
-
-
-    def execute(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            EXECUTE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Send command
-        self.send()
-
-        # Receive response
-        self.receive()
-
-
-
     def decode(self):
 
         """
@@ -196,6 +134,68 @@ class Command(object):
 
         # Ignore
         pass
+
+
+
+    def execute(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            EXECUTE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Send command
+        self.send()
+
+        # Receive response
+        self.receive()
+
+
+
+    def send(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SEND
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Generate packet to send to pump
+        pkt = self.toPumpPacket(self.code, self.parameters)
+
+        # Show it
+        pkt.show()
+
+        # Store it
+        self.packets["TX"].append(pkt)
+
+        # Send encoded packet
+        self.pump.stick.commands["Radio TX/RX"].run(pkt.bytes["Encoded"],
+            self.timeout)
+
+
+
+    def receive(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            RECEIVE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Store data
+        self.data["RX"].append(self.pump.stick.commands["Radio TX/RX"]
+            .data["RX"])
+
+        # Parse data into packet
+        pkt = self.fromPumpPacket(self.data["RX"][-1])
+
+        # Show it
+        pkt.show()
+
+        # Store it
+        self.packets["RX"].append(pkt)
 
 
 
@@ -229,7 +229,7 @@ class Command(object):
 
 
 
-class SetCommand(Command):
+class Set(Command):
 
     def __init__(self, pump):
 
@@ -240,7 +240,7 @@ class SetCommand(Command):
         """
 
         # Initialize command
-        super(SetCommand, self).__init__(pump)
+        super(Set, self).__init__(pump)
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpStatusPacket
@@ -256,7 +256,7 @@ class SetCommand(Command):
         """
 
         # Initialize decoding
-        super(SetCommand, self).decode()
+        super(Set, self).decode()
 
         # Get last packet
         pkt = self.packets["RX"][-1]
@@ -270,7 +270,7 @@ class SetCommand(Command):
 
 
 
-class GetCommand(Command):
+class Get(Command):
 
     def __init__(self, pump):
 
@@ -281,7 +281,7 @@ class GetCommand(Command):
         """
 
         # Initialize command
-        super(GetCommand, self).__init__(pump)
+        super(Get, self).__init__(pump)
 
         # Define function to generate receive packet
         self.fromPumpPacket = packets.FromPumpPacket
@@ -488,7 +488,7 @@ class BigCommand(Command):
 
 
 
-class GetBigCommand(BigCommand):
+class BigGet(BigCommand):
 
     def __init__(self, pump):
 
@@ -499,7 +499,7 @@ class GetBigCommand(BigCommand):
         """
 
         # Initialize command
-        super(GetBigCommand, self).__init__(pump)
+        super(BigGet, self).__init__(pump)
 
         # Define number of NAK retries
         self.repeat["NAK"] = 10
@@ -532,6 +532,12 @@ class GetBigCommand(BigCommand):
 
         # Return it for further decoding as well as its size
         return [payload, len(payload)]
+
+
+
+
+
+
 
 
 
@@ -577,7 +583,7 @@ class NAK(Command):
 
 
 
-class PowerInit(SetCommand):
+class PowerInit(Set):
 
     def __init__(self, pump):
 
@@ -595,7 +601,7 @@ class PowerInit(SetCommand):
 
 
 
-class Power(SetCommand, BigCommand):
+class Power(Set, BigCommand):
 
     def __init__(self, pump):
 
@@ -689,7 +695,7 @@ class Power(SetCommand, BigCommand):
 
 
 
-class ReadTime(GetCommand):
+class ReadTime(Get):
 
     def __init__(self, pump):
 
@@ -729,7 +735,7 @@ class ReadTime(GetCommand):
 
 
 
-class ReadModel(GetCommand):
+class ReadModel(Get):
 
     def __init__(self, pump):
 
@@ -786,7 +792,7 @@ class ReadModel(GetCommand):
 
 
 
-class ReadFirmware(GetCommand):
+class ReadFirmware(Get):
 
     def __init__(self, pump):
 
@@ -843,7 +849,7 @@ class ReadFirmware(GetCommand):
 
 
 
-class ReadBattery(GetCommand):
+class ReadBattery(Get):
 
     def __init__(self, pump):
 
@@ -900,7 +906,7 @@ class ReadBattery(GetCommand):
 
 
 
-class ReadReservoir(GetCommand):
+class ReadReservoir(Get):
 
     def __init__(self, pump):
 
@@ -958,7 +964,7 @@ class ReadReservoir(GetCommand):
 
 
 
-class ReadStatus(GetCommand):
+class ReadStatus(Get):
 
     def __init__(self, pump):
 
@@ -994,7 +1000,7 @@ class ReadStatus(GetCommand):
 
 
 
-class ReadSettings(GetCommand):
+class ReadSettings(Get):
 
     def __init__(self, pump):
 
@@ -1051,7 +1057,7 @@ class ReadSettings(GetCommand):
 
 
 
-class ReadBGUnits(GetCommand):
+class ReadBGUnits(Get):
 
     def __init__(self, pump):
 
@@ -1115,7 +1121,7 @@ class ReadBGUnits(GetCommand):
 
 
 
-class ReadCarbsUnits(GetCommand):
+class ReadCarbsUnits(Get):
 
     def __init__(self, pump):
 
@@ -1179,7 +1185,7 @@ class ReadCarbsUnits(GetCommand):
 
 
 
-class ReadBGTargets(GetCommand):
+class ReadBGTargets(Get):
 
     def __init__(self, pump):
 
@@ -1283,7 +1289,7 @@ class ReadBGTargets(GetCommand):
 
 
 
-class ReadFactors(GetCommand):
+class ReadFactors(Get):
 
     def __init__(self, pump):
 
@@ -1505,7 +1511,7 @@ class ReadCSF(ReadFactors):
 
 
 
-class ReadBasalProfile(GetBigCommand):
+class ReadBasalProfile(BigGet):
 
     def __init__(self, pump):
 
@@ -1678,7 +1684,7 @@ class ReadBasalProfileB(ReadBasalProfile):
 
 
 
-class ReadDailyTotals(GetCommand):
+class ReadDailyTotals(Get):
 
     def __init__(self, pump):
 
@@ -1715,7 +1721,7 @@ class ReadDailyTotals(GetCommand):
 
 
 
-class ReadTB(GetCommand):
+class ReadTB(Get):
 
     def __init__(self, pump):
 
@@ -1794,7 +1800,7 @@ class ReadTB(GetCommand):
 
 
 
-class ReadHistorySize(GetCommand):
+class ReadHistorySize(Get):
 
     def __init__(self, pump):
 
@@ -1828,7 +1834,7 @@ class ReadHistorySize(GetCommand):
 
 
 
-class ReadHistoryPageInit(SetCommand):
+class ReadHistoryPageInit(Set):
 
     def __init__(self, pump):
 
@@ -1846,7 +1852,7 @@ class ReadHistoryPageInit(SetCommand):
 
 
 
-class ReadHistoryPage(GetBigCommand):
+class ReadHistoryPage(BigGet):
 
     def __init__(self, pump):
 
@@ -1929,7 +1935,7 @@ class ReadHistoryPage(GetBigCommand):
 
 
 
-class PushButtonInit(SetCommand):
+class PushButtonInit(Set):
 
     def __init__(self, pump):
 
@@ -1947,7 +1953,7 @@ class PushButtonInit(SetCommand):
 
 
 
-class PushButton(SetCommand, BigCommand):
+class PushButton(Set, BigCommand):
 
     def __init__(self, pump):
 
@@ -1996,7 +2002,7 @@ class PushButton(SetCommand, BigCommand):
 
 
 
-class ResumeInit(SetCommand):
+class ResumeInit(Set):
 
     def __init__(self, pump):
 
@@ -2014,7 +2020,7 @@ class ResumeInit(SetCommand):
 
 
 
-class Resume(SetCommand, BigCommand):
+class Resume(Set, BigCommand):
 
     def __init__(self, pump):
 
@@ -2051,7 +2057,7 @@ class Resume(SetCommand, BigCommand):
 
 
 
-class SuspendInit(SetCommand):
+class SuspendInit(Set):
 
     def __init__(self, pump):
 
@@ -2069,7 +2075,7 @@ class SuspendInit(SetCommand):
 
 
 
-class Suspend(SetCommand, BigCommand):
+class Suspend(Set, BigCommand):
 
     def __init__(self, pump):
 
@@ -2106,7 +2112,7 @@ class Suspend(SetCommand, BigCommand):
 
 
 
-class DeliverBolusInit(SetCommand):
+class DeliverBolusInit(Set):
 
     def __init__(self, pump):
 
@@ -2124,7 +2130,7 @@ class DeliverBolusInit(SetCommand):
 
 
 
-class DeliverBolus(SetCommand, BigCommand):
+class DeliverBolus(Set, BigCommand):
 
     def __init__(self, pump):
 
@@ -2167,7 +2173,7 @@ class DeliverBolus(SetCommand, BigCommand):
 
 
 
-class SetTBUnitsInit(SetCommand):
+class SetTBUnitsInit(Set):
 
     def __init__(self, pump):
 
@@ -2185,7 +2191,7 @@ class SetTBUnitsInit(SetCommand):
 
 
 
-class SetTBUnits(SetCommand, BigCommand):
+class SetTBUnits(Set, BigCommand):
 
     def __init__(self, pump):
 
@@ -2230,7 +2236,7 @@ class SetTBUnits(SetCommand, BigCommand):
 
 
 
-class SetAbsoluteTBInit(SetCommand):
+class SetAbsoluteTBInit(Set):
 
     def __init__(self, pump):
 
@@ -2248,7 +2254,7 @@ class SetAbsoluteTBInit(SetCommand):
 
 
 
-class SetAbsoluteTB(SetCommand, BigCommand):
+class SetAbsoluteTB(Set, BigCommand):
 
     def __init__(self, pump):
 
@@ -2301,7 +2307,7 @@ class SetAbsoluteTB(SetCommand, BigCommand):
 
 
 
-class SetPercentageTBInit(SetCommand):
+class SetPercentageTBInit(Set):
 
     def __init__(self, pump):
 
@@ -2319,7 +2325,7 @@ class SetPercentageTBInit(SetCommand):
 
 
 
-class SetPercentageTB(SetCommand, BigCommand):
+class SetPercentageTB(Set, BigCommand):
 
     def __init__(self, pump):
 

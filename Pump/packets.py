@@ -334,7 +334,7 @@ class PumpPacket(Packet):
 
 
 
-    def show(self):
+    def show(self, encoded = False, decoded = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -353,10 +353,12 @@ class PumpPacket(Packet):
         Logger.debug("CRC: " + str(self.CRC))
 
         # Show its encoded version
-        #self.showEncoded()
+        if encoded:
+            self.showEncoded()
 
         # Show its decoded version
-        self.showDecoded()
+        if decoded:
+            self.showDecoded()
 
 
 
