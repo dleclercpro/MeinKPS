@@ -74,8 +74,8 @@ class TB(PastProfile, StepProfile):
             if self.y[i][1] != "U/h":
                 raise ValueError("Bad TB units. Only 'U/h' supported now.")
 
-            # Get rate
-            self.y[i] = self.y[i][0]
-
             # Get duration
             self.durations.append(datetime.timedelta(minutes = self.y[i][2]))
+
+            # Get rate (remove units and duration)
+            self.y[i] = self.y[i][0]

@@ -914,7 +914,7 @@ class TB(PumpComponent):
 
     	# Info
     	Logger.info("Current TB:")
-        Logger.info(fmt.TB(TB))
+        Logger.info(fmt.TB(self.value))
 
 
 

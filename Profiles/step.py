@@ -109,13 +109,16 @@ class StepProfile(Profile):
         T = []
         y = []
 
+        # Get number of steps
+        n = len(self.T)
+
         # Pad end of axes with infinitely far away entry in order to correctly
         # compute last step duration
         self.T.append(datetime.datetime.max)
         self.y.append(None)
 
         # Rebuild profile and inject zeros where needed
-        for i in range(len(self.T)):
+        for i in range(n):
 
             # Add step
             T.append(self.T[i])
