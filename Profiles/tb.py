@@ -79,3 +79,17 @@ class TB(PastProfile, StepProfile):
 
             # Get rate (remove units and duration)
             self.y[i] = self.y[i][0]
+
+
+
+    def convert(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            CONVERT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Convert % TBs to U/h TBs, using basal profile.
+        """
+
+        # TODO
+        pass
