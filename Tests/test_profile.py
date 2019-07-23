@@ -151,7 +151,7 @@ def test_build(setup_and_teardown):
 
     """
     Build a past profile: instanciate it, define it, load its data and decouple
-    it.
+    it. Data should NOT be cut off.
     """
 
     datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
@@ -174,11 +174,12 @@ def test_build(setup_and_teardown):
         path.TESTS)
 
     # Instanciate and build profile (exclude first and last datetimes)
+    # Using past profile because it has a load method
     p = PastProfile()
     p.build(datetimes[1], datetimes[-1])
 
     # One day before start of profile should have been added to its days
-    assert (p.days == [min(datetimes).date(), max(datetimes).date()] and
+    assert (p.days == [datetimes[0].date(), datetimes[-1].date()] and
         p.data == formattedEntries and
         p.T == datetimes and
         p.y == values)
@@ -188,7 +189,8 @@ def test_build(setup_and_teardown):
 def test_cut(setup_and_teardown):
 
     """
-    ...
+    Build a profile and cut off some of its data (keep data within time range
+    given by 2 datetimes).
     """
 
     datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
@@ -208,12 +210,21 @@ def test_cut(setup_and_teardown):
     reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
         path.TESTS)
 
-    # Instanciate and build profile (exclude first and last datetimes)
+    # Instanciate and build profile (exclude first datetime)
     p = PastProfile()
-    p.build(datetimes[1], datetimes[-2])
+    p.build(datetimes[1], datetimes[-1])
 
     # Cut it
     [_, _, last] = p.cut()
 
     # Last value before start of profile should be returned after the cut
-    assert last == values[0] and p.T == datetimes[1:-1] and p.y == values[1:-1]
+    assert last == values[0] and p.T == datetimes[1:] and p.y == values[1:]
+
+    # Rebuild profile (exclude first and last datetimes)
+    p.build(datetimes[1], datetimes[-1])
+
+    # Cut with given datetimes
+    [_, _, last] = p.cut(datetimes[2], datetimes[-2])
+
+    # Test cut
+    assert last == values[1] and p.T == datetimes[2:-1] and p.y == values[2:-1]
