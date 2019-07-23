@@ -320,7 +320,7 @@ class PumpPacket(Packet):
             rowInt = str(self.bytes["Decoded"]["Int"][a:b])
 
             # On last row, some extra space may be needed for some formats
-            if (r == R - 1) and (N != 0):
+            if r == R - 1 and N != 0:
 
                 # Define row
                 rowHex += (n - N) * 3 * " "

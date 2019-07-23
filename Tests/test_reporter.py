@@ -285,8 +285,8 @@ def test_get_report_dates(setup_and_teardown):
     """
 
     datetimes = [datetime.datetime(1975, 1, 1, 0, 0, 0),
-             datetime.datetime(1980, 2, 2, 0, 0, 0),
-             datetime.datetime(1985, 3, 3, 0, 0, 0)]
+                 datetime.datetime(1980, 2, 2, 0, 0, 0),
+                 datetime.datetime(1985, 3, 3, 0, 0, 0)]
 
     # Instanciate empty reports and store them
     for d in datetimes:
@@ -309,8 +309,8 @@ def test_get_recent(setup_and_teardown):
     now = datetime.datetime.now()
 
     datetimes = [datetime.datetime(1975, 1, 1, 0, 0, 0),
-             datetime.datetime(1980, 2, 2, 0, 0, 0),
-             datetime.datetime(1985, 3, 3, 0, 0, 0)]
+                 datetime.datetime(1980, 2, 2, 0, 0, 0),
+                 datetime.datetime(1985, 3, 3, 0, 0, 0)]
 
     values = [6.2, 6.0, 5.8]
 

@@ -253,11 +253,11 @@ class Profile(object):
 
         # Group axes and filter them
         data = zip(self.T, self.y)
-        previousData = [x for x in data if x[0] < a]
+        olderData = [x for x in data if x[0] < a]
         filteredData = [x for x in data if a <= x[0] <= b]
 
         # Find last value before beginning of profile
-        last = previousData[-1][1] if previousData else None
+        last = olderData[-1][1] if olderData else None
 
         # Cut-off steps outside of start and end limits
         [self.T, self.y] = lib.unzip(filteredData)

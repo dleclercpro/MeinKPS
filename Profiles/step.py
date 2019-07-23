@@ -98,31 +98,27 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INJECT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Inject zeros after theoretical end of steps. Will only work if step
-            durations are defined!
+            Inject zeros after theoretical end of steps.
         """
 
         # Info
-        Logger.debug("Injecting...")
+        Logger.debug("Injecting zeros in: " + repr(self))
 
         # Initialize temporary components
         T = []
         y = []
 
-        # Get number of steps
-        n = len(self.T)
-
         # Pad end of axes with infinitely far away entry in order to correctly
         # compute last step duration
-        self.T.append(datetime.datetime.max)
-        self.y.append(None)
+        self.T += [datetime.datetime.max]
+        self.y += [None]
 
         # Rebuild profile and inject zeros where needed
-        for i in range(n):
+        for i in range(len(self.T) - 1):
 
             # Add step
-            T.append(self.T[i])
-            y.append(self.y[i])
+            T += [self.T[i]]
+            y += [self.y[i]]
 
             # Get current step duration
             d = self.durations[i]
@@ -130,22 +126,17 @@ class StepProfile(Profile):
             # Compute time between current and next steps
             dt = self.T[i + 1] - self.T[i]
 
-            # If step is a canceling one
+            # Step is a canceling one: replace it with a zero (default step)
             if d == datetime.timedelta(0):
-
-                # Replace value with zero (default) value
                 y[-1] = self.zero
 
-            # Inject zero in profile
+            # Step ended before next one start: inject zero in profile
             elif d < dt:
-
-                # Add zero
-                T.append(self.T[i] + d)
-                y.append(self.zero)
+                T += [self.T[i] + d]
+                y += [self.zero]
 
         # Update profile
-        self.T = T
-        self.y = y
+        self.T, self.y = T, y
 
 
 
@@ -177,21 +168,21 @@ class StepProfile(Profile):
         """
 
         # Info
-        Logger.debug("Padding...")
+        Logger.debug("Padding: " + repr(self))
 
-        # If no previous step was found: use profile zero (default) value
+        # No previous step was found: use profile zero (default) value
         if last is None:
             last = self.zero
 
         # Start of profile: extend precedent step's value
         if len(self.T) == 0 or self.T[0] != a:
-            self.T.insert(0, a)
-            self.y.insert(0, last)
+            self.T = [a] + self.T
+            self.y = [last] + self.y
 
         # End of profile
         if self.T[-1] != b:
-            self.T.append(b)
-            self.y.append(self.y[-1])
+            self.T += [b]
+            self.y += [self.y[-1]]
 
 
 
@@ -201,52 +192,47 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             FILL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Fill holes in profile y-axis (replace 'None' values with the ones
+            of filler profile).
+            
             Note: Only cut and padded profile can be filled! The last entry has
                   to delimit the end of the last step.
         """
 
         # Info
-        Logger.debug("Filling...")
+        Logger.debug("Filling: " + repr(self))
 
         # Initialize new profile components
         T = []
         y = []
 
         # Pad axes end with last entry in order to compute last step correctly
-        self.T.append(self.T[-1])
-        self.y.append(None)
+        self.T += [self.T[-1]]
+        self.y += [None]
 
         # Fill profile
         for i in range(len(self.T)):
 
             # Add step time
-            T.append(self.T[i])
+            T += [self.T[i]]
+            y += [self.y[i]]
 
             # Filling criteria
-            if self.y[i] is None:
+            if y[-1] is None:
 
                 # Fill step value
-                y.append(filler.f(self.T[i]))
+                y[-1] = filler.f(T[-1])
 
                 # Look for additional steps to fill
                 for j in range(len(filler.T)):
 
                     # Filling criteria
-                    if (self.T[i] < filler.T[j] < self.T[i + 1]):
-
-                        # Add step
-                        T.append(filler.T[j])
-                        y.append(filler.y[j])
-
-            # Step exists in profile
-            else:
-
-                # Add step value
-                y.append(self.y[i])
+                    if self.T[i] < filler.T[j] < self.T[i + 1]:
+                        T += [filler.T[j]]
+                        y += [filler.y[j]]
 
         # Update profile
-        self.T = T
-        self.y = y
+        self.T, self.y = T, y
 
 
 
@@ -260,15 +246,15 @@ class StepProfile(Profile):
         """
 
         # Info
-        Logger.debug("Smoothing...")
+        Logger.debug("Smoothing: " + repr(self))
 
         # Initialize components for smoothed profile
         T = []
         y = []
 
         # Restore start of profile
-        T.append(self.T[0])
-        y.append(self.y[0])
+        T += [self.T[0]]
+        y += [self.y[0]]
 
         # Look for redundancies
         for i in range(1, len(self.T) - 1):
@@ -277,16 +263,15 @@ class StepProfile(Profile):
             if self.y[i] != y[-1]:
 
                 # Add step
-                T.append(self.T[i])
-                y.append(self.y[i])
+                T += [self.T[i]]
+                y += [self.y[i]]
 
         # Restore end of profile
-        T.append(self.T[-1])
-        y.append(self.y[-1])
+        T += [self.T[-1]]
+        y += [self.y[-1]]
 
         # Update profile
-        self.T = T
-        self.y = y
+        self.T, self.y = T, y
 
 
 
@@ -304,22 +289,23 @@ class StepProfile(Profile):
 
         # Datetime axis
         if type(t) is datetime.datetime:
-
-            # Define axis
             axis = self.T
 
         # Normalized axis
-        else:
-
-            # Define axis
+        elif lib.isRealNumber(t):
             axis = self.t
+
+        # Otherwise
+        else:
+            raise TypeError("Invalid time t to compute f(t) for.")
 
         # Get number of steps in profile
         n = len(axis) - 1
 
         # Make sure axes fit
         if n != len(self.y) - 1:
-            raise IOError("Cannot compute f(t): axes' length do not fit.")
+            raise ArithmeticError("Cannot compute f(t): axes' lengths do not " +
+                "fit.")
 
         # Compute profile value
         for i in range(n):
@@ -329,8 +315,6 @@ class StepProfile(Profile):
 
                 # Store index
                 index = i
-
-                # Exit
                 break
 
         # Index identification criteria (end time)
@@ -344,11 +328,8 @@ class StepProfile(Profile):
             raise ValueError("The value of f(" + lib.formatTime(t) + ") " +
                 "does not exist.")
 
-        # Compute corresponding value
-        y = self.y[index]
-
-        # Return result
-        return y
+        # Return corresponding value
+        return self.y[index]
 
 
 
@@ -387,7 +368,7 @@ class StepProfile(Profile):
                 y = op(y, p.f(T))
 
             # Store result for current step
-            new.y.append(y)
+            new.y += [y]
 
         # Get min/max values
         [new.min, new.max] = [min(new.y), max(new.y)]

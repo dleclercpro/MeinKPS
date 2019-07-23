@@ -28,7 +28,7 @@ import pytest
 import lib
 import path
 import reporter
-from Profiles import profile, past
+from Profiles import profile, step, dot, past, future
 
 
 
@@ -60,6 +60,16 @@ class PastProfile(past.PastProfile):
 
 
 
+class StepProfile(step.StepProfile):
+
+    def __init__(self):
+
+        super(StepProfile, self).__init__()
+
+        self.src = path.TESTS
+
+
+
 # FIXTURES
 @pytest.fixture
 def setup_and_teardown():
@@ -77,19 +87,17 @@ def setup_and_teardown():
 
 
 # TESTS
-def test_define_start_end():
+def test_define(setup_and_teardown):
 
     """
-    Profile start/end times can only be datetime objects. Profiles always start
-    one day before start date.
+    Create a profile and define its time references.
     """
 
-    n = 3
-    start = datetime.datetime(1990, 1, 1, 0, 0, 0)
-    end = start + datetime.timedelta(days = n - 1)
-
-    dayRange = [i - 1 for i in range(n + 1)]
-    days = [(start + datetime.timedelta(days = d)).date() for d in dayRange]
+    datetimes = [datetime.datetime(1990, 12, 1, 0, 0, 0),
+                 datetime.datetime(1990, 12, 2, 0, 0, 0),
+                 datetime.datetime(1990, 12, 3, 0, 0, 0),
+                 datetime.datetime(1990, 12, 4, 0, 0, 0),
+                 datetime.datetime(1990, 12, 5, 0, 0, 0)]
 
     # Create profile
     p = Profile()
@@ -100,58 +108,31 @@ def test_define_start_end():
 
     # Try with dates
     with pytest.raises(TypeError):
-        p.define(start.date(), end.date())
+        p.define(datetimes[0].date(), datetimes[-1].date())
 
-    # Do it with datetimes
-    p.define(start, end)
-
-    # Start/end datetimes, as well as days covered, should be the ones expected
-    assert p.days == days and p.start == start and p.end == end
-
-
-
-def test_missing_load():
-
-    """
-    Basic implementation of Profile object misses load method.
-    """
-
-    # Create and define profile
-    p = Profile()
-
-    # Try loading with unimplemented method
-    with pytest.raises(NotImplementedError):
-        p.load()
-
-
-
-def test_wrong_time_order():
-
-    """
-    Start of profile has to be before its end time.
-    """
-
-    start = datetime.datetime(1990, 1, 1, 0, 0, 0)
-    end = datetime.datetime(1989, 1, 1, 0, 0, 0)
-
-    # Create profile
-    p = Profile()
-
-    # Try defining with wrongly ordered datetimes
+    # Try defining with wrong ordered datetimes
     with pytest.raises(ValueError):
-        p.define(start, end)
+        p.define(datetimes[-1], datetimes[0])
 
     # Try defining point-like profile
     with pytest.raises(ValueError):
-        p.define(start, start)
+        p.define(datetimes[0], datetimes[0])
+    
+    # Define correct time references
+    p.define(datetimes[1], datetimes[-1])
+
+    # Check profile's start/end times
+    assert p.start == datetimes[1] and p.end == datetimes[-1]
+
+    # Check day range: it should start one day before the given start datetime
+    assert p.days == [d.date() for d in datetimes]
 
 
 
-def test_build(setup_and_teardown):
+def test_load(setup_and_teardown):
 
     """
-    Build a past profile: instanciate it, define it, load its data and decouple
-    it. Data should NOT be cut off.
+    Create a profile and load its data.
     """
 
     datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
@@ -159,38 +140,74 @@ def test_build(setup_and_teardown):
                  datetime.datetime(1990, 12, 2, 0, 30, 0),
                  datetime.datetime(1990, 12, 2, 1, 0, 0)]
 
-    formattedDatetimes = [lib.formatTime(d) for d in datetimes]
+    values = [6.2, 6.0, 5.8, 5.6]
+
+    # Create dated entries
+    reporter.setDatedEntries(test_reporter.DatedReport, [],
+        dict(zip(datetimes, values)), path.TESTS)
+
+    # Create profile with no loading method implemented
+    p = Profile()
+
+    # Try loading
+    with pytest.raises(NotImplementedError):
+        p.load()
+
+    # Create a past profile (for its existing load method) and define its time
+    # references (exclude first and last datetimes)
+    p = PastProfile()
+    p.define(datetimes[1], datetimes[-1])
+
+    # Load its data using previously generated test dated reports
+    p.load()
+
+    # One day before start of profile should have been added to its days
+    assert p.data == dict(zip([lib.formatTime(d) for d in datetimes], values))
+
+
+
+def test_decouple(setup_and_teardown):
+
+    """
+    Create a profile, give it loaded data and decouple it into time and value
+    axes.
+    """
+
+    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
+                 datetime.datetime(1990, 12, 2, 0, 0, 0),
+                 datetime.datetime(1990, 12, 2, 0, 30, 0),
+                 datetime.datetime(1990, 12, 2, 1, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6]
 
-    entries = dict(zip(datetimes, values))
+    # Create profile
+    p = Profile()
+    p.data = dict(zip([lib.formatTime(d) for d in datetimes], values))
 
-    formattedEntries = dict(zip(formattedDatetimes, values))
+    # Decouple its data
+    p.decouple()
 
-    branch = []
+    # Check profile axes
+    assert p.T == datetimes and p.y == values
 
-    # Create dated entries
-    reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
-        path.TESTS)
 
-    # Instanciate and build profile (exclude first and last datetimes)
-    # Using past profile because it has a load method
-    p = PastProfile()
-    p.build(datetimes[1], datetimes[-1])
 
-    # One day before start of profile should have been added to its days
-    assert (p.days == [datetimes[0].date(), datetimes[-1].date()] and
-        p.data == formattedEntries and
-        p.T == datetimes and
-        p.y == values)
+def test_inject(setup_and_teardown):
+
+    """
+    ...
+    """
+
+    # TODO
+    assert True
 
 
 
 def test_cut(setup_and_teardown):
 
     """
-    Build a profile and cut off some of its data (keep data within time range
-    given by 2 datetimes).
+    Create a profile and cut off some of its data (outside some given time
+    range).
     """
 
     datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
@@ -202,39 +219,104 @@ def test_cut(setup_and_teardown):
 
     values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2]
 
-    entries = dict(zip(datetimes, values))
-
-    branch = []
-
-    # Create dated entries
-    reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
-        path.TESTS)
-
-    # Instanciate and build profile (exclude first datetime)
-    p = PastProfile()
-    p.build(datetimes[1], datetimes[-1])
+    # Create profile
+    p = Profile()
+    p.T = datetimes
+    p.y = values
+    p.start = datetimes[1]
+    p.end = datetimes[-1]
 
     # Cut it
     [_, _, last] = p.cut()
 
-    # Last value before start of profile should be returned after the cut
-    assert last == values[0] and p.T == datetimes[1:] and p.y == values[1:]
+    # First entry should be cut off
+    assert last == values[0]
+    assert p.T == datetimes[1:] and p.y == values[1:]
 
-    # Rebuild profile (exclude first and last datetimes)
-    p.build(datetimes[1], datetimes[-1])
+    # Rewrite profile
+    p.T = datetimes
+    p.y = values
 
     # Cut with given datetimes
     [_, _, last] = p.cut(datetimes[2], datetimes[-2])
 
-    # Test cut
-    assert last == values[1] and p.T == datetimes[2:-1] and p.y == values[2:-1]
+    # First two entries and last one should be cut off
+    assert last == values[1]
+    assert p.T == datetimes[2:-1] and p.y == values[2:-1]
+
+
+
+def test_pad(setup_and_teardown):
+
+    """
+    ...
+    """
+
+    # TODO
+    assert True
+
+
+
+def test_fill(setup_and_teardown):
+
+    """
+    ...
+    """
+
+    # TODO
+    assert True
+
+
+
+def test_smooth(setup_and_teardown):
+
+    """
+    Create a step profile with redundant steps, then smooth it.
+    """
+
+    datetimes = [datetime.datetime(1990, 12, 1, 1, 0, 0),
+                 datetime.datetime(1990, 12, 1, 2, 0, 0),
+                 datetime.datetime(1990, 12, 1, 3, 0, 0),
+                 datetime.datetime(1990, 12, 1, 4, 0, 0),
+                 datetime.datetime(1990, 12, 1, 5, 0, 0),
+                 datetime.datetime(1990, 12, 1, 6, 0, 0),
+                 datetime.datetime(1990, 12, 1, 7, 0, 0),
+                 datetime.datetime(1990, 12, 1, 8, 0, 0),
+                 datetime.datetime(1990, 12, 1, 9, 0, 0),
+                 datetime.datetime(1990, 12, 1, 10, 0, 0),
+                 datetime.datetime(1990, 12, 1, 11, 0, 0),
+                 datetime.datetime(1990, 12, 1, 12, 0, 0)]
+
+    values = [6.2, 6.2, 6.0, 6.0, 6.0, 5.4, 5.2, 5.2, 5.8, 6.0, 6.2, 6.2]
+
+    smoothedDatetimes = [datetime.datetime(1990, 12, 1, 1, 0, 0),
+                         datetime.datetime(1990, 12, 1, 3, 0, 0),
+                         datetime.datetime(1990, 12, 1, 6, 0, 0),
+                         datetime.datetime(1990, 12, 1, 7, 0, 0),
+                         datetime.datetime(1990, 12, 1, 9, 0, 0),
+                         datetime.datetime(1990, 12, 1, 10, 0, 0),
+                         datetime.datetime(1990, 12, 1, 11, 0, 0),
+                         datetime.datetime(1990, 12, 1, 12, 0, 0)]
+
+    smoothedValues = [6.2, 6.0, 5.4, 5.2, 5.8, 6.0, 6.2, 6.2]
+
+    # Create profile
+    p = StepProfile()
+    p.T = datetimes
+    p.y = values
+
+    # Smooth it
+    p.smooth()
+
+    # No redundant steps allowed in smoothed profile
+    assert p.T == smoothedDatetimes and p.y == smoothedValues
 
 
 
 def test_normalize(setup_and_teardown):
 
     """
-    Build a profile, then normalize its time axis.
+    Create a profile, then normalize its time axis.
     """
 
     datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
@@ -246,22 +328,14 @@ def test_normalize(setup_and_teardown):
 
     values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2]
 
-    entries = dict(zip(datetimes, values))
-
-    branch = []
-
-    # Create dated entries
-    reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
-        path.TESTS)
-
-    # Instanciate and build profile (exclude first datetime)
-    p = PastProfile()
-    p.build(datetimes[1], datetimes[-1])
+    # Create profile and define its norm
+    p = Profile()
+    p.T = datetimes
+    p.y = values
+    p.norm = p.T[-1]
 
     # Normalize it
     p.normalize()
 
-    # Make sure norm of past profile is its end, then check its normalized time
-    # axis
-    assert p.norm == datetimes[-1] and p.t == [lib.normalizeTime(T, p.norm)
-        for T in p.T]
+    # Check normalization
+    assert p.t == [lib.normalizeTime(T, p.norm) for T in p.T]
