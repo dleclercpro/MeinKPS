@@ -185,9 +185,8 @@ class Loop(object):
         # Define starting time
         self.t0 = datetime.datetime.now()
 
-        # Update last loop time and iteration number
+        # Update last loop time
         self.report.set(lib.formatTime(self.t0), ["Status", "Time"], True)
-        self.report.increment(["Status", "N"])
         self.report.store()
 
         # Start devices
@@ -212,8 +211,9 @@ class Loop(object):
         # Get loop length
         dt = (self.t1 - self.t0).seconds
 
-        # Update loop infos
+        # Update last loop duration, as well as number of successful loops
         self.report.set(dt, ["Status", "Duration"], True)
+        self.report.increment(["Status", "N"])
         self.report.store()
 
         # Info
