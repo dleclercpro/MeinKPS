@@ -138,9 +138,6 @@ class Loop(object):
         # Start stick
         self.stick.start()
 
-        # Turn stick's LED on to signify active looping
-        self.stick.switchLED("ON")
-
         # Start CGM
         self.cgm.start()
 
@@ -162,9 +159,6 @@ class Loop(object):
 
         # Stop CGM
         self.cgm.stop()
-
-        # Turn stick's LED off
-        self.stick.switchLED("OFF")
 
         # Stop stick
         self.stick.stop()
@@ -429,6 +423,9 @@ class Loop(object):
         # Start loop
         if self.tryAndCatch(self.start):
 
+            # Turn stick's LED on to signify active looping
+            self.stick.switchLED("ON")
+
             # If reading CGM works
             if self.tryAndCatch(self.readCGM):
 
@@ -443,6 +440,9 @@ class Loop(object):
 
                 # Export recent treatments
                 self.tryAndCatch(self.export)
+
+            # Turn stick's LED off
+            self.stick.switchLED("OFF")
 
             # Stop loop
             self.tryAndCatch(self.stop)
