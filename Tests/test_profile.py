@@ -228,3 +228,40 @@ def test_cut(setup_and_teardown):
 
     # Test cut
     assert last == values[1] and p.T == datetimes[2:-1] and p.y == values[2:-1]
+
+
+
+def test_normalize(setup_and_teardown):
+
+    """
+    Build a profile, then normalize its time axis.
+    """
+
+    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
+                 datetime.datetime(1990, 12, 2, 0, 0, 0),
+                 datetime.datetime(1990, 12, 2, 0, 30, 0),
+                 datetime.datetime(1990, 12, 3, 0, 0, 0),
+                 datetime.datetime(1990, 12, 3, 0, 30, 0),
+                 datetime.datetime(1990, 12, 4, 0, 0, 0)]
+
+    values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2]
+
+    entries = dict(zip(datetimes, values))
+
+    branch = []
+
+    # Create dated entries
+    reporter.setDatedEntries(test_reporter.DatedReport, branch, entries,
+        path.TESTS)
+
+    # Instanciate and build profile (exclude first datetime)
+    p = PastProfile()
+    p.build(datetimes[1], datetimes[-1])
+
+    # Normalize it
+    p.normalize()
+
+    # Make sure norm of past profile is its end, then check its normalized time
+    # axis
+    assert p.norm == datetimes[-1] and p.t == [lib.normalizeTime(T, p.norm)
+        for T in p.T]

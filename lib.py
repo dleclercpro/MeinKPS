@@ -312,30 +312,30 @@ def formatTime(t):
 
 
 
-def normalizeTime(t, T):
+def normalizeTime(t, ref):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         NORMALIZETIME
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Compare a datetime object to another one, which serves as a reference.
+        Return the time difference in hours.
     """
 
-    # Compare time to reference
-    if t >= T:
+    # Test types
+    if type(t) is not datetime.datetime or type(ref) is not datetime.datetime:
+        raise TypeError("Only datetime objects can be normalized.")
 
-        # Compute positive time difference (s)
-        dt = (t - T).total_seconds()
+    # Compute positive time difference (s)
+    if t >= ref:
+        dt = (t - ref).total_seconds()
 
+    # Compute negative time difference (s)
     else:
+        dt = -(ref - t).total_seconds()
 
-        # Compute negative time difference (s)
-        dt = -(T - t).total_seconds()
-
-    # Convert time difference to hours
-    dt /= 3600.0
-
-    # Return time difference
-    return dt
+    # Return time difference in hours
+    return dt / 3600.0
 
 
 
