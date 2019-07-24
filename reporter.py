@@ -795,14 +795,7 @@ class LoopReport(Report):
                 "BG": 0,
                 "Battery": 0,
                 "Calibration": 0,
-                "Clock": 0,
-                "Firmware": 0,
-                "Language": 0,
-                "Sensor": 0,
-                "Start": 0,
-                "Stop": 0,
-                "Transmitter": 0,
-                "Units": 0
+                "Sensor": 0
             },
             "Pump": {
                 "BG Targets": 0,
@@ -811,13 +804,9 @@ class LoopReport(Report):
                 "CSF": 0,
                 "History": 0,
                 "ISF": 0,
-                "Model": 0,
                 "Reservoir": 0,
                 "Settings": 0,
-                "Start": 0,
-                "Stop": 0,
-                "TB": 0,
-                "Time": 0
+                "TB": 0
             },
             "Status": {
                 "Duration": 0,
