@@ -29,6 +29,7 @@ import datetime
 
 # USER LIBRARIES
 import lib
+import fmt
 import logger
 import errors
 import reporter
@@ -185,14 +186,14 @@ class BGRecord(Record):
         self.size = 13
 
         # Define dictionary for trends
-        self.trends = {1: "90UpUp",
-                       2: "90Up",
-                       3: "45Up",
-                       4: "0",
-                       5: "45Down",
-                       6: "90Down",
-                       7: "90DownDown",
-                       8: "None",
+        self.trends = {1: "↑↑",
+                       2: "↑",
+                       3: "↗",
+                       4: "→",
+                       5: "↘",
+                       6: "↓",
+                       7: "↓↓",
+                       8: " ", # No trend
                        9: "OutOfRange"}
 
         # Define dictionary for special values
@@ -238,7 +239,7 @@ class BGRecord(Record):
             BG = self.special[BG]
 
             # Info
-            Logger.info("Special value: " + BG)
+            Logger.debug(BG + " (" + lib.formatTime(self.t[-1]) + ")")
 
         # Deal with normal values
         else:
@@ -250,7 +251,7 @@ class BGRecord(Record):
                 BG = round(BG / 18.0, 1)
 
             # Info
-            Logger.info("BG: " + str(BG) + " " + str(trend) + " " +
+            Logger.info("BG: " + fmt.BG(BG) + " " + str(trend) + " " +
                         "(" + lib.formatTime(self.t[-1]) + ")")
 
         # Store them
@@ -280,12 +281,6 @@ class BGRecord(Record):
 
                 # Store them
                 BGs[self.t[i]] = self.values[i]["BG"]
-
-            # Print special values
-            else:
-
-                # Info
-                Logger.info(self.values[i]["BG"] + " (" + str(self.t[i]) + ")")
 
         # Return them
         return BGs
