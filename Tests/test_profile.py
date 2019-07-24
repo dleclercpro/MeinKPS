@@ -93,11 +93,11 @@ def test_define(setup_and_teardown):
     Create a profile and define its time references.
     """
 
-    datetimes = [datetime.datetime(1990, 12, 1, 0, 0, 0),
-                 datetime.datetime(1990, 12, 2, 0, 0, 0),
-                 datetime.datetime(1990, 12, 3, 0, 0, 0),
-                 datetime.datetime(1990, 12, 4, 0, 0, 0),
-                 datetime.datetime(1990, 12, 5, 0, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 3, 0, 0, 0),
+                 datetime.datetime(1970, 1, 4, 0, 0, 0),
+                 datetime.datetime(1970, 1, 5, 0, 0, 0)]
 
     # Create profile
     p = Profile()
@@ -135,10 +135,10 @@ def test_load(setup_and_teardown):
     Create a profile and load its data.
     """
 
-    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
-                 datetime.datetime(1990, 12, 2, 0, 0, 0),
-                 datetime.datetime(1990, 12, 2, 0, 30, 0),
-                 datetime.datetime(1990, 12, 2, 1, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 30, 0),
+                 datetime.datetime(1970, 1, 2, 1, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6]
 
@@ -173,10 +173,10 @@ def test_decouple(setup_and_teardown):
     axes.
     """
 
-    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
-                 datetime.datetime(1990, 12, 2, 0, 0, 0),
-                 datetime.datetime(1990, 12, 2, 0, 30, 0),
-                 datetime.datetime(1990, 12, 2, 1, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 30, 0),
+                 datetime.datetime(1970, 1, 2, 1, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6]
 
@@ -210,12 +210,12 @@ def test_cut(setup_and_teardown):
     range).
     """
 
-    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
-                 datetime.datetime(1990, 12, 2, 0, 0, 0),
-                 datetime.datetime(1990, 12, 2, 0, 30, 0),
-                 datetime.datetime(1990, 12, 3, 0, 0, 0),
-                 datetime.datetime(1990, 12, 3, 0, 30, 0),
-                 datetime.datetime(1990, 12, 4, 0, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 30, 0),
+                 datetime.datetime(1970, 1, 3, 0, 0, 0),
+                 datetime.datetime(1970, 1, 3, 0, 30, 0),
+                 datetime.datetime(1970, 1, 4, 0, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2]
 
@@ -274,29 +274,29 @@ def test_smooth(setup_and_teardown):
     Create a step profile with redundant steps, then smooth it.
     """
 
-    datetimes = [datetime.datetime(1990, 12, 1, 1, 0, 0),
-                 datetime.datetime(1990, 12, 1, 2, 0, 0),
-                 datetime.datetime(1990, 12, 1, 3, 0, 0),
-                 datetime.datetime(1990, 12, 1, 4, 0, 0),
-                 datetime.datetime(1990, 12, 1, 5, 0, 0),
-                 datetime.datetime(1990, 12, 1, 6, 0, 0),
-                 datetime.datetime(1990, 12, 1, 7, 0, 0),
-                 datetime.datetime(1990, 12, 1, 8, 0, 0),
-                 datetime.datetime(1990, 12, 1, 9, 0, 0),
-                 datetime.datetime(1990, 12, 1, 10, 0, 0),
-                 datetime.datetime(1990, 12, 1, 11, 0, 0),
-                 datetime.datetime(1990, 12, 1, 12, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 1, 0, 0),
+                 datetime.datetime(1970, 1, 1, 2, 0, 0),
+                 datetime.datetime(1970, 1, 1, 3, 0, 0),
+                 datetime.datetime(1970, 1, 1, 4, 0, 0),
+                 datetime.datetime(1970, 1, 1, 5, 0, 0),
+                 datetime.datetime(1970, 1, 1, 6, 0, 0),
+                 datetime.datetime(1970, 1, 1, 7, 0, 0),
+                 datetime.datetime(1970, 1, 1, 8, 0, 0),
+                 datetime.datetime(1970, 1, 1, 9, 0, 0),
+                 datetime.datetime(1970, 1, 1, 10, 0, 0),
+                 datetime.datetime(1970, 1, 1, 11, 0, 0),
+                 datetime.datetime(1970, 1, 1, 12, 0, 0)]
 
     values = [6.2, 6.2, 6.0, 6.0, 6.0, 5.4, 5.2, 5.2, 5.8, 6.0, 6.2, 6.2]
 
-    smoothedDatetimes = [datetime.datetime(1990, 12, 1, 1, 0, 0),
-                         datetime.datetime(1990, 12, 1, 3, 0, 0),
-                         datetime.datetime(1990, 12, 1, 6, 0, 0),
-                         datetime.datetime(1990, 12, 1, 7, 0, 0),
-                         datetime.datetime(1990, 12, 1, 9, 0, 0),
-                         datetime.datetime(1990, 12, 1, 10, 0, 0),
-                         datetime.datetime(1990, 12, 1, 11, 0, 0),
-                         datetime.datetime(1990, 12, 1, 12, 0, 0)]
+    smoothedDatetimes = [datetime.datetime(1970, 1, 1, 1, 0, 0),
+                         datetime.datetime(1970, 1, 1, 3, 0, 0),
+                         datetime.datetime(1970, 1, 1, 6, 0, 0),
+                         datetime.datetime(1970, 1, 1, 7, 0, 0),
+                         datetime.datetime(1970, 1, 1, 9, 0, 0),
+                         datetime.datetime(1970, 1, 1, 10, 0, 0),
+                         datetime.datetime(1970, 1, 1, 11, 0, 0),
+                         datetime.datetime(1970, 1, 1, 12, 0, 0)]
 
     smoothedValues = [6.2, 6.0, 5.4, 5.2, 5.8, 6.0, 6.2, 6.2]
 
@@ -319,12 +319,12 @@ def test_normalize(setup_and_teardown):
     Create a profile, then normalize its time axis.
     """
 
-    datetimes = [datetime.datetime(1990, 12, 1, 23, 30, 0),
-                 datetime.datetime(1990, 12, 2, 0, 0, 0),
-                 datetime.datetime(1990, 12, 2, 0, 30, 0),
-                 datetime.datetime(1990, 12, 3, 0, 0, 0),
-                 datetime.datetime(1990, 12, 3, 0, 30, 0),
-                 datetime.datetime(1990, 12, 4, 0, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 30, 0),
+                 datetime.datetime(1970, 1, 3, 0, 0, 0),
+                 datetime.datetime(1970, 1, 3, 0, 30, 0),
+                 datetime.datetime(1970, 1, 4, 0, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6, 5.4, 5.2]
 
