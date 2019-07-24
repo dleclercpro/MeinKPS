@@ -135,7 +135,7 @@ class Pump(object):
 
         # Tune stick to optimized frequency to establish further connections
         # with pump
-        self.stick.tuneOptimizedFrequency(self)
+        self.stick.tuneBestFrequency(self)
 
         # Power pump's radio transmitter if necessary
         self.power.verify()

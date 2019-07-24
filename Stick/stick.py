@@ -53,7 +53,8 @@ Logger = logger.Logger("Stick.stick")
 
 
 # CONSTANTS
-N_WARNINGS = 10
+N_WARNINGS  = 10
+FLASH_SPEED = 1  # (Hz)
 
 
 
@@ -160,75 +161,6 @@ class Stick(object):
         """
 
         pass
-
-
-
-    def switchLED(self, mode):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SWITCHLED
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Shortcut to private command method turning LED on/off.
-        """
-
-        # Turn on LED
-        if mode == "ON":
-            self.commands["LED On"].run()
-
-        # Turn off LED
-        elif mode == "OFF":
-            self.commands["LED Off"].run()
-
-        # Otherwise
-        else:
-            raise ValueError("Incorrect LED mode.")
-
-
-
-    def flash(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FLASH
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Flash LED.
-        """
-
-        # Switch LED
-        self.commands["LED Toggle"].run()
-
-        # Wait
-        time.sleep(1)
-
-        # Re-switch LED
-        self.commands["LED Toggle"].run()
-
-        # Wait
-        time.sleep(1)
-
-
-
-    def warn(self, n = N_WARNINGS):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            WARN
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Warn user with the stick's LED.
-        """
-
-        # Turn LED off first
-        self.commands["LED Off"].run()
-
-        # Warn 10 times
-        for i in range(n):
-
-            # Info
-            Logger.debug("Stick LED warning: " + str(i + 1) + "/" + str(n))
-            
-            # Flash LED
-            self.flash()
 
 
 
@@ -377,6 +309,102 @@ class Stick(object):
 
 
 
+    def switchLED(self, mode):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SWITCHLED
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Shortcut to private command method turning LED on/off.
+        """
+
+        # Turn on LED
+        if mode == "ON":
+            self.commands["LED On"].run()
+
+        # Turn off LED
+        elif mode == "OFF":
+            self.commands["LED Off"].run()
+
+        # Otherwise
+        else:
+            raise ValueError("Incorrect LED mode.")
+
+
+
+    def flash(self, speed = FLASH_SPEED):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            FLASH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Flash LED at given speed (Hz).
+        """
+
+        # Flash
+        for _ in range(2):
+
+            # Toggle LED
+            self.commands["LED Toggle"].run()
+
+            # Wait
+            time.sleep(1 / speed)
+
+
+
+    def warn(self, n = N_WARNINGS):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            WARN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Warn user with the stick's LED.
+        """
+
+        # Turn LED off first
+        self.commands["LED Off"].run()
+
+        # Warn 10 times
+        for i in range(n):
+
+            # Info
+            Logger.debug("Stick LED warning: " + str(i + 1) + "/" + str(n))
+            
+            # Flash LED
+            self.flash()
+
+
+
+    def listen(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LISTEN
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Listen to incoming packets on radio.
+        """
+
+        # Read from radio indefinitely
+        while True:
+
+            # Try reading
+            try:
+
+                # Get data
+                data = self.commands["Radio RX"].run()
+
+                # Turn it into a pump packet
+                pkt = packets.FromPumpPacket(data)
+
+                # Show it
+                pkt.show()
+
+            # Ignore radio errors
+            except errors.RadioError:
+                pass
+
+
+
     def tune(self, f):
 
         """
@@ -410,11 +438,11 @@ class Stick(object):
 
 
 
-    def tuneOptimizedFrequency(self, pump):
+    def tuneBestFrequency(self, pump):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            TUNEOPTIMIZEDFREQUENCY
+            TUNEBESTFREQUENCY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Check if frequency optimizing required.
         """
@@ -438,7 +466,7 @@ class Stick(object):
         if entry is None or now.day != t.day:
 
             # Scan for best frequency
-            f = self.scan(pump)
+            f = self.scanFrequencies(pump)
 
         # Tune radio
         self.tune(f)
@@ -477,11 +505,11 @@ class Stick(object):
 
 
 
-    def scan(self, pump, F1 = None, F2 = None, n = 25, sample = 5):
+    def scanFrequencies(self, pump, F1 = None, F2 = None, n = 25, sample = 5):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            SCAN
+            SCANFREQUENCIES
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Scan the air for frequency with best signal strength (best sample
             average RSSI) to tune radio in order to communicate with pump.
@@ -545,10 +573,10 @@ class Stick(object):
         if not all(f == -99 for f in RSSIs.values()):
 
             # Optimize frequency
-            f = self.getOptimizedFrequency(RSSIs)
+            f = self.getBestFrequency(RSSIs)
 
             # Store it
-            self.storeOptimizedFrequency(f)
+            self.storeBestFrequency(f)
 
         # Otherwise
         else:
@@ -561,11 +589,11 @@ class Stick(object):
 
 
 
-    def getOptimizedFrequency(self, RSSIs):
+    def getBestFrequency(self, RSSIs):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GETOPTIMIZEDFREQUENCY
+            GETBESTFREQUENCY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Find out which frequency corresponds to best sample average RSSI.
         """
@@ -591,18 +619,17 @@ class Stick(object):
 
 
 
-    def storeOptimizedFrequency(self, f):
+    def storeBestFrequency(self, f):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STOREOPTIMIZEDFREQUENCY
+            STOREBESTFREQUENCY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Store optimized frequency.
+            Store best frequency to communicate with pump.
         """
 
         # Info
-        Logger.debug("Adding pump's last optimized frequency to: " +
-            repr(self.report))
+        Logger.debug("Adding pump's best RF to: " + repr(self.report))
 
         # Get current formatted time
         now = lib.formatTime(datetime.datetime.now())
@@ -610,38 +637,6 @@ class Stick(object):
         # Add entry to report and store it
         self.report.set([f, now], ["Frequency"], True)
         self.report.store()
-
-
-
-    def listen(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            LISTEN
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Listen to incoming packets on radio.
-        """
-
-        # Read from radio indefinitely
-        while True:
-
-            # Try reading
-            try:
-
-                # Get data
-                data = self.commands["Radio RX"].run()
-
-                # Turn it into a pump packet
-                pkt = packets.FromPumpPacket(data)
-
-                # Show it
-                pkt.show()
-
-            # Error
-            except errors.RadioError:
-
-                # Ignore
-                pass
 
 
 
