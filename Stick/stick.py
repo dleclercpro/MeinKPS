@@ -521,7 +521,7 @@ class Stick(object):
                 try:
 
                     # Run pump command
-                    pump.model.read()
+                    pump.model.read(False)
 
                     # Get last packet
                     pkt = pump.model.command.packets["RX"][-1]

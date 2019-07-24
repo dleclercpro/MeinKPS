@@ -178,7 +178,7 @@ class PumpComponent(object):
 
 
 
-    def read(self):
+    def read(self, show = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -190,7 +190,8 @@ class PumpComponent(object):
         self.value = self.command.run()
 
         # Show it
-        self.show()
+        if show:
+            self.show()
 
 
 
