@@ -74,9 +74,6 @@ class Loop(object):
         self.cgm = cgm.CGM()
         self.pump = pump.Pump(self.stick)
 
-        # Get DIA
-        self.DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
-
         # Initialize profile dict
         self.profiles = {}
 
@@ -84,7 +81,7 @@ class Loop(object):
         self.recommendation = None
 
         # Define report
-        self.report = reporter.REPORTS["loop"]
+        self.report = None
 
 
 
@@ -180,6 +177,8 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             START
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            The loop is only considered started after the devices have been
+            initialized and are ready to receive orders.
         """
 
         # Info
@@ -188,12 +187,16 @@ class Loop(object):
         # Define starting time
         self.t0 = datetime.datetime.now()
 
-        # Update last loop time
-        self.report.set(lib.formatTime(self.t0), ["Status", "Time"], True)
-        self.report.store()
+        # Get report
+        self.report = reporter.LoopReport(self.t0)
 
         # Start devices
         self.startDevices()
+
+        # Update loop stats
+        self.report.set(lib.formatTime(self.t0), ["Loop", "Last Time"], True)
+        self.report.increment(["Loop", "Start"])
+        self.report.store()
 
 
 
@@ -211,12 +214,12 @@ class Loop(object):
         # Define ending time
         self.t1 = datetime.datetime.now()
 
-        # Get loop length
-        dt = (self.t1 - self.t0).seconds
+        # Get loop duration
+        duration = (self.t1 - self.t0).seconds
 
-        # Update last loop duration, as well as number of successful loops
-        self.report.set(dt, ["Status", "Duration"], True)
-        self.report.increment(["Status", "N"])
+        # Update loop stats
+        self.report.set(duration, ["Loop", "Last Duration"], True)
+        self.report.increment(["Loop", "End"])
         self.report.store()
 
         # Info
@@ -288,12 +291,15 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Get DIA
+        DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
+
         # Define past/future reference times
-        past = now - datetime.timedelta(hours = self.DIA)
-        future = now + datetime.timedelta(hours = self.DIA)
+        past = now - datetime.timedelta(hours = DIA)
+        future = now + datetime.timedelta(hours = DIA)
 
         # Instanciate profiles
-        self.profiles = {"IDC": idc.WalshIDC(self.DIA),
+        self.profiles = {"IDC": idc.WalshIDC(DIA),
             "Suspend": suspend.Suspend(),
             "Resume": resume.Resume(),
             "Basal": basal.Basal(),
@@ -399,10 +405,10 @@ class Loop(object):
         """
 
         # Export preprocessed treatments
-        self.do(Exporter.run, ["Status", "Export"], self.t0)
+        self.do(Exporter.run, ["Loop", "Export"], self.t0)
 
         # Upload stuff
-        self.do(Uploader.run, ["Status", "Upload"])
+        self.do(Uploader.run, ["Loop", "Upload"])
 
 
 

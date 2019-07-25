@@ -762,11 +762,11 @@ class HistoryReport(DatedReport):
 
 
 
-class LoopReport(Report):
+class LoopReport(DatedReport):
 
     name = "loop.json"
 
-    def __init__(self, directory = path.REPORTS):
+    def __init__(self, date, directory = path.REPORTS):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -774,7 +774,7 @@ class LoopReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(LoopReport, self).__init__(self.name, directory)
+        super(LoopReport, self).__init__(self.name, date, directory)
 
 
 
@@ -808,11 +808,12 @@ class LoopReport(Report):
                 "Settings": 0,
                 "TB": 0
             },
-            "Status": {
-                "Duration": 0,
+            "Loop": {                
+                "Start": 0,
+                "End": 0,
+                "Last Time": "1970.01.01 - 00:00:00",
+                "Last Duration": 0,
                 "Export": 0,
-                "N": 0,
-                "Time": "1970.01.01 - 00:00:00",
                 "Upload": 0
             }
         }
@@ -1082,7 +1083,6 @@ REPORTS = {
     "pump": PumpReport(),
     "cgm": CGMReport(),
     "stick": StickReport(),
-    "loop": LoopReport(),
     "ftp": FTPReport()
 }
 
