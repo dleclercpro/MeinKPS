@@ -23,9 +23,15 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
+# LIBRARIES
+import datetime
+
+
+
 # USER LIBRARIES
 import fmt
 import logger
+import reporter
 
 
 
@@ -62,6 +68,24 @@ class BaseError(Exception):
 
 
 
+    def __repr__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            REPR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Representation of an error as a chain, going from itself, all the
+            way up to its class ancestor, which succeeds the 'BaseError' class.
+        """
+
+        # Get class path
+        path = [c.__name__ for c in self.__class__.__mro__]
+
+        return " | ".join([p for p in
+            reversed(path[:path.index("BaseError")])])
+
+
+
     def define(self):
 
         """
@@ -84,31 +108,112 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Get error type
-        errorType = self.__class__.__base__.__name__
-
-        # Get error name
-        errorName = self.__class__.__name__
-
         # Log error with according level
-        Logger.log(self.level, errorType + " | " + errorName + ": " + self.info)
+        Logger.log(self.level, repr(self) + ": " + self.info)
 
 
 
-class StickError(BaseError):
+class LoopError(BaseError):
+
+    def __init__(self, *args):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Loop errors are not only logged in the 'run.log' file, but also
+            counted in an 'errors.json' dated report.
+
+            Note: Reporter errors cannot be counted, since some cases (e.g.
+                  missing branches) lead to stack overflows.
+        """
+
+        # Get current time
+        now = datetime.datetime.now()
+
+        # Define and load report
+        self.report = reporter.ErrorsReport(now)
+        self.report.load(False)
+
+        # Initialize error
+        super(LoopError, self).__init__(*args)
+
+
+
+    def __repr__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            REPR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Representation of an error as a chain, going from itself, all the
+            way up to its class ancestor, which succeeds the 'LoopError' class.
+        """
+
+        # Get class path
+        path = [c.__name__ for c in self.__class__.__mro__]
+
+        return " | ".join([p for p in
+            reversed(path[:path.index("LoopError")])])
+
+
+
+    def log(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            LOG
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Log error
+        super(LoopError, self).log()
+
+        # Update error stats
+        self.report.increment(repr(self).split(" | "), False)
+        self.report.store()
+
+
+
+
+
+
+class StickError(LoopError):
     pass
 
-class PumpError(BaseError):
+class PumpError(LoopError):
     pass
 
-class CGMError(BaseError):
+class CGMError(LoopError):
     pass
 
-class ProfileError(BaseError):
+class ProfileError(LoopError):
     pass
 
 class ReporterError(BaseError):
     pass
+
+
+
+
+
+
+# Loop errors
+class NotEnoughBGs(LoopError):
+
+    def define(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error logging level
+        self.level = "CRITICAL"
+
+        # Define error info
+        self.info = ("Not enough recent BGs to take action.")
 
 
 
@@ -526,22 +631,3 @@ class InvalidFTPReport(ReporterError):
 
         # Define error info
         self.info = "Invalid FTP report."
-
-
-
-# General errors
-class NotEnoughBGs(BaseError):
-
-    def define(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DEFINE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error logging level
-        self.level = "CRITICAL"
-
-        # Define error info
-        self.info = ("Not enough recent BGs to take action.")

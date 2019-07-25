@@ -436,13 +436,15 @@ class Report(object):
 
 
 
-    def increment(self, branch):
+    def increment(self, branch, strict = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INCREMENT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Increment the tip of the branch by one.
+            Increment the tip of the branch by one. If 'strict' is set to False,
+            it is possible to increment a non-existing entry, by assuming it
+            was set to 0 before the call.
         """
 
         # Test branch: no empty branch allowed (cannot increment the root of a
@@ -451,7 +453,18 @@ class Report(object):
             raise errors.InvalidBranch(branch)
 
         # Try reading value
-        n = self.get(branch)
+        try:
+            n = self.get(branch)
+
+        # Entry does not exist yet
+        except errors.MissingBranch:
+
+            # Strict: creating a new entry not allowed
+            if strict:
+                raise
+
+            # Initialize tip of branch with 0
+            n = 0
 
         # Make sure it is a number
         if type(n) is not int:
@@ -820,6 +833,22 @@ class LoopReport(DatedReport):
 
         # Store it
         self.store()
+
+
+
+class ErrorsReport(DatedReport):
+
+    name = "errors.json"
+
+    def __init__(self, date, directory = path.REPORTS):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(ErrorsReport, self).__init__(self.name, date, directory)
 
 
 
