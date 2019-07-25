@@ -578,10 +578,8 @@ class Stick(object):
             # Store it
             self.storeBestFrequency(f)
 
-        # Otherwise
+        # Otherwise: pump does not respond
         else:
-
-            # Pump does not respond
             raise errors.NoPump
 
         # Return it

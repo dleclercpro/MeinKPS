@@ -182,7 +182,7 @@ class Report(object):
 
         # Overwrite right check
         if self.exists() and not overwrite:
-            raise errors.NoOverwriting(repr(self), str([]))
+            raise errors.NoOverwriting(repr(self), [])
 
         # Info
         Logger.debug("Storing report: " + repr(self))
@@ -280,7 +280,7 @@ class Report(object):
 
         # Test branch
         if not isBranchValid(branch):
-            raise errors.InvalidBranch(str(branch))
+            raise errors.InvalidBranch(branch)
 
         # Empty branch: return whole report
         if branch == []:
@@ -304,7 +304,7 @@ class Report(object):
                     json = json[key]
 
         # Branch is invalid
-        raise errors.MissingBranch(repr(self), str(branch))
+        raise errors.MissingBranch(repr(self), branch)
 
 
 
@@ -321,7 +321,7 @@ class Report(object):
 
         # Test branch
         if not isBranchValid(branch):
-            raise errors.InvalidBranch(str(branch))
+            raise errors.InvalidBranch(branch)
 
         # Empty branch: replace the whole report
         if branch == []:
@@ -333,7 +333,7 @@ class Report(object):
 
             # Overwriting not allowed
             if not overwrite:
-                raise errors.NoOverwriting(repr(self), str(branch))
+                raise errors.NoOverwriting(repr(self), branch)
 
             # Replace whole content
             self.json = value
@@ -361,7 +361,7 @@ class Report(object):
                         return
 
                     # Otherwise
-                    raise errors.NoOverwriting(repr(self), str(branch))
+                    raise errors.NoOverwriting(repr(self), branch)
 
                 # Otherwise
                 else:
@@ -382,7 +382,7 @@ class Report(object):
 
                     # No overwriting
                     if not overwrite:
-                        raise errors.NoOverwriting(repr(self), str(branch))
+                        raise errors.NoOverwriting(repr(self), branch)
 
                     # Overwrite
                     json[key] = {}                    
@@ -391,7 +391,7 @@ class Report(object):
                 json = json[key]
 
         # Branch is invalid
-        raise errors.MissingBranch(repr(self), str(branch))
+        raise errors.MissingBranch(repr(self), branch)
 
 
 
@@ -406,7 +406,7 @@ class Report(object):
 
         # Test branch
         if not isBranchValid(branch):
-            raise errors.InvalidBranch(str(branch))
+            raise errors.InvalidBranch(branch)
 
         # Empty branch: erase whole report
         if branch == []:
@@ -432,7 +432,7 @@ class Report(object):
                     json = json[key]
 
         # Branch is invalid
-        raise errors.MissingBranch(repr(self), str(branch))
+        raise errors.MissingBranch(repr(self), branch)
 
 
 
@@ -448,7 +448,7 @@ class Report(object):
         # Test branch: no empty branch allowed (cannot increment the root of a
         # report's content)
         if not isBranchValid(branch) or branch == []:
-            raise errors.InvalidBranch(str(branch))
+            raise errors.InvalidBranch(branch)
 
         # Try reading value
         n = self.get(branch)

@@ -45,7 +45,7 @@ class BaseError(Exception):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize info
+        # Initialize error info
         self.info = ""
 
         # Initialize error logging level
@@ -54,33 +54,33 @@ class BaseError(Exception):
         # Convert arguments to strings
         self.args = [str(x) for x in args]
 
-        # Prepare error
-        self.prepare()
+        # Define error
+        self.define()
 
-        # Give error
-        self.give()
+        # Log error
+        self.log()
 
 
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Define error logging level and info. This method has to be
-            implemented for each error.
+            Define error logging level and info, using arguments passed when the
+            error was raised. This method has to be implemented for each error.
         """
 
         raise NotImplementedError
 
 
 
-    def give(self):
+    def log(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            GIVE
+            LOG
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -91,7 +91,7 @@ class BaseError(Exception):
         errorName = self.__class__.__name__
 
         # Log error with according level
-        Logger.log(self.level, errorType + " > " + errorName + ": " + self.info)
+        Logger.log(self.level, errorType + " | " + errorName + ": " + self.info)
 
 
 
@@ -115,11 +115,11 @@ class ReporterError(BaseError):
 # Stick errors
 class NoStick(StickError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -133,11 +133,11 @@ class NoStick(StickError):
 
 class RadioError(StickError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -151,11 +151,11 @@ class RadioError(StickError):
 
 class UnknownFrequencyRange(StickError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -167,11 +167,11 @@ class UnknownFrequencyRange(StickError):
 
 class RadioRegisterTXFail(RadioError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -185,11 +185,11 @@ class RadioRegisterTXFail(RadioError):
 
 class UnsuccessfulRadioCommand(RadioError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -201,11 +201,11 @@ class UnsuccessfulRadioCommand(RadioError):
 # Packets errors
 class BadPumpPacket(RadioError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -216,11 +216,11 @@ class BadPumpPacket(RadioError):
 
 class UnknownPacketRecipient(BadPumpPacket):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -234,11 +234,11 @@ class UnknownPacketRecipient(BadPumpPacket):
 
 class CorruptedPumpPacket(BadPumpPacket):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -253,11 +253,11 @@ class CorruptedPumpPacket(BadPumpPacket):
 
 class NotEnoughPumpPacketBytes(BadPumpPacket):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -272,11 +272,11 @@ class NotEnoughPumpPacketBytes(BadPumpPacket):
 
 class MissingPumpPacketBits(BadPumpPacket):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -291,11 +291,11 @@ class MissingPumpPacketBits(BadPumpPacket):
 
 class BadPumpPacketEnding(BadPumpPacket):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -311,11 +311,11 @@ class BadPumpPacketEnding(BadPumpPacket):
 # Pump errors
 class NoPump(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -330,11 +330,11 @@ class NoPump(PumpError):
 
 class BadPumpRecord(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -348,11 +348,11 @@ class BadPumpRecord(PumpError):
 
 class TBFail(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -366,11 +366,11 @@ class TBFail(PumpError):
 
 class BadTBRate(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -383,11 +383,11 @@ class BadTBRate(PumpError):
 
 class BadTBDuration(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -399,11 +399,11 @@ class BadTBDuration(PumpError):
 
 class PumpStatusAbnormal(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -414,11 +414,11 @@ class PumpStatusAbnormal(PumpError):
 
 class PumpStatusBolusing(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -429,11 +429,11 @@ class PumpStatusBolusing(PumpError):
 
 class PumpStatusSuspended(PumpError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -445,11 +445,11 @@ class PumpStatusSuspended(PumpError):
 # CGM errors
 class NoCGM(CGMError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -464,11 +464,11 @@ class NoCGM(CGMError):
 # Reporter errors
 class InvalidBranch(ReporterError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -479,11 +479,11 @@ class InvalidBranch(ReporterError):
 
 class MissingBranch(ReporterError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -491,17 +491,18 @@ class MissingBranch(ReporterError):
         self.level = "DEBUG"
 
         # Define error info
+        print self.args
         self.info = self.args[0] + " has no branch: " + self.args[1]
 
 
 
 class NoOverwriting(ReporterError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -512,11 +513,11 @@ class NoOverwriting(ReporterError):
 
 class InvalidFTPReport(ReporterError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -531,11 +532,11 @@ class InvalidFTPReport(ReporterError):
 # General errors
 class NotEnoughBGs(BaseError):
 
-    def prepare(self):
+    def define(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PREPARE
+            DEFINE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 

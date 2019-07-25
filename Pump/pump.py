@@ -1050,7 +1050,7 @@ class TB(PumpComponent):
 
         # Compare to expectedly set TB
         if TB != self.value:
-            raise errors.TBFail()
+            raise errors.TBFail
 
         # Success
         Logger.info("TB correctly enacted.")
