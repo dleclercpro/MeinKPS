@@ -65,7 +65,7 @@ class Resume(PastProfile, StepProfile):
 
         # Load data
         self.data = reporter.getRecent(self.reportType, self.norm, self.branch,
-            False, self.src)
+            self.src, False)
 
 
 

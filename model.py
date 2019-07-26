@@ -280,7 +280,7 @@ def plotInsulinActivity():
     now = datetime.datetime.now()
 
     # Read DIA
-    DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
+    DIA = reporter.getPumpReport().get(["Settings", "DIA"])
 
     # Define timestep (h)
     dt = 5 / 60.

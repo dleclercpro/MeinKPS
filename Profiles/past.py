@@ -89,7 +89,7 @@ class PastProfile(Profile):
 
         # Load data
         self.data = reporter.getDatedEntries(self.reportType, self.days,
-            self.branch, False, self.src)
+            self.branch, self.src, False)
 
         # No data
         if not self.data:

@@ -74,10 +74,9 @@ def setup_and_teardown():
     Setup and teardown for tests which store reports.
     """
 
+    reporter.reset()
     path.TESTS.touch()
-
     yield
-
     path.TESTS.delete()
 
 
@@ -116,10 +115,9 @@ def test_create_dated_report():
     Create a dated report.
     """
 
-    now = datetime.datetime.now()
     today = datetime.date.today()
 
-    report = DatedReport(now)
+    report = DatedReport(today)
     
     reportPath = path.Path(path.TESTS.path + lib.formatDate(today))
 
@@ -229,7 +227,7 @@ def test_set():
 
 
 
-def test_add_overwrite():
+def test_set_overwrite():
 
     """
     Add something to report while overwriting previous content.
@@ -302,7 +300,7 @@ def test_get_report_dates(setup_and_teardown):
 
     # Instanciate empty reports and store them
     for d in datetimes:
-        report = DatedReport(d)
+        report = DatedReport(d.date())
         report.store()
 
     reportDates = reporter.getReportDates(DatedReport, path.TESTS)
@@ -330,26 +328,25 @@ def test_get_recent(setup_and_teardown):
 
     branch = ["A", "B"]
 
-    for d in datetimes:
-        report = DatedReport(d)
-        report.set(entries[d], branch + [lib.formatDate(d)])
-        report.store()
+    # Create reports
+    reporter.setDatedEntries(DatedReport, branch, entries,
+        path.TESTS)
 
     # Look for values in last 3 days (strict search)
-    emptyResults = reporter.getRecent(DatedReport, now, branch, 3, True,
-        path.TESTS)
+    emptyResults = reporter.getRecent(DatedReport, now, branch, 3, path.TESTS,
+        True)
     
     # Results should be empty
     assert len(emptyResults) == 0
 
     # Look for values in 3 most recent available reports
-    results = reporter.getRecent(DatedReport, now, branch, 3, False,
-        path.TESTS)
+    results = reporter.getRecent(DatedReport, now, branch, 3, path.TESTS,
+        False)
 
     # There should be as many entries in merged results, as there were reports
     # instanciated. The values should also fit.
     assert (len(results) == len(datetimes) and
-        all([results[lib.formatDate(d)] == entries[d] for d in datetimes]))
+        all([results[lib.formatTime(d)] == entries[d] for d in datetimes]))
 
 
 
@@ -382,14 +379,14 @@ def test_get_dated_entries(setup_and_teardown):
 
     # Try and find entries in given dated reports
     # Search for entries strictly: none should be missing!
-    storedEntries = reporter.getDatedEntries(DatedReport, dates, branch, True,
-        path.TESTS)
+    storedEntries = reporter.getDatedEntries(DatedReport, dates, branch,
+        path.TESTS, True)
 
     assert storedEntries == formattedEntries
 
 
 
-def test_add_dated_entries(setup_and_teardown):
+def test_set_dated_entries(setup_and_teardown):
 
     """
     Add multiple dated entries to corresponding dated reports.
@@ -410,14 +407,11 @@ def test_add_dated_entries(setup_and_teardown):
     reporter.setDatedEntries(DatedReport, branch, entries,
         path.TESTS)
 
+    # Check for each datetime if report was created and value added
     for d in datetimes:
 
-        # Get date
-        date = d.date()
-
         # Instanciate and load corresponding report
-        report = DatedReport(date)
-        report.load()
+        report = reporter.getReportByType(DatedReport, d.date())
 
         # Format datetime object to get key
         key = lib.formatTime(d)

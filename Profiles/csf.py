@@ -43,7 +43,7 @@ class CSF(DailyProfile, FutureProfile):
         super(CSF, self).__init__()
 
         # Define report properties
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
         self.branch = ["CSF"]
 
         # Read units

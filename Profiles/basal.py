@@ -46,7 +46,7 @@ class Basal(DailyProfile, PastProfile):
         self.units = "U/h"
 
         # Define report properties
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
         self.branch = ["Basal Profile (" + profile + ")"]
 
         # Read theoretical max

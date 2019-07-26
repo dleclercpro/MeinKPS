@@ -128,12 +128,12 @@ class LoopError(BaseError):
                   missing branches) lead to stack overflows.
         """
 
-        # Get current time
-        now = datetime.datetime.now()
+        # Get current day
+        today = datetime.date.today()
 
         # Define and load report
-        self.report = reporter.LoopReport(now)
-        self.report.load(False)
+        self.report = reporter.getReportByType(reporter.LoopReport, today,
+            strict = False)
 
         # Initialize error
         super(LoopError, self).__init__(*args)

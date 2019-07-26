@@ -31,6 +31,7 @@ import ftplib
 # USER LIBRARIES
 import logger
 import errors
+import path
 import reporter
 
 
@@ -52,7 +53,7 @@ class Uploader(object):
         """
 
         # Define report
-        self.report = reporter.REPORTS["ftp"]
+        self.report = reporter.getFTPReport()
 
 
 
@@ -141,7 +142,7 @@ class Uploader(object):
         ftp.cwd(self.report.get(["Path"]))
 
         # Define path to files
-        path = reporter.path.EXPORTS.path
+        path = path.EXPORTS.path
 
         # Upload files
         self.upload(ftp, path, "json")

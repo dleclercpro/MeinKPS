@@ -104,7 +104,7 @@ class Exporter(object):
             [round(y, 2) for y in _net.y]))
 
         # Get pump data
-        self.data["pump"] = reporter.REPORTS["pump"].get()
+        self.data["pump"] = reporter.getPumpReport().get()
 
         # Get recent BGs
         self.data["bgs"] = reporter.getDatedEntries(
@@ -155,12 +155,12 @@ class Exporter(object):
         # Info
         Logger.debug("Filling recent data structures...")
 
-        # Fill BG report
+        # Fill separate BG report
         self.reports["bgs"] = reporter.Report("BG.json",
             reporter.path.EXPORTS,
             self.data["bgs"])
 
-        # Fill treatments report
+        # Fill separate treatments report
         self.reports["treatments"] = reporter.Report("treatments.json",
             reporter.path.EXPORTS, {
                 "Net Basals": self.data["net"],
@@ -168,7 +168,7 @@ class Exporter(object):
                 "IOB": self.data["iobs"]
             })
 
-        # Fill history report
+        # Fill separate history report
         self.reports["history"] = reporter.Report("history.json",
             reporter.path.EXPORTS,
             lib.mergeDicts(self.data["history"], {
@@ -178,7 +178,7 @@ class Exporter(object):
                 }
             }))
 
-        # Fill pump report
+        # Fill separate pump report
         self.reports["pump"] = reporter.Report("pump.json",
             reporter.path.EXPORTS,
             self.data["pump"])

@@ -228,7 +228,7 @@ class Power(PumpComponent):
         self.command = commands.Power(pump)
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 

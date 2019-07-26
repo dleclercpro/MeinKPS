@@ -187,9 +187,11 @@ class Loop(object):
         # Define starting time
         self.t0 = datetime.datetime.now()
 
+        # Get current day
+        today = self.t0.date()
+
         # Get report
-        self.report = reporter.LoopReport(self.t0)
-        self.report.load()
+        self.report = reporter.getReportByType(reporter.LoopReport, today)
 
         # Start devices
         self.startDevices()
@@ -293,7 +295,7 @@ class Loop(object):
         """
 
         # Get DIA
-        DIA = reporter.REPORTS["pump"].get(["Settings", "DIA"])
+        DIA = reporter.getPumpReport().get(["Settings", "DIA"])
 
         # Define past/future reference times
         past = now - datetime.timedelta(hours = DIA)

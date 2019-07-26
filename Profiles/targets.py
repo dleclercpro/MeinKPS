@@ -43,7 +43,7 @@ class BGTargets(DailyProfile, FutureProfile):
         super(BGTargets, self).__init__()
 
         # Define report properties
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
         self.branch = ["BG Targets"]
 
         # Read units

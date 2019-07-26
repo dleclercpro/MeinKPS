@@ -48,17 +48,14 @@ Logger = logger.Logger("reporter")
 
 
 
-# CONSTANTS
-LOADING_ATTEMPTS = 2
-
-
-
 # CLASSES
 class Report(object):
 
     """
     Report object based on given JSON file.
     """
+
+    LOADING_ATTEMPTS = 2
 
     def __init__(self, name, directory = path.REPORTS, json = None):
 
@@ -88,6 +85,7 @@ class Report(object):
 
         # Initialize report attributes
         self.name = name
+        self.date = None
         self.json = json
         self.directory = path.Path(directory.path)
 
@@ -214,19 +212,17 @@ class Report(object):
         Logger.debug("Loading report: " + repr(self))
 
         # Loading
-        for i in range(LOADING_ATTEMPTS):
+        for i in range(self.LOADING_ATTEMPTS):
 
             # Info
             Logger.debug("Loading attempt: " + str(i + 1) + "/" +
-                                               str(LOADING_ATTEMPTS))
+                str(self.LOADING_ATTEMPTS))
 
             # Try opening report
             try:
 
-                # Open report
+                # Open report and load JSON
                 with open(self.directory.path + self.name, "r") as f:
-
-                    # Load JSON
                     self.json = json.load(f)
 
                 # Success
@@ -489,15 +485,15 @@ class DatedReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
+        # Initialize report
         super(DatedReport, self).__init__(name, directory, json)
 
         # Test date
-        if (type(date) is not datetime.date and
-            type(date) is not datetime.datetime):
-            raise TypeError("Date should be a datetime object.")
+        if type(date) is not datetime.date:
+            raise TypeError("Invalid date.")
 
         # Define date
-        self.date = date.date() if type(date) is datetime.datetime else date
+        self.date = date
         
         # Expand path
         self.directory.expand(lib.formatDate(date))
@@ -896,6 +892,123 @@ class FTPReport(Report):
 
 
 # FUNCTIONS
+def reset():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        RESET
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Reset (reinstanciate and reload) default reports in module.
+    """
+
+    # Reports are defined once in module
+    global REPORTS
+
+    # Instanciate default reports
+    REPORTS = [PumpReport(), StickReport(), CGMReport(), FTPReport()]
+
+    # Load them
+    for report in REPORTS:
+        report.load()
+
+
+
+def getReportByType(reportType, date = None, directory = path.REPORTS,
+    json = None, strict = True):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        GETREPORTBYTYPE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Check if module already knows about report using its type (class). If
+        yes, return it, otherwise instanciate and load it, then return a
+        reference to it.
+
+        If "strict" is set to "True", then report will be loading strictly.
+
+        # TODO
+        Note: only pre-defined types of reports can be handled so far.
+    """
+
+    # Reports are defined once in module
+    global REPORTS
+
+    # Test date
+    if date is not None and type(date) is not datetime.date:
+        raise TypeError("Invalid date.")
+
+    # Try to get report in existing ones
+    for report in REPORTS:
+        if isinstance(report, reportType) and report.date == date:
+            return report
+
+    # Instanciate report
+    # Report
+    if date is None:
+        report = reportType(directory, json)
+
+    # Dated report
+    else:
+        report = reportType(date, directory, json)
+    
+    # Load it
+    report.load(strict)
+
+    # Store it
+    REPORTS += [report]
+
+    # Return its reference
+    return report
+
+
+
+def storeReportsByType(reportType, dates = []):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        STOREREPORTSBYTYPE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Store all reports with matching type (class) currently loaded in module.
+    """
+
+    # Reports are defined once in module
+    global REPORTS
+
+    # Test dates
+    if not all([type(date) is datetime.date for date in dates]):
+        raise TypeError("Invalid dates.")
+
+    # Non-dated report
+    if not dates:
+        dates = [None]
+
+    # Store loaded dated reports
+    for date in dates:
+        for report in REPORTS:
+            if isinstance(report, reportType) and report.date == date:
+                report.store()
+                break
+
+
+
+def storeReports():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        STOREREPORTS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Store all reports currently loaded in module.
+    """
+
+    # Reports are defined once in module
+    global REPORTS
+
+    # Store loaded reports
+    for report in REPORTS:
+        report.store()
+
+
+
 def isBranchValid(branch):
 
     """
@@ -935,8 +1048,8 @@ def getReportDates(reportType, src = path.REPORTS):
 
 
 
-def getRecent(reportType, now, branch, n = 1, strict = False,
-    src = path.REPORTS):
+def getRecent(reportType, now, branch, n = 1, src = path.REPORTS,
+    strict = False):
 
     # TODO
     # This won't work with finding recent reports with a specific VALUE at the
@@ -983,8 +1096,7 @@ def getRecent(reportType, now, branch, n = 1, strict = False,
     for date in sorted(filteredDates, reverse = True):
 
         # Initialize and load report
-        report = reportType(date, src)
-        report.load()
+        report = getReportByType(reportType, date, src)
 
         # Get and merge new entries
         try:
@@ -1009,8 +1121,8 @@ def getRecent(reportType, now, branch, n = 1, strict = False,
 
 
 
-def getDatedEntries(reportType, dates, branch, strict = False,
-    src = path.REPORTS):
+def getDatedEntries(reportType, dates, branch, src = path.REPORTS,
+    strict = False):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1038,16 +1150,15 @@ def getDatedEntries(reportType, dates, branch, strict = False,
 
         # Get entries for given date and merge them to previously gathered ones
         try:
-            report = reportType(date, src)
-            report.load()
+            report = getReportByType(reportType, date, src)
             json = lib.mergeDicts(json, report.get(branch))
 
         # Something went wrong (e.g. missing report/branch)
-        except Exception as e:
+        except (IOError, errors.MissingBranch):
             
             # Strict search: re-throw error
             if strict:
-                raise e
+                raise
 
     # Return entries
     return json
@@ -1078,33 +1189,44 @@ def setDatedEntries(reportType, branch, entries, src = path.REPORTS):
 
     # Each date corresponds to a report
     for date in dates:
-        reports[date] = reportType(date, src)
-        reports[date].load(False)
+        reports[date] = getReportByType(reportType, date, src,
+            strict = False)
 
     # Add values to reports
     for key, value in entries.items():
         reports[key.date()].set(value, branch + [lib.formatTime(key)])
 
     # Store reports
-    for date, report in reports.items():
-        report.store()
+    storeReportsByType(reportType, dates)
 
 
 
 
 
 
-# Report instances (for external imports)
-REPORTS = {
-    "pump": PumpReport(),
-    "cgm": CGMReport(),
-    "stick": StickReport(),
-    "ftp": FTPReport()
-}
+# SELECTOR FUNCTIONS
+def getPumpReport():
+    return getReportByType(PumpReport)
 
-# Load them
-for report in REPORTS.values():
-    report.load(False)
+def getStickReport():
+    return getReportByType(StickReport)
+
+def getCGMReport():
+    return getReportByType(CGMReport)
+
+def getFTPReport():
+    return getReportByType(FTPReport)
+
+
+
+
+
+
+# Initialize reports (for external imports)
+REPORTS = None
+
+# Reset them
+reset()
 
 
 

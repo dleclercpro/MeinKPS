@@ -100,7 +100,7 @@ class CGM(object):
                           "Settings": databases.SettingsDatabase(self)}
 
         # Define report
-        self.report = reporter.REPORTS["cgm"]
+        self.report = reporter.getCGMReport()
 
 
 
@@ -453,7 +453,7 @@ class Language(object):
         self.command = commands.ReadLanguage(cgm)
 
         # Define report
-        self.report = reporter.REPORTS["cgm"]
+        self.report = reporter.getCGMReport()
 
 
 
@@ -524,7 +524,7 @@ class Clock(object):
                          "ReadMode": commands.ReadClockMode(cgm)}
 
         # Define report
-        self.report = reporter.REPORTS["cgm"]
+        self.report = reporter.getCGMReport()
 
 
 
@@ -601,7 +601,7 @@ class Units(object):
         self.command = commands.ReadUnits(cgm)
 
         # Define report
-        self.report = reporter.REPORTS["cgm"]
+        self.report = reporter.getCGMReport()
 
 
 
@@ -694,7 +694,7 @@ class Transmitter(object):
         self.command = commands.ReadTransmitterID(cgm)
 
         # Define report
-        self.report = reporter.REPORTS["cgm"]
+        self.report = reporter.getCGMReport()
 
 
 

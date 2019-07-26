@@ -575,7 +575,7 @@ class Power(Set, BigCommand):
         self.code = "5D"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
         # Define prelude command
         self.commands["Init"] = PowerInit(pump)
@@ -709,7 +709,7 @@ class ReadModel(Get):
         self.code = "8D"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 
@@ -766,7 +766,7 @@ class ReadFirmware(Get):
         self.code = "74"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 
@@ -974,7 +974,7 @@ class ReadSettings(Get):
         self.code = "C0"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 
@@ -1031,7 +1031,7 @@ class ReadBGUnits(Get):
         self.code = "89"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 
@@ -1095,7 +1095,7 @@ class ReadCarbsUnits(Get):
         self.code = "88"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 
@@ -1159,7 +1159,7 @@ class ReadBGTargets(Get):
         self.code = "9F"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 
@@ -1260,7 +1260,7 @@ class ReadFactors(Get):
         super(ReadFactors, self).__init__(pump)
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 
@@ -1482,7 +1482,7 @@ class ReadBasalProfile(BigGet):
         super(ReadBasalProfile, self).__init__(pump)
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
         # Define profile name
         self.name = None
@@ -1691,7 +1691,7 @@ class ReadTB(Get):
         self.code = "98"
 
         # Define report
-        self.report = reporter.REPORTS["pump"]
+        self.report = reporter.getPumpReport()
 
 
 

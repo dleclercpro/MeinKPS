@@ -58,7 +58,7 @@ class BG(DotProfile):
         super(BG, self).__init__()
 
         # Read units
-        self.units = reporter.REPORTS["pump"].get(["Units", "BG"])
+        self.units = reporter.getPumpReport().get(["Units", "BG"])
 
         # Define plot y-axis default limits
         # mmol/L

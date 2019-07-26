@@ -57,7 +57,7 @@ class Bolus(PastProfile, StepProfile):
         self.rate = 90.0
 
         # Read theoretical max
-        self.max = reporter.REPORTS["pump"].get(["Settings", "Max Bolus"])
+        self.max = reporter.getPumpReport().get(["Settings", "Max Bolus"])
 
         # Define report properties
         self.reportType = reporter.TreatmentsReport
