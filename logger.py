@@ -57,7 +57,7 @@ class Logger(object):
         self.level = LEVELS.index(level)
 
         # Define logging format
-        self.format = "[{:%H:%M:%S.%f}] [{:>16}] [{:>8}] --- {}"
+        self.fmt = "[{:%H:%M:%S.%f}] [{:>16}] [{:>8}] --- {}"
 
         # Define report
         self.report = report
@@ -79,7 +79,7 @@ class Logger(object):
             now = datetime.datetime.now()
 
             # Format message
-            msg = self.format.format(now, self.name, level, msg)
+            msg = self.fmt.format(now, self.name, level, msg)
 
             # Define log directory and touch it
             directory = path.Path("Reports/" + lib.formatDate(now))

@@ -132,7 +132,7 @@ class LoopError(BaseError):
         now = datetime.datetime.now()
 
         # Define and load report
-        self.report = reporter.ErrorsReport(now)
+        self.report = reporter.LoopReport(now)
         self.report.load(False)
 
         # Initialize error
@@ -170,7 +170,7 @@ class LoopError(BaseError):
         super(LoopError, self).log()
 
         # Update error stats
-        self.report.increment(repr(self).split(" | "), False)
+        self.report.increment(["Errors"] + repr(self).split(" | "), False)
         self.report.store()
 
 
@@ -596,7 +596,6 @@ class MissingBranch(ReporterError):
         self.level = "DEBUG"
 
         # Define error info
-        print self.args
         self.info = self.args[0] + " has no branch: " + self.args[1]
 
 

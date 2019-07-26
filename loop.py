@@ -189,6 +189,7 @@ class Loop(object):
 
         # Get report
         self.report = reporter.LoopReport(self.t0)
+        self.report.load()
 
         # Start devices
         self.startDevices()
