@@ -100,6 +100,7 @@ class Loop(object):
 
         # Update loop log
         self.report.increment(branch)
+        self.report.store()
 
 
 
@@ -191,7 +192,8 @@ class Loop(object):
         today = self.t0.date()
 
         # Get report
-        self.report = reporter.getReportByType(reporter.LoopReport, today)
+        self.report = reporter.getReportByType(reporter.LoopReport, today,
+            strict = False)
 
         # Start devices
         self.startDevices()

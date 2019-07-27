@@ -909,12 +909,12 @@ def reset():
 
     # Load them
     for report in REPORTS:
-        report.load()
+        report.load(False)
 
 
 
 def getReportByType(reportType, date = None, directory = path.REPORTS,
-    json = None, strict = True):
+    strict = True):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -945,11 +945,11 @@ def getReportByType(reportType, date = None, directory = path.REPORTS,
     # Instanciate report
     # Report
     if date is None:
-        report = reportType(directory, json)
+        report = reportType(directory)
 
     # Dated report
     else:
-        report = reportType(date, directory, json)
+        report = reportType(date, directory)
     
     # Load it
     report.load(strict)
@@ -1150,11 +1150,11 @@ def getDatedEntries(reportType, dates, branch, src = path.REPORTS,
 
         # Get entries for given date and merge them to previously gathered ones
         try:
-            report = getReportByType(reportType, date, src)
+            report = getReportByType(reportType, date, src, strict)
             json = lib.mergeDicts(json, report.get(branch))
 
-        # Something went wrong (e.g. missing report/branch)
-        except (IOError, errors.MissingBranch):
+        # Branch does not exist
+        except errors.MissingBranch:
             
             # Strict search: re-throw error
             if strict:

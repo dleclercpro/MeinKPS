@@ -141,11 +141,8 @@ class Uploader(object):
         # Move to directory
         ftp.cwd(self.report.get(["Path"]))
 
-        # Define path to files
-        path = path.EXPORTS.path
-
         # Upload files
-        self.upload(ftp, path, "json")
+        self.upload(ftp, path.EXPORTS.path, "json")
 
 
 
