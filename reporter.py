@@ -891,7 +891,7 @@ class FTPReport(Report):
 
 
 
-# FUNCTIONS
+# REPORT MANAGEMENT FUNCTIONS
 def reset():
 
     """
@@ -927,7 +927,9 @@ def getReportByType(reportType, date = None, directory = path.REPORTS,
         If "strict" is set to "True", then report will be loading strictly.
 
         # TODO
-        Note: only pre-defined types of reports can be handled so far.
+        Notes: - Only pre-defined types of reports can be handled so far
+               - Reports are stored in an simple array. Searching is thus in
+                 O(n). This could be optimized.
     """
 
     # Reports are defined once in module
@@ -985,6 +987,8 @@ def storeReportsByType(reportType, dates = []):
     # Store loaded dated reports
     for date in dates:
         for report in REPORTS:
+
+            # Report matches with type and date
             if isinstance(report, reportType) and report.date == date:
                 report.store()
                 break
@@ -1009,6 +1013,10 @@ def storeReports():
 
 
 
+
+
+
+# GENERAL FUNCTIONS
 def isBranchValid(branch):
 
     """
