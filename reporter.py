@@ -803,7 +803,6 @@ class LoopReport(DatedReport):
             "CGM": {
                 "BG": 0,
                 "Battery": 0,
-                "Calibration": 0,
                 "Sensor": 0
             },
             "Pump": {
