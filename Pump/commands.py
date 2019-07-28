@@ -349,7 +349,7 @@ class BigCommand(Command):
                                               .packets["RX"][-1])
 
             # Radio error: retry (if possible)
-            except (errors.RadioError, errors.BadPumpPacket):
+            except (errors.RadioError, errors.PacketError):
                 self.retry()
 
 
@@ -367,7 +367,7 @@ class BigCommand(Command):
             super(BigCommand, self).execute()
 
         # Radio error: retry (if possible)
-        except (errors.RadioError, errors.BadPumpPacket):
+        except (errors.RadioError, errors.PacketError):
             self.retry()
 
 
@@ -403,7 +403,7 @@ class BigCommand(Command):
                 return
 
             # Ignore radio errors/bad packets
-            except (errors.RadioError, errors.BadPumpPacket):
+            except (errors.RadioError, errors.PacketError):
                 pass
 
         # Unsuccessful command
@@ -602,7 +602,7 @@ class Power(Set, BigCommand):
                 return
 
             # Ignore specific errors
-            except (errors.RadioError, errors.BadPumpPacket):
+            except (errors.RadioError, errors.PacketError):
                 pass
 
         # Pump does not respond

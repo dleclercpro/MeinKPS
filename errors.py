@@ -181,6 +181,12 @@ class LoopError(BaseError):
 class StickError(LoopError):
     pass
 
+class RadioError(StickError):
+    pass
+
+class PacketError(RadioError):
+    pass
+
 class PumpError(LoopError):
     pass
 
@@ -236,24 +242,6 @@ class NoStick(StickError):
 
 
 
-class RadioError(StickError):
-
-    def define(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DEFINE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error logging level
-        self.level = "DEBUG"
-
-        # Define error info
-        self.info = self.args[0]
-
-
-
 class UnknownFrequencyRange(StickError):
 
     def define(self):
@@ -270,7 +258,7 @@ class UnknownFrequencyRange(StickError):
 
 
 
-class RadioRegisterTXFail(RadioError):
+class RadioRegisterWriteFail(StickError):
 
     def define(self):
 
@@ -285,6 +273,61 @@ class RadioRegisterTXFail(RadioError):
 
         # Define error info
         self.info = "Radio register not updated correctly."
+
+
+
+# Radio errors
+class RadioTimeout(RadioError):
+
+    def define(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error logging level
+        self.level = "DEBUG"
+
+        # Define error info
+        self.info = "Timeout"
+
+
+
+class RadioNoData(RadioError):
+
+    def define(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error logging level
+        self.level = "DEBUG"
+
+        # Define error info
+        self.info = "No Data"
+
+
+
+class RadioInterrupted(RadioError):
+
+    def define(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error logging level
+        self.level = "DEBUG"
+
+        # Define error info
+        self.info = "Interrupted"
 
 
 
@@ -303,23 +346,8 @@ class UnsuccessfulRadioCommand(RadioError):
 
 
 
-# Packets errors
-class BadPumpPacket(RadioError):
-
-    def define(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DEFINE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Define error logging level
-        self.level = "DEBUG"
-
-
-
-class UnknownPacketRecipient(BadPumpPacket):
+# Packet errors
+class UnknownPacketRecipient(PacketError):
 
     def define(self):
 
@@ -337,7 +365,7 @@ class UnknownPacketRecipient(BadPumpPacket):
 
 
 
-class CorruptedPumpPacket(BadPumpPacket):
+class CorruptedPumpPacket(PacketError):
 
     def define(self):
 
@@ -356,7 +384,7 @@ class CorruptedPumpPacket(BadPumpPacket):
 
 
 
-class NotEnoughPumpPacketBytes(BadPumpPacket):
+class NotEnoughPumpPacketBytes(PacketError):
 
     def define(self):
 
@@ -375,7 +403,7 @@ class NotEnoughPumpPacketBytes(BadPumpPacket):
 
 
 
-class MissingPumpPacketBits(BadPumpPacket):
+class MissingPumpPacketBits(PacketError):
 
     def define(self):
 
@@ -394,7 +422,7 @@ class MissingPumpPacketBits(BadPumpPacket):
 
 
 
-class BadPumpPacketEnding(BadPumpPacket):
+class BadPumpPacketEnding(PacketError):
 
     def define(self):
 

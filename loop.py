@@ -249,9 +249,6 @@ class Loop(object):
         # Read sensor events
         self.do(self.cgm.databases["Sensor"].read, ["CGM", "Sensor"])
 
-        # Read calibrations
-        self.do(self.cgm.databases["Calibration"].read, ["CGM", "Calibration"])
-
 
 
     def readPump(self):

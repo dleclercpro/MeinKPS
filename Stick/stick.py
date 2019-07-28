@@ -93,7 +93,7 @@ class Stick(object):
 
         # Define radio errors
         self.errors = {0xAA: "Timeout",
-                       0xBB: "No data",
+                       0xBB: "No Data",
                        0xCC: "Interrupted"}
 
         # Define commands
@@ -301,8 +301,20 @@ class Stick(object):
         # If bytes coming from radio are an error code
         if radio and len(bytes) == 1 and bytes[-1] in self.errors:
 
-            # Raise error
-            raise errors.RadioError(self.errors[bytes[-1]])
+            # Radio error
+            error = self.errors[bytes[-1]]
+
+            # Timeout
+            if error == "Timeout":
+                raise errors.RadioTimeout
+            
+            # No data
+            elif error == "No Data":
+                raise errors.RadioNoData
+            
+            # Interrupted
+            elif error == "Interrupted":
+                raise errors.RadioInterrupted
 
         # Return them
         return bytes
@@ -431,7 +443,7 @@ class Stick(object):
 
             # If mismatch
             if self.commands["Radio Register RX"].run(reg) != byte:
-                raise errors.RadioRegisterTXFail
+                raise errors.RadioRegisterWriteFail
 
         # Info
         Logger.debug("Radio tuned.")
@@ -558,7 +570,7 @@ class Stick(object):
                     RSSIs[f].append(pkt.RSSI["dBm"])
 
                 # On invalid packet or radio error
-                except (errors.RadioError, errors.BadPumpPacket):
+                except (errors.RadioError, errors.PacketError):
 
                     # Add fake low RSSI reading
                     RSSIs[f].append(-99)
