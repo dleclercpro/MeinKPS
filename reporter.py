@@ -892,13 +892,13 @@ class FTPReport(Report):
 
 
 # FUNCTIONS
-def reset():
+def resetReports():
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        RESET
+        RESETREPORTS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Reset (reinstanciate and reload) default reports in module.
+        Reset (re-instanciate and re-load) default reports in module.
     """
 
     # Reports are defined once in module
@@ -1226,7 +1226,7 @@ def getFTPReport():
 REPORTS = None
 
 # Reset them
-reset()
+resetReports()
 
 
 

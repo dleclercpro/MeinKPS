@@ -96,7 +96,7 @@ def setup_and_teardown():
     Setup and teardown for tests which store reports.
     """
 
-    reporter.reset()
+    reporter.resetReports()
     path.TESTS.touch()
     yield
     path.TESTS.delete()

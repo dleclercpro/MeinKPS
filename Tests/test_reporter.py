@@ -74,7 +74,7 @@ def setup_and_teardown():
     Setup and teardown for tests which store reports.
     """
 
-    reporter.reset()
+    reporter.resetReports()
     path.TESTS.touch()
     yield
     path.TESTS.delete()
@@ -125,6 +125,27 @@ def test_create_dated_report():
             report.date == today and
             report.json == {} and 
             report.directory.path == reportPath.path)
+
+
+
+def test_reset_report():
+
+    """
+    Reset a report.
+    """
+
+    key = "A"
+    value = 0
+    branch = [key]
+
+    report = Report()
+    report.set(value, branch)
+
+    assert report.get(branch) == value
+
+    report.reset()
+
+    assert report.get() == {}
 
 
 
