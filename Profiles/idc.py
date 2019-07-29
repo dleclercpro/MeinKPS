@@ -213,7 +213,10 @@ class FourthOrderIDC(IDC):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: implicit integration of IDC. Only makes sense when taking dF.
+            Implicit integration of IDC.
+            
+            Note: Only makes sense when taking difference between two values of
+                  the integral (e.g. dF = F2 - F1)
         """
 
         # Correct time
@@ -447,19 +450,25 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
-    # Define time references
-    DIA = 5.0
+    # Define DIAs
+    DIAs = [3, 4, 5, 6]
 
-    # Instanciate IDC
-    NovoRapid = WalshIDC(DIA)
-    Fiasp = FiaspIDC(DIA)
-
-    # Show it
+    # Initialize plot
     lib.initPlot()
-    NovoRapid.plot(False, "orange")
-    Fiasp.plot(True, "#99e500")
-    #NovoRapid.plot(False, "orange", 1, [2, 1])
-    #Fiasp.plot(True, "#99e500", 2, [2, 1])
+
+    # Plot IDCs with various DIAs
+    for DIA in DIAs:
+        
+        # Instanciate IDCs
+        NovoRapid = WalshIDC(DIA)
+        Fiasp = FiaspIDC(DIA)
+
+        # Plot them
+        NovoRapid.plot(False, "orange", 1, [2, 1])
+        Fiasp.plot(False, "#99e500", 2, [2, 1])
+
+    # Show plot
+    plt.show()
 
 
 

@@ -30,19 +30,49 @@ from Profiles import idc
 
 
 
+# CONSTANTS
+IDC_PRECISION = 0.01
+
+
+
+# FUNCTIONS
+def isEqual(x, y):
+
+    """
+    Custom equality testing function with acceptable precision for IDC values.
+    """
+
+    return lib.isEqual(x, y, IDC_PRECISION)
+
+
+
+def isValid(idc):
+
+    """
+    Check if insulin decay curve (IDC) is valid.
+    """
+
+    # Make sure DIA is defined
+    assert type(idc.DIA) is float
+
+    # Test at beginning and end
+    assert isEqual(idc.f(0), 1) and isEqual(idc.f(-idc.DIA), 0)
+
+    # Test before insulin was given (wrong time)
+    with pytest.raises(ValueError):
+        idc.f(1)
+
+    # Test after end of insulin action
+    assert isEqual(idc.f(-(idc.DIA + 1)), 0)
+
+
+
 # TESTS
-def test_fourth_order_idc():
-
-    # Define DIA
-    DIA = 5.0
-
-
-
 def test_walsh():
 
-    # Define custom equality testing function with acceptable precision
-    def isEqual(x, y):
-        return lib.isEqual(x, y, 0.01)
+    """
+    Specific tests for Walsh IDC.
+    """
 
     # Define DIAs
     DIAs = [3, 4, 5, 6]
@@ -60,8 +90,26 @@ def test_walsh():
     for dia, ri in dict(zip(DIAs, remainingInsulin)).items():
         walsh = idc.WalshIDC(dia)
 
-        # Test at beginning and end
-        assert isEqual(walsh.f(0), 1) and isEqual(walsh.f(-dia), 0)
+        # Test Walsh IDC
+        isValid(walsh)
 
         # Test after one hour
         assert isEqual(walsh.f(-1), ri)
+
+
+
+def test_fiasp():
+
+    """
+    Specific tests for Fiasp IDC.
+    """
+
+    # Define DIAs
+    DIAs = [3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8]
+
+    # Test fractions of active insulin remaining
+    for dia in DIAs:
+        fiasp = idc.FiaspIDC(dia)
+
+        # Test Fiasp IDC
+        isValid(fiasp)
