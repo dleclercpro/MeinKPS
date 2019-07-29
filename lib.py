@@ -108,6 +108,22 @@ CRC16_TABLE = [0,     4129,  8258,  12387, 16516, 20645, 24774, 28903,
 
 
 # FUNCTIONS
+def isEqual(x, y, precision):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISEQUAL
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Test equality between two numbers for a given precision.
+    """
+
+    if not precision > 0:
+        raise ValueError("Precision should be a number greater than 0.")
+
+    return abs(x - y) <= precision
+
+
+
 def derivate(x, t):
 
     """

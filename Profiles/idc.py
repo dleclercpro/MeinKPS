@@ -91,17 +91,15 @@ class IDC(object):
             Bring back given time within insulin's range of action.
         """
 
-        # If too old
+        # If too old: bring it back up
         if t < -self.DIA:
-
-            # Bring it back up
             t = -self.DIA
 
         # If too new: bring it back down
         elif t > 0:
             raise ValueError("Given insulin age is too new.")
 
-        # Return verified time
+        # Return corrected time
         return t
 
 
@@ -390,7 +388,6 @@ class WalshIDC(FourthOrderIDC):
 
         # Define parameters of IDC for various DIA
         if DIA == 3:
-
             self.m4 = -4.151e-2
             self.m3 = -2.925e-1
             self.m2 = -6.332e-1
@@ -398,7 +395,6 @@ class WalshIDC(FourthOrderIDC):
             self.m0 = 9.995e-1
 
         elif DIA == 4:
-
             self.m4 = -4.290e-3
             self.m3 = -5.465e-2
             self.m2 = -1.984e-1
@@ -406,7 +402,6 @@ class WalshIDC(FourthOrderIDC):
             self.m0 = 9.995e-1
 
         elif DIA == 5:
-
             self.m4 = -3.823e-3
             self.m3 = -5.011e-2
             self.m2 = -1.998e-1
@@ -414,7 +409,6 @@ class WalshIDC(FourthOrderIDC):
             self.m0 = 9.930e-1
 
         elif DIA == 6:
-
             self.m4 = -1.935e-3
             self.m3 = -3.052e-2
             self.m2 = -1.474e-1
