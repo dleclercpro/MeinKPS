@@ -37,6 +37,17 @@ import test_reporter
 
 
 
+# FUNCTIONS
+def replaceDate(date, hour, minute, second):
+
+    """
+    Replace a datetime object with given hour, minute, and second.
+    """
+
+    return date.replace(hour = hour, minute = minute, second = second)
+
+
+
 # CLASSES
 class Profile(profile.Profile):
 
@@ -133,10 +144,12 @@ def test_load(setup_and_teardown):
     Create a profile and load its data.
     """
 
+    date = datetime.datetime(1970, 1, 2)
+
     datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
-                 datetime.datetime(1970, 1, 2, 0, 0, 0),
-                 datetime.datetime(1970, 1, 2, 0, 30, 0),
-                 datetime.datetime(1970, 1, 2, 1, 0, 0)]
+                 replaceDate(date, 0, 0, 0),
+                 replaceDate(date, 0, 30, 0),
+                 replaceDate(date, 1, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6]
 
@@ -171,10 +184,12 @@ def test_decouple(setup_and_teardown):
     axes.
     """
 
+    date = datetime.datetime(1970, 1, 2)
+
     datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
-                 datetime.datetime(1970, 1, 2, 0, 0, 0),
-                 datetime.datetime(1970, 1, 2, 0, 30, 0),
-                 datetime.datetime(1970, 1, 2, 1, 0, 0)]
+                 replaceDate(date, 0, 0, 0),
+                 replaceDate(date, 0, 30, 0),
+                 replaceDate(date, 1, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6]
 
@@ -200,11 +215,13 @@ def test_inject(setup_and_teardown):
         - Step is at the end of profile (new step injected at the end) 
     """
 
-    datetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
-                 datetime.datetime(1970, 1, 1, 1, 0, 0),
-                 datetime.datetime(1970, 1, 1, 1, 30, 0),
-                 datetime.datetime(1970, 1, 1, 2, 0, 0),
-                 datetime.datetime(1970, 1, 1, 3, 0, 0)]
+    date = datetime.datetime(1970, 1, 1)
+
+    datetimes = [replaceDate(date, 0, 0, 0),
+                 replaceDate(date, 1, 0, 0),
+                 replaceDate(date, 1, 30, 0),
+                 replaceDate(date, 2, 0, 0),
+                 replaceDate(date, 3, 0, 0)]
 
     values = [6.2, 6.0, 5.8, 5.6, 5.4]
 
@@ -215,14 +232,14 @@ def test_inject(setup_and_teardown):
     durations = [datetime.timedelta(minutes = d) for d in [5, 60, 20, 0, 30]]
 
     # Define expected axes after injection
-    expectedDatetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
-                         datetime.datetime(1970, 1, 1, 0, 5, 0),
-                         datetime.datetime(1970, 1, 1, 1, 0, 0),
-                         datetime.datetime(1970, 1, 1, 1, 30, 0),
-                         datetime.datetime(1970, 1, 1, 1, 50, 0),
-                         datetime.datetime(1970, 1, 1, 2, 0, 0),
-                         datetime.datetime(1970, 1, 1, 3, 0, 0),
-                         datetime.datetime(1970, 1, 1, 3, 30, 0)]
+    expectedDatetimes = [replaceDate(date, 0, 0, 0),
+                         replaceDate(date, 0, 5, 0),
+                         replaceDate(date, 1, 0, 0),
+                         replaceDate(date, 1, 30, 0),
+                         replaceDate(date, 1, 50, 0),
+                         replaceDate(date, 2, 0, 0),
+                         replaceDate(date, 3, 0, 0),
+                         replaceDate(date, 3, 30, 0)]
 
     expectedValues = [6.2, zero, 6.0, 5.8, zero, zero, 5.4, zero]
 
@@ -339,11 +356,51 @@ def test_pad(setup_and_teardown):
 def test_fill(setup_and_teardown):
 
     """
-    ...
+    Create a step profile with holes and fill them using a filler profile.
     """
 
-    # TODO
-    assert True
+    date = datetime.datetime(1970, 1, 1)
+
+    profileDatetimes = [replaceDate(date, 1, 0, 0),
+                        replaceDate(date, 2, 0, 0),
+                        replaceDate(date, 4, 0, 0),
+                        replaceDate(date, 5, 0, 0)]
+
+    profileValues = [6.0, None, 5.8, 5.8]
+
+    fillerDatetimeSet = [
+        [replaceDate(date, 1, 30, 0),
+         replaceDate(date, 2, 30, 0),
+         replaceDate(date, 3, 30, 0),
+         replaceDate(date, 4, 30, 0)],
+        [],
+        []
+    ]
+
+    fillerValueSet = [
+        [6.0, 8.0, 7.0, 5.8],
+        [],
+        []
+    ]
+
+    # Test various data sets
+    for datetimes, values in zip(fillerDatetimeSet, fillerValueSet):
+
+        # Create profile
+        p = StepProfile()
+        p.T = profileDatetimes
+        p.y = profileValues
+
+        # Create filler
+        filler = StepProfile()
+        filler.T = datetimes
+        filler.y = values
+
+        # Fill it
+        #p.fill(filler)
+
+        # TODO
+        #assert all([y is not None for y in p.y])
 
 
 
@@ -353,29 +410,31 @@ def test_smooth(setup_and_teardown):
     Create a step profile with redundant steps, then smooth it.
     """
 
-    datetimes = [datetime.datetime(1970, 1, 1, 1, 0, 0),
-                 datetime.datetime(1970, 1, 1, 2, 0, 0),
-                 datetime.datetime(1970, 1, 1, 3, 0, 0),
-                 datetime.datetime(1970, 1, 1, 4, 0, 0),
-                 datetime.datetime(1970, 1, 1, 5, 0, 0),
-                 datetime.datetime(1970, 1, 1, 6, 0, 0),
-                 datetime.datetime(1970, 1, 1, 7, 0, 0),
-                 datetime.datetime(1970, 1, 1, 8, 0, 0),
-                 datetime.datetime(1970, 1, 1, 9, 0, 0),
-                 datetime.datetime(1970, 1, 1, 10, 0, 0),
-                 datetime.datetime(1970, 1, 1, 11, 0, 0),
-                 datetime.datetime(1970, 1, 1, 12, 0, 0)]
+    date = datetime.datetime(1970, 1, 1)
+
+    datetimes = [replaceDate(date, 1, 0, 0),
+                 replaceDate(date, 2, 0, 0),
+                 replaceDate(date, 3, 0, 0),
+                 replaceDate(date, 4, 0, 0),
+                 replaceDate(date, 5, 0, 0),
+                 replaceDate(date, 6, 0, 0),
+                 replaceDate(date, 7, 0, 0),
+                 replaceDate(date, 8, 0, 0),
+                 replaceDate(date, 9, 0, 0),
+                 replaceDate(date, 10, 0, 0),
+                 replaceDate(date, 11, 0, 0),
+                 replaceDate(date, 12, 0, 0)]
 
     values = [6.2, 6.2, 6.0, 6.0, 6.0, 5.4, 5.2, 5.2, 5.8, 6.0, 6.2, 6.2]
 
-    smoothedDatetimes = [datetime.datetime(1970, 1, 1, 1, 0, 0),
-                         datetime.datetime(1970, 1, 1, 3, 0, 0),
-                         datetime.datetime(1970, 1, 1, 6, 0, 0),
-                         datetime.datetime(1970, 1, 1, 7, 0, 0),
-                         datetime.datetime(1970, 1, 1, 9, 0, 0),
-                         datetime.datetime(1970, 1, 1, 10, 0, 0),
-                         datetime.datetime(1970, 1, 1, 11, 0, 0),
-                         datetime.datetime(1970, 1, 1, 12, 0, 0)]
+    smoothedDatetimes = [replaceDate(date, 1, 0, 0),
+                         replaceDate(date, 3, 0, 0),
+                         replaceDate(date, 6, 0, 0),
+                         replaceDate(date, 7, 0, 0),
+                         replaceDate(date, 9, 0, 0),
+                         replaceDate(date, 10, 0, 0),
+                         replaceDate(date, 11, 0, 0),
+                         replaceDate(date, 12, 0, 0)]
 
     smoothedValues = [6.2, 6.0, 5.4, 5.2, 5.8, 6.0, 6.2, 6.2]
 
