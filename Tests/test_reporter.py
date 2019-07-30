@@ -40,12 +40,6 @@ class Report(reporter.Report):
 
     def __init__(self, directory = path.TESTS, json = None):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
         super(Report, self).__init__(self.name, directory, json)
 
 
@@ -55,12 +49,6 @@ class DatedReport(reporter.DatedReport):
     name = "test.json"
 
     def __init__(self, date, directory = path.TESTS, json = None):
-        
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
 
         super(DatedReport, self).__init__(self.name, date, directory, json)
 
@@ -191,7 +179,12 @@ def test_store_overwrite_report(setup_and_teardown):
     report.reset()
 
     report.set(value, branch)
-    report.store(overwrite = True)
+
+    # Try overwriting report although not allowed to
+    with pytest.raises(errors.NoOverwriting):
+        report.store(False)
+
+    report.store()
     
     report.erase()
     report.load()
@@ -272,6 +265,33 @@ def test_set_overwrite():
     report.set(newValue, branch, overwrite = True)
     
     assert report.get(branch) == newValue
+
+
+
+def test_delete():
+
+    """
+    Delete something from report at the tip of a given branch.
+    """
+
+    keys = ["A", "B"]
+    values = [0, 1]
+
+    report = Report(json = dict(zip(keys, values)))
+
+    # Missing branch should raise an error
+    with pytest.raises(errors.MissingBranch):
+        report.delete(["C"])
+
+    # Delete value at tip of branch
+    report.delete(["B"])
+
+    assert report.get([]) == { "A": 0 }
+
+    # Delete the whole report
+    report.delete()
+
+    assert report.get([]) == {}
 
 
 

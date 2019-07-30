@@ -42,14 +42,8 @@ class Profile(profile.Profile):
 
     def __init__(self):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
         super(Profile, self).__init__()
-
+        
         self.src = path.TESTS
 
 
@@ -58,29 +52,16 @@ class PastProfile(past.PastProfile):
 
     def __init__(self):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
         super(PastProfile, self).__init__()
 
         self.src = path.TESTS
         self.reportType = test_reporter.DatedReport
-        self.branch = []
 
 
 
 class StepProfile(step.StepProfile):
 
     def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
 
         super(StepProfile, self).__init__()
 
@@ -215,8 +196,15 @@ def test_inject(setup_and_teardown):
     ...
     """
 
-    # TODO
-    assert True
+    datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
+                 datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 2, 0, 30, 0),
+                 datetime.datetime(1970, 1, 2, 1, 0, 0)]
+
+    values = [6.2, 6.0, 5.8, 5.6]
+
+    # Create step profile
+    p = StepProfile()
 
 
 

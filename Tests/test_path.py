@@ -31,7 +31,7 @@ import path
 
 
 # FUNCTIONS
-def getDirAndFilePathFromSrc(dirname = "", filename = ""):
+def getDirAndFilePath(dirname = "", filename = ""):
     dirpath, filepath = "", ""
 
     if dirname:
@@ -112,7 +112,7 @@ def test_touch_dir():
     """
 
     dirname = "test"
-    dirpath = getDirAndFilePathFromSrc(dirname)[0]
+    dirpath = getDirAndFilePath(dirname)[0]
 
     _path = path.Path(dirname)
     _path.touch()
@@ -133,7 +133,7 @@ def test_touch_file():
 
     dirname = "test"
     filename = "test.json"
-    filepath = getDirAndFilePathFromSrc(dirname, filename)[1]
+    filepath = getDirAndFilePath(dirname, filename)[1]
 
     _path = path.Path(dirname)
     _path.touch(filename)
@@ -197,7 +197,7 @@ def test_scan_non_existent_dir():
 
     dirname = "test"
     filename = "test.json"
-    dirpath = getDirAndFilePathFromSrc(dirname, filename)[0]
+    dirpath = getDirAndFilePath(dirname, filename)[0]
 
     _path = path.Path(dirname)
 
@@ -216,7 +216,7 @@ def test_scan_non_existent_file():
 
     dirname = "test"
     filename = "test.json"
-    filepath = getDirAndFilePathFromSrc(dirname, filename)[1]
+    filepath = getDirAndFilePath(dirname, filename)[1]
 
     _path = path.Path(dirname)
     _path.touch()
@@ -238,7 +238,7 @@ def test_delete():
 
     dirname = "test"
     filename = "test.json"
-    dirpath, filepath = getDirAndFilePathFromSrc(dirname, filename)
+    dirpath, filepath = getDirAndFilePath(dirname, filename)
 
     _path = path.Path(dirname)
     _path.touch(filename)
@@ -263,7 +263,7 @@ def test_delete_recursive():
     rootname = "test"
     dirname = rootname + os.sep + "1/2/3"
     filename = "test.json"
-    dirpath, filepath = getDirAndFilePathFromSrc(dirname, filename)
+    dirpath, filepath = getDirAndFilePath(dirname, filename)
 
     _path = path.Path(dirname)
     _path.touch(filename)
