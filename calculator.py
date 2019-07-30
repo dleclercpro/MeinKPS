@@ -61,8 +61,8 @@ def computeIOB(net, IDC):
 
             IOB = SUM_t' NET(t') * S_t' IDC(t) * dt
 
-        where S represents an integral and t' the value of a given step in the
-        net insulin profile.
+        where S represents an integral and t' a given step in the net insulin
+        profile.
     """
 
     # Initialize IOB
@@ -84,7 +84,7 @@ def computeIOB(net, IDC):
         IOB += r * y[i]
 
     # Info
-    Logger.debug("IOB: " + fmt.IOB(IOB))
+    Logger.info("IOB: " + fmt.IOB(IOB))
 
     # Return IOB
     return IOB

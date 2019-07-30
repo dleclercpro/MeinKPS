@@ -25,3 +25,14 @@ import pytest
 
 # USER LIBRARIES
 import calculator
+
+
+
+# TESTS
+def test_compute_iob():
+
+    """
+    ...
+    """
+
+    pass
