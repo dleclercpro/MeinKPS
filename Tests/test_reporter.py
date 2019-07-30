@@ -305,8 +305,11 @@ def test_increment():
     value = 0
     keyString = "B"
     valueString = "0"
+    missingKey = "C"
+    missingValue = 0
 
     branch = [key]
+    missingBranch = [missingKey]
 
     report = Report(json = {
         key: value,
@@ -326,6 +329,15 @@ def test_increment():
     report.increment(branch)
     
     assert report.get(branch) == value + 1
+
+    # Increment non-exisiting entry, while not allowed to
+    with pytest.raises(errors.MissingBranch):
+        report.increment(missingBranch)
+
+    # To it again, but allow it
+    report.increment(missingBranch, strict = False)
+    
+    assert report.get(missingBranch) == missingValue + 1
 
 
 
