@@ -193,18 +193,48 @@ def test_decouple(setup_and_teardown):
 def test_inject(setup_and_teardown):
 
     """
-    ...
+    Inject steps in profile according to given step durations. Tests 4 cases:
+        - Step ends before start of next one (new step injected)
+        - Step ends after start of next one (nothing to do)
+        - Step is a canceling one (value is replaced by profile's zero value)
+        - Step is at the end of profile (new step injected at the end) 
     """
 
-    datetimes = [datetime.datetime(1970, 1, 1, 23, 30, 0),
-                 datetime.datetime(1970, 1, 2, 0, 0, 0),
-                 datetime.datetime(1970, 1, 2, 0, 30, 0),
-                 datetime.datetime(1970, 1, 2, 1, 0, 0)]
+    datetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
+                 datetime.datetime(1970, 1, 1, 1, 0, 0),
+                 datetime.datetime(1970, 1, 1, 1, 30, 0),
+                 datetime.datetime(1970, 1, 1, 2, 0, 0),
+                 datetime.datetime(1970, 1, 1, 3, 0, 0)]
 
-    values = [6.2, 6.0, 5.8, 5.6]
+    values = [6.2, 6.0, 5.8, 5.6, 5.4]
+
+    # Define durations for each given step
+    durations = [datetime.timedelta(minutes = d) for d in [5, 60, 20, 0, 30]]
+
+    # Define expected axes after injection
+    expectedDatetimes = [datetime.datetime(1970, 1, 1, 0, 0, 0),
+                         datetime.datetime(1970, 1, 1, 0, 5, 0),
+                         datetime.datetime(1970, 1, 1, 1, 0, 0),
+                         datetime.datetime(1970, 1, 1, 1, 30, 0),
+                         datetime.datetime(1970, 1, 1, 1, 50, 0),
+                         datetime.datetime(1970, 1, 1, 2, 0, 0),
+                         datetime.datetime(1970, 1, 1, 3, 0, 0),
+                         datetime.datetime(1970, 1, 1, 3, 30, 0)]
+
+    expectedValues = [6.2, None, 6.0, 5.8, None, None, 5.4, None]
 
     # Create step profile
     p = StepProfile()
+
+    # Define it
+    p.T = datetimes
+    p.y = values
+    p.durations = durations
+
+    # Inject it with zeros
+    p.inject()
+
+    assert p.T == expectedDatetimes and p.y == expectedValues
 
 
 
