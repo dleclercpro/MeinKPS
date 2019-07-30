@@ -208,6 +208,9 @@ def test_inject(setup_and_teardown):
 
     values = [6.2, 6.0, 5.8, 5.6, 5.4]
 
+    # Define zero (default y-axis value) for profile
+    zero = 1000
+
     # Define durations for each given step
     durations = [datetime.timedelta(minutes = d) for d in [5, 60, 20, 0, 30]]
 
@@ -221,7 +224,7 @@ def test_inject(setup_and_teardown):
                          datetime.datetime(1970, 1, 1, 3, 0, 0),
                          datetime.datetime(1970, 1, 1, 3, 30, 0)]
 
-    expectedValues = [6.2, None, 6.0, 5.8, None, None, 5.4, None]
+    expectedValues = [6.2, zero, 6.0, 5.8, zero, zero, 5.4, zero]
 
     # Create step profile
     p = StepProfile()
@@ -230,6 +233,7 @@ def test_inject(setup_and_teardown):
     p.T = datetimes
     p.y = values
     p.durations = durations
+    p.zero = zero
 
     # Inject it with zeros
     p.inject()
@@ -262,7 +266,7 @@ def test_cut(setup_and_teardown):
     p.end = datetimes[-1]
 
     # Cut it
-    [_, _, last] = p.cut()
+    last = p.cut()
 
     # First entry should be cut off
     assert last == values[0]
@@ -273,7 +277,7 @@ def test_cut(setup_and_teardown):
     p.y = values
 
     # Cut with given datetimes
-    [_, _, last] = p.cut(datetimes[2], datetimes[-2])
+    last = p.cut(datetimes[2], datetimes[-2])
 
     # First two entries and last one should be cut off
     assert last == values[1]
@@ -284,11 +288,51 @@ def test_cut(setup_and_teardown):
 def test_pad(setup_and_teardown):
 
     """
-    ...
+    Force start/end limits on profile, using (if available) the value of the
+    step preceding beginning of profile.
     """
 
-    # TODO
-    assert True
+    datetimes = [datetime.datetime(1970, 1, 2, 0, 0, 0),
+                 datetime.datetime(1970, 1, 3, 0, 0, 0)]
+
+    values = [6.2, 6.0]
+
+    start = datetime.datetime(1970, 1, 1, 0, 0, 0)
+    end = datetime.datetime(1970, 1, 4, 0, 0, 0)
+    last = 0
+    zero = 1000
+
+    # Create empty profile
+    p = StepProfile()
+
+    # Pad it
+    p.pad(start, end, last)
+
+    assert p.T[0] == start and p.T[-1] == end
+    assert p.y[0] == last and p.y[-1] == last
+
+    # Create profile
+    p = StepProfile()
+    p.T = datetimes
+    p.y = values
+
+    # Pad it
+    p.pad(start, end, last)
+
+    assert p.T[0] == start and p.T[-1] == end
+    assert p.y[0] == last and p.y[-1] == values[-1]
+
+    # Create profile with a specific zero value
+    p = StepProfile()
+    p.T = datetimes
+    p.y = values
+    p.zero = zero
+
+    # Pad it without last value
+    p.pad(start, end)
+
+    assert p.T[0] == start and p.T[-1] == end
+    assert p.y[0] == zero and p.y[-1] == values[-1]
 
 
 

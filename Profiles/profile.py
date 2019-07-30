@@ -256,14 +256,14 @@ class Profile(object):
         olderData = [x for x in data if x[0] < a]
         filteredData = [x for x in data if a <= x[0] <= b]
 
-        # Find last value before beginning of profile
-        last = olderData[-1][1] if olderData else None
-
         # Cut-off steps outside of start and end limits
         [self.T, self.y] = lib.unzip(filteredData)
 
-        # Return core infos
-        return [a, b, last]
+        # Find last value before beginning of profile
+        last = olderData[-1][1] if olderData else None
+
+        # Return step value before beginning of profile
+        return last
 
 
 

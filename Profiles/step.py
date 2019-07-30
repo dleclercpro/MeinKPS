@@ -74,8 +74,8 @@ class StepProfile(Profile):
         if self.durations:
             self.inject()
 
-        # Cut entries outside of time limits
-        self.cut()
+        # Cut entries outside of time limits, then ensure ends of profile fit
+        self.pad(start, end, self.cut())
 
         # Filling required?
         if filler is not None:
@@ -140,25 +140,7 @@ class StepProfile(Profile):
 
 
 
-    def cut(self, a = None, b = None):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            CUT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Cut remaining excess entries in profile and ensure the latter starts
-            and ends according to the previously defined limit times.
-        """
-
-        # Cut profile
-        [start, end, last] = super(StepProfile, self).cut(a, b)
-
-        # Ensure ends of profile fit
-        self.pad(start, end, last)
-
-
-
-    def pad(self, a, b, last):
+    def pad(self, a, b, last = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

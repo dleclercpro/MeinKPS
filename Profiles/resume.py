@@ -75,10 +75,11 @@ class Resume(PastProfile, StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             FILL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Change resume times to None before filling with net insulin profile.
+            Convert resume times to None before filling with net insulin
+            profile.
         """
 
-        # Decouple components
+        # Convert resume times
         # 0: Suspend
         # 1: Resume
         self.y = [None if y == 1 else y for y in self.y]

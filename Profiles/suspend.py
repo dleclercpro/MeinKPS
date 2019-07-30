@@ -75,10 +75,10 @@ class Suspend(PastProfile, StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             FILL
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Change suspend times to None before filling with basal profile.
+            Convert suspend times to "None" before filling with basal profile.
         """
 
-        # Decouple components
+        # Convert suspend times
         # 0: Suspend
         # 1: Resume
         self.y = [None if y == 0 else 0 for y in self.y]
