@@ -983,11 +983,9 @@ def storeReportsByType(reportType, dates = []):
     if not dates:
         dates = [None]
 
-    # Loop on loaded dated reports
+    # Loop on loaded dated reports: if type and date match, store them
     for date in dates:
         for report in REPORTS:
-
-            # Report type and date match: store it
             if isinstance(report, reportType) and report.date == date:
                 report.store()
                 break

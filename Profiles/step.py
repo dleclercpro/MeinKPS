@@ -176,45 +176,55 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Fill holes in profile y-axis (replace 'None' values with the ones
             of filler profile).
-            
-            Note: Only cut and padded profile can be filled! The last entry has
-                  to delimit the end of the last step.
+
+            TODO: test if filling possible? Not doing it so far, because
+                  computing f(t) for a given t will fail if corresponding step
+                  does not exist in filler.
         """
 
-        # Info
-        Logger.debug("Filling: " + repr(self))
+        # Is filling needed?
+        if any([y is None for y in self.y]):
 
-        # Initialize new profile components
-        T = []
-        y = []
+            # Info
+            Logger.debug("Filling: " + repr(self))
 
-        # Pad axes end with last entry in order to compute last step correctly
-        self.T += [self.T[-1]]
-        self.y += [None]
+            # Get number of steps in profile and filler
+            n = len(self.T)
+            m = len(filler.T)
 
-        # Fill profile
-        for i in range(len(self.T) - 1):
+            # Initialize new profile components
+            T, y = [], []
 
-            # Add step time
-            T += [self.T[i]]
-            y += [self.y[i]]
+            # Fill profile
+            for i in range(n):
 
-            # Filling criteria
-            if y[-1] is None:
+                # Restore step
+                T += [self.T[i]]
+                y += [self.y[i]]
 
-                # Fill step value
-                y[-1] = filler.f(T[-1])
+                # Filling criteria
+                if y[-1] is None:
 
-                # Look for additional steps to fill
-                for j in range(len(filler.T)):
+                    # Fill step value
+                    y[-1] = filler.f(T[-1])
 
-                    # Filling criteria
-                    if self.T[i] < filler.T[j] < self.T[i + 1]:
-                        T += [filler.T[j]]
-                        y += [filler.y[j]]
+                    # Before end of profile...
+                    if i < n - 1:
 
-        # Update profile
-        self.T, self.y = T, y
+                        # ...look for additional steps to fill
+                        for j in range(m):
+
+                            # Filling criteria
+                            if self.T[i] < filler.T[j] < self.T[i + 1]:
+                                T += [filler.T[j]]
+                                y += [filler.y[j]]
+
+                            # Stop looking in filler
+                            elif self.T[i + 1] <= filler.T[j]:
+                                break
+
+            # Update profile
+            self.T, self.y = T, y
 
 
 
