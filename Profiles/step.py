@@ -270,27 +270,30 @@ class StepProfile(Profile):
         if type(t) is datetime.datetime:
             axis = self.T
 
-        # Normalized time axis
+        # Normalized axis
         elif lib.isRealNumber(t):
             axis = self.t
 
         # Otherwise
         else:
-            raise TypeError("Can't compute f(t): invalid time t.")
+            raise TypeError("Invalid time t to compute f(t) for.")
+
+        # Get number of steps
+        n = len(axis)
 
         # Make sure axes fit
-        if len(axis) != len(self.y):
-            raise ArithmeticError("Can't compute f(t): axes of unequal length.")
-
-        # Extend axis artificially for computation reasons
-        extendedAxis = axis + [axis[-1]]
+        if n != len(self.y):
+            raise ArithmeticError("Cannot compute f(t): axes' lengths do not " +
+                "fit.")
 
         # Compute profile value
-        for i in range(len(axis)):
-            if extendedAxis[i] <= t < extendedAxis[i + 1]:
+        for i in range(n):
+
+            # Either end of last step, or within one of the other steps
+            if i == n - 1 and axis[i] == t or axis[i] <= t < axis[i + 1]:
                 return self.y[i]
 
-        # Result could be found
+        # Result not found
         raise ValueError("The value of f(" + lib.formatTime(t) + ") does not " +
             "exist.")
 
