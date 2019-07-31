@@ -193,7 +193,7 @@ class StepProfile(Profile):
         self.y += [None]
 
         # Fill profile
-        for i in range(len(self.T)):
+        for i in range(len(self.T) - 1):
 
             # Add step time
             T += [self.T[i]]
@@ -266,52 +266,33 @@ class StepProfile(Profile):
             Compute profile's value (y) for a given time (t).
         """
 
-        # Initialize index
-        index = None
-
         # Datetime axis
         if type(t) is datetime.datetime:
             axis = self.T
 
-        # Normalized axis
+        # Normalized time axis
         elif lib.isRealNumber(t):
             axis = self.t
 
         # Otherwise
         else:
-            raise TypeError("Invalid time t to compute f(t) for.")
-
-        # Get number of steps in profile
-        n = len(axis) - 1
+            raise TypeError("Can't compute f(t): invalid time t.")
 
         # Make sure axes fit
-        if n != len(self.y) - 1:
-            raise ArithmeticError("Cannot compute f(t): axes' lengths do not " +
-                "fit.")
+        if len(axis) != len(self.y):
+            raise ArithmeticError("Can't compute f(t): axes of unequal length.")
+
+        # Extend axis artificially for computation reasons
+        extendedAxis = axis + [axis[-1]]
 
         # Compute profile value
-        for i in range(n):
+        for i in range(len(axis)):
+            if extendedAxis[i] <= t < extendedAxis[i + 1]:
+                return self.y[i]
 
-            # Index identification criteria
-            if axis[i] <= t < axis[i + 1]:
-
-                # Store index
-                index = i
-                break
-
-        # Index identification criteria (end time)
-        if t == axis[-1]:
-
-            # Store index
-            index = -1
-
-        # Check if result could be found
-        if index is None:
-            raise ValueError("The value of f(" + lib.formatTime(t) + ") " +
-                "does not exist.")
-
-        # Return corresponding value
-        return self.y[index]
+        # Result could be found
+        raise ValueError("The value of f(" + lib.formatTime(t) + ") does not " +
+            "exist.")
 
 
 
