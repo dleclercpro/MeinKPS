@@ -45,7 +45,39 @@ DEFAULT_DATE = datetime.datetime(1970, 1, 1)
 
 # FUNCTIONS
 def getTime(timeString = "00:00:00", dateString = "1970.01.01"):
+
+    """
+    Return a datetime object based on two formatted date and time strings.
+    """
+
     return lib.formatTime(dateString + " - " + timeString)
+
+
+
+def do_test_fill(profile, fillers, expectations):
+
+    """
+    Helper function to test filling of profile.
+    """
+
+    # Test expectations
+    for i in range(len(expectations)):
+
+        # Create step profile with a hole in the middle
+        p = StepProfile()
+        p.T, p.y = lib.unzip(profile)
+
+        # Create filler
+        f = StepProfile()
+        f.T, f.y = lib.unzip(fillers[i])
+
+        # Fill profile
+        p.fill(f)
+
+        # Every value on the y-axis should be defined
+        # Expectations should be met
+        assert all([y is not None for y in p.y])
+        assert p.T, p.y == lib.unzip(expectations[i])
 
 
 
@@ -145,16 +177,14 @@ def test_load(setup_and_teardown):
     Create a profile and load its data.
     """
 
-    datetimes = [getTime("23:30:00", "1970.01.01"),
-                 getTime("00:00:00", "1970.01.02"),
-                 getTime("00:30:00", "1970.01.02"),
-                 getTime("01:00:00", "1970.01.02")]
-
-    values = [6.2, 6, 5.8, 5.6]
+    profile = [(getTime("23:30:00", "1970.01.01"), 6.2),
+               (getTime("00:00:00", "1970.01.02"), 6),
+               (getTime("00:30:00", "1970.01.02"), 5.8),
+               (getTime("01:00:00", "1970.01.02"), 5.6)]
 
     # Create dated entries
-    reporter.setDatedEntries(test_reporter.DatedReport, [],
-        dict(zip(datetimes, values)), path.TESTS)
+    reporter.setDatedEntries(test_reporter.DatedReport, [], dict(profile),
+        path.TESTS)
 
     # Create profile with no loading method implemented
     p = Profile()
@@ -166,13 +196,13 @@ def test_load(setup_and_teardown):
     # Create a past profile (for its existing load method) and define its time
     # references (exclude first and last datetimes)
     p = PastProfile()
-    p.define(datetimes[1], datetimes[-1])
+    p.define(profile[1][0], profile[-1][0])
 
     # Load its data using previously generated test dated reports
     p.load()
 
     # One day before start of profile should have been added to its days
-    assert p.data == dict(zip([lib.formatTime(d) for d in datetimes], values))
+    assert p.data == dict([(lib.formatTime(d), y) for (d, y) in profile])
 
 
 
@@ -183,22 +213,20 @@ def test_decouple():
     axes.
     """
 
-    datetimes = [getTime("23:30:00", "1970.01.01"),
-                 getTime("00:00:00", "1970.01.02"),
-                 getTime("00:30:00", "1970.01.02"),
-                 getTime("01:00:00", "1970.01.02")]
-
-    values = [6.2, 6, 5.8, 5.6]
+    profile = [(getTime("23:30:00", "1970.01.01"), 6.2),
+               (getTime("00:00:00", "1970.01.02"), 6),
+               (getTime("00:30:00", "1970.01.02"), 5.8),
+               (getTime("01:00:00", "1970.01.02"), 5.6)]
 
     # Create profile
     p = Profile()
-    p.data = dict(zip([lib.formatTime(d) for d in datetimes], values))
+    p.data = dict([(lib.formatTime(d), y) for (d, y) in profile])
 
     # Decouple its data
     p.decouple()
 
     # Check profile axes
-    assert p.T == datetimes and p.y == values
+    assert p.T, p.y == lib.unzip(profile)
 
 
 
@@ -212,13 +240,11 @@ def test_inject():
         - Step is at the end of profile (new step injected at the end) 
     """
 
-    datetimes = [getTime("00:00:00"),
-                 getTime("01:00:00"),
-                 getTime("01:30:00"),
-                 getTime("02:00:00"),
-                 getTime("03:00:00")]
-
-    values = [6.2, 6, 5.8, 5.6, 5.4]
+    profile = [(getTime("00:00:00"), 6.2),
+               (getTime("01:00:00"), 6),
+               (getTime("01:30:00"), 5.8),
+               (getTime("02:00:00"), 5.6),
+               (getTime("03:00:00"), 5.4)]
 
     # Define zero (default y-axis value) for profile
     zero = 1000
@@ -227,30 +253,27 @@ def test_inject():
     durations = [datetime.timedelta(minutes = d) for d in [5, 60, 20, 0, 30]]
 
     # Define expected axes after injection
-    expectedDatetimes = [getTime("00:00:00"),
-                         getTime("00:05:00"),
-                         getTime("01:00:00"),
-                         getTime("01:30:00"),
-                         getTime("01:50:00"),
-                         getTime("02:00:00"),
-                         getTime("03:00:00"),
-                         getTime("03:30:00")]
-
-    expectedValues = [6.2, zero, 6, 5.8, zero, zero, 5.4, zero]
+    expectations = [(getTime("00:00:00"), 6),
+                    (getTime("00:05:00"), zero),
+                    (getTime("01:00:00"), 6),
+                    (getTime("01:30:00"), 5.8),
+                    (getTime("01:50:00"), zero),
+                    (getTime("02:00:00"), zero),
+                    (getTime("03:00:00"), 5.4),
+                    (getTime("03:30:00"), zero)]
 
     # Create step profile
     p = StepProfile()
 
     # Define it
-    p.T = datetimes
-    p.y = values
+    p.T, p.y = lib.unzip(profile)
     p.durations = durations
     p.zero = zero
 
     # Inject it with zeros
     p.inject()
 
-    assert p.T == expectedDatetimes and p.y == expectedValues
+    assert p.T, p.y == lib.unzip(expectations)
 
 
 
@@ -261,39 +284,35 @@ def test_cut():
     range).
     """
 
-    datetimes = [getTime("23:30:00", "1970.01.01"),
-                 getTime("00:00:00", "1970.01.02"),
-                 getTime("00:30:00", "1970.01.02"),
-                 getTime("00:00:00", "1970.01.03"),
-                 getTime("00:30:00", "1970.01.03"),
-                 getTime("00:00:00", "1970.01.04")]
-
-    values = [6.2, 6, 5.8, 5.6, 5.4, 5.2]
+    profile = [(getTime("23:30:00", "1970.01.01"), 6.2),
+               (getTime("00:00:00", "1970.01.02"), 6),
+               (getTime("00:30:00", "1970.01.02"), 5.8),
+               (getTime("00:00:00", "1970.01.03"), 5.6),
+               (getTime("00:30:00", "1970.01.03"), 5.4),
+               (getTime("00:00:00", "1970.01.04"), 5.2)]
 
     # Create profile
     p = Profile()
-    p.T = datetimes
-    p.y = values
-    p.start = datetimes[1]
-    p.end = datetimes[-1]
+    p.T, p.y = lib.unzip(profile)
+    p.start = profile[1][0]
+    p.end = profile[-1][0]
 
     # Cut it
     last = p.cut()
 
     # First entry should be cut off
-    assert last == values[0]
-    assert p.T == datetimes[1:] and p.y == values[1:]
+    assert last == profile[0][1]
+    assert p.T, p.y == lib.unzip(profile[1:])
 
     # Rewrite profile
-    p.T = datetimes
-    p.y = values
+    p.T, p.y = lib.unzip(profile)
 
     # Cut with given datetimes
-    last = p.cut(datetimes[2], datetimes[-2])
+    last = p.cut(profile[2][0], profile[-2][0])
 
     # First two entries and last one should be cut off
-    assert last == values[1]
-    assert p.T == datetimes[2:-1] and p.y == values[2:-1]
+    assert last == profile[1][1]
+    assert p.T, p.y == lib.unzip(profile[2:-1])
 
 
 
@@ -304,10 +323,8 @@ def test_pad():
     step preceding beginning of profile.
     """
 
-    datetimes = [getTime(dateString = "1970.01.02"),
-                 getTime(dateString = "1970.01.03")]
-
-    values = [6.2, 6]
+    profile = [(getTime(dateString = "1970.01.02"), 6.2),
+               (getTime(dateString = "1970.01.03"), 6)]
 
     start = getTime(dateString = "1970.01.01")
     end = getTime(dateString = "1970.01.04")
@@ -325,53 +342,24 @@ def test_pad():
 
     # Create profile
     p = StepProfile()
-    p.T = datetimes
-    p.y = values
+    p.T, p.y = lib.unzip(profile)
 
     # Pad it
     p.pad(start, end, last)
 
     assert p.T[0] == start and p.T[-1] == end
-    assert p.y[0] == last and p.y[-1] == values[-1]
+    assert p.y[0] == last and p.y[-1] == profile[-1][1]
 
     # Create profile with a specific zero value
     p = StepProfile()
-    p.T = datetimes
-    p.y = values
+    p.T, p.y = lib.unzip(profile)
     p.zero = zero
 
     # Pad it without last value
     p.pad(start, end)
 
     assert p.T[0] == start and p.T[-1] == end
-    assert p.y[0] == zero and p.y[-1] == values[-1]
-
-
-
-def do_test_fill(profile, fillers, expectations):
-
-    """
-    Helper function to test filling of profile.
-    """
-
-    # Test expectations
-    for i in range(len(expectations)):
-
-        # Create step profile with a hole in the middle
-        p = StepProfile()
-        p.T, p.y = lib.unzip(profile)
-
-        # Create filler
-        f = StepProfile()
-        f.T, f.y = lib.unzip(fillers[i])
-
-        # Fill profile
-        p.fill(f)
-
-        # Every value on the y-axis should be defined
-        # Expectations should be met
-        assert all([y is not None for y in p.y])
-        assert p.T, p.y == lib.unzip(expectations[i])
+    assert p.y[0] == zero and p.y[-1] == profile[-1][1]
 
 
 
@@ -526,42 +514,37 @@ def test_smooth():
     Create a step profile with redundant steps, then smooth it.
     """
 
-    datetimes = [getTime("01:00:00"),
-                 getTime("02:00:00"),
-                 getTime("03:00:00"),
-                 getTime("04:00:00"),
-                 getTime("05:00:00"),
-                 getTime("06:00:00"),
-                 getTime("07:00:00"),
-                 getTime("08:00:00"),
-                 getTime("09:00:00"),
-                 getTime("10:00:00"),
-                 getTime("11:00:00"),
-                 getTime("12:00:00")]
+    profile = [(getTime("01:00:00"), 6.2),
+               (getTime("02:00:00"), 6.2),
+               (getTime("03:00:00"), 6),
+               (getTime("04:00:00"), 6),
+               (getTime("05:00:00"), 6),
+               (getTime("06:00:00"), 5.4),
+               (getTime("07:00:00"), 5.2),
+               (getTime("08:00:00"), 5.2),
+               (getTime("09:00:00"), 5.8),
+               (getTime("10:00:00"), 6),
+               (getTime("11:00:00"), 6.2),
+               (getTime("12:00:00"), 6.2)]
 
-    values = [6.2, 6.2, 6, 6, 6, 5.4, 5.2, 5.2, 5.8, 6, 6.2, 6.2]
-
-    smoothedDatetimes = [getTime("01:00:00"),
-                         getTime("03:00:00"),
-                         getTime("06:00:00"),
-                         getTime("07:00:00"),
-                         getTime("09:00:00"),
-                         getTime("10:00:00"),
-                         getTime("11:00:00"),
-                         getTime("12:00:00")]
-
-    smoothedValues = [6.2, 6, 5.4, 5.2, 5.8, 6, 6.2, 6.2]
+    smoothedProfile = [(getTime("01:00:00"), 6.2),
+                       (getTime("03:00:00"), 6),
+                       (getTime("06:00:00"), 5.4),
+                       (getTime("07:00:00"), 5.2),
+                       (getTime("09:00:00"), 5.8),
+                       (getTime("10:00:00"), 6),
+                       (getTime("11:00:00"), 6.2),
+                       (getTime("12:00:00"), 6.2)]
 
     # Create profile
     p = StepProfile()
-    p.T = datetimes
-    p.y = values
+    p.T, p.y = lib.unzip(profile)
 
     # Smooth it
     p.smooth()
 
     # No redundant steps allowed in smoothed profile
-    assert p.T == smoothedDatetimes and p.y == smoothedValues
+    assert p.T, p.y == lib.unzip(smoothedProfile)
 
 
 
@@ -571,19 +554,16 @@ def test_normalize():
     Create a profile, then normalize its time axis.
     """
 
-    datetimes = [getTime("23:30:00", "1970.01.01"),
-                 getTime("00:00:00", "1970.01.02"),
-                 getTime("00:30:00", "1970.01.02"),
-                 getTime("00:00:00", "1970.01.03"),
-                 getTime("00:30:00", "1970.01.03"),
-                 getTime("00:00:00", "1970.01.04")]
-
-    values = [6.2, 6, 5.8, 5.6, 5.4, 5.2]
+    profile = [(getTime("23:30:00", "1970.01.01"), 6.2),
+               (getTime("00:00:00", "1970.01.02"), 6),
+               (getTime("00:30:00", "1970.01.02"), 5.8),
+               (getTime("00:00:00", "1970.01.03"), 5.6),
+               (getTime("00:30:00", "1970.01.03"), 5.4),
+               (getTime("00:00:00", "1970.01.04"), 5.2)]
 
     # Create profile and define its norm
     p = Profile()
-    p.T = datetimes
-    p.y = values
+    p.T, p.y = lib.unzip(profile)
     p.norm = p.T[-1]
 
     # Normalize it
