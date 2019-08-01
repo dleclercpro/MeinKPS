@@ -59,29 +59,34 @@ def computeIOB(net, IDC):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         The formula to compute IOB is given by:
 
-            IOB = SUM_t' NET(t') * S_t' IDC(t) * dt
+            IOB = S_{-DIA}^0 NET(t) * IDC(t) * dt
 
-        where S represents an integral and t' a given step in the net insulin
-        profile.
+        where
+        
+        - S_{-DIA}^0: integral over time from a given number of hours in the
+                      past corresponding to the duration of insulin
+                      action (DIA) until now
+        - NET:        net insulin profile
+        - IDC:        selected insulin decay curve
+        
+        Since the NET is defined by steps, this integral can be decomposed such
+        that:
+
+            IOB = SUM_{t'} (NET(t') * S_{t'} IDC(t) * dt)
+
+        where
+        
+        SUM_{t'}: sum on all steps t' of NET
+        NET(t'):  step value of NET during t'
+        S_{t'}:   integral over step t'
     """
 
     # Initialize IOB
     IOB = 0
 
-    # Decouple net insulin profile components
-    t, y = net.t, net.y
-
-    # Get number of steps
-    n = len(t) - 1
-
-    # Compute IOB
-    for i in range(n):
-
-        # Compute remaining IOB factor based on integral of IDC
-        r = IDC.F(t[i + 1]) - IDC.F(t[i])
-
-        # Compute active insulin remaining for current step
-        IOB += r * y[i]
+    # Compute IOB for each step and add it to total
+    for i in range(len(net.t) - 1):
+        IOB += net.y[i] * (IDC.F(net.t[i + 1]) - IDC.F(net.t[i]))
 
     # Info
     Logger.info("IOB: " + fmt.IOB(IOB))
