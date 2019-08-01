@@ -48,10 +48,10 @@ def isEqual(x, y):
 
 
 # TESTS
-def test_compute_iob_constant_net():
+def test_compute_iob_single_step_net():
 
     """
-    Test IOB computing for a constant net insulin profile.
+    Test IOB computing for a net insulin profile with a single step.
     """
 
     # Define a DIA
@@ -62,30 +62,33 @@ def test_compute_iob_constant_net():
 
     # Create net insulin profile
     netInsulin = net.Net()
-    netInsulin.t = [-DIA, 0]
-    netInsulin.y = [1, 1]
+    netInsulin.t = np.array([-DIA, 0])
+    netInsulin.y = np.array([1, 1])
 
-    expectedIOB = 1.45532
+    # Define integral over single step
+    walshIntegrals = np.array([1.45532])
 
+    expectedIOB = np.sum(netInsulin.y * walshIntegrals)
     IOB = calculator.computeIOB(netInsulin, walsh)
 
     assert isEqual(IOB, expectedIOB)
 
-    # Redefine net insulin profile
+    # Redefine net insulin profile that corresponds to only scheduled basals
+    # (there should be no insulin on board)
+    netInsulin.t = np.array([-DIA, 0])
     netInsulin.y = [0, 0]
 
     expectedIOB = 0
-
     IOB = calculator.computeIOB(netInsulin, walsh)
 
     assert isEqual(IOB, expectedIOB)
 
 
 
-def test_compute_iob_varying_net():
+def test_compute_iob_multiple_steps_net():
 
     """
-    Test IOB computing for a varying net insulin profile.
+    Test IOB computing for a net insulin profile with multiple steps.
     """
 
     # Define a DIA
@@ -100,10 +103,9 @@ def test_compute_iob_varying_net():
     netInsulin.y = np.array([2, -0.5, 3, 1])
 
     # Define part integrals (one for each step)
-    walsh3HourDIAIntegrals = np.array([0.129461, 0.444841, 0.881021, 0])
+    walshIntegrals = np.array([0.129461, 0.444841, 0.881021, 0])
 
-    expectedIOB = np.sum(netInsulin.y * walsh3HourDIAIntegrals)
-
+    expectedIOB = np.sum(netInsulin.y * walshIntegrals)
     IOB = calculator.computeIOB(netInsulin, walsh)
 
     assert isEqual(IOB, expectedIOB)
