@@ -48,10 +48,10 @@ def isEqual(x, y):
 
 
 # TESTS
-def test_compute_iob():
+def test_compute_iob_constant_net():
 
     """
-    Test IOB computing.
+    Test IOB computing for a constant net insulin profile.
     """
 
     # Define a DIA
@@ -72,6 +72,30 @@ def test_compute_iob():
     assert isEqual(IOB, expectedIOB)
 
     # Redefine net insulin profile
+    netInsulin.y = [0, 0]
+
+    expectedIOB = 0
+
+    IOB = calculator.computeIOB(netInsulin, walsh)
+
+    assert isEqual(IOB, expectedIOB)
+
+
+
+def test_compute_iob_varying_net():
+
+    """
+    Test IOB computing for a varying net insulin profile.
+    """
+
+    # Define a DIA
+    DIA = 3.0
+
+    # Get an IDC
+    walsh = idc.WalshIDC(DIA)
+
+    # Create net insulin profile
+    netInsulin = net.Net()
     netInsulin.t = np.array([-DIA, -2, -1, 0])
     netInsulin.y = np.array([2, -0.5, 3, 1])
 
