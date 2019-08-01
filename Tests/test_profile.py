@@ -444,6 +444,7 @@ def test_fill_middle():
 
     profile = [(getTime("01:00:00"), 6),
                (getTime("02:00:00"), None),
+               (getTime("03:00:00"), None),
                (getTime("04:00:00"), 5.8),
                (getTime("05:00:00"), 5.8)]
 
@@ -459,6 +460,7 @@ def test_fill_middle():
     expectations = [[(getTime("01:00:00"), 6),
                      (getTime("02:00:00"), 150),
                      (getTime("02:30:00"), 100),
+                     (getTime("03:00:00"), 100),
                      (getTime("03:30:00"), 50),
                      (getTime("04:00:00"), 5.8),
                      (getTime("05:00:00"), 5.8)],
