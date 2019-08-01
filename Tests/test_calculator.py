@@ -19,13 +19,31 @@
 """
 
 # LIBRARIES
+import numpy as np
 import pytest
 
 
 
 # USER LIBRARIES
+import lib
 import calculator
 from Profiles import idc, net
+
+
+
+# CONSTANTS
+IOB_PRECISION = 0.01
+
+
+
+# FUNCTIONS
+def isEqual(x, y):
+
+    """
+    Custom equality testing function with acceptable precision for IOB values.
+    """
+
+    return lib.isEqual(x, y, IOB_PRECISION)
 
 
 
@@ -37,18 +55,31 @@ def test_compute_iob():
     """
 
     # Define a DIA
-    dia = 3.0
+    DIA = 3.0
 
     # Get an IDC
-    walsh = idc.WalshIDC(dia)
+    walsh = idc.WalshIDC(DIA)
 
     # Create net insulin profile
-    insulin = net.Net()
-    insulin.t = [-4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0]
-    insulin.y = [10.0, -2.0, -1.5, -1.0, 0.25, 0.005, 5.55, 45.0, 0]
+    netInsulin = net.Net()
+    netInsulin.t = [-DIA, 0]
+    netInsulin.y = [1, 1]
 
-    # Compute IOB
-    iob = calculator.computeIOB(insulin, walsh)
+    expectedIOB = 1.45532
 
-    # TODO
-    assert True
+    IOB = calculator.computeIOB(netInsulin, walsh)
+
+    assert isEqual(IOB, expectedIOB)
+
+    # Redefine net insulin profile
+    netInsulin.t = np.array([-DIA, -2, -1, 0])
+    netInsulin.y = np.array([2, -0.5, 3, 1])
+
+    # Define part integrals (one for each step)
+    integrals = np.array([0.129461, 0.444841, 0.881021, 0])
+
+    expectedIOB = np.sum(netInsulin.y * integrals)
+
+    IOB = calculator.computeIOB(netInsulin, walsh)
+
+    assert isEqual(IOB, expectedIOB)
