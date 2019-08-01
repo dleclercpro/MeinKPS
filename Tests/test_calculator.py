@@ -100,9 +100,9 @@ def test_compute_iob_varying_net():
     netInsulin.y = np.array([2, -0.5, 3, 1])
 
     # Define part integrals (one for each step)
-    integrals = np.array([0.129461, 0.444841, 0.881021, 0])
+    walsh3HourDIAIntegrals = np.array([0.129461, 0.444841, 0.881021, 0])
 
-    expectedIOB = np.sum(netInsulin.y * integrals)
+    expectedIOB = np.sum(netInsulin.y * walsh3HourDIAIntegrals)
 
     IOB = calculator.computeIOB(netInsulin, walsh)
 
