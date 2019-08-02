@@ -66,7 +66,7 @@ def test_compute_iob_single_step_net():
     netInsulin.y = np.array([1, 1])
 
     # Define integral over single step
-    walshIntegrals = np.array([1.45532])
+    walshIntegrals = np.array([1.45532, 0])
 
     expectedIOB = np.sum(netInsulin.y * walshIntegrals)
     IOB = calculator.computeIOB(netInsulin, walsh)

@@ -29,7 +29,7 @@ import pytest
 import lib
 import path
 import reporter
-from Profiles import profile, step, dot, past, future
+from Profiles import profile, step, dot, past, future, daily
 
 
 
@@ -86,6 +86,12 @@ class Profile(profile.Profile):
 
     def __init__(self):
 
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
         super(Profile, self).__init__()
         
         self.src = path.TESTS
@@ -95,6 +101,12 @@ class Profile(profile.Profile):
 class PastProfile(past.PastProfile):
 
     def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
         super(PastProfile, self).__init__()
 
@@ -107,7 +119,29 @@ class StepProfile(step.StepProfile):
 
     def __init__(self):
 
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
         super(StepProfile, self).__init__()
+
+        self.src = path.TESTS
+
+
+
+class DailyProfile(daily.DailyProfile):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(DailyProfile, self).__init__()
 
         self.src = path.TESTS
 
@@ -209,8 +243,7 @@ def test_load(setup_and_teardown):
 def test_decouple():
 
     """
-    Create a profile, give it loaded data and decouple it into time and value
-    axes.
+    Create a profile, give it data and decouple it into time and value axes.
     """
 
     profile = [(getTime("23:30:00", "1970.01.01"), 6.2),
@@ -227,6 +260,55 @@ def test_decouple():
 
     # Check profile axes
     assert p.T, p.y == lib.unzip(profile)
+
+
+
+def test_map():
+
+    """
+    Create a daily profile, give it decoupled data and map it over range of days
+    covered by said profile.
+    """
+
+    profile = [(lib.formatTime("00:00"), 1.30),
+               (lib.formatTime("01:00"), 1.45),
+               (lib.formatTime("02:00"), 1.60),
+               (lib.formatTime("03:00"), 1.70),
+               (lib.formatTime("04:00"), 1.80),
+               (lib.formatTime("05:00"), 1.90),
+               (lib.formatTime("06:00"), 2.00),
+               (lib.formatTime("07:00"), 1.90),
+               (lib.formatTime("08:00"), 1.80),
+               (lib.formatTime("09:00"), 1.70),
+               (lib.formatTime("10:00"), 1.60),
+               (lib.formatTime("11:00"), 1.45),
+               (lib.formatTime("12:00"), 1.30),
+               (lib.formatTime("13:00"), 1.15),
+               (lib.formatTime("14:00"), 1.00),
+               (lib.formatTime("15:00"), 0.90),
+               (lib.formatTime("16:00"), 0.90),
+               (lib.formatTime("17:00"), 1.00),
+               (lib.formatTime("18:00"), 1.10),
+               (lib.formatTime("19:00"), 1.20),
+               (lib.formatTime("20:00"), 1.25),
+               (lib.formatTime("21:00"), 1.30),
+               (lib.formatTime("22:00"), 1.30),
+               (lib.formatTime("23:00"), 1.30)]
+
+    nDays = 5
+    days = [getTime().date() + datetime.timedelta(days = d)
+        for d in range(nDays)]
+
+    # Create profile
+    p = DailyProfile()
+    p.T, p.y = lib.unzip(profile)
+    p.days = days
+
+    # Map its data
+    p.map()
+
+    assert p.T, p.y == lib.unzip(sorted([(datetime.datetime.combine(d, T), y)
+        for d in days for (T, y) in profile]))
 
 
 

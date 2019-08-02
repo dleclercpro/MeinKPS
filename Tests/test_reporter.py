@@ -40,6 +40,12 @@ class Report(reporter.Report):
 
     def __init__(self, directory = path.TESTS, json = None):
 
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
         super(Report, self).__init__(self.name, directory, json)
 
 
@@ -49,6 +55,12 @@ class DatedReport(reporter.DatedReport):
     name = "test.json"
 
     def __init__(self, date, directory = path.TESTS, json = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
 
         super(DatedReport, self).__init__(self.name, date, directory, json)
 

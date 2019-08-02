@@ -100,6 +100,8 @@ class DailyProfile(StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             MAP
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            After decoupling daily profile data, reproduce it on the whole range
+            of days that the profile covers.
         """
 
         # Info
