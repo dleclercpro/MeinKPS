@@ -186,14 +186,14 @@ class BGRecord(Record):
         self.size = 13
 
         # Define dictionary for trends
-        self.trends = {1: "↑↑",
-                       2: "↑",
-                       3: "↗",
-                       4: "→",
-                       5: "↘",
-                       6: "↓",
-                       7: "↓↓",
-                       8: " ", # No trend
+        self.trends = {1: ">>>", # ↑↑
+                       2: ">>",  # ↑
+                       3: ">",   # ↗
+                       4: "-",   # →
+                       5: "<",   # ↘
+                       6: "<<",  # ↓
+                       7: "<<<", # ↓↓
+                       8: " ",   # No trend
                        9: "OutOfRange"}
 
         # Define dictionary for special values
