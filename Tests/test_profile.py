@@ -270,32 +270,15 @@ def test_map():
     covered by said profile.
     """
 
-    profile = [(lib.formatTime("00:00"), 1.30),
-               (lib.formatTime("01:00"), 1.45),
-               (lib.formatTime("02:00"), 1.60),
-               (lib.formatTime("03:00"), 1.70),
-               (lib.formatTime("04:00"), 1.80),
-               (lib.formatTime("05:00"), 1.90),
-               (lib.formatTime("06:00"), 2.00),
-               (lib.formatTime("07:00"), 1.90),
-               (lib.formatTime("08:00"), 1.80),
-               (lib.formatTime("09:00"), 1.70),
-               (lib.formatTime("10:00"), 1.60),
-               (lib.formatTime("11:00"), 1.45),
-               (lib.formatTime("12:00"), 1.30),
-               (lib.formatTime("13:00"), 1.15),
-               (lib.formatTime("14:00"), 1.00),
-               (lib.formatTime("15:00"), 0.90),
-               (lib.formatTime("16:00"), 0.90),
-               (lib.formatTime("17:00"), 1.00),
-               (lib.formatTime("18:00"), 1.10),
-               (lib.formatTime("19:00"), 1.20),
-               (lib.formatTime("20:00"), 1.25),
-               (lib.formatTime("21:00"), 1.30),
-               (lib.formatTime("22:00"), 1.30),
-               (lib.formatTime("23:00"), 1.30)]
+    profile = [(getTime("00:30:00").time(), 1.30),
+               (getTime("01:30:00").time(), 1.45),
+               (getTime("02:30:00").time(), 1.60),
+               (getTime("03:30:00").time(), 1.70),
+               (getTime("04:30:00").time(), 1.80),
+               (getTime("05:30:00").time(), 1.90),
+               (getTime("06:30:00").time(), 2.00)]
 
-    nDays = 5
+    nDays = 3
     days = [getTime().date() + datetime.timedelta(days = d)
         for d in range(nDays)]
 
@@ -309,6 +292,13 @@ def test_map():
 
     assert p.T, p.y == lib.unzip(sorted([(datetime.datetime.combine(d, T), y)
         for d in days for (T, y) in profile]))
+
+    # Test before beginning of profile
+    with pytest.raises(ValueError):
+        p.f(getTime("00:00:00"))
+
+    # Test midnight cross
+    assert p.f(getTime("00:00:00") + datetime.timedelta(days = 1)) == 2.00
 
 
 
