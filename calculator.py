@@ -72,13 +72,13 @@ def computeIOB(net, IDC):
         Since the NET is defined by steps, this integral can be decomposed such
         that:
 
-            IOB = SUM_{t'} (NET(t') * S_{t'} IDC(t) * dt)
+            IOB = SUM_{t'} [NET(t') * S_{t'} IDC(t) * dt]
 
         where
         
-        SUM_{t'}: sum on all steps t' of NET
-        NET(t'):  step value of NET during t'
-        S_{t'}:   integral over step t'
+        - SUM_{t'}: sum on all steps t' of NET
+        - NET(t'):  step value of NET during t'
+        - S_{t'}:   integral over step t'
     """
 
     # Initialize IOB
@@ -102,16 +102,25 @@ def computeDose(dBG, futureISF, IDC):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         COMPUTEDOSE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Compute dose (theoretical instant bolus) to bring back BG to target
-        using ISF and IDC, based on the following formula:
+        Compute dose to bring back BG to target using ISF and IDC, based on the
+        following formula:
 
-            dBG = SUM_t' ISF(t') * dIDC(t') * D
+            dBG = SUM_t' [ISF(t') * dIDC(t') * D]
 
-        where dBG represents the desired BG variation, t' to the considered time
-        step in the ISF profile, dIDC to the corresponding change in remaining
-        active insulin over said step, and D to the necessary insulin dose. The
-        dose can simply be taken out of the sum, since it is a constant
-        (assuming a theoretical instant bolus).
+        where
+
+        - SUM_t':   sum on the steps of the ISF profile over the course of 
+                    insulin action (next DIA hours)
+        - t':       considered time step in the ISF profile
+        - dBG:      desired BG variation
+        - ISF(t'):  value of ISF during step t'
+        - dIDC(t'): fraction of active insulin consumed during step t'
+        - D:        necessary insulin dose to enable dBG.
+        
+        The dose can simply be taken out of the sum, since it is a constant
+        (assuming the dose is an instantaneous bolus), so that:
+
+            D = dBG / (SUM_t' [ISF(t') * dIDC(t')])
     """
 
     # Initialize conversion factor between dose and BG difference to target
@@ -123,12 +132,15 @@ def computeDose(dBG, futureISF, IDC):
     # Compute factor
     for i in range(n):
 
-        # Compute step limits
+        # Get current ISF
+        isf = futureISF.y[i]
+
+        # Compute step limits (negative because IDC ranges from -DIA to 0)
         a = -futureISF.t[i]
         b = -futureISF.t[i + 1]
 
         # Update factor with current step
-        f += futureISF.y[i] * (IDC.f(b) - IDC.f(a))
+        f += isf * (IDC.f(b) - IDC.f(a))
 
     # Compute necessary dose (instant bolus)
     dose = dBG / f
