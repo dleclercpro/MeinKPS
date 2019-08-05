@@ -77,7 +77,7 @@ def do_test_fill(profile, fillers, expectations):
         # Every value on the y-axis should be defined
         # Expectations should be met
         assert all([y is not None for y in p.y])
-        assert p.T, p.y == lib.unzip(expectations[i])
+        assert [p.T, p.y] == lib.unzip(expectations[i])
 
 
 
@@ -246,9 +246,10 @@ def test_decouple():
     Create a profile, give it data and decouple it into time and value axes.
     """
 
-    profile = [(getTime("23:30:00", "1970.01.01"), 6.2),
+    # Create an unsorted profile
+    profile = [(getTime("00:30:00", "1970.01.02"), 5.8),
+               (getTime("23:30:00", "1970.01.01"), 6.2),
                (getTime("00:00:00", "1970.01.02"), 6),
-               (getTime("00:30:00", "1970.01.02"), 5.8),
                (getTime("01:00:00", "1970.01.02"), 5.6)]
 
     # Create profile
@@ -258,8 +259,8 @@ def test_decouple():
     # Decouple its data
     p.decouple()
 
-    # Check profile axes
-    assert p.T, p.y == lib.unzip(profile)
+    # Check profile axes (they should be time ordered)
+    assert [p.T, p.y] == lib.unzip(sorted(profile))
 
 
 
@@ -290,7 +291,7 @@ def test_map():
     # Map its data
     p.map()
 
-    assert p.T, p.y == lib.unzip(sorted([(datetime.datetime.combine(d, T), y)
+    assert [p.T, p.y] == lib.unzip(sorted([(datetime.datetime.combine(d, T), y)
         for d in days for (T, y) in profile]))
 
     # Test before beginning of profile
@@ -325,7 +326,7 @@ def test_inject():
     durations = [datetime.timedelta(minutes = d) for d in [5, 60, 20, 0, 30]]
 
     # Define expected axes after injection
-    expectations = [(getTime("00:00:00"), 6),
+    expectations = [(getTime("00:00:00"), 6.2),
                     (getTime("00:05:00"), zero),
                     (getTime("01:00:00"), 6),
                     (getTime("01:30:00"), 5.8),
@@ -345,7 +346,7 @@ def test_inject():
     # Inject it with zeros
     p.inject()
 
-    assert p.T, p.y == lib.unzip(expectations)
+    assert [p.T, p.y] == lib.unzip(expectations)
 
 
 
@@ -374,7 +375,7 @@ def test_cut():
 
     # First entry should be cut off
     assert last == profile[0][1]
-    assert p.T, p.y == lib.unzip(profile[1:])
+    assert [p.T, p.y] == lib.unzip(profile[1:])
 
     # Rewrite profile
     p.T, p.y = lib.unzip(profile)
@@ -384,7 +385,7 @@ def test_cut():
 
     # First two entries and last one should be cut off
     assert last == profile[1][1]
-    assert p.T, p.y == lib.unzip(profile[2:-1])
+    assert [p.T, p.y] == lib.unzip(profile[2:-1])
 
 
 
@@ -618,7 +619,7 @@ def test_smooth():
     p.smooth()
 
     # No redundant steps allowed in smoothed profile
-    assert p.T, p.y == lib.unzip(smoothedProfile)
+    assert [p.T, p.y] == lib.unzip(smoothedProfile)
 
 
 
