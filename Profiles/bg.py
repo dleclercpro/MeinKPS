@@ -258,23 +258,3 @@ class FutureBG(BG, FutureProfile):
 
         # Finish defining
         super(FutureBG, self).define(start, end)
-
-
-
-def main():
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MAIN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Instanciate a BG profile
-    pastBG = PastBG()
-    futureBG = FutureBG()
-
-
-
-# Run this when script is called from terminal
-if __name__ == "__main__":
-    main()

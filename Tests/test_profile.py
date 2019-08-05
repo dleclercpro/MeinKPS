@@ -602,14 +602,14 @@ def test_smooth():
                (getTime("11:00:00"), 6.2),
                (getTime("12:00:00"), 6.2)]
 
-    smoothedProfile = [(getTime("01:00:00"), 6.2),
-                       (getTime("03:00:00"), 6),
-                       (getTime("06:00:00"), 5.4),
-                       (getTime("07:00:00"), 5.2),
-                       (getTime("09:00:00"), 5.8),
-                       (getTime("10:00:00"), 6),
-                       (getTime("11:00:00"), 6.2),
-                       (getTime("12:00:00"), 6.2)]
+    expectation = [(getTime("01:00:00"), 6.2),
+                   (getTime("03:00:00"), 6),
+                   (getTime("06:00:00"), 5.4),
+                   (getTime("07:00:00"), 5.2),
+                   (getTime("09:00:00"), 5.8),
+                   (getTime("10:00:00"), 6),
+                   (getTime("11:00:00"), 6.2),
+                   (getTime("12:00:00"), 6.2)]
 
     # Create profile
     p = StepProfile()
@@ -619,7 +619,7 @@ def test_smooth():
     p.smooth()
 
     # No redundant steps allowed in smoothed profile
-    assert [p.T, p.y] == lib.unzip(smoothedProfile)
+    assert [p.T, p.y] == lib.unzip(expectation)
 
 
 
@@ -646,3 +646,50 @@ def test_normalize():
 
     # Check normalization
     assert p.t == [lib.normalizeTime(T, p.norm) for T in p.T]
+
+
+
+def test_op():
+
+    """
+    Create several step profiles, and do operations on them.
+    """
+
+    profiles = [[(getTime("00:00:00"), 6),
+                 (getTime("00:30:00"), 5.8),
+                 (getTime("01:00:00"), 5.2),
+                 (getTime("01:30:00"), 5.6),
+                 (getTime("02:00:00"), 4.8)],
+                [(getTime("00:00:00"), 0.1),
+                 (getTime("00:10:00"), 3),
+                 (getTime("00:35:00"), 2.8),
+                 (getTime("01:05:00"), 6.2),
+                 (getTime("01:30:00"), 7.6),
+                 (getTime("02:00:00"), 0.8)]]
+
+    expectation = [(getTime("00:00:00"), 6.1),
+                   (getTime("00:10:00"), 9),
+                   (getTime("00:30:00"), 8.8),
+                   (getTime("00:35:00"), 8.6),
+                   (getTime("01:00:00"), 8),
+                   (getTime("01:05:00"), 11.4),
+                   (getTime("01:30:00"), 13.2),
+                   (getTime("02:00:00"), 5.6)]
+
+    start, end = expectation[0][0], expectation[-1][0]
+
+    # Create profiles
+    p1 = StepProfile()
+    p1.T, p1.y = lib.unzip(profiles[0])
+    p1.start, p1.end = start, end
+    p1.norm = end
+
+    p2 = StepProfile()
+    p2.T, p2.y = lib.unzip(profiles[1])
+    p2.start, p2.end = start, end
+    p2.norm = end
+
+    # Add profiles
+    p = p1.add(p2)
+
+    assert [p.T, p.y] == lib.unzip(expectation)

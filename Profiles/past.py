@@ -98,19 +98,3 @@ class PastProfile(Profile):
 
         # Info
         Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
-
-
-
-def main():
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MAIN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-
-
-# Run this when script is called from terminal
-if __name__ == "__main__":
-    main()

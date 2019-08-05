@@ -19,6 +19,7 @@
 """
 
 # LIBRARIES
+import datetime
 import numpy as np
 import pytest
 
@@ -27,7 +28,7 @@ import pytest
 # USER LIBRARIES
 import lib
 import calculator
-from Profiles import idc, net
+from Profiles import idc, net, isf
 
 
 
@@ -109,3 +110,24 @@ def test_compute_iob_multiple_steps_net():
     IOB = calculator.computeIOB(netInsulin, walsh)
 
     assert isEqual(IOB, expectedIOB)
+
+
+
+def test_compute_dose():
+
+    """
+    Test the computing of an insulin dose necessary to bring back BG to a given
+    target using an IDC and an ISF profile.
+    """
+
+    # Define a DIA
+    DIA = 5.0
+
+    # Define time references
+    now = datetime.datetime(1970, 1, 1, )
+    future = now + datetime.timedelta(hours = DIA)
+
+    # Define an ISF profile for the next DIA hours
+    ISF = isf.FutureISF()
+    ISF.t = [0, DIA]
+    ISF.y = [1.5, 1.5]

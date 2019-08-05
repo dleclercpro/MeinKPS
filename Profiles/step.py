@@ -59,7 +59,7 @@ class StepProfile(Profile):
 
 
 
-    def build(self, start, end, filler = None):
+    def build(self, start, end, filler = None, show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -88,7 +88,8 @@ class StepProfile(Profile):
         self.normalize()
 
         # Show profile
-        self.show()
+        if show:
+            self.show()
 
 
 
@@ -315,10 +316,11 @@ class StepProfile(Profile):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            OPERATE
+            OP
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: Profiles on which operations are made cannot have "None"
-                  values within them!
+            Execute a given operation on profiles, and return the resulting
+            profile. Said operation is executed on each step of the combined
+            time axes.
         """
 
         # Copy profile on which operation is done
@@ -335,26 +337,16 @@ class StepProfile(Profile):
 
         # Compute each step of new profile
         for T in new.T:
+            new.y += [self.f(T)]
 
-            # Compute partial result with base profile
-            y = self.f(T)
-
-            # Look within each profile
             for p in profiles:
-
-                # Compute partial result on current profile
-                y = op(y, p.f(T))
-
-            # Store result for current step
-            new.y += [y]
-
-        # Get min/max values
-        [new.min, new.max] = [min(new.y), max(new.y)]
+                new.y[-1] = op(new.y[-1], p.f(T))
 
         # Normalize it
-        new.normalize()
+        if new.norm is not None:
+            new.normalize()
 
-        # Return new profile
+        # Return it
         return new
 
 
@@ -370,7 +362,6 @@ class StepProfile(Profile):
         # Info
         Logger.debug("Adding:")
 
-        # Do operation
         return self.op(lambda x, y: x + y, list(args))
 
 
@@ -386,7 +377,6 @@ class StepProfile(Profile):
         # Info
         Logger.debug("Subtracting:")
 
-        # Do operation
         return self.op(lambda x, y: x - y, list(args))
 
 
@@ -402,7 +392,6 @@ class StepProfile(Profile):
         # Info
         Logger.debug("Multiplying:")
 
-        # Do operation
         return self.op(lambda x, y: x * y, list(args))
 
 
@@ -418,13 +407,12 @@ class StepProfile(Profile):
         # Info
         Logger.debug("Dividing:")
 
-        # Do operation
         return self.op(lambda x, y: x / y, list(args))
 
 
 
     def plot(self, n = 1, size = [1, 1], show = True, title = None,
-                   color = "black"):
+        color = "black"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -446,19 +434,3 @@ class StepProfile(Profile):
         # Ready to show?
         if show:
             plt.show()
-
-
-
-def main():
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MAIN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-
-
-# Run this when script is called from terminal
-if __name__ == "__main__":
-    main()

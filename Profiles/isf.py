@@ -55,7 +55,5 @@ class ISF(DailyProfile):
 class PastISF(ISF, PastProfile):
     pass
 
-
-
 class FutureISF(ISF, FutureProfile):
     pass

@@ -308,7 +308,7 @@ class Profile(object):
 
             # If not empty
             if entries:
-                Logger.debug(repr(self) + " - " + version)
+                Logger.info(repr(self) + " - " + version)
 
                 # Show entries
                 for entry in entries:
@@ -326,7 +326,7 @@ class Profile(object):
                         y = round(y, 2)
 
                     # Info
-                    Logger.debug(str(y) + " (" + str(t) + ")")
+                    Logger.info(str(y) + " (" + str(t) + ")")
 
 
 
@@ -365,19 +365,3 @@ class Profile(object):
 
         # Return figure and subplot
         return ax
-
-
-
-def main():
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MAIN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-
-
-# Run this when script is called from terminal
-if __name__ == "__main__":
-    main()

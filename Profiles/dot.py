@@ -41,7 +41,7 @@ Logger = logger.Logger("Profiles.dot")
 
 class DotProfile(Profile):
 
-    def build(self, start, end):
+    def build(self, start, end, show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,7 +62,8 @@ class DotProfile(Profile):
         self.derivate()
 
         # Show profile
-        self.show()
+        if show:
+            self.show()
 
 
 
@@ -106,19 +107,3 @@ class DotProfile(Profile):
         # Ready to show?
         if show:
             plt.show()
-
-
-
-def main():
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MAIN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-
-
-# Run this when script is called from terminal
-if __name__ == "__main__":
-    main()

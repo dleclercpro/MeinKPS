@@ -50,19 +50,3 @@ class FutureProfile(Profile):
 
         # Finish defining
         super(FutureProfile, self).define(start, end)
-
-
-
-def main():
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        MAIN
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-
-
-# Run this when script is called from terminal
-if __name__ == "__main__":
-    main()

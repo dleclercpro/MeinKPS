@@ -29,7 +29,7 @@ from future import FutureProfile
 
 
 
-class CSF(DailyProfile, FutureProfile):
+class CSF(DailyProfile):
 
     def __init__(self):
 
@@ -60,3 +60,11 @@ class CSF(DailyProfile, FutureProfile):
         # Bad units
         else:
             raise ValueError("Bad CSF units.")
+
+
+
+class PastCSF(CSF, PastProfile):
+    pass
+
+class FutureCSF(CSF, FutureProfile):
+    pass
