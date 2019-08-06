@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 # USER LIBRARIES
 import lib
 import logger
+import errors
 from .profile import Profile
 
 
@@ -322,6 +323,11 @@ class StepProfile(Profile):
             profile. Said operation is executed on each step of the combined
             time axes.
         """
+
+        # Test profile limits
+        if not all([p.start == self.start and p.end == self.end
+            for p in profiles]):
+            raise errors.MismatchedLimits
 
         # Copy profile on which operation is done
         new = copy.deepcopy(self)

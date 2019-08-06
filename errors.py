@@ -658,3 +658,18 @@ class InvalidFTPReport(ReporterError):
 
         # Define error info
         self.info = "Invalid FTP report."
+
+
+
+class MismatchedLimits(ProfileError):
+
+    def define(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DEFINE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Define error info
+        self.info = "Cannot operate on profiles: mismatched start/end limits."

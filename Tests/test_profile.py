@@ -27,6 +27,7 @@ import pytest
 
 # USER LIBRARIES
 import lib
+import errors
 import path
 import reporter
 from Profiles import profile, step, dot, past, future, daily
@@ -78,6 +79,72 @@ def do_test_fill(profile, fillers, expectations):
         # Expectations should be met
         assert all([y is not None for y in p.y])
         assert [p.T, p.y] == lib.unzip(expectations[i])
+
+
+
+def do_test_op(op, base, profile, expectation):
+
+    """
+    Helper function to test operations on profiles.
+    """
+
+    def isEqual(x, y):
+        return lib.isEqual(x, y, 0.001)
+
+    wrongStart = base.start + datetime.timedelta(hours = 1)
+    wrongEnd = base.end - datetime.timedelta(hours = 1)
+
+    # Create a profile with mismatching limits
+    wrongProfile = [(wrongStart, 0),
+                    (wrongEnd, 0)]
+
+    w = StepProfile()
+    w.T, w.y = lib.unzip(wrongProfile)
+    w.start, w.end = wrongStart, wrongEnd
+    w.norm = wrongEnd
+
+    # Execute operation on profiles
+    if op == "+":
+        p = base.add(profile)
+
+        with pytest.raises(errors.MismatchedLimits):
+            base.add(w)
+
+        with pytest.raises(errors.MismatchedLimits):
+            w.add(base)
+
+    elif op == "-":
+        p = base.subtract(profile)
+
+        with pytest.raises(errors.MismatchedLimits):
+            base.subtract(w)
+
+        with pytest.raises(errors.MismatchedLimits):
+            w.subtract(base)
+
+    elif op == "*":
+        p = base.multiply(profile)
+
+        with pytest.raises(errors.MismatchedLimits):
+            base.multiply(w)
+
+        with pytest.raises(errors.MismatchedLimits):
+            w.multiply(base)
+
+    elif op == "/":
+        p = base.divide(profile)
+
+        with pytest.raises(errors.MismatchedLimits):
+            base.divide(w)
+
+        with pytest.raises(errors.MismatchedLimits):
+            w.divide(base)
+
+    else:
+        raise TypeError("Bad profile operation type.")
+
+    assert all([T1 == T2 and isEqual(y1, y2) for ((T1, y1), (T2, y2)) in
+        zip(expectation, zip(p.T, p.y))])
 
 
 
@@ -655,28 +722,55 @@ def test_op():
     Create several step profiles, and do operations on them.
     """
 
-    profiles = [[(getTime("00:00:00"), 6),
+    start, end = getTime("00:00:00"), getTime("02:00:00")
+
+    profiles = [[(start, 6),
                  (getTime("00:30:00"), 5.8),
                  (getTime("01:00:00"), 5.2),
                  (getTime("01:30:00"), 5.6),
-                 (getTime("02:00:00"), 4.8)],
-                [(getTime("00:00:00"), 0.1),
+                 (end, 4.8)],
+                [(start, 0.1),
                  (getTime("00:10:00"), 3),
                  (getTime("00:35:00"), 2.8),
                  (getTime("01:05:00"), 6.2),
                  (getTime("01:30:00"), 7.6),
-                 (getTime("02:00:00"), 0.8)]]
+                 (end, 0.8)]]
 
-    expectation = [(getTime("00:00:00"), 6.1),
-                   (getTime("00:10:00"), 9),
-                   (getTime("00:30:00"), 8.8),
-                   (getTime("00:35:00"), 8.6),
-                   (getTime("01:00:00"), 8),
-                   (getTime("01:05:00"), 11.4),
-                   (getTime("01:30:00"), 13.2),
-                   (getTime("02:00:00"), 5.6)]
+    expectationAdd = [(start, 6.1),
+                      (getTime("00:10:00"), 9),
+                      (getTime("00:30:00"), 8.8),
+                      (getTime("00:35:00"), 8.6),
+                      (getTime("01:00:00"), 8),
+                      (getTime("01:05:00"), 11.4),
+                      (getTime("01:30:00"), 13.2),
+                      (end, 5.6)]
 
-    start, end = expectation[0][0], expectation[-1][0]
+    expectationSubtract = [(start, 5.9),
+                           (getTime("00:10:00"), 3),
+                           (getTime("00:30:00"), 2.8),
+                           (getTime("00:35:00"), 3),
+                           (getTime("01:00:00"), 2.4),
+                           (getTime("01:05:00"), -1),
+                           (getTime("01:30:00"), -2),
+                           (end, 4)]
+
+    expectationMultiply = [(start, 0.6),
+                           (getTime("00:10:00"), 18),
+                           (getTime("00:30:00"), 17.4),
+                           (getTime("00:35:00"), 16.24),
+                           (getTime("01:00:00"), 14.56),
+                           (getTime("01:05:00"), 32.24),
+                           (getTime("01:30:00"), 42.56),
+                           (end, 3.84)]
+
+    expectationDivide = [(start, 6 / 0.1),
+                         (getTime("00:10:00"), 6 / 3),
+                         (getTime("00:30:00"), 5.8 / 3),
+                         (getTime("00:35:00"), 5.8 / 2.8),
+                         (getTime("01:00:00"), 5.2 / 2.8),
+                         (getTime("01:05:00"), 5.2 / 6.2),
+                         (getTime("01:30:00"), 5.6 / 7.6),
+                         (end, 4.8 / 0.8)]
 
     # Create profiles
     p1 = StepProfile()
@@ -689,7 +783,8 @@ def test_op():
     p2.start, p2.end = start, end
     p2.norm = end
 
-    # Add profiles
-    p = p1.add(p2)
-
-    assert [p.T, p.y] == lib.unzip(expectation)
+    # Test operations on them
+    do_test_op("+", p1, p2, expectationAdd)
+    do_test_op("-", p1, p2, expectationSubtract)
+    do_test_op("*", p1, p2, expectationMultiply)
+    do_test_op("/", p1, p2, expectationDivide)
