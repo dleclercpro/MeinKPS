@@ -88,9 +88,6 @@ def computeIOB(net, IDC):
     for i in range(len(net.t) - 1):
         IOB += net.y[i] * (IDC.F(net.t[i + 1]) - IDC.F(net.t[i]))
 
-    # Info
-    Logger.info("IOB: " + fmt.IOB(IOB))
-
     # Return IOB
     return IOB
 
