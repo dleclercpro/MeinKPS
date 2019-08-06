@@ -90,7 +90,7 @@ class FutureIOB(IOB, FutureProfile):
 
 
 
-    def build(self, dt, net, IDC):
+    def build(self, dt, net, IDC, show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -130,7 +130,8 @@ class FutureIOB(IOB, FutureProfile):
         self.store()
 
         # Show
-        self.show()
+        if show:
+            self.show()
 
 
 
