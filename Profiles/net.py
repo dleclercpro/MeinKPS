@@ -52,7 +52,8 @@ class Net(PastProfile, StepProfile):
 
 
 
-    def build(self, start, end, suspend, resume, basal, TB, bolus = None):
+    def build(self, start, end, suspend, resume, basal, TB, bolus = None,
+        show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,4 +107,5 @@ class Net(PastProfile, StepProfile):
         Logger.debug("Net insulin profile:")
 
         # Show it
-        self.show()
+        if show:
+            self.show()
