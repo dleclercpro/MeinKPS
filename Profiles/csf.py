@@ -25,6 +25,7 @@
 # USER LIBRARIES
 import reporter
 from daily import DailyProfile
+from past import PastProfile
 from future import FutureProfile
 
 
