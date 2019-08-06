@@ -113,7 +113,7 @@ class FutureBG(BG, FutureProfile):
 
 
 
-    def build(self, dt, net, IDC, futureISF, past):
+    def build(self, dt, net, IDC, futureISF, past, show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -230,7 +230,8 @@ class FutureBG(BG, FutureProfile):
         self.derivate()
 
         # Show
-        self.show()
+        if show:
+            self.show()
 
 
 
