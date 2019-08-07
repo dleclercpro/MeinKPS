@@ -35,7 +35,7 @@ import lib
 
 class IDC(object):
 
-    def __init__(self, DIA):
+    def __init__(self, DIA, PIA = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,6 +48,9 @@ class IDC(object):
 
         # Define DIA
         self.DIA = float(DIA)
+
+        # Define PIA
+        self.PIA = PIA if PIA is None else float(PIA)
 
         # Define plot limits
         self.xlim = [-self.DIA, 0]
@@ -245,10 +248,7 @@ class ExponentialModelIDC(IDC):
         """
 
         # Start initialization
-        super(ExponentialModelIDC, self).__init__(DIA)
-
-        # Define PIA
-        self.PIA = float(PIA)
+        super(ExponentialModelIDC, self).__init__(DIA, PIA)
 
         # Time constant of exponential decay
         self.tau = self.PIA * ((1 - self.PIA / self.DIA) /

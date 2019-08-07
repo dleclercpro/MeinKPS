@@ -51,9 +51,6 @@ def isValid(idc):
     Check if insulin decay curve (IDC) is valid.
     """
 
-    # Make sure DIA is defined
-    assert type(idc.DIA) is float
-
     # Test at beginning and end
     assert isEqual(idc.f(0), 1) and isEqual(idc.f(-idc.DIA), 0)
 
@@ -123,9 +120,6 @@ def test_exp_novo():
 
     # Define IDC
     novo = idc.ExponentialNovoIDC()
-
-    # Make sure PIA is defined
-    assert type(idc.PIA) is float
 
     # Test it
     isValid(novo)
