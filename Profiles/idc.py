@@ -63,6 +63,8 @@ class IDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Gives fraction of active insulin remaining in body t hours after
             enacting it.
+
+            Note: -DIA <= t <= 0
         """
 
         raise NotImplementedError
@@ -75,7 +77,10 @@ class IDC(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: implicit integration of IDC. Only makes sense when taking dF.
+            Implicit integration of IDC.
+            
+            Note: Only makes sense when taking difference between two values of
+                  the integral (e.g. dF = F2 - F1)
         """
 
         raise NotImplementedError
@@ -188,8 +193,6 @@ class FourthOrderIDC(IDC):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Gives fraction of active insulin remaining in body t hours after
-            enacting it.
         """
 
         # Correct time
@@ -213,10 +216,6 @@ class FourthOrderIDC(IDC):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Implicit integration of IDC.
-            
-            Note: Only makes sense when taking difference between two values of
-                  the integral (e.g. dF = F2 - F1)
         """
 
         # Correct time
@@ -228,6 +227,78 @@ class FourthOrderIDC(IDC):
              self.m2 * t ** 3 / 3 +
              self.m1 * t ** 2 / 2 +
              self.m0 * t ** 1 / 1)
+
+        # Return it
+        return F
+
+
+
+class ExponentialModelIDC(IDC):
+
+    def __init__(self, DIA, PIA):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Modelization of IDC based on an exponential model.
+        """
+
+        # Start initialization
+        super(ExponentialModelIDC, self).__init__(DIA)
+
+        # Define PIA
+        self.PIA = float(PIA)
+
+        # Time constant of exponential decay
+        self.tau = self.PIA * ((1 - self.PIA / self.DIA) /
+            (1 - 2 * self.PIA / self.DIA))
+        
+        # Rise time factor
+        self.a = 2 * self.tau / self.DIA
+
+        # Auxiliary scale factor
+        self.s = 1 / (1 - self.a + (1 + self.a) * np.exp(-self.DIA / self.tau))
+
+
+
+    def f(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Correct time
+        t = self.correct(t)
+
+        # Compute IDC(t)
+        f = 1 - self.s * (1 - self.a) * ((t ** 2 /
+            (self.tau * self.DIA * (1 - self.a)) +
+            t / self.tau - 1) * np.exp(t / self.tau) + 1)
+
+        # Return it
+        return f
+
+
+
+    def F(self, t):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            F
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Correct time
+        t = self.correct(t)
+
+        # Compute F(t) of IDC
+        F = -(self.s * np.exp(t/self.tau) * (t *
+            (-self.a * self.DIA - 2 * self.tau + self.DIA) + 2 * self.tau *
+            ((self.a - 1) * self.DIA + self.tau) +
+            t ** 2)) / self.DIA + (self.a - 1) * self.s * t + t
 
         # Return it
         return F
@@ -287,8 +358,6 @@ class TriangleModelIDC(IDC):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Gives fraction of active insulin remaining in body t hours after
-            enacting it.
         """
 
         # Correct time
@@ -324,8 +393,6 @@ class TriangleModelIDC(IDC):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             F
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Note: implicit integration of IDC. Only makes sense when taking dF.
-
             The integration of the piecewise IDC is based on the following rule:
 
                 S_a^b f(t) * dt = S_u^b f(t) * dt - S_u^a f(t) * dt
@@ -442,6 +509,24 @@ class FiaspIDC(TriangleModelIDC):
 
 
 
+class ExponentialNovoIDC(ExponentialModelIDC):
+
+    def __init__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DIA (duration of insulin action) set by default to 6 hours, and PIA
+            (peak of insulin action) to 75 minutes (as often observed in
+            adults).
+        """
+
+        # Start initialization
+        super(ExponentialNovoIDC, self).__init__(6.0, 1.25)
+
+
+
 def main():
 
     """
@@ -451,7 +536,7 @@ def main():
     """
 
     # Define DIAs
-    DIAs = [3, 4, 5, 6]
+    DIAs = [5.0]
 
     # Initialize plot
     lib.initPlot()
@@ -463,9 +548,15 @@ def main():
         NovoRapid = WalshIDC(DIA)
         Fiasp = FiaspIDC(DIA)
 
-        # Plot them
-        NovoRapid.plot(False, "orange", 1, [2, 1])
-        Fiasp.plot(False, "#99e500", 2, [2, 1])
+        # Add them to plot
+        NovoRapid.plot(False, "orange")
+        Fiasp.plot(False, "#99e500")
+
+    # Instanciate an exponential IDC
+    ExponentialNovo = ExponentialNovoIDC()
+
+    # Add it to plot
+    ExponentialNovo.plot(False, "blue")
 
     # Show plot
     plt.show()

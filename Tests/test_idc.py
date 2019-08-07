@@ -112,3 +112,20 @@ def test_fiasp():
 
         # Test Fiasp IDC
         isValid(fiasp)
+
+
+
+def test_exp_novo():
+
+    """
+    Specific tests for exponential model of Novorapid.
+    """
+
+    # Define IDC
+    novo = idc.ExponentialNovoIDC()
+
+    # Make sure PIA is defined
+    assert type(idc.PIA) is float
+
+    # Test it
+    isValid(novo)
