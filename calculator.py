@@ -182,7 +182,8 @@ def computeBGI(pastBG):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         COMPUTEBGI
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Compute dBG/dt a.k.a. BGI (mmol/L/h) using linear fit on most recent BGs.
+        Compute dBG/dt a.k.a. BGI (mmol/L/h) using linear fit on most recent
+        BGs.
     """
 
     # Count valid BGs
