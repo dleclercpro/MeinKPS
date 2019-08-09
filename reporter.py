@@ -823,14 +823,27 @@ class LoopReport(DatedReport):
                 "Last Duration": 0,
                 "Export": 0,
                 "Upload": 0
-            },
-            "Errors": {
-                
             }
         }
 
         # Store it
         self.store()
+
+
+
+class ErrorsReport(DatedReport):
+
+    name = "errors.json"
+
+    def __init__(self, date, directory = path.REPORTS):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        super(ErrorsReport, self).__init__(self.name, date, directory)
 
 
 

@@ -113,7 +113,7 @@ class BaseError(Exception):
 
 
 
-class LoopError(BaseError):
+class LoggableError(BaseError):
 
     def __init__(self, *args):
 
@@ -121,7 +121,7 @@ class LoopError(BaseError):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             INIT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Loop errors are not only logged in the 'run.log' file, but also
+            Loggable errors are not only logged in the 'run.log' file, but also
             counted in an 'errors.json' dated report.
 
             Note: Reporter errors cannot be counted, since some cases (e.g.
@@ -132,11 +132,11 @@ class LoopError(BaseError):
         today = datetime.date.today()
 
         # Define and load report
-        self.report = reporter.getReportByType(reporter.LoopReport, today,
+        self.report = reporter.getReportByType(reporter.ErrorsReport, today,
             strict = False)
 
         # Initialize error
-        super(LoopError, self).__init__(*args)
+        super(LoggableError, self).__init__(*args)
 
 
 
@@ -147,14 +147,15 @@ class LoopError(BaseError):
             REPR
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Representation of an error as a chain, going from itself, all the
-            way up to its class ancestor, which succeeds the 'LoopError' class.
+            way up to its class ancestor, which succeeds the 'LoggableError'
+            class.
         """
 
         # Get class path
         path = [c.__name__ for c in self.__class__.__mro__]
 
         return " | ".join([p for p in
-            reversed(path[:path.index("LoopError")])])
+            reversed(path[:path.index("LoggableError")])])
 
 
 
@@ -167,10 +168,10 @@ class LoopError(BaseError):
         """
 
         # Log error
-        super(LoopError, self).log()
+        super(LoggableError, self).log()
 
         # Update error stats
-        self.report.increment(["Errors"] + repr(self).split(" | "), False)
+        self.report.increment(repr(self).split(" | "), False)
         self.report.store()
 
 
@@ -178,7 +179,7 @@ class LoopError(BaseError):
 
 
 
-class StickError(LoopError):
+class StickError(LoggableError):
     pass
 
 class RadioError(StickError):
@@ -187,13 +188,13 @@ class RadioError(StickError):
 class PacketError(RadioError):
     pass
 
-class PumpError(LoopError):
+class PumpError(LoggableError):
     pass
 
-class CGMError(LoopError):
+class CGMError(LoggableError):
     pass
 
-class ProfileError(LoopError):
+class ProfileError(LoggableError):
     pass
 
 class ReporterError(BaseError):
@@ -205,7 +206,7 @@ class ReporterError(BaseError):
 
 
 # Loop errors
-class NotEnoughBGs(LoopError):
+class NotEnoughBGs(LoggableError):
 
     def define(self):
 
