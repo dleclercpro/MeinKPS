@@ -162,7 +162,7 @@ def countValidBGs(pastBG, age = 30, N = 2):
 
     # Count how many BGs are not older than T
     n = np.sum(np.array(pastBG.T) > pastBG.end -
-                                    datetime.timedelta(minutes = age))
+        datetime.timedelta(minutes = age))
 
     # Info
     Logger.debug("Found " + str(n) + " BGs within last " + str(age) + " m.")
