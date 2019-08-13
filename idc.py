@@ -236,7 +236,7 @@ class FourthOrderIDC(IDC):
 
 
 
-class ExponentialModelIDC(IDC):
+class ExponentialIDC(IDC):
 
     def __init__(self, DIA, PIA):
 
@@ -248,7 +248,7 @@ class ExponentialModelIDC(IDC):
         """
 
         # Start initialization
-        super(ExponentialModelIDC, self).__init__(DIA, PIA)
+        super(ExponentialIDC, self).__init__(DIA, PIA)
 
         # Time constant of exponential decay
         self.tau = self.PIA * ((1 - self.PIA / self.DIA) /
@@ -509,24 +509,6 @@ class FiaspIDC(TriangleModelIDC):
 
 
 
-class ExponentialNovoIDC(ExponentialModelIDC):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DIA (duration of insulin action) set by default to 6 hours, and PIA
-            (peak of insulin action) to 75 minutes (as often observed in
-            adults).
-        """
-
-        # Start initialization
-        super(ExponentialNovoIDC, self).__init__(6.0, 1.25)
-
-
-
 def main():
 
     """
@@ -553,7 +535,7 @@ def main():
         Fiasp.plot(False, "#99e500")
 
     # Instanciate an exponential IDC
-    ExponentialNovo = ExponentialNovoIDC()
+    ExponentialNovo = ExponentialIDC(6.0, 1.5)
 
     # Add it to plot
     ExponentialNovo.plot(False, "blue")

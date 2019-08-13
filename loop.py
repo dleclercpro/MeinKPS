@@ -39,11 +39,12 @@ import reporter
 import exporter
 import uploader
 import calculator
+import idc
 from CGM import cgm
 from Stick import stick
 from Pump import pump
 from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
-    suspend, resume, idc)
+    suspend, resume)
 
 
 

@@ -46,7 +46,7 @@ import scipy.special
 import lib
 import reporter
 import calculator
-from Profiles.idc import WalshIDC, FiaspIDC
+import idc
 from Profiles.iob import FutureIOB
 from Profiles.net import Net
 from Profiles.bg import FutureBG
@@ -213,7 +213,7 @@ def modelInsulinActivity(t, args, PIA, DIA, MID):
              ls = "-", lw = 1.5, c = "purple",
              label = "Animas IDC")
 
-    walshIDC = WalshIDC(3)
+    walshIDC = idc.WalshIDC(3)
 
     plt.plot(t, walshIDC.f(t = t),
              ls = "-", lw = 1.5, c = "red",
@@ -298,15 +298,15 @@ def plotInsulinActivity():
     # FIXME
     # Build profiles manually
     # Build net insulin profile
-    idc = WalshIDC(DIA)
+    walsh = idc.WalshIDC(DIA)
     iob = FutureIOB()
     bg = FutureBG()
     net = Net()
 
     # Initialize plot
     mpl.rc("font", size = 11, family = "Ubuntu")
-    fig = plt.figure(0, figsize = (10, 8))
-    sub = plt.subplot(111)
+    plt.figure(0, figsize = (10, 8))
+    plt.subplot(111)
 
     # Define plot title
     plt.title("Insulin Decay Over Time (DIA = " + str(DIA) + ")",
@@ -317,7 +317,7 @@ def plotInsulinActivity():
     plt.ylabel("Insulin Activity (-)", weight = "semibold")
 
     # Add Walsh IDC to plot
-    plt.plot(-t, idc.f(t),
+    plt.plot(-t, walsh.f(t),
              ls = "-", lw = 1.5, c = "red", label = "Walsh IDC")
 
     # Add insulin net profile to plot

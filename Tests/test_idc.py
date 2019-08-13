@@ -25,7 +25,7 @@ import pytest
 
 # USER LIBRARIES
 import lib
-from Profiles import idc
+import idc
 
 
 
@@ -119,7 +119,7 @@ def test_exp_novo():
     """
 
     # Define IDC
-    novo = idc.ExponentialNovoIDC()
+    novo = idc.ExponentialIDC(6.0, 1.5)
 
     # Test it
     isValid(novo)
