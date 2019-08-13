@@ -45,9 +45,9 @@ Logger = logger.Logger("calculator")
 
 
 # CONSTANTS
-BG_HYPO_LIMIT       = 4.5 # (mmol/L)
-BG_HYPER_LIMIT      = 8.5 # (mmol/L)
-DOSE_ENACT_TIME     = 0.5 # (h)
+BG_HYPO_LIMIT   = 4.5 # (mmol/L)
+BG_HYPER_LIMIT  = 8.5 # (mmol/L)
+DOSE_ENACT_TIME = 0.5 # (h)
 
 
 
@@ -190,7 +190,7 @@ def computeBGI(pastBG):
     n = countValidBGs(pastBG, 30, 4)
 
     # Get fit over last minutes
-    [m, b] = np.polyfit(pastBG.t[-n:], pastBG.y[-n:], 1)
+    [m, _] = np.polyfit(pastBG.t[-n:], pastBG.y[-n:], 1)
 
     # Return fit slope, which corresponds to BGI
     return m
