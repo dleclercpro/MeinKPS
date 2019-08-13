@@ -1069,11 +1069,6 @@ def getReportDates(reportType, src = path.REPORTS):
 def getRecent(reportType, now, branch, n = 1, src = path.REPORTS,
     strict = False):
 
-    # TODO
-    # This won't work with finding recent reports with a specific VALUE at the
-    # tip of the given branch. This would allow finding last suspend/resume
-    # entries in treatments report.
-
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         GETRECENT
@@ -1084,6 +1079,11 @@ def getRecent(reportType, now, branch, n = 1, src = path.REPORTS,
         If "strict" is set to "True", "n" defines the number of days from today
         the function will try looking back for content. Otherwise, it will try
         to find "n" reports, no matter how old they are.
+
+        ** TODO **
+        This won't work with finding recent reports with a specific VALUE at the
+        tip of the given branch. This would allow finding last suspend/resume
+        entries in treatments report.
     """
 
     # Test report type
