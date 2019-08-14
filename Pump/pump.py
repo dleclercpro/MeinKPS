@@ -1003,18 +1003,13 @@ class TB(PumpComponent):
 
 
 
-    def set(self, rate, units, duration, cancel = False):
+    def set(self, TB, cancel = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Define new TB
-        TB = {"Rate": rate,
-              "Units": units,
-              "Duration": duration}
 
         # Not a cancel TB
         if not cancel:
@@ -1054,7 +1049,6 @@ class TB(PumpComponent):
 
         # Success
         Logger.info("TB correctly enacted.")
-
 
 
 

@@ -392,7 +392,7 @@ class Loop(object):
 
         # Otherwise, enact TB recommendation
         else:
-            self.do(self.pump.TB.set, ["Pump", "TB"], *TB)
+            self.do(self.pump.TB.set, ["Pump", "TB"], TB)
 
         # Re-update history
         self.pump.history.update()

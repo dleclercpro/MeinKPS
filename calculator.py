@@ -321,16 +321,16 @@ def computeTB(dose, basal):
     dB = dose / DOSE_ENACT_TIME
 
     # Compute TB to enact using the current basal and said required difference
-    TB = basal.y[-1] + dB
+    rate = basal.y[-1] + dB
 
     # Info
     Logger.info("Current basal: " + fmt.basal(basal.y[-1]))
     Logger.info("Required basal difference: " + fmt.basal(dB))
-    Logger.info("Temporary basal to enact: " + fmt.basal(TB))
+    Logger.info("Temporary basal to enact: " + fmt.basal(rate))
     Logger.info("Enactment time: " + str(DOSE_ENACT_TIME) + " h")
 
     # Return TB recommendation (in minutes)
-    return {"Rate": TB, "Units": "U/h", "Duration": DOSE_ENACT_TIME * 60}
+    return {"Rate": rate, "Units": "U/h", "Duration": DOSE_ENACT_TIME * 60}
 
 
 
