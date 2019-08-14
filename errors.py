@@ -680,6 +680,38 @@ class MismatchedLimits(ProfileError):
 
 
 
+def flattenErrors(errors, result = {}):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        FLATTENERRORS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Using a JSON object with an error tree for each available day, store the
+        daily count for each error type in the given result JSON object.
+    """
+
+    # Loop over keys
+    for key in errors:
+
+        # Key leads to another dict object: dive deeper
+        if type(errors[key]) is dict:
+            flattenErrors(errors[key], result)
+
+        # Otherwise: add count to result
+        else:
+
+            # Key does not exist yet: initialize it
+            if key not in result:
+                result[key] = []
+
+            # Add count
+            result[key] += [errors[key]]
+
+    # Return merged errors (will only be accessible at top-level of recursion)
+    return result
+
+
+
 def main():
 
     """
@@ -694,8 +726,11 @@ def main():
     # Get errors of the month
     errors = reporter.getMonthlyErrors(today)
 
+    # Flatten error counts (each error has an array of counts, no more dates)
+    flattenedErrors = flattenErrors(errors)
+
     # Show them
-    print lib.JSONize(errors)
+    print lib.JSONize(flattenedErrors)
 
 
 
