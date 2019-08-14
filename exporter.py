@@ -31,8 +31,9 @@ import datetime
 import lib
 import logger
 import reporter
+import idc
 from Profiles import (bolus, basal, tb, net, bg, targets, isf, csf, iob, cob,
-    idc, resume, suspend)
+    resume, suspend)
 
 
 

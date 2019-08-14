@@ -33,8 +33,9 @@ import matplotlib.pyplot as plt
 import lib
 import fmt
 import calculator
+import idc
 from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
-    suspend, resume, idc)
+    suspend, resume)
 
 
 

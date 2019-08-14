@@ -422,7 +422,7 @@ def merge(base, new, n = 1):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         MERGE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Merge dictionaries together.
+        Merge dictionaries together. Overwriting of entries is forbidden!
     """
 
     # Start

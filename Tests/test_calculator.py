@@ -28,7 +28,8 @@ import pytest
 # USER LIBRARIES
 import lib
 import calculator
-from Profiles import idc, net, isf
+import idc
+from Profiles import net, isf
 
 
 

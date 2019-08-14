@@ -45,9 +45,9 @@ Logger = logger.Logger("calculator")
 
 
 # CONSTANTS
-BG_HYPO_LIMIT       = 4.5 # (mmol/L)
-BG_HYPER_LIMIT      = 8.5 # (mmol/L)
-DOSE_ENACT_TIME     = 0.5 # (h)
+BG_HYPO_LIMIT   = 4.5 # (mmol/L)
+BG_HYPER_LIMIT  = 8.5 # (mmol/L)
+DOSE_ENACT_TIME = 0.5 # (h)
 
 
 
