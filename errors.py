@@ -676,3 +676,29 @@ class MismatchedLimits(ProfileError):
 
         # Define error info
         self.info = "Cannot operate on profiles: mismatched start/end limits."
+
+
+
+def main():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
+    """
+
+    # Get current time
+    now = datetime.datetime.now()
+    start = datetime.datetime(now.year, now.month, 1)
+
+    # Get number of days since beginning of the month
+    nDays = (now - start).days + 1
+
+    # Concatenate errors
+    errors = {}
+
+
+
+# Run this when script is called from terminal
+if __name__ == "__main__":
+    main()
