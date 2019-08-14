@@ -147,7 +147,7 @@ def computeDose(dBG, futureISF, IDC):
 
 
 
-def countValidBGs(pastBG, age = 30, N = 2):
+def countValidBGs(pastBG, maxAge = 30, N = 4):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,14 +162,11 @@ def countValidBGs(pastBG, age = 30, N = 2):
 
     # Count how many BGs are not older than T
     n = np.sum(np.array(pastBG.T) > pastBG.end -
-        datetime.timedelta(minutes = age))
-
-    # Info
-    Logger.debug("Found " + str(n) + " BGs within last " + str(age) + " m.")
+        datetime.timedelta(minutes = maxAge))
 
     # Check for insufficient valid BGs
     if n < N:
-        raise errors.NotEnoughBGs
+        raise errors.NotEnoughBGs(n, N, maxAge)
 
     # Return count
     return n
@@ -189,15 +186,15 @@ def computeBGI(pastBG):
     # Count valid BGs
     n = countValidBGs(pastBG, 30, 4)
 
-    # Get fit over last minutes
-    [m, b] = np.polyfit(pastBG.t[-n:], pastBG.y[-n:], 1)
+    # Get linear fit over last minutes
+    [m, _] = np.polyfit(pastBG.t[-n:], pastBG.y[-n:], 1)
 
     # Return fit slope, which corresponds to BGI
     return m
 
 
 
-def linearlyProjectBG(pastBG, dt):
+def linearlyProjectBG(pastBG, dt = 0.5):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -278,7 +275,6 @@ def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF,
     Logger.info("Current IOB: " + fmt.IOB(futureIOB.y[0]))
 
     # Info about short (dt) BG projection
-    Logger.info("Projection time: " + str(dt) + " h")
     Logger.info("Expected BG (dt): " + fmt.BG(shortExpectedBG))
     Logger.info("Projected BG (dt): " + fmt.BG(shortProjectedBG))
     Logger.info("dBG (dt): " + fmt.BG(shortdBG))
@@ -334,7 +330,7 @@ def computeTB(dose, basal):
     Logger.info("Enactment time: " + str(DOSE_ENACT_TIME) + " h")
 
     # Return TB recommendation (in minutes)
-    return [TB, "U/h", DOSE_ENACT_TIME * 60]
+    return {"Rate": TB, "Units": "U/h", "Duration": DOSE_ENACT_TIME * 60}
 
 
 
@@ -349,7 +345,9 @@ def limitTB(TB, basal, BG):
     """
 
     # Destructure TB
-    [rate, units, duration] = TB
+    rate = TB["Rate"]
+    units = TB["Units"]
+    duration = TB["Duration"]
 
     # Negative TB rate
     if rate < 0 or BG <= BG_HYPO_LIMIT:
@@ -386,7 +384,7 @@ def limitTB(TB, basal, BG):
             rate = maxRate
 
     # Return limited TB
-    return [rate, units, duration]
+    return {"Rate": rate, "Units": units, "Duration": duration}
 
 
 
@@ -397,7 +395,7 @@ def snooze(now, duration = 2):
         SNOOZE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Snooze enactment of TBs for a while after eating.
-        FIXME: take carbs dynamics into consideration!
+        TODO: take carb dynamics into consideration!
     """
 
     # Compute dates
@@ -467,12 +465,8 @@ def recommendTB(BGDynamics, basal, futureISF, IDC):
     # If recommendation was not canceled
     if TB is not None:
 
-        # Destructure TB
-        [rate, units, duration] = TB
-
         # Info
-        Logger.info("Recommended TB: " + fmt.basal(rate) + " " +
-                    "(" + str(duration) + " m)")
+        Logger.info("Recommended TB: " + fmt.TB(TB))
 
     # Return recommendation
     return TB

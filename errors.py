@@ -220,7 +220,9 @@ class NotEnoughBGs(LoggableError):
         self.level = "CRITICAL"
 
         # Define error info
-        self.info = ("Not enough recent BGs to take action.")
+        self.info = ("Not enough BGs found in the last " + self.args[2] + " " +
+            "minutes to take action. Found: " + self.args[0] + ". Needed: " +
+            self.args[1] + ".")
 
 
 
