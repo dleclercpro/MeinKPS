@@ -1182,8 +1182,9 @@ def setDatedEntries(reportType, branch, entries, src = path.REPORTS):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        setDatedEntries
+        SETDATEDENTRIES
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Store a set of dated entries in their corresponding dated reports.
     """
 
     # Test report type
@@ -1211,6 +1212,46 @@ def setDatedEntries(reportType, branch, entries, src = path.REPORTS):
 
     # Store reports
     storeReportsByType(reportType, dates)
+
+
+
+def getMonthlyErrors(today):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        GETMONTHLYERRORS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Get all reported errors in the current month and merge them into a
+        single JSON object.
+    """
+
+    # Type check date
+    if type(today) is not datetime.date:
+        raise TypeError("Incorrect date type.")
+
+    # Define first month day
+    start = datetime.date(today.year, today.month, 1)
+
+    # Get all dates of error reports
+    dates = getReportDates(ErrorsReport)
+
+    # Keep only dates that are within current month
+    filteredDates = [d for d in dates if start <= d]
+
+    # Initialize dict for merged errors
+    json = {}
+
+    # Loop on found dates
+    for date in sorted(filteredDates):
+
+        # Initialize and load report
+        report = getReportByType(ErrorsReport, date)
+
+        # Add error entries
+        json[lib.formatDate(date)] = report.get()
+
+    # Return merged errors
+    return json
 
 
 

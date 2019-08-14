@@ -30,6 +30,7 @@ import datetime
 
 # USER LIBRARIES
 import fmt
+import lib
 import logger
 import reporter
 
@@ -687,15 +688,14 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
     """
 
-    # Get current time
-    now = datetime.datetime.now()
-    start = datetime.datetime(now.year, now.month, 1)
+    # Get current date
+    today = datetime.date.today()
 
-    # Get number of days since beginning of the month
-    nDays = (now - start).days + 1
+    # Get errors of the month
+    errors = reporter.getMonthlyErrors(today)
 
-    # Concatenate errors
-    errors = {}
+    # Show them
+    print lib.JSONize(errors)
 
 
 
