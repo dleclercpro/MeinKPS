@@ -398,15 +398,15 @@ def test_get_recent(setup_and_teardown):
         path.TESTS)
 
     # Look for values in last 3 days (strict search)
-    emptyResults = reporter.getRecent(DatedReport, now, branch, 3, path.TESTS,
-        True)
+    emptyResults = reporter.getRecentDatedEntries(DatedReport, now, branch, 3,
+        src = path.TESTS, strict = True)
     
     # Results should be empty
     assert len(emptyResults) == 0
 
     # Look for values in 3 most recent available reports
-    results = reporter.getRecent(DatedReport, now, branch, 3, path.TESTS,
-        False)
+    results = reporter.getRecentDatedEntries(DatedReport, now, branch, 3,
+        src = path.TESTS, strict = False)
 
     # There should be as many entries in merged results, as there were reports
     # instanciated. The values should also fit.

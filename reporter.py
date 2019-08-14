@@ -1066,24 +1066,19 @@ def getReportDates(reportType, src = path.REPORTS):
 
 
 
-def getRecent(reportType, now, branch, n = 1, src = path.REPORTS,
+def getRecentDatedEntries(reportType, now, branch, n = 1, src = path.REPORTS,
     strict = False):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        GETRECENT
+        GETRECENTDATEDENTRIES
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Get the "n" most recent reports which INCLUDE given branch (this can
-        mean the whole report if the branch is an empty list).
+        Get, merge, and return the dated entries at the tip of the given branch
+        in the "n" most recent reports, in which said branch exists.
                 
         If "strict" is set to "True", "n" defines the number of days from today
         the function will try looking back for content. Otherwise, it will try
         to find "n" reports, no matter how old they are.
-
-        ** TODO **
-        This won't work with finding recent reports with a specific VALUE at the
-        tip of the given branch. This would allow finding last suspend/resume
-        entries in treatments report.
     """
 
     # Test report type
@@ -1146,10 +1141,10 @@ def getDatedEntries(reportType, dates, branch, src = path.REPORTS,
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         GETDATEDENTRIES
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Try to get entries in dated reports with given dates.
+        Try to get dated entries in reports with given dates.
 
-        If "strict" is set to "True", then each report HAS to include the given
-        branch.
+        If "strict" is set to "True", then the given branch HAS to exist within
+        each report.
     """
 
     # Test report type

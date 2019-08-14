@@ -64,12 +64,12 @@ class Resume(PastProfile, StepProfile):
         """
 
         # Load data
-        self.data = reporter.getRecent(self.reportType, self.norm, self.branch,
-            src = self.src, strict = False)
+        self.data = reporter.getRecentDatedEntries(self.reportType, self.norm,
+            self.branch, src = self.src, strict = False)
 
 
 
-    def fill(self, filler):
+    def fill(self, net):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -85,4 +85,4 @@ class Resume(PastProfile, StepProfile):
         self.y = [None if y == 1 else y for y in self.y]
 
         # Fill
-        super(Resume, self).fill(filler)
+        super(Resume, self).fill(net)

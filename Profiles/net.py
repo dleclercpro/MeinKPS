@@ -59,6 +59,17 @@ class Net(PastProfile, StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Build a net insulin profile by subtracting basals to temporary
+            basals, then adding boluses (as a step profile). Use the resume and
+            suspend profiles to adjust the result:
+
+                - RESUME -> SUSPEND
+                  When insulin is being delivered, use the above described net
+                  insulin profile.
+
+                - SUSPEND -> RESUME
+                  When insulin delivery is suspended, use a negative version of
+                  the basal profile as the net insulin profile.
         """
 
         # Info
@@ -70,41 +81,32 @@ class Net(PastProfile, StepProfile):
         # Define time references of profile
         self.define(start, end)
 
-        # Build basal profile
+        # Build basal profile, as well as TB profile, using the former to fill
+        # the latter
         basal.build(start, end)
-
-        # Build TB profile and fill holes with basal
         TB.build(start, end, basal)
 
         # Compute net basal by subtracting TBs and basal
         netBasal = TB.subtract(basal)
 
-        # If bolus profile given
+        # If bolus profile given: build a corresponding step profile and add it
+        # to net basal
         if bolus is not None:
-
-            # Build bolus profile
             bolus.build(start, end)
-
-            # Add it to net basal
             netBasal = netBasal.add(bolus)
 
-        # Build suspend profile and fill with basal
-        # Negative IOB impact due to suspending pump
+        # Build a suspend and resume profiles, filling the former with basals,
+        # and the latter with net basals
         suspend.build(start, end, basal)
-
-        # Build resume profile and fill with net basal 
         resume.build(start, end, netBasal)
 
-        # Build net insulin profile
+        # Build the final net insulin profile
         net = resume.subtract(suspend)
 
         # Assign components
         self.T = net.T
         self.t = net.t
         self.y = net.y
-        
-        # Info
-        Logger.debug("Net insulin profile:")
 
         # Show it
         if show:

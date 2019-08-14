@@ -1123,7 +1123,7 @@ class Bolus(PumpComponent):
         now = datetime.datetime.now()
 
         # Get recent boluses
-        boluses = reporter.getRecent(reporter.TreatmentsReport, now,
+        boluses = reporter.getRecentDatedEntries(reporter.TreatmentsReport, now,
             ["Boluses"])
 
         # Get latest bolus time

@@ -64,12 +64,12 @@ class Suspend(PastProfile, StepProfile):
         """
 
         # Load data
-        self.data = reporter.getRecent(self.reportType, self.norm, self.branch,
-            src = self.src, strict = False)
+        self.data = reporter.getRecentDatedEntries(self.reportType, self.norm,
+            self.branch, src = self.src, strict = False)
 
 
 
-    def fill(self, filler):
+    def fill(self, basal):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,4 +84,4 @@ class Suspend(PastProfile, StepProfile):
         self.y = [None if y == 0 else 0 for y in self.y]
 
         # Fill
-        super(Suspend, self).fill(filler)
+        super(Suspend, self).fill(basal)
