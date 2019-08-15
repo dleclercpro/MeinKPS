@@ -728,18 +728,24 @@ def main():
     # Get flattened monthly error counts (each error has an array of counts, no
     # more dates)
     flattenedErrors = flattenErrors(reporter.getMonthlyErrors(today))
-
+    
     # Show them
     print lib.JSONize(flattenedErrors)
 
+    # Filter some errors out
+    filteredErrors = {k: v for k, v in flattenedErrors.iteritems()
+        if k != "BadPumpRecord" and
+           k != "RadioTimeout" and
+           k != "NoCGM"}
+
     # Sort errors
-    errors = sorted(flattenedErrors.keys())
+    errors = sorted(filteredErrors.keys())
 
     # Compute stats
-    avgs = [np.mean(flattenedErrors[e]) for e in errors]
-    stds = [np.std(flattenedErrors[e]) for e in errors]
-    mins = np.array([min(flattenedErrors[e]) for e in errors])
-    maxs = np.array([max(flattenedErrors[e]) for e in errors])
+    avgs = [np.mean(filteredErrors[e]) for e in errors]
+    stds = [np.std(filteredErrors[e]) for e in errors]
+    mins = np.array([min(filteredErrors[e]) for e in errors])
+    maxs = np.array([max(filteredErrors[e]) for e in errors])
 
     # Create error bars: min to max count
     plt.errorbar(errors,
