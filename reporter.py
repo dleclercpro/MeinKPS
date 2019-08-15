@@ -1058,11 +1058,7 @@ def getReportDates(reportType, src = path.REPORTS):
     directories = src.scan(reportType.name)
 
     # Convert paths to dates
-    if directories:
-        return [path.toDate(d) for d in directories]
-
-    # Info
-    Logger.debug("No dated report found for: " + repr(reportType))
+    return [path.toDate(d) for d in directories]
 
 
 
@@ -1232,10 +1228,9 @@ def getMonthlyErrors(today):
     # Define first month day
     start = datetime.date(today.year, today.month, 1)
 
-    # Get all dates of error reports
+    # Get all dates of error reports, and keep the ones that are within current
+    # month
     dates = getReportDates(ErrorsReport)
-
-    # Keep only dates that are within current month
     filteredDates = [d for d in dates if start <= d]
 
     # Initialize dict for merged errors
