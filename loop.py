@@ -297,12 +297,15 @@ class Loop(object):
         # Get DIA
         DIA = reporter.getPumpReport().get(["Settings", "DIA"])
 
+        # Define PIA (peak of insulin action)
+        PIA = 1.25
+
         # Define past/future reference times
         past = now - datetime.timedelta(hours = DIA)
         future = now + datetime.timedelta(hours = DIA)
 
         # Instanciate profiles
-        self.profiles = {"IDC": idc.WalshIDC(DIA),
+        self.profiles = {"IDC": idc.ExponentialIDC(DIA, PIA),
             "Suspend": suspend.Suspend(),
             "Resume": resume.Resume(),
             "Basal": basal.Basal(),
