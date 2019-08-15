@@ -25,6 +25,8 @@
 
 # LIBRARIES
 import datetime
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 
@@ -723,14 +725,36 @@ def main():
     # Get current date
     today = datetime.date.today()
 
-    # Get errors of the month
-    errors = reporter.getMonthlyErrors(today)
-
-    # Flatten error counts (each error has an array of counts, no more dates)
-    flattenedErrors = flattenErrors(errors)
+    # Get flattened monthly error counts (each error has an array of counts, no
+    # more dates)
+    flattenedErrors = flattenErrors(reporter.getMonthlyErrors(today))
 
     # Show them
     print lib.JSONize(flattenedErrors)
+
+    # Sort errors
+    errors = sorted(flattenedErrors.keys())
+
+    # Compute stats
+    avgs = [np.mean(flattenedErrors[e]) for e in errors]
+    stds = [np.std(flattenedErrors[e]) for e in errors]
+    mins = np.array([min(flattenedErrors[e]) for e in errors])
+    maxs = np.array([max(flattenedErrors[e]) for e in errors])
+
+    # Create error bars: min to max count
+    plt.errorbar(errors,
+        avgs,
+        [avgs - mins, maxs - avgs],
+        fmt = ".k", ecolor = "orange", lw = 1, uplims = True, lolims = True)
+
+    # Create error bars: average centered, extending +/- standard deviation
+    plt.errorbar(errors,
+        avgs,
+        stds,
+        fmt = "ok", ecolor = "black", lw = 3, uplims = True, lolims = True)
+
+    # Show graph
+    plt.show()
 
 
 
