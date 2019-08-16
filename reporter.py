@@ -32,6 +32,7 @@
 import os
 import json
 import datetime
+from dateutil.relativedelta import relativedelta 
 
 
 
@@ -1211,22 +1212,31 @@ def setDatedEntries(reportType, branch, entries, src = path.REPORTS):
 
 
 
-def getMonthlyErrors(today):
+def getMonthlyErrors(today, nMonths):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         GETMONTHLYERRORS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Get all reported errors in the current month and merge them into a
-        single JSON object.
+        Get all reported errors over the last "n" months and merge them into a
+        single JSON object, in which every error report's content is stored
+        under its corresponding date as a key.
     """
 
     # Type check date
     if type(today) is not datetime.date:
         raise TypeError("Incorrect date type.")
 
+    # Type check number of months
+    if not lib.isRealNumber(nMonths):
+        raise TypeError("Incorrect type for number of months.")
+
+    # Check number of months
+    if nMonths <= 0:
+        raise ValueError("Incorrect value for number of months.")
+
     # Define first month day
-    start = datetime.date(today.year, today.month, 1)
+    start = today.replace(day = 1) - relativedelta(months = nMonths - 1)
 
     # Get all dates of error reports, and keep the ones that are within current
     # month

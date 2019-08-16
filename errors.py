@@ -682,6 +682,10 @@ class MismatchedLimits(ProfileError):
 
 
 
+
+
+
+# FUNCTIONS
 def flattenErrors(errors, result = {}):
 
     """
@@ -714,6 +718,78 @@ def flattenErrors(errors, result = {}):
 
 
 
+def analyzeMonthlyErrors(today, nMonths = 1):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ANALYZEMONTHLYERRORS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
+    """
+
+    # Get flattened monthly error counts (each error has an array of counts, no
+    # more dates)
+    flattenedErrors = flattenErrors(reporter.getMonthlyErrors(today, nMonths))
+
+    # Filter some errors out
+    filteredErrors = {k: v for k, v in flattenedErrors.iteritems() if
+        k != "BadPumpRecord" and
+        k != "RadioTimeout" and
+        k != "NoStick" and
+        k != "NoCGM"}
+
+    # Plot monthly error counts
+    plotMonthlyErrors(filteredErrors, nMonths)
+
+
+
+def plotMonthlyErrors(errors, nMonths):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PLOTMONTHLYERRORS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
+    """
+
+    # Initialize plot
+    lib.initPlot()
+
+    # Define subplot
+    ax = plt.subplot(1, 1, 1)
+
+    # Define title
+    title = "Error counts over the last " + str(nMonths) + " month(s)"
+
+    # Define axis labels
+    x = "Error Type"
+    y = "Error Count"
+
+    # Set title and labels
+    ax.set_title(title, fontweight = "semibold")
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
+
+    # Sort errors
+    errorTypes = sorted(errors.keys())
+
+    # Compute stats
+    avgs = [np.mean(errors[e]) for e in errorTypes]
+    stds = [np.std(errors[e]) for e in errorTypes]
+    mins = np.array([min(errors[e]) for e in errorTypes])
+    maxs = np.array([max(errors[e]) for e in errorTypes])
+
+    # Create error bars: min to max count
+    ax.errorbar(errorTypes, avgs, [avgs - mins, maxs - avgs],
+        fmt = ".k", ecolor = "orange", lw = 1, uplims = True, lolims = True)
+
+    # Create error bars: average centered, extending +/- standard deviation
+    ax.errorbar(errorTypes, avgs, stds,
+        fmt = "ok", ecolor = "black", lw = 3, uplims = True, lolims = True)
+
+    # Show graph
+    plt.show()
+
+
+
 def main():
 
     """
@@ -725,42 +801,8 @@ def main():
     # Get current date
     today = datetime.date.today()
 
-    # Get flattened monthly error counts (each error has an array of counts, no
-    # more dates)
-    flattenedErrors = flattenErrors(reporter.getMonthlyErrors(today))
-    
-    # Show them
-    print lib.JSONize(flattenedErrors)
-
-    # Filter some errors out
-    filteredErrors = {k: v for k, v in flattenedErrors.iteritems()
-        if k != "BadPumpRecord" and
-           k != "RadioTimeout" and
-           k != "NoCGM"}
-
-    # Sort errors
-    errors = sorted(filteredErrors.keys())
-
-    # Compute stats
-    avgs = [np.mean(filteredErrors[e]) for e in errors]
-    stds = [np.std(filteredErrors[e]) for e in errors]
-    mins = np.array([min(filteredErrors[e]) for e in errors])
-    maxs = np.array([max(filteredErrors[e]) for e in errors])
-
-    # Create error bars: min to max count
-    plt.errorbar(errors,
-        avgs,
-        [avgs - mins, maxs - avgs],
-        fmt = ".k", ecolor = "orange", lw = 1, uplims = True, lolims = True)
-
-    # Create error bars: average centered, extending +/- standard deviation
-    plt.errorbar(errors,
-        avgs,
-        stds,
-        fmt = "ok", ecolor = "black", lw = 3, uplims = True, lolims = True)
-
-    # Show graph
-    plt.show()
+    # Analyze errors over the last x months
+    analyzeMonthlyErrors(today, 3)
 
 
 
