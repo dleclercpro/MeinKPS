@@ -45,10 +45,10 @@ Logger = logger.Logger("calculator")
 
 
 # CONSTANTS
-BG_HYPO_LIMIT         = 4.5  # (mmol/L)
-BG_HYPER_LIMIT        = 10.0 # (mmol/L)
-BG_HYPER_URGENT_LIMIT = 15.0 # (mmol/L)
-DOSE_ENACT_TIME       = 0.5  # (h)
+BG_LOW_LIMIT       = 4.2  # (mmol/L)
+BG_HIGH_LIMIT      = 8.5  # (mmol/L)
+BG_VERY_HIGH_LIMIT = 11.0 # (mmol/L)
+DOSE_ENACT_TIME    = 0.5  # (h)
 
 
 
@@ -350,9 +350,12 @@ def limitTB(TB, basal, BG):
     units = TB["Units"]
     duration = TB["Duration"]
 
-    # Negative TB rate: stop insulin delivery
-    if rate < 0 or BG <= BG_HYPO_LIMIT:
+    # Negative TB rate or hypo close
+    if rate < 0 or BG <= BG_LOW_LIMIT:
         Logger.warning("Hypo prevention mode.")
+
+        # Stop insulin delivery
+        rate = 0
 
     # Positive TB
     elif rate > 0:
@@ -366,14 +369,14 @@ def limitTB(TB, basal, BG):
         factorCurrentBasal = 4
 
         # High BGs
-        if BG >= BG_HYPER_LIMIT:
-            factorDailyMaxBasal = 6
-            factorCurrentBasal = 8
+        if BG >= BG_HIGH_LIMIT:
+            factorDailyMaxBasal = 4.5
+            factorCurrentBasal = 6
 
         # Very high BGs
-        if BG >= BG_HYPER_URGENT_LIMIT:
-            factorDailyMaxBasal = 8
-            factorCurrentBasal = 10
+        if BG >= BG_VERY_HIGH_LIMIT:
+            factorDailyMaxBasal = 6
+            factorCurrentBasal = 8
 
         # Define max basal rate allowed (U/h)
         maxRate = min(factorCurrentBasal * basal.y[-1],
@@ -390,14 +393,15 @@ def limitTB(TB, basal, BG):
 
         # TB exceeds max
         if rate > maxRate:
-            Logger.warning("TB recommendation exceeds maximal basal and has " +
+            Logger.warning("TB recommendation exceeds max basal rate and has " +
                            "thus been limited. Bolus would bring BG back to " +
                            "safe range more effectively.")
 
+            # Limit TB
+            rate = maxRate
+
     # Return limited TB
-    return {"Rate": min(max(rate, 0), maxRate),
-            "Units": units,
-            "Duration": duration}
+    return {"Rate": rate, "Units": units, "Duration": duration}
 
 
 
