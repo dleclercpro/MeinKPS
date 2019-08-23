@@ -45,9 +45,10 @@ Logger = logger.Logger("calculator")
 
 
 # CONSTANTS
-BG_HYPO_LIMIT   = 4.5 # (mmol/L)
-BG_HYPER_LIMIT  = 8.5 # (mmol/L)
-DOSE_ENACT_TIME = 0.5 # (h)
+BG_HYPO_LIMIT         = 4.5  # (mmol/L)
+BG_HYPER_LIMIT        = 10.0 # (mmol/L)
+BG_HYPER_URGENT_LIMIT = 15.0 # (mmol/L)
+DOSE_ENACT_TIME       = 0.5  # (h)
 
 
 
@@ -349,42 +350,54 @@ def limitTB(TB, basal, BG):
     units = TB["Units"]
     duration = TB["Duration"]
 
-    # Negative TB rate
+    # Negative TB rate: stop insulin delivery
     if rate < 0 or BG <= BG_HYPO_LIMIT:
-
-        # Info
         Logger.warning("Hypo prevention mode.")
-
-        # Stop insulin delivery
-        rate = 0
 
     # Positive TB
     elif rate > 0:
 
-        # Compute maximum daily basal rate
-        maxDailyBasal = max(basal.y)
+        # Define max basal rates
+        dailyMaxBasal = max(basal.y)
+        theoreticalMaxBasal = basal.max
+        
+        # Define factors to apply on those maxes to limit TB
+        factorDailyMaxBasal = 3
+        factorCurrentBasal = 4
+
+        # High BGs
+        if BG >= BG_HYPER_LIMIT:
+            factorDailyMaxBasal = 6
+            factorCurrentBasal = 8
+
+        # Very high BGs
+        if BG >= BG_HYPER_URGENT_LIMIT:
+            factorDailyMaxBasal = 8
+            factorCurrentBasal = 10
 
         # Define max basal rate allowed (U/h)
-        maxRate = min(4 * basal.y[-1], 3 * maxDailyBasal, basal.max)
+        maxRate = min(factorCurrentBasal * basal.y[-1],
+            factorDailyMaxBasal * dailyMaxBasal,
+            theoreticalMaxBasal)
 
         # Info
-        Logger.info("Theoretical max basal: " + fmt.basal(basal.max))
-        Logger.info("4x current basal: " + fmt.basal(4 * basal.y[-1]))
-        Logger.info("3x max daily basal: " + fmt.basal(3 * maxDailyBasal))
+        Logger.info("Theoretical max basal: " +
+            fmt.basal(theoreticalMaxBasal))
+        Logger.info(str(factorCurrentBasal) + "x current basal: " +
+            fmt.basal(factorCurrentBasal * basal.y[-1]))
+        Logger.info(str(factorMaxBasal) + "x max daily basal: " +
+            fmt.basal(factorDailyMaxBasal * dailyMaxBasal))
 
         # TB exceeds max
         if rate > maxRate:
-
-            # Info
             Logger.warning("TB recommendation exceeds maximal basal and has " +
                            "thus been limited. Bolus would bring BG back to " +
                            "safe range more effectively.")
 
-            # Max it out
-            rate = maxRate
-
     # Return limited TB
-    return {"Rate": rate, "Units": units, "Duration": duration}
+    return {"Rate": min(max(rate, 0), maxRate),
+            "Units": units,
+            "Duration": duration}
 
 
 
@@ -456,16 +469,12 @@ def recommendTB(BGDynamics, basal, futureISF, IDC):
     # Limit it
     TB = limitTB(TB, basal, BGDynamics["BG"])
 
-    # Snoozing of temping required?
+    # Snoozing of temping required
     if snooze(basal.end):
-
-        # No TB recommendation (back to programmed basal)
         TB = None
 
-    # If recommendation was not canceled
+    # Recommendation was not canceled
     if TB is not None:
-
-        # Info
         Logger.info("Recommended TB: " + fmt.TB(TB))
 
     # Return recommendation

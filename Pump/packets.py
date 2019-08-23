@@ -126,21 +126,14 @@ class FromPacket(Packet):
 
         # Bigger than
         if RSSI >= 128:
-
-            # Value
             RSSI = (RSSI - 256) / 2.0
 
         # Otherwise
         else:
-
-            # Value
             RSSI = RSSI / 2.0
 
-        # Remove offset
-        RSSI -= offset
-
-        # Round value
-        RSSI = round(RSSI)
+        # Remove offset and round value
+        RSSI = round(RSSI - offset)
 
         # Reassign it
         self.RSSI["dBm"] = RSSI
