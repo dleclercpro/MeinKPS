@@ -386,10 +386,10 @@ def limitTB(TB, basal, BG):
         # Info
         Logger.info("Theoretical max basal: " +
             fmt.basal(theoreticalMaxBasal))
+        Logger.info(str(factorDailyMaxBasal) + "x max daily basal: " +
+            fmt.basal(factorDailyMaxBasal * dailyMaxBasal))
         Logger.info(str(factorCurrentBasal) + "x current basal: " +
             fmt.basal(factorCurrentBasal * basal.y[-1]))
-        Logger.info(str(factorMaxBasal) + "x max daily basal: " +
-            fmt.basal(factorDailyMaxBasal * dailyMaxBasal))
 
         # TB exceeds max
         if rate > maxRate:
