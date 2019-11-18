@@ -71,6 +71,11 @@ class Command(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             EXECUTE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Command response packet format:
+
+            [0-3]:     HEAD
+            [4-531]:   PAYLOAD
+            [532-533]: CRC
         """
 
         # Reset response
@@ -84,51 +89,62 @@ class Command(object):
         # Send packet
         self.cgm.write(self.packet.bytes)
 
-        # Get data
+        # Get response data
         data = self.cgm.read()
 
-        # Compute size of packet to receive
-        size = lib.unpack(data[1:3], "<")
+        # Check packet status
+        status = data[0]
 
-        # Until whole data collected
-        while len(data) != size:
+        # Packet OK
+        if packets.STATUSES["ACK"] == status:
 
-            # Read more data
-            data.extend(self.cgm.read())
+            # Compute size of packet to receive
+            size = lib.unpack(data[1:3], "<")
 
-        # Head
-        self.response["Head"] = data[0:4]
+            # Until whole data collected
+            while len(data) != size:
 
-        # Payload
-        self.response["Payload"] = data[4:(size - 2)]
+                # Read more data
+                data.extend(self.cgm.read())
 
-        # CRC
-        self.response["CRC"] = data[-2:]
+            # Head
+            self.response["Head"] = data[0:4]
 
-        # Try and find XML structure in response
-        Logger.debug("XML: " + str(lib.XMLify(self.response["Payload"])))
+            # Payload
+            self.response["Payload"] = data[4:(size - 2)]
 
-        # Verify response
-        self.verify()
+            # CRC
+            self.response["CRC"] = data[-2:]
+
+            # Verify response
+            self.verifyCRC()
+
+        # Otherwise
+        else:
+            raise IOError("Packet does not have an ACK status.")
 
 
 
-    def verify(self):
+    def verifyCRC(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFY
+            VERIFYCRC
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
         # Get and compute response CRCs
         expectedCRC = lib.unpack(self.response["CRC"], "<")
-        computedCRC = crc.compute(self.response["Head"] + self.response["Payload"])
+        computedCRC = crc.compute(self.response["Head"] +
+            self.response["Payload"])
 
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
-            raise ValueError("Bad CRC. Expected: " + str(expectedCRC) + ". " +
-                "Computed: " + str(computedCRC) + ".")
+            raise ValueError("Bad packet CRC. Expected: " + str(expectedCRC) +
+                ". Computed: " + str(computedCRC) + ".")
+
+
+
 
 
 
@@ -142,10 +158,8 @@ class ReadDatabaseRange(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadDatabaseRange, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 16
 
 
@@ -160,10 +174,8 @@ class ReadDatabase(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadDatabase, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 17
 
 
@@ -178,10 +190,8 @@ class ReadFirmwareHeader(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadFirmwareHeader, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 11
 
 
@@ -196,10 +206,8 @@ class ReadTransmitterID(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadTransmitterID, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 25
 
 
@@ -214,10 +222,8 @@ class ReadFirmwareSettings(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadFirmwareSettings, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 54
 
 
@@ -232,10 +238,8 @@ class ReadBatteryLevel(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadBatteryLevel, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 33
 
 
@@ -250,10 +254,8 @@ class ReadBatteryState(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadBatteryState, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 48
 
 
@@ -268,10 +270,8 @@ class ReadLanguage(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadLanguage, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 27
 
 
@@ -286,10 +286,8 @@ class ReadSystemTime(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadSystemTime, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 34
 
 
@@ -304,10 +302,8 @@ class ReadClockMode(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadClockMode, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 41
 
 
@@ -322,8 +318,6 @@ class ReadUnits(Command):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
+        # Define command
         super(ReadUnits, self).__init__(cgm)
-
-        # Initialize command code
         self.code = 37

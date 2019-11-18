@@ -34,6 +34,18 @@ Logger = logger.Logger("CGM.packets")
 
 
 
+# Packet statuses
+STATUSES = {"NULL": 0,
+            "ACK": 1,
+            "NAK": 2,
+            "INVALID_COMMAND": 3,
+            "INVALID_PARAMETER": 4,
+            "INCOMPLETE_PACKET_RECEIVED": 5,
+            "RECEIVER_ERROR": 6,
+            "INVALID_MODE": 7}
+
+
+
 class Packet(object):
 
     def __init__(self):
@@ -61,6 +73,15 @@ class Packet(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            The format of a packet is:
+
+            [0]:   ACK/NAK
+            [1]:   PACKET SIZE
+            [2]:   ???
+            [3]:   OP CODE (COMMAND)
+            [4]:   DATABASE INDEX
+            [5]:   DATABASE PAGE
+            [6-7]: CRC
         """
 
         # Build database byte
@@ -80,7 +101,7 @@ class Packet(object):
             page = []
 
         # Build packet
-        self.bytes = [1, 0, 0]
+        self.bytes = [STATUSES["ACK"], 0, 0]
         self.bytes.append(code)
         self.bytes.extend(database)
         self.bytes.extend(page)

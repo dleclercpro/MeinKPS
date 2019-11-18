@@ -32,8 +32,7 @@ import lib
 import fmt
 import logger
 import crc
-import errors
-import reporter
+import cgm
 
 
 
@@ -42,9 +41,20 @@ Logger = logger.Logger("CGM.records")
 
 
 
+# Constants
+BG_VALUE_MASK = 1023
+BG_TREND_MASK = 15
+
+
+
 class Record(object):
 
-    def __init__(self, cgm):
+    # Record size
+    size = 0
+
+
+
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,64 +62,27 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize report properties
-        self.reportType = None
-        self.report = None
-
-        # Initialize record size
-        self.size = None
-
         # Initialize record vectors
-        self.t = None
+        self.bytes = bytes
+        self.systemTime = None
+        self.displayTime = None
         self.values = None
-        self.bytes = None
-
-        # Link with CGM
-        self.cgm = cgm
 
 
 
-    def find(self, data):
+    def __str__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FIND
+            STR
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Find records in a database page.
         """
 
-        # Reset record vectors
-        self.t = []
-        self.values = []
-        self.bytes = []
-
-        # Compute number of records in data
-        n = len(data) / self.size
-
-        # Extract records
-        for i in range(n):
-
-            # Extract ith record's bytes
-            bytes = data[i * self.size: (i + 1) * self.size]
-
-            # Info
-            Logger.debug("Record bytes: " + str(bytes))
-
-            # Store them
-            self.bytes.append(bytes)
-
-            # Verify them
-            self.verify()
-
-            # Decode them
-            self.decode()
-
-        # Store records
-        self.store()
+        return "Record unknown"
 
 
 
-    def verify(self):
+    def verifyCRC(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,8 +92,8 @@ class Record(object):
         """
 
         # Decode and compute CRCs
-        expectedCRC = lib.unpack(self.bytes[-1][-2:], "<")
-        computedCRC = crc.compute(self.bytes[-1][:-2])
+        expectedCRC = lib.unpack(self.bytes[-2:], "<")
+        computedCRC = crc.compute(self.bytes[:-2])
 
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
@@ -135,7 +108,7 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Decode the record's bytes.
+            Decode the record's time-related bytes.
 
             [0-3] SYSTEM TIME
             [4-7] DISPLAY TIME
@@ -143,45 +116,37 @@ class Record(object):
         """
 
         # Decode system time
-        #systemTime = (self.cgm.clock.epoch + datetime.timedelta(seconds =
-        #    lib.unpack(self.bytes[-1][0:4], "<")))
+        self.systemTime = (cgm.EPOCH_TIME + datetime.timedelta(seconds =
+            lib.unpack(self.bytes[0:4], "<")))
 
         # Decode display time
-        displayTime = (self.cgm.clock.epoch + datetime.timedelta(seconds =
-            lib.unpack(self.bytes[-1][4:8], "<")))
-
-        # Store it
-        self.t.append(displayTime)
-
-
-
-    def filter(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILTER
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        pass
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        pass
+        self.displayTime = (cgm.EPOCH_TIME + datetime.timedelta(seconds =
+            lib.unpack(self.bytes[4:8], "<")))
 
 
 
 class BGRecord(Record):
 
-    def __init__(self, cgm):
+    # Record size
+    size = 25
+
+    # Trend values
+    trends = [None, "↑↑", "↑", "↗", "→", "↘", "↓", "↓↓", " ", "OutOfRange"]
+
+    # Special BG values
+    special = {0: None,
+               1: "SensorInactive",
+               2: "MinimalDeviation",
+               3: "NoAntenna",
+               5: "SensorNotCalibrated",
+               6: "DeviationCount",
+               9: "AbsoluteDeviation",
+               10: "PowerDeviation",
+               12: "BadRF"}
+
+
+
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -190,39 +155,29 @@ class BGRecord(Record):
         """
 
         # Initialize record
-        super(BGRecord, self).__init__(cgm)
+        super(BGRecord, self).__init__(bytes)
 
-        # Define record size
-        self.size = 25
+        # BG record properties
+        self.value = None
+        self.trend = None
 
-        # Define dictionary for trends
-        self.trends = {0: None,
-                       1: "↑↑",
-                       2: "↑", 
-                       3: "↗", 
-                       4: "→", 
-                       5: "↘", 
-                       6: "↓",
-                       7: "↓↓",
-                       8: " ",
-                       9: "OutOfRange"}
 
-        # Define dictionary for special values
-        self.special = {0:  None,
-                        1:  "SensorInactive",
-                        2:  "MinimalDeviation",
-                        3:  "NoAntenna",
-                        5:  "SensorNotCalibrated",
-                        6:  "DeviationCount",
-                        9:  "AbsoluteDeviation",
-                        10: "PowerDeviation",
-                        12: "BadRF"}
 
-        # Define if conversion from mg/dL to mmol/L is needed
-        self.convert = True
+    def __str__(self):
 
-        # Define report type
-        self.reportType = reporter.BGReport
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+        
+        value = self.value
+
+        if type(value) is float:
+            value = fmt.BG(value)
+            
+        return ("BG: " + str(value) + " " + str(self.trend) + " (" +
+            lib.formatTime(self.displayTime) + ")")
 
 
 
@@ -247,87 +202,60 @@ class BGRecord(Record):
         # Initialize decoding
         super(BGRecord, self).decode()
 
-        # Decode BG
-        BG = lib.unpack(self.bytes[-1][8:10], "<") & 1023
+        # Decode BG value
+        self.value = lib.unpack(self.bytes[8:10], "<") & BG_VALUE_MASK
 
         # Decode trend
-        trend = self.trends[self.bytes[-1][19] & 15] # G6
-        #trend = self.trends[self.bytes[-1][10] & 15] # G4
+        self.trend = self.trends[self.bytes[19] & BG_TREND_MASK] # G6
+        #self.trend = self.trends[self.bytes[10] & BG_TREND_MASK] # G4
 
-        # Deal with special values
-        if BG in self.special:
+        # Normal values
+        if self.value not in self.special:
 
-            # Decode special BG
-            BG = self.special[BG]
+            # Convert BG units by default from mg/dL to mmol/L
+            self.value = round(self.value / 18.0, 1)
 
-            # Info
-            Logger.debug(BG + " (" + lib.formatTime(self.t[-1]) + ")")
-
-        # Deal with normal values
+        # Special values
         else:
 
-            # Convert BG units if desired
-            if self.convert:
-
-                # Convert them
-                BG = round(BG / 18.0, 1)
-
-            # Info
-            Logger.info("BG: " + fmt.BG(BG) + " " + str(trend) + " " +
-                        "(" + lib.formatTime(self.t[-1]) + ")")
-
-        # Store them
-        self.values.append({"BG": BG, "Trend": trend})
-
-
-
-    def filter(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            FILTER
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize record dict
-        BGs = {}
-
-        # Compute number of decoded records
-        n = len(self.t)
-
-        # Filter records
-        for i in range(n):
-
-            # Only keep normal (numeric) BG values
-            if type(self.values[i]["BG"]) is float:
-
-                # Store them
-                BGs[self.t[i]] = self.values[i]["BG"]
-
-        # Return them
-        return BGs
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Info
-        Logger.debug("Adding BG records to: " + repr(self.reportType))
-
-        # Add entries
-        reporter.setDatedEntries(self.reportType, [], self.filter())
+            # Decode special BG
+            self.value = self.special[self.value]
 
 
 
 class SensorRecord(Record):
 
-    def __init__(self, cgm):
+    # Record size
+    size = 25 # G6
+    #size = 15 # G4
+
+    # Sensor statuses
+    statuses = [None,
+                "Stopped",
+                "Expired",
+                "ResidualDeviation",
+                "CountsDeviation",
+                "SecondSession",
+                "OffTimeLoss",
+                "Started",
+                "BadTransmitter",
+                "ManufacturingMode",
+                "Unknown1",
+                "Unknown2",
+                "Unknown3",
+                "Unknown4",
+                "Unknown5",
+                "Unknown6",
+                "Unknown7",
+                "Unknown8",
+                "Unknown9",
+                "Unknown10",
+                "Unknown11" # Sensor ID input?
+                ]
+
+
+
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -336,38 +264,23 @@ class SensorRecord(Record):
         """
 
         # Initialize record
-        super(SensorRecord, self).__init__(cgm)
+        super(SensorRecord, self).__init__(bytes)
 
-        # Define record size
-        self.size = 25 # G6
-        #self.size = 15 # G4
+        # Sensor record properties
+        self.status = None
 
-        # Define possible sensor status
-        self.statuses = [None,
-                         "Stopped",
-                         "Expired",
-                         "ResidualDeviation",
-                         "CountsDeviation",
-                         "SecondSession",
-                         "OffTimeLoss",
-                         "Started",
-                         "BadTransmitter",
-                         "ManufacturingMode",
-                         "Unknown1",
-                         "Unknown2",
-                         "Unknown3",
-                         "Unknown4",
-                         "Unknown5",
-                         "Unknown6",
-                         "Unknown7",
-                         "Unknown8",
-                         "Unknown9",
-                         "Unknown10",
-                         "Unknown11" # Sensor ID input?
-                         ]
 
-        # Define report type
-        self.reportType = reporter.HistoryReport
+
+    def __str__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        return ("Sensor status: " + str(self.status) + " (" +
+            lib.formatTime(self.displayTime) + ")")
 
 
 
@@ -391,37 +304,19 @@ class SensorRecord(Record):
         super(SensorRecord, self).decode()
 
         # Decode sensor status
-        status = self.statuses[self.bytes[-1][12]]
-
-        # Store it
-        self.values.append(status)
-
-        # Info
-        Logger.info("Sensor status: " + str(status) + " " +
-                    "(" + lib.formatTime(self.t[-1]) + ")")
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Info
-        Logger.debug("Adding sensor statuses to: " + repr(self.reportType))
-
-        # Add entries
-        reporter.setDatedEntries(self.reportType, ["CGM", "Sensor Statuses"],
-            dict(zip(self.t, self.values)))
+        self.status = self.statuses[self.bytes[12]]
 
 
 
 class CalibrationRecord(Record):
 
-    def __init__(self, cgm):
+    # Record size
+    size = 21 # G6
+    #size = 16 # G4
+
+
+
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -430,14 +325,24 @@ class CalibrationRecord(Record):
         """
 
         # Initialize record
-        super(CalibrationRecord, self).__init__(cgm)
+        super(CalibrationRecord, self).__init__(bytes)
 
-        # Define record size
-        self.size = 21 # G6
-        #self.size = 16 # G4
+        # Calibration record properties
+        self.enteredTime = None
+        self.value = None
 
-        # Define report type
-        self.reportType = reporter.HistoryReport
+
+
+    def __str__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        return ("BG calibration value: " + str(self.value) + " mmol/L (" +
+            lib.formatTime(self.enteredTime) + ")")
 
 
 
@@ -461,42 +366,32 @@ class CalibrationRecord(Record):
         # Initialize decoding
         super(CalibrationRecord, self).decode()
 
-        # Time entered
-        t = (self.cgm.clock.epoch + datetime.timedelta(seconds =
-            lib.unpack(self.bytes[-1][11:15], "<")))
+        # Entered time
+        self.enteredTime = (cgm.EPOCH_TIME + datetime.timedelta(seconds =
+            lib.unpack(self.bytes[11:15], "<")))
 
         # Decode BG
-        BG = round(lib.unpack(self.bytes[-1][8:10], "<") / 18.0, 1)
-
-        # Store it
-        self.values.append(BG)
-
-        # Info
-        Logger.info("BG calibration: " + str(BG) + " " + self.cgm.units.value +
-                    " (" + lib.formatTime(t) + ")")
-
-
-
-    def store(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STORE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Info
-        Logger.debug("Adding sensor calibrations to: " + repr(self.reportType))
-
-        # Add entries
-        reporter.setDatedEntries(self.reportType, ["CGM", "Calibrations"],
-            dict(zip(self.t, self.values)))
+        self.value = round(lib.unpack(self.bytes[8:10], "<") / 18.0, 1)
 
 
 
 class EventRecord(Record):
 
-    def __init__(self, cgm):
+    # Record size
+    size = 20
+
+    # Event types
+    types = [None, "Carbs", "Insulin", "Health", "Exercise"]
+
+    # Event sub-types
+    subTypes = {"Insulin": [None, "Fast-Acting", "Long-Acting"],
+                "Exercise": [None, "Light", "Medium", "Heavy"],
+                "Health": [None, "Illness", "Stress", "Feel High", "Feel Low",
+                                 "Cycle", "Alcohol"]}
+
+
+
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -505,28 +400,26 @@ class EventRecord(Record):
         """
 
         # Initialize record
-        super(EventRecord, self).__init__(cgm)
+        super(EventRecord, self).__init__(bytes)
 
-        # Define record size
-        self.size = 20
+        # Event record properties
+        self.enteredTime = None
+        self.type = None
+        self.subType = None
+        self.value = None
 
-        # Define possible event types
-        self.types = [None,
-                      "Carbs",
-                      "Insulin",
-                      "Health",
-                      "Exercise"]
 
-        # Define possible event sub-types
-        self.subTypes = {"Insulin": [None, "Fast-Acting", "Long-Acting"],
-                         "Exercise": [None, "Light", "Medium", "Heavy"],
-                         "Health": [None,
-                                    "Illness",
-                                    "Stress",
-                                    "Feel High",
-                                    "Feel Low",
-                                    "Cycle",
-                                    "Alcohol"]}
+
+    def __str__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        return ("Event: " + str(self.type) + ", " + str(self.subType) + ": " +
+            str(self.value) + " (" + lib.formatTime(self.enteredTime) + ")")
 
 
 
@@ -550,55 +443,40 @@ class EventRecord(Record):
         # Initialize decoding
         super(EventRecord, self).decode()
 
-        # Time entered
-        t = (self.cgm.clock.epoch + datetime.timedelta(seconds =
-            lib.unpack(self.bytes[-1][10:14], "<")))
+        # Entered time
+        self.enteredTime = (cgm.EPOCH_TIME + datetime.timedelta(seconds =
+            lib.unpack(self.bytes[10:14], "<")))
 
         # Decode event type
-        eventType = self.types[self.bytes[-1][8]]
+        self.type = self.types[self.bytes[8]]
 
         # Decode event sub-type
         # No sub-type
-        if self.bytes[-1][9] == 0:
-            eventSubType = None
+        if self.bytes[9] == 0:
+            self.subType = None
             
         # Otherwise
         else:
-            eventSubType = self.subTypes[eventType][self.bytes[-1][9]]
+            self.subType = self.subTypes[self.type][self.bytes[9]]
 
         # No value entered for health events
-        if eventType == "Health":
-            value = None
+        if self.type == "Health":
+            self.value = None
         
         # Otherwise
         else:
-            value = lib.unpack(self.bytes[-1][14:18], "<")
+            self.value = lib.unpack(self.bytes[14:18], "<")
 
             # Insulin needs post-treatment
-            if eventType == "Insulin":
-                value /= 100.0
-
-        # Info
-        Logger.info("Event: " + str(eventType) + ", " + str(eventSubType) +
-                    ": " + str(value) + " (" + lib.formatTime(t) + ")")
+            if self.type == "Insulin":
+                self.value /= 100.0
 
 
 
 class ReceiverRecord(Record):
 
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize record
-        super(ReceiverRecord, self).__init__(cgm)
-
-        # Define record size
-        self.size = 20
+    # Record size
+    size = 20
 
 
 
@@ -623,19 +501,8 @@ class ReceiverRecord(Record):
 
 class SettingsRecord(Record):
 
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize record
-        super(SettingsRecord, self).__init__(cgm)
-
-        # Define record size
-        self.size = 60
+    # Record size
+    size = 60
 
 
 
@@ -651,13 +518,19 @@ class SettingsRecord(Record):
             [58-59]: CRC
         """
 
-        pass
+        # Initialize decoding
+        super(SettingsRecord, self).decode()
 
 
 
-class ManufactureRecord(Record):
+class XMLRecord(Record):
 
-    def __init__(self, cgm):
+    # Record size
+    size = 500
+
+
+
+    def __init__(self, bytes):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -666,10 +539,22 @@ class ManufactureRecord(Record):
         """
 
         # Initialize record
-        super(ManufactureRecord, self).__init__(cgm)
+        super(XMLRecord, self).__init__(bytes)
 
-        # Define record size
-        self.size = 500
+        # XML parameters
+        self.value = None
+
+
+
+    def __str__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        return "XML record: " + str(self.value)
 
 
 
@@ -688,87 +573,49 @@ class ManufactureRecord(Record):
         """
 
         # Initialize decoding
-        super(ManufactureRecord, self).decode()
+        super(XMLRecord, self).decode()
 
-        # Info
-        Logger.info("Manufacture record: " + lib.translate(self.bytes[-1][8:-2]))
-
-
-
-class FirmwareRecord(Record):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Initialize record
-        super(FirmwareRecord, self).__init__(cgm)
-
-        # Define record size
-        self.size = 500
+        # XML value
+        self.value = lib.translate(self.bytes[8:-2])
 
 
 
-    def decode(self):
+class ManufactureRecord(XMLRecord):
+
+    def __str__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Decode the record's bytes.
-
-            [0-3]:     SYSTEM TIME
-            [4-7]:     DISPLAY TIME
-            [8-497]:   CONTENT (XML)
-            [498-499]: CRC
-        """
-
-        # Initialize decoding
-        super(FirmwareRecord, self).decode()
-
-        # Info
-        Logger.info("Firmware record: " + lib.translate(self.bytes[-1][8:-2]))
-
-
-
-class PCRecord(Record):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            STR
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize record
-        super(PCRecord, self).__init__(cgm)
-
-        # Define record size
-        self.size = 500
+        return "Manufacture record: " + str(self.value)
 
 
 
-    def decode(self):
+class FirmwareRecord(XMLRecord):
+
+    def __str__(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECODE
+            STR
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Decode the record's bytes.
-
-            [0-3]:     SYSTEM TIME
-            [4-7]:     DISPLAY TIME
-            [8-497]:   CONTENT (XML)
-            [498-499]: CRC
         """
 
-        # Initialize decoding
-        super(PCRecord, self).decode()
+        return "Firmware record: " + str(self.value)
 
-        # Info
-        Logger.info("PC record: " + lib.translate(self.bytes[-1][8:-2]))
+
+
+class PCRecord(XMLRecord):
+
+    def __str__(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STR
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        return "PC record: " + str(self.value)

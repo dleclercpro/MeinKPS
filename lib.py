@@ -566,37 +566,6 @@ def charify(x):
 
 
 
-def XMLify(bytes):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        XMLIFY
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Get number of bytes
-    n = len(bytes)
-
-    # Translate bytes
-    bytes = translate(bytes)
-
-    # Extract XML structure from bytes
-    a = None
-    b = None
-
-    for i in range(n):
-
-        if bytes[i] == "<" and a is None:
-            a = i
-
-        elif bytes[i] == ">":
-            b = i + 1
-            break
-
-    return bytes[a:b]
-
-
-
 def getByte(x, n):
 
     """

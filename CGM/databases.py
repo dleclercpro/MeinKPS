@@ -25,6 +25,7 @@
 # USER LIBRARIES
 import lib
 import logger
+import reporter
 import crc
 import commands
 import records
@@ -36,7 +37,19 @@ Logger = logger.Logger("CGM.databases")
 
 
 
+# Constants
+DATABASE_HEAD_SIZE = 28
+EMPTY_PAGE_RANGE = [lib.unpack([255] * 4, "<")] * 2
+
+
+
 class Database(object):
+
+    # Database parameters
+    code = None
+    recordType = records.Record
+
+
 
     def __init__(self, cgm):
 
@@ -46,49 +59,36 @@ class Database(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Initialize database code
-        self.code = None
-
-        # Initialize database record
-        self.record = None
-
-        # Initialize XML boolean
-        self.xml = False
-
-        # Initialize database range
-        self.range = None
-
-        # Initialize database page
-        self.page = None
-
-        # Initialize database data
-        self.data = None
-
-        # Define response head size
-        self.headSize = 28
-
-        # Define empty range response
-        self.emptyRange = [lib.unpack([255] * 4, "<")] * 2
-
         # Define command(s)
         self.commands = {"ReadDatabaseRange": commands.ReadDatabaseRange(cgm),
                          "ReadDatabase": commands.ReadDatabase(cgm)}
 
-        # Link with CGM
-        self.cgm = cgm
+        # Initialize page range
+        self.pageRange = None
+
+        # Initialize current page
+        self.currentPage = {"Head": None,
+                            "Payload": None}
+
+        # Initialize records data
+        self.data = []
+
+        # Initialize decoded records
+        self.records = []
+
+        # Initialize number of records found in pages
+        self.nRecords = 0
 
 
 
-    def measure(self):
+    def isEmpty(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            MEASURE
+            ISEMPTY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Check if database is empty.
         """
-
-        # Reset database range
-        self.range = []
 
         # Link to database range command
         command = self.commands["ReadDatabaseRange"]
@@ -100,52 +100,64 @@ class Database(object):
         command.execute()
 
         # Decode it
-        self.range.append(lib.unpack(command.response["Payload"][0:4], "<"))
-        self.range.append(lib.unpack(command.response["Payload"][4:8], "<"))
+        self.pageRange = [lib.unpack(command.response["Payload"][0:4], "<"),
+            lib.unpack(command.response["Payload"][4:8], "<")]
 
-        # Deal with empty database
-        if self.range == self.emptyRange:
-            Logger.warning("Database empty.")
-            return False
-
-        else:
-            Logger.debug("Database range: " + str(self.range))
-            return True
+        # Return whether it is empty or not
+        return self.pageRange == EMPTY_PAGE_RANGE
 
 
 
-    def parse(self, bytes):
+    def parsePage(self, page):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PARSE
+            PARSEPAGE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Parse a database page into a head and a payload.
         """
 
         # Reset database page
-        self.page = {"Header": None, "Data": None}
+        self.currentPage = {"Head": None,
+                            "Payload": None}
 
         # Get page header
-        self.page["Header"] = bytes[:self.headSize]
+        self.currentPage["Head"] = page[:DATABASE_HEAD_SIZE]
+
+        # Get page payload
+        self.currentPage["Payload"] = page[DATABASE_HEAD_SIZE:]
 
         # Parse data, in case record is defined (discard empty bytes)
-        if self.record is not None:
+        if self.recordType is not None:
 
-            # Get number of records in current page
-            n = bytes[4]
-            Logger.debug("There are " + str(n) + " records in this page.")
+            # Add number of records in current page to total
+            n = page[4]
+            self.nRecords += n
+            Logger.debug("There are " + str(n) + " record(s) in this page.")
 
-            # Get page data
-            self.page["Data"] = bytes[self.headSize:
-                                      self.headSize + n * self.record.size]
+            # Get page data while discarding empty bytes
+            self.data.extend(self.currentPage["Payload"][:
+                n * self.recordType.size])
 
-        else:
 
-            # Get page data
-            self.page["Data"] = bytes[self.headSize:]
-        
-        # Extend data
-        self.data.extend(self.page["Data"])
+
+    def verifyCRC(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            VERIFYCRC
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Verify database page head CRC.
+        """
+
+        # Get and compute header CRCs
+        expectedCRC = lib.unpack(self.currentPage["Head"][-2:], "<")
+        computedCRC = crc.compute(self.currentPage["Head"][:-2])
+
+        # CRCs mismatch
+        if computedCRC != expectedCRC:
+            raise ValueError("Bad database page head CRC. Expected: " +
+                str(expectedCRC) + ". Computed: " + str(computedCRC) + ".")
 
 
 
@@ -155,260 +167,248 @@ class Database(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             READ
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Read the database within given page range.
         """
 
-        # Reset database data
+        # Reset database
         self.data = []
+        self.records = []
+        self.nRecords = 0
 
-        # Read database range and read database if not empty
-        if self.measure():
+        # Database is empty
+        if self.isEmpty():
+            Logger.warning("Database empty.")
+            return
 
-            # Get ends of database range
-            start = self.range[0]
-            end = self.range[1]
+        # Otherwise
+        Logger.debug("Database page range: " + str(self.pageRange))
 
-            # Compute eventual new lower limit of database range
-            if n is not None and start < end - n:
+        # Get ends of database range
+        [start, end] = self.pageRange[0:2]
 
-                # Assign new limit
-                start = end - n
+        # Compute eventual new lower limit of database range
+        if n is not None and start < end - n:
+            start = end - n
 
-            # Link to read database command
-            command = self.commands["ReadDatabase"]
+        # Define command to read database
+        command = self.commands["ReadDatabase"]
+        command.database = self.code
 
-            # Tell command which database to read from
-            command.database = self.code
+        # Read database pages
+        for i in range(start, end + 1):
 
-            # Read database
-            for i in range(start, end + 1):
+            # Info
+            Logger.debug("Reading database page " + str(i) + "/" +
+                str(end) + "...")
 
-                # Info
-                Logger.debug("Reading database page " + str(i) + "/" +
-                             str(end) + "...")
+            # Tell command which page to read
+            command.page = i
 
-                # Tell command which page to read
-                command.page = i
+            # Read page
+            command.execute()
+            page = command.response["Payload"]
 
-                # Read page
-                command.execute()
+            # Parse page: each one of them has a head and a payload
+            self.parsePage(page)
 
-                # Parse page
-                self.parse(command.response["Payload"])
+            # Verify page CRC
+            self.verifyCRC()
 
-                # Verify page
-                self.verify()
+        # Extract records from data
+        self.findRecords()
 
-            # Extract defined records from data
-            if self.record is not None:
-
-                # Find them
-                Logger.debug("Trying to find records in: " + str(self.data))
-                self.record.find(self.data)
+        # Store records
+        self.storeRecords()
 
 
 
-    def verify(self):
+    def findRecords(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            VERIFY
+            FINDRECORDS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Find records in database pages.
         """
 
-        # Get and compute header CRCs
-        expectedCRC = lib.unpack(self.page["Header"][-2:], "<")
-        computedCRC = crc.compute(self.page["Header"][:-2])
+        # Info
+        Logger.debug("There were a total of " + str(self.nRecords) + " " +
+            "record(s) found in the database.")
 
-        # CRCs mismatch
-        if computedCRC != expectedCRC:
-            raise ValueError("Bad header CRC. Expected: " + str(expectedCRC) +
-                ". Computed: " + str(computedCRC) + ".")
+        # Extract records
+        for i in range(self.nRecords):
+
+            # Generate i-th record from corresponding bytes
+            record = self.recordType(self.data[i * self.recordType.size :
+                (i + 1) * self.recordType.size])
+
+            # Verify its CRC
+            record.verifyCRC()
+
+            # Decode it
+            record.decode()
+
+            # Store it
+            self.records += [record]
+
+            # Info
+            Logger.info(record)
+
+
+
+    def storeRecords(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STORERECORDS
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Store records found in database.
+        """
+
+        pass
+
+
+
 
 
 
 class BGDatabase(Database):
 
-    def __init__(self, cgm):
+    # Database parameters
+    code = 4
+    recordType = records.BGRecord
+    reportType = reporter.BGReport
+
+
+
+    def storeRecords(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            STORERECORDS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
-        super(BGDatabase, self).__init__(cgm)
+        # Info
+        Logger.debug("Adding BG records to: " + repr(self.reportType))
 
-        # Define database code
-        self.code = 4
+        # Initialize values dict
+        values = {}
 
-        # Link with record
-        self.record = records.BGRecord(cgm)
+        # Get number of decoded records
+        n = len(self.records)
+
+        # Filter them
+        for i in range(n):
+
+            # Get value and display time
+            value = self.records[i].value
+            displayTime = self.records[i].displayTime
+
+            # Only keep normal (numeric) BG values
+            if type(value) is float:
+                values[displayTime] = value
+
+        # Add entries
+        reporter.setDatedEntries(self.reportType, [], values)
 
 
 
 class SensorDatabase(Database):
 
-    def __init__(self, cgm):
+    # Database parameters
+    code = 7
+    recordType = records.SensorRecord
+    reportType = reporter.HistoryReport
+
+
+
+    def storeRecords(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            STORERECORDS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
-        super(SensorDatabase, self).__init__(cgm)
+        # Info
+        Logger.debug("Adding sensor statuses to: " + repr(self.reportType))
 
-        # Define database code
-        self.code = 7
-
-        # Link with record
-        self.record = records.SensorRecord(cgm)
-
-
-
-class ReceiverDatabase(Database):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(ReceiverDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 8
-
-        # Link with record
-        self.record = records.ReceiverRecord(cgm)
+        # Add entries
+        reporter.setDatedEntries(self.reportType, ["CGM", "Sensor Statuses"],
+            dict([(r.displayTime, r.status) for r in self.records]))
 
 
 
 class CalibrationDatabase(Database):
 
-    def __init__(self, cgm):
+    # Database parameters
+    code = 10
+    recordType = records.CalibrationRecord
+    reportType = reporter.HistoryReport
+
+
+
+    def storeRecords(self):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
+            STORERECORDS
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start initialization
-        super(CalibrationDatabase, self).__init__(cgm)
+        # Info
+        Logger.debug("Adding sensor calibrations to: " + repr(self.reportType))
 
-        # Define database code
-        self.code = 10
-
-        # Link with record
-        self.record = records.CalibrationRecord(cgm)
+        # Add entries
+        reporter.setDatedEntries(self.reportType, ["CGM", "Calibrations"],
+            dict([(r.displayTime, r.value) for r in self.records]))
 
 
 
 class EventsDatabase(Database):
 
-    def __init__(self, cgm):
+    # Database parameters
+    code = 11
+    recordType = records.EventRecord
+    reportType = reporter.HistoryReport
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
 
-        # Start initialization
-        super(EventsDatabase, self).__init__(cgm)
 
-        # Define database code
-        self.code = 11
+class ReceiverDatabase(Database):
 
-        # Link with record
-        self.record = records.EventRecord(cgm)
+    # Database parameters
+    code = 8
+    recordType = records.ReceiverRecord
 
 
 
 class SettingsDatabase(Database):
 
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(SettingsDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 12
-
-        # Link with record
-        self.record = records.SettingsRecord(cgm)
+    # Database parameters
+    code = 12
+    recordType = records.SettingsRecord
 
 
 
 class ManufactureDatabase(Database):
 
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(ManufactureDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 0
-
-        # Link with record
-        self.record = records.ManufactureRecord(cgm)
+    # Database parameters
+    code = 0
+    recordType = records.ManufactureRecord
 
 
 
 class FirmwareDatabase(Database):
 
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(FirmwareDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 1
-
-        # Link with record
-        self.record = records.FirmwareRecord(cgm)
+    # Database parameters
+    code = 1
+    recordType = records.FirmwareRecord
 
 
 
 class PCDatabase(Database):
 
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(PCDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 2
-
-        # Link with record
-        self.record = records.PCRecord(cgm)
+    # Database parameters
+    code = 2
+    recordType = records.PCRecord

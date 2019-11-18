@@ -46,6 +46,13 @@ Logger = logger.Logger("CGM.cgm")
 
 
 
+# Constants
+EPOCH_TIME = datetime.datetime(2009, 1, 1)
+USB_VENDOR_DEXCOM = 0x22A3
+USB_PRODUCT_DEXCOM = 0x0047
+
+
+
 class CGM(object):
 
     def __init__(self):
@@ -57,8 +64,8 @@ class CGM(object):
         """
 
         # Define CGM characteristics
-        self.vendor = 0x22A3
-        self.product = 0x0047
+        self.vendor = USB_VENDOR_DEXCOM
+        self.product = USB_PRODUCT_DEXCOM
 
         # Give CGM a USB interface
         self.usb = None
@@ -89,15 +96,15 @@ class CGM(object):
         self.transmitter = Transmitter(self)
 
         # Give CGM databases
-        self.databases = {"Manufacture": databases.ManufactureDatabase(self),
-                          "Firmware": databases.FirmwareDatabase(self),
-                          "PC": databases.PCDatabase(self),
-                          "BG": databases.BGDatabase(self),
+        self.databases = {"BG": databases.BGDatabase(self),
                           "Sensor": databases.SensorDatabase(self),
                           "Receiver": databases.ReceiverDatabase(self),
                           "Calibration": databases.CalibrationDatabase(self),
                           "Events": databases.EventsDatabase(self),
-                          "Settings": databases.SettingsDatabase(self)}
+                          "Settings": databases.SettingsDatabase(self),
+                          "Manufacture": databases.ManufactureDatabase(self),
+                          "Firmware": databases.FirmwareDatabase(self),
+                          "PC": databases.PCDatabase(self),}
 
         # Define report
         self.report = reporter.getCGMReport()
@@ -333,6 +340,9 @@ class CGM(object):
 
 
 
+
+
+
 class Battery(object):
 
     def __init__(self, cgm):
@@ -518,9 +528,6 @@ class Clock(object):
         # Define modes
         self.modes = {0: "24h", 1: "AM/PM"}
 
-        # Define epoch
-        self.epoch = datetime.datetime(2009, 1, 1)
-
         # Define command(s)
         self.commands = {"ReadSystemTime": commands.ReadSystemTime(cgm),
                          "ReadMode": commands.ReadClockMode(cgm)}
@@ -546,7 +553,7 @@ class Clock(object):
             self.commands["ReadSystemTime"].response["Payload"], "<"))
 
         # Assign response
-        self.systemTime = self.epoch + delta
+        self.systemTime = EPOCH_TIME + delta
 
         # Info
         Logger.info("System time: " + lib.formatTime(self.systemTime))
