@@ -1860,7 +1860,7 @@ class ReadHistoryPage(BigGet):
         expectedCRC = lib.unpack(payload[-2:])
 
         # Compute CRC
-        computedCRC = lib.newComputeCRC16(payload[:-2])
+        computedCRC = lib.computeCRC16(payload[:-2])
 
         # Compare CRCs
         if computedCRC != expectedCRC:

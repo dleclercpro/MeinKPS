@@ -31,6 +31,7 @@ import datetime
 import lib
 import fmt
 import logger
+import crc
 import errors
 import reporter
 
@@ -74,6 +75,7 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             FIND
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Find records in a database page.
         """
 
         # Reset record vectors
@@ -113,11 +115,12 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             VERIFY
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Compute and check CRC value of last record.
         """
 
         # Decode and compute CRCs
         expectedCRC = lib.unpack(self.bytes[-1][-2:], "<")
-        computedCRC = lib.computeCRC16(self.bytes[-1][:-2])
+        computedCRC = crc.compute(self.bytes[-1][:-2])
 
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:
@@ -132,14 +135,23 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3] SYSTEM TIME
+            [4-7] DISPLAY TIME
+            [...]
         """
 
-        # Decode local time
-        t = (self.cgm.clock.epoch +
-             datetime.timedelta(seconds = lib.unpack(self.bytes[-1][4:8], "<")))
+        # Decode system time
+        #systemTime = (self.cgm.clock.epoch + datetime.timedelta(seconds =
+        #    lib.unpack(self.bytes[-1][0:4], "<")))
+
+        # Decode display time
+        displayTime = (self.cgm.clock.epoch + datetime.timedelta(seconds =
+            lib.unpack(self.bytes[-1][4:8], "<")))
 
         # Store it
-        self.t.append(t)
+        self.t.append(displayTime)
 
 
 
@@ -151,7 +163,6 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore if method not implemented
         pass
 
 
@@ -164,7 +175,6 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Ignore if method not implemented
         pass
 
 
@@ -183,10 +193,11 @@ class BGRecord(Record):
         super(BGRecord, self).__init__(cgm)
 
         # Define record size
-        self.size = 13
+        self.size = 25
 
         # Define dictionary for trends
-        self.trends = {1: "↑↑",
+        self.trends = {0: None,
+                       1: "↑↑",
                        2: "↑", 
                        3: "↗", 
                        4: "→", 
@@ -197,15 +208,15 @@ class BGRecord(Record):
                        9: "OutOfRange"}
 
         # Define dictionary for special values
-        self.special = {0: None,
-                        1: 'SensorInactive',
-                        2: 'MinimalDeviation',
-                        3: 'NoAntenna',
-                        5: 'SensorInitialization',
-                        6: 'DeviationCount',
-                        9: 'AbsoluteDeviation',
-                        10: 'PowerDeviation',
-                        12: 'BadRF'}
+        self.special = {0:  None,
+                        1:  "SensorInactive",
+                        2:  "MinimalDeviation",
+                        3:  "NoAntenna",
+                        5:  "SensorNotCalibrated",
+                        6:  "DeviationCount",
+                        9:  "AbsoluteDeviation",
+                        10: "PowerDeviation",
+                        12: "BadRF"}
 
         # Define if conversion from mg/dL to mmol/L is needed
         self.convert = True
@@ -221,6 +232,16 @@ class BGRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3]:   SYSTEM TIME
+            [4-7]:   DISPLAY TIME
+            [8-9]:   BG
+            [10-13]: MEASUREMENT TIME (?)
+            [14-18]: ???
+            [19]:    TREND
+            [20-22]: ???
+            [23-24]: CRC
         """
 
         # Initialize decoding
@@ -230,7 +251,8 @@ class BGRecord(Record):
         BG = lib.unpack(self.bytes[-1][8:10], "<") & 1023
 
         # Decode trend
-        trend = self.trends[self.bytes[-1][10] & 15]
+        trend = self.trends[self.bytes[-1][19] & 15] # G6
+        #trend = self.trends[self.bytes[-1][10] & 15] # G4
 
         # Deal with special values
         if BG in self.special:
@@ -317,18 +339,32 @@ class SensorRecord(Record):
         super(SensorRecord, self).__init__(cgm)
 
         # Define record size
-        self.size = 15
+        self.size = 25 # G6
+        #self.size = 15 # G4
 
         # Define possible sensor status
-        self.statuses = {1: "Stopped",
-                         2: "Expired",
-                         3: "ResidualDeviation",
-                         4: "CountsDeviation",
-                         5: "SecondSession",
-                         6: "OffTimeLoss",
-                         7: "Started",
-                         8: "BadTransmitter",
-                         9: "ManufacturingMode"}
+        self.statuses = [None,
+                         "Stopped",
+                         "Expired",
+                         "ResidualDeviation",
+                         "CountsDeviation",
+                         "SecondSession",
+                         "OffTimeLoss",
+                         "Started",
+                         "BadTransmitter",
+                         "ManufacturingMode",
+                         "Unknown1",
+                         "Unknown2",
+                         "Unknown3",
+                         "Unknown4",
+                         "Unknown5",
+                         "Unknown6",
+                         "Unknown7",
+                         "Unknown8",
+                         "Unknown9",
+                         "Unknown10",
+                         "Unknown11" # Sensor ID input?
+                         ]
 
         # Define report type
         self.reportType = reporter.HistoryReport
@@ -341,6 +377,14 @@ class SensorRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3]:   SYSTEM TIME
+            [4-7]:   DISPLAY TIME
+            [8-11]:  INSERTION TIME
+            [12]:    STATUS
+            [13-22]: ???
+            [23-24]: CRC
         """
 
         # Initialize decoding
@@ -389,7 +433,8 @@ class CalibrationRecord(Record):
         super(CalibrationRecord, self).__init__(cgm)
 
         # Define record size
-        self.size = 16
+        self.size = 21 # G6
+        #self.size = 16 # G4
 
         # Define report type
         self.reportType = reporter.HistoryReport
@@ -402,10 +447,23 @@ class CalibrationRecord(Record):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECODE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3]:   SYSTEM TIME
+            [4-7]:   DISPLAY TIME
+            [8:9]:   CALIBRATION BG VALUE
+            [10]:    ???
+            [11-14]: ENTERED TIME
+            [15-18]: ???
+            [19-20]: CRC
         """
 
         # Initialize decoding
         super(CalibrationRecord, self).decode()
+
+        # Time entered
+        t = (self.cgm.clock.epoch + datetime.timedelta(seconds =
+            lib.unpack(self.bytes[-1][11:15], "<")))
 
         # Decode BG
         BG = round(lib.unpack(self.bytes[-1][8:10], "<") / 18.0, 1)
@@ -414,8 +472,8 @@ class CalibrationRecord(Record):
         self.values.append(BG)
 
         # Info
-        Logger.info("BG: " + str(BG) + " " + self.cgm.units.value + " " +
-                    "(" + lib.formatTime(self.t[-1]) + ")")
+        Logger.info("BG calibration: " + str(BG) + " " + self.cgm.units.value +
+                    " (" + lib.formatTime(t) + ")")
 
 
 
@@ -451,3 +509,266 @@ class EventRecord(Record):
 
         # Define record size
         self.size = 20
+
+        # Define possible event types
+        self.types = [None,
+                      "Carbs",
+                      "Insulin",
+                      "Health",
+                      "Exercise"]
+
+        # Define possible event sub-types
+        self.subTypes = {"Insulin": [None, "Fast-Acting", "Long-Acting"],
+                         "Exercise": [None, "Light", "Medium", "Heavy"],
+                         "Health": [None,
+                                    "Illness",
+                                    "Stress",
+                                    "Feel High",
+                                    "Feel Low",
+                                    "Cycle",
+                                    "Alcohol"]}
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3]:   SYSTEM TIME
+            [4-7]:   DISPLAY TIME
+            [8]:     EVENT TYPE
+            [9]:     EVENT SUB-TYPE
+            [10-13]: ENTERED TIME
+            [14-17]: VALUE
+            [18-19]: CRC
+        """
+
+        # Initialize decoding
+        super(EventRecord, self).decode()
+
+        # Time entered
+        t = (self.cgm.clock.epoch + datetime.timedelta(seconds =
+            lib.unpack(self.bytes[-1][10:14], "<")))
+
+        # Decode event type
+        eventType = self.types[self.bytes[-1][8]]
+
+        # Decode event sub-type
+        # No sub-type
+        if self.bytes[-1][9] == 0:
+            eventSubType = None
+            
+        # Otherwise
+        else:
+            eventSubType = self.subTypes[eventType][self.bytes[-1][9]]
+
+        # No value entered for health events
+        if eventType == "Health":
+            value = None
+        
+        # Otherwise
+        else:
+            value = lib.unpack(self.bytes[-1][14:18], "<")
+
+            # Insulin needs post-treatment
+            if eventType == "Insulin":
+                value /= 100.0
+
+        # Info
+        Logger.info("Event: " + str(eventType) + ", " + str(eventSubType) +
+                    ": " + str(value) + " (" + lib.formatTime(t) + ")")
+
+
+
+class ReceiverRecord(Record):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(ReceiverRecord, self).__init__(cgm)
+
+        # Define record size
+        self.size = 20
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3]:   SYSTEM TIME
+            [4-7]:   DISPLAY TIME
+            [8-17]:  ???
+            [18-19]: CRC
+        """
+
+        # Initialize decoding
+        super(ReceiverRecord, self).decode()
+
+
+
+class SettingsRecord(Record):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(SettingsRecord, self).__init__(cgm)
+
+        # Define record size
+        self.size = 60
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-57]:  ???
+            [58-59]: CRC
+        """
+
+        pass
+
+
+
+class ManufactureRecord(Record):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(ManufactureRecord, self).__init__(cgm)
+
+        # Define record size
+        self.size = 500
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+            
+            [0-3]:     SYSTEM TIME
+            [4-7]:     DISPLAY TIME
+            [8-497]:   CONTENT (XML)
+            [498-499]: CRC
+        """
+
+        # Initialize decoding
+        super(ManufactureRecord, self).decode()
+
+        # Info
+        Logger.info("Manufacture record: " + lib.translate(self.bytes[-1][8:-2]))
+
+
+
+class FirmwareRecord(Record):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(FirmwareRecord, self).__init__(cgm)
+
+        # Define record size
+        self.size = 500
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3]:     SYSTEM TIME
+            [4-7]:     DISPLAY TIME
+            [8-497]:   CONTENT (XML)
+            [498-499]: CRC
+        """
+
+        # Initialize decoding
+        super(FirmwareRecord, self).decode()
+
+        # Info
+        Logger.info("Firmware record: " + lib.translate(self.bytes[-1][8:-2]))
+
+
+
+class PCRecord(Record):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Initialize record
+        super(PCRecord, self).__init__(cgm)
+
+        # Define record size
+        self.size = 500
+
+
+
+    def decode(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            DECODE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Decode the record's bytes.
+
+            [0-3]:     SYSTEM TIME
+            [4-7]:     DISPLAY TIME
+            [8-497]:   CONTENT (XML)
+            [498-499]: CRC
+        """
+
+        # Initialize decoding
+        super(PCRecord, self).decode()
+
+        # Info
+        Logger.info("PC record: " + lib.translate(self.bytes[-1][8:-2]))

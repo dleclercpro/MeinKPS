@@ -25,6 +25,7 @@
 # USER LIBRARIES
 import lib
 import logger
+import crc
 import commands
 import records
 
@@ -50,6 +51,9 @@ class Database(object):
 
         # Initialize database record
         self.record = None
+
+        # Initialize XML boolean
+        self.xml = False
 
         # Initialize database range
         self.range = None
@@ -101,19 +105,11 @@ class Database(object):
 
         # Deal with empty database
         if self.range == self.emptyRange:
-
-            # Info
             Logger.warning("Database empty.")
-
-            # Exit
             return False
 
         else:
-
-            # Info
             Logger.debug("Database range: " + str(self.range))
-
-            # Exit
             return True
 
 
@@ -137,6 +133,7 @@ class Database(object):
 
             # Get number of records in current page
             n = bytes[4]
+            Logger.debug("There are " + str(n) + " records in this page.")
 
             # Get page data
             self.page["Data"] = bytes[self.headSize:
@@ -205,6 +202,7 @@ class Database(object):
             if self.record is not None:
 
                 # Find them
+                Logger.debug("Trying to find records in: " + str(self.data))
                 self.record.find(self.data)
 
 
@@ -219,66 +217,12 @@ class Database(object):
 
         # Get and compute header CRCs
         expectedCRC = lib.unpack(self.page["Header"][-2:], "<")
-        computedCRC = lib.computeCRC16(self.page["Header"][:-2])
+        computedCRC = crc.compute(self.page["Header"][:-2])
 
         # CRCs mismatch
         if computedCRC != expectedCRC:
             raise ValueError("Bad header CRC. Expected: " + str(expectedCRC) +
                 ". Computed: " + str(computedCRC) + ".")
-
-
-
-class ManufactureDatabase(Database):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(ManufactureDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 0
-
-
-
-class FirmwareDatabase(Database):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(FirmwareDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 1
-
-
-
-class PCDatabase(Database):
-
-    def __init__(self, cgm):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(PCDatabase, self).__init__(cgm)
-
-        # Define database code
-        self.code = 2
 
 
 
@@ -340,6 +284,9 @@ class ReceiverDatabase(Database):
         # Define database code
         self.code = 8
 
+        # Link with record
+        self.record = records.ReceiverRecord(cgm)
+
 
 
 class CalibrationDatabase(Database):
@@ -399,3 +346,69 @@ class SettingsDatabase(Database):
 
         # Define database code
         self.code = 12
+
+        # Link with record
+        self.record = records.SettingsRecord(cgm)
+
+
+
+class ManufactureDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(ManufactureDatabase, self).__init__(cgm)
+
+        # Define database code
+        self.code = 0
+
+        # Link with record
+        self.record = records.ManufactureRecord(cgm)
+
+
+
+class FirmwareDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(FirmwareDatabase, self).__init__(cgm)
+
+        # Define database code
+        self.code = 1
+
+        # Link with record
+        self.record = records.FirmwareRecord(cgm)
+
+
+
+class PCDatabase(Database):
+
+    def __init__(self, cgm):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            INIT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
+        # Start initialization
+        super(PCDatabase, self).__init__(cgm)
+
+        # Define database code
+        self.code = 2
+
+        # Link with record
+        self.record = records.PCRecord(cgm)

@@ -25,6 +25,7 @@
 # USER LIBRARIES
 import lib
 import logger
+import crc
 
 
 
@@ -62,9 +63,6 @@ class Packet(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Reset packet
-        self.bytes = []
-
         # Build database byte
         if database is not None:
             database = [database]
@@ -82,7 +80,7 @@ class Packet(object):
             page = []
 
         # Build packet
-        self.bytes.extend([1, 0, 0])
+        self.bytes = [1, 0, 0]
         self.bytes.append(code)
         self.bytes.extend(database)
         self.bytes.extend(page)
@@ -94,7 +92,7 @@ class Packet(object):
         self.bytes[1] = size
 
         # Build CRC bytes
-        CRC = lib.computeCRC16(self.bytes)
+        CRC = crc.compute(self.bytes)
         CRC = lib.pack(CRC, "<") + [0] * 2
         CRC = CRC[:2]
 

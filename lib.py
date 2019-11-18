@@ -581,18 +581,17 @@ def XMLify(bytes):
     bytes = translate(bytes)
 
     # Extract XML structure from bytes
-    a = 0
-    b = 0
-    begun = False
+    a = None
+    b = None
 
     for i in range(n):
 
-        if bytes[i] == "<" and not begun :
+        if bytes[i] == "<" and a is None:
             a = i
-            begun = True
 
-        if bytes[i] == ">":
+        elif bytes[i] == ">":
             b = i + 1
+            break
 
     return bytes[a:b]
 
@@ -727,13 +726,13 @@ def unpack(bytes, order = ">"):
         if order == ">":
 
             # Add ith byte
-            x += bytes[i] * 0x100 ** (n - 1 - i)
+            x += bytes[i] * 256 ** (n - 1 - i)
 
         # From LSB to MSB
         elif order == "<":
 
             # Add ith byte
-            x += bytes[i] * 0x100 ** i
+            x += bytes[i] * 256 ** i
 
     # Return
     return x
@@ -834,29 +833,6 @@ def computeCRC16(x):
     """
 
     # Initialize CRC
-    CRC = 0
-
-    # Look for CRC in table
-    for i in range(len(x)):
-
-        # Compute it
-        CRC = ((CRC * 256) & (0xFF << 8)) ^ \
-              CRC16_TABLE[((CRC / 256) & 0xFF) ^ x[i]]
-
-    # Return CRC
-    return CRC & 0xFFFF
-
-
-
-def newComputeCRC16(x):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        NEWCOMPUTECRC16
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Initialize CRC
     CRC = 0xFFFF
 
     # Look for CRC in table
@@ -900,11 +876,11 @@ def isRealNumber(x):
 
 
 
-def getEP(configuration, direction, interface = 0, setting = 0):
+def getUSBEP(configuration, direction, interface = 0, setting = 0):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        GETEP
+        GETUSBEP
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         This finds a matching EP on a USB device given a configuration, a
         direction, an interface and a setting input, using the PyUSB library.

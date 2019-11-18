@@ -205,8 +205,8 @@ class Stick(object):
         self.config = self.usb.get_active_configuration()
 
         # Get EPs
-        self.EPs["OUT"] = lib.getEP(self.config, "OUT")
-        self.EPs["IN"] = lib.getEP(self.config, "IN")
+        self.EPs["OUT"] = lib.getUSBEP(self.config, "OUT")
+        self.EPs["IN"] = lib.getUSBEP(self.config, "IN")
 
 
 

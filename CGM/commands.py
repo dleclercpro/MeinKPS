@@ -25,6 +25,7 @@
 # USER LIBRARIES
 import lib
 import logger
+import crc
 import packets
 
 
@@ -122,8 +123,7 @@ class Command(object):
 
         # Get and compute response CRCs
         expectedCRC = lib.unpack(self.response["CRC"], "<")
-        computedCRC = lib.computeCRC16(self.response["Head"] +
-                                       self.response["Payload"])
+        computedCRC = crc.compute(self.response["Head"] + self.response["Payload"])
 
         # Exit if CRCs mismatch
         if computedCRC != expectedCRC:

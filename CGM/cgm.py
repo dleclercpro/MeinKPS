@@ -203,8 +203,8 @@ class CGM(object):
         self.config = self.usb.get_active_configuration()
 
         # Get EPs
-        self.EPs["OUT"] = lib.getEP(self.config, "OUT", 1)
-        self.EPs["IN"] = lib.getEP(self.config, "IN", 1)
+        self.EPs["OUT"] = lib.getUSBEP(self.config, "OUT", 1)
+        self.EPs["IN"] = lib.getUSBEP(self.config, "IN", 1)
 
 
 
@@ -243,6 +243,7 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             WRITE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Write bytes to USB EP.
         """
 
         # Info
@@ -259,6 +260,7 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             READ
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Read bytes from USB EP.
         """
 
         # Read raw bytes
@@ -302,17 +304,17 @@ class CGM(object):
         self.transmitter.read()
 
         # Read databases
-        self.databases["Manufacture"].read()
-        self.databases["Firmware"].read()
-        self.databases["PC"].read()
         self.databases["Sensor"].read()
         self.databases["Receiver"].read()
         self.databases["Calibration"].read()
         self.databases["Events"].read()
         self.databases["Settings"].read()
-
-        # Read BGs
         self.databases["BG"].read()
+        
+        # Read XML databases
+        self.databases["Manufacture"].read()
+        self.databases["Firmware"].read()
+        self.databases["PC"].read()
 
 
 

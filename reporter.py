@@ -32,7 +32,7 @@
 import os
 import json
 import datetime
-from dateutil.relativedelta import relativedelta 
+from dateutil.relativedelta import relativedelta
 
 
 
@@ -1205,7 +1205,7 @@ def setDatedEntries(reportType, branch, entries, src = path.REPORTS):
 
     # Add values to reports
     for key, value in entries.items():
-        reports[key.date()].set(value, branch + [lib.formatTime(key)])
+        reports[key.date()].set(value, branch + [lib.formatTime(key)], True)
 
     # Store reports
     storeReportsByType(reportType, dates)
