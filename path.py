@@ -152,8 +152,6 @@ class Path:
 
             # Only JSON works
             if ext != ".json":
-
-                # Error
                 raise TypeError("Only allowed to touch JSON files: " + ext)
 
             # Complete path with filename
@@ -211,10 +209,8 @@ class Path:
                 # Remove it
                 os.remove(p)
 
-            # If directory
+            # If directory: delete further
             elif os.path.isdir(p):
-
-                # Delete further
                 self.delete(Path(p).path, n + 1)
 
         # Delete directory
