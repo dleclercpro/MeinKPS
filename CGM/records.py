@@ -43,6 +43,7 @@ Logger = logger.Logger("CGM.records")
 
 # Constants
 BG_VALUE_MASK = 1023
+BG_NOISE_MASK = 112
 BG_TREND_MASK = 15
 
 
@@ -78,7 +79,7 @@ class Record(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        return "Record unknown"
+        raise NotImplementedError("No string representation for record.")
 
 
 

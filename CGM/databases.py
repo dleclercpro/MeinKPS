@@ -251,8 +251,11 @@ class Database(object):
             # Store it
             self.records += [record]
 
-            # Info
-            Logger.info(record)
+            # Show record if it has a string representation
+            try:
+                Logger.info(record)
+            except:
+                pass
 
 
 
