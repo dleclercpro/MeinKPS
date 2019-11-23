@@ -42,6 +42,12 @@ Logger = logger.Logger("exporter")
 
 
 
+# CONSTANTS
+MAX_SENSOR_AGE = 10 # days
+N_MONTH_DAYS   = 30 # days
+
+
+
 # CLASSES
 class Exporter(object):
 
@@ -61,7 +67,8 @@ class Exporter(object):
             "bgs": None,
             "history": None,
             "treatments": None,
-            "pump": None
+            "pump": None,
+            "errors": None,
         }
 
         # Initialize data
@@ -73,7 +80,8 @@ class Exporter(object):
             "iobs": None,
             "history": None,
             "statuses": None,
-            "calibrations": None
+            "calibrations": None,
+            "errors": None,
         }
 
 
@@ -131,17 +139,24 @@ class Exporter(object):
             [yesterday, today],
             [])
 
-        # Get recent sensor statuses
-        self.data["statuses"] = reporter.getDatedEntries(
+        # Get recent sensor statuses (last session)
+        self.data["statuses"] = reporter.getRecentDatedEntries(
             reporter.HistoryReport,
-            [yesterday, today],
-            ["CGM", "Sensor Statuses"])
+            self.now,
+            ["CGM", "Sensor Statuses"],
+            MAX_SENSOR_AGE)
 
         # Get recent calibrations
         self.data["calibrations"] = reporter.getDatedEntries(
             reporter.HistoryReport,
             [yesterday, today],
             ["CGM", "Calibrations"])
+
+        # Get recent errors
+        self.data["errors"] = reporter.getDatedEntries(
+            reporter.ErrorsReport,
+            [today],
+            [])
 
 
 
@@ -183,6 +198,11 @@ class Exporter(object):
         self.reports["pump"] = reporter.Report("pump.json",
             reporter.path.EXPORTS,
             self.data["pump"])
+        
+        # Fill separate errors report
+        self.reports["errors"] = reporter.Report("errors.json",
+            reporter.path.EXPORTS,
+            self.data["errors"])
 
 
 
