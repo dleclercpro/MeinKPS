@@ -248,10 +248,10 @@ class SensorRecord(Record):
                 "Unknown5",
                 "Unknown6",
                 "Unknown7",
-                "Unknown8",
+                "Expired", # ?
                 "Unknown9",
                 "Unknown10",
-                "Unknown11" # Sensor ID input?
+                "SensorIDEntered" # ?
                 ]
 
 
