@@ -123,53 +123,8 @@ class Loop(object):
 
         # Ignore all errors, but log them
         except:
-            Logger.error("\n" + traceback.format_exc())
+            #Logger.error("\n" + traceback.format_exc())
             return False
-
-
-
-    def startDevices(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STARTDEVICES
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Initialize devices so they're ready to take commands.
-        """
-
-        # Start stick
-        self.stick.start()
-
-        # Turn stick's LED on to signify active looping
-        self.stick.switchLED("ON")
-
-        # Start CGM
-        self.cgm.start()
-
-        # Start pump
-        self.pump.start()
-
-
-
-    def stopDevices(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            STOPDEVICES
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Stop pump
-        self.pump.stop()
-
-        # Stop CGM
-        self.cgm.stop()
-
-        # Turn stick's LED off
-        self.stick.switchLED("OFF")
-
-        # Stop stick
-        self.stick.stop()
 
 
 
@@ -196,9 +151,6 @@ class Loop(object):
         self.report = reporter.getReportByType(reporter.LoopReport, today,
             strict = False)
 
-        # Start devices
-        self.startDevices()
-
         # Update loop stats
         self.report.set(lib.formatTime(self.t0), ["Loop", "Last Time"], True)
         self.report.increment(["Loop", "Start"])
@@ -213,9 +165,6 @@ class Loop(object):
             STOP
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
-
-        # Stop devices
-        self.stopDevices()
 
         # Define ending time
         self.t1 = datetime.datetime.now()
@@ -457,26 +406,29 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Start loop
-        if self.tryAndCatch(self.start):
+        # Start
+        isStarted = {"Loop": self.tryAndCatch(self.start),
+                     "Stick": self.tryAndCatch(self.stick.start),
+                     "CGM": self.tryAndCatch(self.cgm.start),
+                     "Pump": self.tryAndCatch(self.pump.start)}
 
-            # If reading CGM works
-            if self.tryAndCatch(self.readCGM):
+        # Read
+        isRead = {"CGM": isStarted["CGM"] and self.tryAndCatch(self.readCGM),
+                  "Pump": isStarted["Pump"] and self.tryAndCatch(self.readPump)}
 
-                # If reading pump works
-                if self.tryAndCatch(self.readPump):
+        # Compute and enact necessary TB
+        if isRead["CGM"] and isRead["Pump"]:
+            if self.tryAndCatch(self.computeTB, self.t0):
+                self.tryAndCatch(self.enactTB, self.recommendation)
 
-                    # Compute necessary TB
-                    if self.tryAndCatch(self.computeTB, self.t0):
+        # Export recent treatments
+        self.tryAndCatch(self.export)
 
-                        # Enact it
-                        self.tryAndCatch(self.enactTB, self.recommendation)
-
-                # Export recent treatments
-                self.tryAndCatch(self.export)
-
-            # Stop loop
-            self.tryAndCatch(self.stop)
+        # Stop
+        isStarted = {"Pump": self.tryAndCatch(self.pump.stop),
+                     "CGM": self.tryAndCatch(self.cgm.stop),
+                     "Stick": self.tryAndCatch(self.stick.stop),
+                     "Loop": self.tryAndCatch(self.stop)}
 
 
 
