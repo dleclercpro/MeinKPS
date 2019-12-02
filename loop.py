@@ -416,13 +416,18 @@ class Loop(object):
         isRead = {"CGM": isStarted["CGM"] and self.tryAndCatch(self.readCGM),
                   "Pump": isStarted["Pump"] and self.tryAndCatch(self.readPump)}
 
-        # Compute and enact necessary TB
-        if isRead["CGM"] and isRead["Pump"]:
-            if self.tryAndCatch(self.computeTB, self.t0):
-                self.tryAndCatch(self.enactTB, self.recommendation)
+        # BG data is always necessary
+        if isRead["CGM"]:
 
-        # Export recent treatments
-        self.tryAndCatch(self.export)
+            # If pump was successfully read
+            if isRead["Pump"]:
+
+                # Compute and enact necessary TB
+                if self.tryAndCatch(self.computeTB, self.t0):
+                    self.tryAndCatch(self.enactTB, self.recommendation)
+                
+            # Export recent treatments
+            self.tryAndCatch(self.export)
 
         # Stop
         isStarted = {"Pump": self.tryAndCatch(self.pump.stop),
