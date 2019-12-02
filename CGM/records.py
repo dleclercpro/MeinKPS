@@ -233,7 +233,7 @@ class SensorRecord(Record):
     # Sensor statuses
     statuses = [None,
                 "Stopped",
-                "Expired",
+                "Expired", # G4
                 "ResidualDeviation",
                 "CountsDeviation",
                 "SecondSession",
@@ -248,10 +248,10 @@ class SensorRecord(Record):
                 "Unknown5",
                 "Unknown6",
                 "Unknown7",
-                "Expired", # ?
+                "Expired", # G6 ?
                 "Unknown9",
                 "Unknown10",
-                "SensorIDEntered" # ?
+                "Unknown11"
                 ]
 
 
