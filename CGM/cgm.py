@@ -331,8 +331,7 @@ class CGM(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DUMPBG
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            To dump about 24 h of CGM readings: 8 pages (38 records per page,
-            separated by 5 m intervals)
+            Dump n pages of BG data
         """
 
         # Read BGs

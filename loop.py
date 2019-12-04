@@ -191,7 +191,7 @@ class Loop(object):
         """
 
         # Read BGs (last 24 hours)
-        self.do(self.cgm.dumpBG, ["CGM", "BG"], 8)
+        self.do(self.cgm.dumpBG, ["CGM", "BG"], 10)
 
         # Read battery
         self.do(self.cgm.battery.read, ["CGM", "Battery"])
