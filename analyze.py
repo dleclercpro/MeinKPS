@@ -4,13 +4,13 @@
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Title:    model
+    Title:    analyze
 
     Author:   David Leclerc
 
     Version:  0.1
 
-    Date:     03.06.2016
+    Date:     25.12.2019
 
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 # USER LIBRARIES
 import lib
 import fmt
+import reporter
 import calculator
 import idc
 from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
@@ -39,11 +40,11 @@ from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
 
 
 
-def autosens(self, now, DIA, t = 24):
+def analyze(now, DIA, t = 24):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            AUTOSENS
+            ANALYZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
@@ -157,3 +158,31 @@ def autosens(self, now, DIA, t = 24):
         ax.set_ylabel(y)
         ax.plot(t[:-1], ddBGs, marker = "o", ms = 3.5, lw = 0, c = "red")
         plt.show()
+
+
+
+def main():
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        MAIN
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+
+    # Get current time
+    now = datetime.datetime.now()
+
+    # Get DIA
+    DIA = reporter.getPumpReport().get(["Settings", "DIA"])
+
+    # Define timespan for autotune
+    t = 24 # h
+
+    # Run analyze
+    analyze(now, DIA, t)
+
+
+
+# Run this when script is called from terminal
+if __name__ == "__main__":
+    main()
