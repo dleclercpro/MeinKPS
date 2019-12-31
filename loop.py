@@ -240,6 +240,7 @@ class Loop(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             BUILDPROFILES
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            dt: step size
         """
 
         # Get DIA
@@ -254,15 +255,15 @@ class Loop(object):
 
         # Instanciate profiles
         self.profiles = {"IDC": idc.ExponentialIDC(DIA, PIA),
-            "Basal": basal.Basal(),
-            "Net": net.Net(),
-            "BGTargets": targets.BGTargets(),
-            "FutureISF": isf.FutureISF(),
-            "CSF": csf.CSF(),
-            "PastIOB": iob.PastIOB(),
-            "FutureIOB": iob.FutureIOB(),
-            "PastBG": bg.PastBG(),
-            "FutureBG": bg.FutureBG()}
+                         "Basal": basal.Basal(),
+                         "Net": net.Net(),
+                         "BGTargets": targets.BGTargets(),
+                         "FutureISF": isf.FutureISF(),
+                         "CSF": csf.CSF(),
+                         "PastIOB": iob.PastIOB(),
+                         "FutureIOB": iob.FutureIOB(),
+                         "PastBG": bg.PastBG(),
+                         "FutureBG": bg.FutureBG()}
         
         # Build net insulin profile
         self.profiles["Net"].build(past, now)
@@ -270,13 +271,8 @@ class Loop(object):
         # Build past profiles
         self.profiles["PastIOB"].build(past, now)
         self.profiles["PastBG"].build(past, now)
-        
-        # Build daily profiles
-        self.profiles["BGTargets"].build(now, future)
-        self.profiles["FutureISF"].build(now, future)
-        #self.profiles["FutureCSF"].build(now, future)
 
-        # Build prediction profiles
+        # Build future profiles
         self.profiles["FutureIOB"].build(dt,
             self.profiles["Net"],
             self.profiles["IDC"])
@@ -285,6 +281,11 @@ class Loop(object):
             self.profiles["IDC"],
             self.profiles["FutureISF"],
             self.profiles["PastBG"])
+
+        # Build daily profiles
+        self.profiles["BGTargets"].build(now, future)
+        self.profiles["FutureISF"].build(now, future)
+        #self.profiles["FutureCSF"].build(now, future)
 
 
 
@@ -299,18 +300,24 @@ class Loop(object):
         # Build profiles
         self.buildProfiles(now)
 
+        # Get current IOB
+        IOB = self.profiles["FutureIOB"].y[0]
+
         # Compute BG dynamics
-        BGDynamics = calculator.computeBGDynamics(self.profiles["PastBG"],
+        BGDynamics = calculator.computeBGDynamics(
+            self.profiles["PastBG"],
             self.profiles["FutureBG"],
             self.profiles["BGTargets"],
             self.profiles["FutureIOB"],
             self.profiles["FutureISF"])
 
         # Store TB recommendation
-        self.recommendation = calculator.recommendTB(BGDynamics,
+        self.recommendation = calculator.recommendTB(
+            BGDynamics,
             self.profiles["Basal"],
             self.profiles["FutureISF"],
-            self.profiles["IDC"])
+            self.profiles["IDC"],
+            IOB)
 
 
 

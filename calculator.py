@@ -94,7 +94,7 @@ def computeIOB(net, IDC):
 
 
 
-def computeDose(dBG, futureISF, IDC):
+def computeDose(dBG, futureISF, IDC, IOB = 0):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -140,8 +140,8 @@ def computeDose(dBG, futureISF, IDC):
         # Update factor with current step
         f += isf * (IDC.f(b) - IDC.f(a))
 
-    # Compute necessary dose (instant bolus)
-    dose = dBG / f
+    # Compute necessary dose (instant bolus) minus the current IOB
+    dose = dBG / f - IOB
 
     # Return dose
     return dose
@@ -451,7 +451,7 @@ def snooze(now, duration = 2):
 
 
 
-def recommendTB(BGDynamics, basal, futureISF, IDC):
+def recommendTB(BGDynamics, basal, futureISF, IDC, IOB = 0):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -465,7 +465,7 @@ def recommendTB(BGDynamics, basal, futureISF, IDC):
     Logger.debug("Recommending TB...")
 
     # Compute necessary insulin dose to bring back eventual BG to target
-    dose = computeDose(BGDynamics["dBGTarget"], futureISF, IDC)
+    dose = computeDose(BGDynamics["dBGTarget"], futureISF, IDC, IOB)
 
     # Compute corresponding TB
     TB = computeTB(dose, basal)

@@ -64,6 +64,9 @@ class IOB(DotProfile):
         self.reportType = reporter.TreatmentsReport
         self.branch = ["IOB"]
 
+        # Step size
+        self.dt = None
+
 
 
 class PastIOB(IOB, PastProfile):
@@ -72,23 +75,6 @@ class PastIOB(IOB, PastProfile):
 
 
 class FutureIOB(IOB, FutureProfile):
-
-    def __init__(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            INIT
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-
-        # Start initialization
-        super(FutureIOB, self).__init__()
-
-        # Initialize step size
-        self.dt = None
-        self.dT = None
-
-
 
     def build(self, dt, net, IDC, show = False):
 
@@ -106,7 +92,7 @@ class FutureIOB(IOB, FutureProfile):
         self.reset()
 
         # Define time references
-        self.define(net.end, IDC.DIA, dt)
+        self.define(net.start, net.end, dt)
 
         # Copy net insulin profile
         net = copy.deepcopy(net)
@@ -115,13 +101,11 @@ class FutureIOB(IOB, FutureProfile):
         for _ in self.t:
 
             # Compute new IOB and store it
-            self.y.append(calculator.computeIOB(net, IDC))
+            self.y += [calculator.computeIOB(net, IDC)]
 
-            # Move net insulin profile into the past
-            for i in range(len(net.t)):
-
-                # Update time axes
-                net.t[i] -= self.dt
+            # Move net insulin profile into the past (only normalized axis is
+            # needed for IOB computation)
+            net.t = [t - self.dt for t in net.t]
 
         # Derivate
         self.derivate()
@@ -135,7 +119,7 @@ class FutureIOB(IOB, FutureProfile):
 
 
 
-    def define(self, start, DIA, dt):
+    def define(self, start, end, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,17 +128,14 @@ class FutureIOB(IOB, FutureProfile):
             Define time references for prediction of IOB decay.
         """
 
-        # Compute end of profile
-        end = start + datetime.timedelta(hours = DIA)
+        # Compute DIA
+        DIA = end - start
 
         # Define step size
         self.dt = dt
-        self.dT = datetime.timedelta(hours = dt)
 
-        # Generate normalized time axis
+        # Generate time axes
         self.t = np.linspace(0, DIA, int(DIA / dt) + 1)
-
-        # Generate datetime time axis
         self.T = [start + datetime.timedelta(hours = h) for h in self.t]
 
         # Finish defining
