@@ -79,9 +79,6 @@ class PastProfile(Profile):
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Load profile components from specified dated report(s).
-
-            'strict' defines whether data should strictly be loaded within
-            given time range or try and find the latest available.
         """
 
         # Info

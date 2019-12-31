@@ -35,129 +35,134 @@ import fmt
 import reporter
 import calculator
 import idc
-from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
-    suspend, resume)
+from Profiles import bg, net, isf, csf, iob, cob, targets
 
 
 
-def analyze(now, DIA, t = 24):
+def analyze(now, DIA, PIA, t = 24):
 
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            ANALYZE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ANALYZE
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Analyze differences between observations and expectations associated
+        with treatments
+    """
 
-        # Define past reference time
-        past = now - datetime.timedelta(hours = t)
+    # Define reference times
+    past = now - datetime.timedelta(hours = t)
 
-        # Define DIA as a datetime timedelta object
-        dia = datetime.timedelta(hours = DIA)
+    # Instanciate profiles
+    profiles = {"IDC": idc.ExponentialIDC(DIA, PIA),
+                "Net": net.Net(),
+                "PastBG": bg.PastBG(),
+                "PastISF": isf.PastISF()}
 
-        # Instanciate profiles
-        profiles = {"IDC": idc.WalshIDC(DIA),
-                    "Suspend": None,
-                    "Resume": None,
-                    "Basal": None,
-                    "TB": None,
-                    "Bolus": None,
-                    "Net": None,
-                    "PastISF": isf.PastISF(),
-                    "PastBG": bg.PastBG()}
+    # Build past profiles
+    profiles["PastBG"].build(past, now)
+    profiles["PastISF"].build(past, now)
 
-        # Build past BG profile
-        profiles["PastBG"].build(past, now)
-        
-        # Build past ISF profile
-        profiles["PastISF"].build(past, now)
+    # Reference to BG time axes
+    T = profiles["PastBG"].T
+    t = profiles["PastBG"].t
 
-        # Reference to BG time axes
-        T = profiles["PastBG"].T
-        t = profiles["PastBG"].t
+    # Initialize IOB arrays
+    IOBs = []
 
-        # Initialize IOB arrays
-        IOBs = []
+    # Get number of BGs
+    n = len(T)
 
-        # Get number of BGs
-        n = len(T)
+    # Compute IOB for each BG
+    for i in range(n):
 
-        # Compute IOB for each BG
-        for i in range(n):
+        # Define start/end times of current net profile
+        [start, end] = [T[i] - datetime.timedelta(hours = DIA), T[i]]
 
-            # Reset necessary profiles
-            profiles["Suspend"] = suspend.Suspend()
-            profiles["Resume"] = resume.Resume()
-            profiles["Basal"] = basal.Basal()
-            profiles["TB"] = tb.TB()
-            profiles["Bolus"] = bolus.Bolus()
-            profiles["Net"] = net.Net()
+        # Build net insulin profile
+        profiles["Net"].build(start, end)
 
-            # Build net insulin profile
-            profiles["Net"].build(T[i] - dia, T[i], profiles["Suspend"],
-                                                    profiles["Resume"],
-                                                    profiles["Basal"], 
-                                                    profiles["TB"],
-                                                    profiles["Bolus"])
+        # Do it
+        IOBs.append(calculator.computeIOB(profiles["Net"], profiles["IDC"]))
 
-            # Do it
-            IOBs.append(calculator.computeIOB(profiles["Net"], profiles["IDC"]))
+        # Show IOB
+        print "IOB(" + lib.formatTime(end) + ") = " + fmt.IOB(IOBs[-1])
 
-            # Show IOB
-            print "IOB(" + lib.formatTime(T[i]) + ") = " + fmt.IOB(IOBs[-1])
+    # Initialize dBG deviations
+    ddBGs = []
 
-        # Initialize dBG deviations
-        ddBGs = []
+    # Go through IOBs and find difference between expected dBG and actual
+    # one
+    for i in range(n - 1):
 
-        # Go through IOB and find difference between expected dBG and actual one
-        for i in range(n - 1):
+        # Compute dIOB
+        dIOB = IOBs[i + 1] - IOBs[i]
 
-            # Compute dIOB
-            dIOB = IOBs[i + 1] - IOBs[i]
+        # Get associated ISF
+        # NOTE: there might be some error slipping in here if ISF changes
+        # between two IOBs
+        ISF = profiles["PastISF"].f(t[i])
 
-            # Compute dBG
-            dBG = profiles["PastBG"].y[i + 1] - profiles["PastBG"].y[i]
-            expecteddBG = dIOB * profiles["PastISF"].f(t[i])
+        # Compute dBGs
+        dBG = profiles["PastBG"].y[i + 1] - profiles["PastBG"].y[i]
+        expecteddBG = dIOB * ISF
 
-            # Compute delta dBG
-            ddBGs.append(dBG - expecteddBG)
+        # Compute difference between observed and expected dBG associated
+        # with dIOB
+        ddBGs.append(dBG - expecteddBG)
 
-            # Avoid division by zero
-            if not expecteddBG == 0:
+        # Info
+        print "dIOB: " + fmt.IOB(dIOB)
+        print "dBG: " + fmt.BG(dBG)
+        print "Expected dBG: " + fmt.BG(expecteddBG)
+        print "ddBG: " + fmt.BG(ddBGs[i])
+        print
 
-                # Compute dBG ratio
-                r = round(dBG / float(expecteddBG), 2)
+    # Info
+    print "AVG ddBG: " + fmt.BG(np.mean(ddBGs))
+    print "STD ddBG: " + fmt.BG(np.std(ddBGs))
 
-            # Otherwise
-            else:
+    # Plot results
+    plot(t, ddBGs, profiles["PastBG"].y, IOBs)
 
-                # No ratio available
-                r = None
 
-            # Info
-            print "dIOB: " + fmt.IOB(dIOB)
-            print "dBG: " + fmt.BG(dBG)
-            print "Expected dBG: " + fmt.BG(expecteddBG)
-            print "ddBG: " + fmt.BG(ddBGs[i])
-            print "r: " + str(r)
-            print
 
-        # Plot
-        print "Mean ddBG: " + fmt.BG(np.mean(ddBGs))
-        lib.initPlot()
-        ax = plt.subplot(1, 1, 1)
+def plot(t, ddBGs, BGs, IOBs):
 
-        # Define axis labels
-        x = "(h)"
-        y = "(mmol/L)"
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PLOT
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Plot results of analysis
+    """
 
-        # Set title
-        ax.set_title("dBG Deviations", fontweight = "semibold")
+    # Initialize plot
+    lib.initPlot()
+    axes = {"ddBGs": plt.subplot(3, 1, 1),
+            "BGs": plt.subplot(3, 1, 2),
+            "IOBs": plt.subplot(3, 1, 3)}
 
-        # Set axis labels
-        ax.set_xlabel(x)
-        ax.set_ylabel(y)
-        ax.plot(t[:-1], ddBGs, marker = "o", ms = 3.5, lw = 0, c = "red")
-        plt.show()
+    # Define axis labels
+    x = "(h)"
+    y = "(mmol/L)"
+
+    # Set title
+    axes["ddBGs"].set_title("ddBGs", fontweight = "semibold")
+    axes["BGs"].set_title("BGs", fontweight = "semibold")
+    axes["IOBs"].set_title("IOBs", fontweight = "semibold")
+
+    # Set axis labels
+    axes["ddBGs"].set_xlabel(x)
+    axes["ddBGs"].set_ylabel(y)
+    axes["BGs"].set_xlabel(x)
+    axes["BGs"].set_ylabel(y)
+    axes["IOBs"].set_xlabel(x)
+    axes["IOBs"].set_ylabel("U")
+
+    # Plot axes
+    axes["ddBGs"].plot(t[:-1], ddBGs, marker = "o", ms = 3.5, lw = 0, c = "black")
+    axes["BGs"].plot(t[:-1], BGs[:-1], marker = "o", ms = 3.5, lw = 0, c = "red")
+    axes["IOBs"].plot(t[:-1], IOBs[:-1], marker = "o", ms = 3.5, lw = 0, c = "orange")
+    plt.show()
 
 
 
@@ -172,14 +177,15 @@ def main():
     # Get current time
     now = datetime.datetime.now()
 
-    # Get DIA
+    # Get IDC related quantities
     DIA = reporter.getPumpReport().get(["Settings", "DIA"])
+    PIA = 1.25
 
     # Define timespan for autotune
     t = 24 # h
 
-    # Run analyze
-    analyze(now, DIA, t)
+    # Run analyze and plot results
+    analyze(now, DIA, PIA, t)
 
 
 

@@ -26,6 +26,11 @@
 import logger
 from step import StepProfile
 from past import PastProfile
+from basal import Basal
+from tb import TB
+from bolus import Bolus
+from suspend import Suspend
+from resume import Resume
 
 
 
@@ -52,8 +57,7 @@ class Net(PastProfile, StepProfile):
 
 
 
-    def build(self, start, end, suspend, resume, basal, TB, bolus = None,
-        show = False):
+    def build(self, start, end, useBoluses = True, show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,27 +85,35 @@ class Net(PastProfile, StepProfile):
         # Define time references of profile
         self.define(start, end)
 
+        # Instanciate needed profiles
+        profiles = {"Basal": Basal(),
+                    "TB": TB(),
+                    "Bolus": Bolus(),
+                    "Suspend": Suspend(),
+                    "Resume": Resume(),
+                    "NetBasal": None}
+
         # Build basal profile, as well as TB profile, using the former to fill
         # the latter
-        basal.build(start, end)
-        TB.build(start, end, basal)
+        profiles["Basal"].build(start, end)
+        profiles["TB"].build(start, end, profiles["Basal"])
 
         # Compute net basal by subtracting TBs and basal
-        netBasal = TB.subtract(basal)
+        profiles["NetBasal"] = profiles["TB"].subtract(profiles["Basal"])
 
-        # If bolus profile given: build a corresponding step profile and add it
-        # to net basal
-        if bolus is not None:
-            bolus.build(start, end)
-            netBasal = netBasal.add(bolus)
+        # If bolus need to be considered: build corresponding step profile and
+        # add it to net basal one
+        if useBoluses:
+            profiles["Bolus"].build(start, end)
+            profiles["NetBasal"] = profiles["NetBasal"].add(profiles["Bolus"])
 
         # Build a suspend and resume profiles, filling the former with basals,
         # and the latter with net basals
-        suspend.build(start, end, basal)
-        resume.build(start, end, netBasal)
+        profiles["Suspend"].build(start, end, profiles["Basal"])
+        profiles["Resume"].build(start, end, profiles["NetBasal"])
 
         # Build the final net insulin profile
-        net = resume.subtract(suspend)
+        net = profiles["Resume"].subtract(profiles["Suspend"])
 
         # Assign components
         self.T = net.T

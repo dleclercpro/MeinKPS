@@ -43,8 +43,7 @@ import idc
 from CGM import cgm
 from Stick import stick
 from Pump import pump
-from Profiles import (bg, basal, tb, bolus, net, isf, csf, iob, cob, targets,
-    suspend, resume)
+from Profiles import bg, basal, net, isf, csf, iob, cob, targets
 
 
 
@@ -255,11 +254,7 @@ class Loop(object):
 
         # Instanciate profiles
         self.profiles = {"IDC": idc.ExponentialIDC(DIA, PIA),
-            "Suspend": suspend.Suspend(),
-            "Resume": resume.Resume(),
             "Basal": basal.Basal(),
-            "TB": tb.TB(),
-            "Bolus": bolus.Bolus(),
             "Net": net.Net(),
             "BGTargets": targets.BGTargets(),
             "FutureISF": isf.FutureISF(),
@@ -270,12 +265,7 @@ class Loop(object):
             "FutureBG": bg.FutureBG()}
         
         # Build net insulin profile
-        self.profiles["Net"].build(past, now,
-            self.profiles["Suspend"],
-            self.profiles["Resume"],
-            self.profiles["Basal"],
-            self.profiles["TB"],
-            self.profiles["Bolus"])
+        self.profiles["Net"].build(past, now)
 
         # Build past profiles
         self.profiles["PastIOB"].build(past, now)
@@ -367,13 +357,16 @@ class Loop(object):
 
 
 
-    def plot(self):
+    def plot(self, now):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PLOT
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
+
+        # Build profiles
+        self.buildProfiles(now)
 
         # Profiles defined?
         if self.profiles:
@@ -445,6 +438,9 @@ def main():
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~­
     """
 
+    # Get current time
+    now = datetime.datetime.now()
+
     # Instanciate a loop
     loop = Loop()
 
@@ -452,7 +448,7 @@ def main():
     loop.run()
 
     # Plot
-    #loop.plot()
+    #loop.plot(now)
 
 
 

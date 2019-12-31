@@ -32,8 +32,7 @@ import lib
 import logger
 import reporter
 import idc
-from Profiles import (bolus, basal, tb, net, bg, targets, isf, csf, iob, cob,
-    resume, suspend)
+from Profiles import net, bg, targets, isf, csf, iob, cob
 
 
 
@@ -104,8 +103,7 @@ class Exporter(object):
 
         # Build net insulin profile for last 24 hours
         _net = net.Net()
-        _net.build(then, self.now,
-            suspend.Suspend(), resume.Resume(), basal.Basal(), tb.TB())
+        _net.build(then, self.now, False)
 
         # Format and store its data
         self.data["net"] = dict(zip(
