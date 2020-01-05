@@ -122,7 +122,7 @@ class Loop(object):
 
         # Ignore all errors, but log them
         except:
-            #Logger.error("\n" + traceback.format_exc())
+            Logger.error("\n" + traceback.format_exc())
             return False
 
 
@@ -259,7 +259,7 @@ class Loop(object):
                          "Net": net.Net(),
                          "BGTargets": targets.BGTargets(),
                          "FutureISF": isf.FutureISF(),
-                         "CSF": csf.CSF(),
+                         "FutureCSF": csf.FutureCSF(),
                          "PastIOB": iob.PastIOB(),
                          "FutureIOB": iob.FutureIOB(),
                          "PastBG": bg.PastBG(),
@@ -269,23 +269,26 @@ class Loop(object):
         self.profiles["Net"].build(past, now)
 
         # Build past profiles
+        self.profiles["Basal"].build(past, now)
         self.profiles["PastIOB"].build(past, now)
         self.profiles["PastBG"].build(past, now)
-
-        # Build future profiles
-        self.profiles["FutureIOB"].build(dt,
-            self.profiles["Net"],
-            self.profiles["IDC"])
-        self.profiles["FutureBG"].build(dt,
-            self.profiles["Net"],
-            self.profiles["IDC"],
-            self.profiles["FutureISF"],
-            self.profiles["PastBG"])
 
         # Build daily profiles
         self.profiles["BGTargets"].build(now, future)
         self.profiles["FutureISF"].build(now, future)
         #self.profiles["FutureCSF"].build(now, future)
+
+        # Build future profiles
+        self.profiles["FutureIOB"].build(
+            self.profiles["Net"],
+            self.profiles["IDC"],
+            dt)
+        self.profiles["FutureBG"].build(
+            self.profiles["PastBG"],
+            self.profiles["Net"],
+            self.profiles["IDC"],
+            self.profiles["FutureISF"],
+            dt)
 
 
 
@@ -430,7 +433,7 @@ class Loop(object):
             self.tryAndCatch(self.export)
 
         # Stop
-        isStarted = {"Pump": self.tryAndCatch(self.pump.stop),
+        isStopped = {"Pump": self.tryAndCatch(self.pump.stop),
                      "CGM": self.tryAndCatch(self.cgm.stop),
                      "Stick": self.tryAndCatch(self.stick.stop),
                      "Loop": self.tryAndCatch(self.stop)}

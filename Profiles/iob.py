@@ -76,7 +76,7 @@ class PastIOB(IOB, PastProfile):
 
 class FutureIOB(IOB, FutureProfile):
 
-    def build(self, dt, net, IDC, show = False):
+    def build(self, net, IDC, dt, show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,7 +92,7 @@ class FutureIOB(IOB, FutureProfile):
         self.reset()
 
         # Define time references
-        self.define(net.start, net.end, dt)
+        self.define(net.end, IDC.DIA, dt)
 
         # Copy net insulin profile
         net = copy.deepcopy(net)
@@ -119,7 +119,7 @@ class FutureIOB(IOB, FutureProfile):
 
 
 
-    def define(self, start, end, dt):
+    def define(self, start, DIA, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,14 +128,14 @@ class FutureIOB(IOB, FutureProfile):
             Define time references for prediction of IOB decay.
         """
 
-        # Compute DIA
-        DIA = end - start
+        # Compute end of profile
+        end = start + datetime.timedelta(hours = DIA)
 
         # Define step size
         self.dt = dt
 
         # Generate time axes
-        self.t = np.linspace(0, DIA, int(DIA / dt) + 1)
+        self.t = list(np.linspace(0, DIA, int(DIA / dt) + 1))
         self.T = [start + datetime.timedelta(hours = h) for h in self.t]
 
         # Finish defining

@@ -62,6 +62,10 @@ def analyze(now, DIA, PIA, t = 24):
     profiles["PastBG"].build(past, now)
     profiles["PastISF"].build(past, now)
 
+    # Get carbs
+    carbs = reporter.getDatedEntries(reporter.TreatmentsReport,
+        [yesterday, today], ["Carbs"])
+
     # Reference to BG time axes
     T = profiles["PastBG"].T
     t = profiles["PastBG"].t

@@ -113,7 +113,7 @@ class FutureBG(BG, FutureProfile):
 
 
 
-    def build(self, dt, net, IDC, futureISF, past, show = False):
+    def build(self, past, net, IDC, futureISF, dt, show = False):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -133,22 +133,19 @@ class FutureBG(BG, FutureProfile):
 
         # Info
         Logger.debug("Building 'FutureBG'...")
+        Logger.debug("Step size: " + str(self.dt) + " h")
 
         # Ensure there is one BG recent enough to accurately predict decay
         calculator.countValidBGs(past, 15, 1)
-
-        # Initialize BG
-        BG = past.y[-1]
-
-        # Info
-        Logger.debug("Step size: " + str(self.dt) + " h")
-        Logger.debug("Initial BG: " + str(BG) + " " + self.units)
 
         # Reset previous BG predictions
         self.reset()
 
         # Define time references
         self.define(net.end, IDC.DIA, dt)
+
+        # Initialize BG
+        BG = past.y[-1]
 
         # Store initial (most recent) BG
         self.y.append(BG)
@@ -157,41 +154,18 @@ class FutureBG(BG, FutureProfile):
         net = copy.deepcopy(net)
 
         # Compute initial IOB
-        IOB0 = calculator.computeIOB(net, IDC)
-
-        # Read number of steps in prediction
-        n = len(self.t) - 1
-
-        # Read number of entries in net insulin profile
-        m = len(net.t)
-
-        # Read number of entries in ISF profile
-        l = len(futureISF.t)
+        IOBs = [calculator.computeIOB(net, IDC)]
 
         # Compute dBG
-        for i in range(n):
+        for i in range(len(self.t) - 1):
 
             # Compute start/end of current step
-            t0 = self.t[i]
-            t1 = self.t[i + 1]
+            [t0, t1] = [self.t[i], self.t[i + 1]]
 
-            # Initialize time axis associated with ISF changes
-            t = []
-
-            # Define start time
-            t.append(t0)
-
-            # Fill it with ISF change times
-            for j in range(l):
-
-                # Change contained within current step
-                if t0 < futureISF.t[j] < t1:
-
-                    # Add it
-                    t.append(futureISF.t[j])
-
-            # Define end time
-            t.append(t1)
+            # Generate time axis associated with ISF changes over current step
+            t = [t0]
+            t += list(filter(lambda t_: t0 < t_ < t1, futureISF.t))
+            t += [t1]
 
             # Loop on ISF changes
             for j in range(len(t) - 1):
@@ -200,31 +174,19 @@ class FutureBG(BG, FutureProfile):
                 dt = t[j + 1] - t[j]
 
                 # Move net insulin profile into the past
-                for k in range(m):
+                net.t = [t_ - dt for t_ in net.t]
 
-                    # Update normalized time axis
-                    net.t[k] -= dt
-
-                # Compute new IOB
+                # Compute new IOB and difference with last one
                 IOB = calculator.computeIOB(net, IDC)
+                dIOB = IOB - IOBs[-1]
+                IOBs += [IOB]
 
-                # Compute dIOB
-                dIOB = IOB - IOB0
-
-                # Update IOB
-                IOB0 = IOB
-
-                # Compute dBG for current step
+                # Compute dBG for current step and corresponding expected BG
                 dBG = futureISF.f(t[j]) * dIOB
-
-                # Compute expected BG
                 BG += dBG
 
             # Store BG at end of current step
-            self.y.append(BG)
-
-        # Normalize
-        self.normalize()
+            self.y += [BG]
 
         # Derivate
         self.derivate()
@@ -249,12 +211,9 @@ class FutureBG(BG, FutureProfile):
 
         # Define step size
         self.dt = dt
-        self.dT = datetime.timedelta(hours = dt)
 
-        # Generate normalized time axis
-        self.t = np.linspace(0, DIA, int(DIA / dt) + 1)
-
-        # Generate datetime time axis
+        # Generate time axes
+        self.t = list(np.linspace(0, DIA, int(DIA / dt) + 1))
         self.T = [start + datetime.timedelta(hours = h) for h in self.t]
 
         # Finish defining
