@@ -138,11 +138,12 @@ class Exporter(object):
             [])
 
         # Get recent sensor statuses (last session)
+        # With n = 1, only today's history report would be considered, thus + 1
         self.data["statuses"] = reporter.getRecentDatedEntries(
             reporter.HistoryReport,
             self.now,
             ["CGM", "Sensor Statuses"],
-            MAX_SENSOR_AGE)
+            MAX_SENSOR_AGE + 1)
 
         # Get recent calibrations
         self.data["calibrations"] = reporter.getDatedEntries(
