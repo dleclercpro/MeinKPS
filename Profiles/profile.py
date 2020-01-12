@@ -289,6 +289,25 @@ class Profile(object):
 
 
 
+    def shift(self, dt):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            SHIFT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Shift profile's time axes in the past/future.
+        """
+
+        if type(dt) is datetime.timedelta:
+            self.T = [T + dt for T in self.T]
+            self.t = [t + (dt.total_seconds() / 3600.0) for t in self.t]
+
+        elif type(dt) is int or type(dt) is float:
+            self.T = [T + datetime.timedelta(hours = dt) for T in self.T]
+            self.t = [t + dt for t in self.t]
+
+
+
     def show(self):
 
         """

@@ -105,7 +105,7 @@ class FutureIOB(IOB, FutureProfile):
 
             # Move net insulin profile into the past (only normalized axis is
             # needed for IOB computation)
-            net.t = [t - self.dt for t in net.t]
+            net.shift(-self.dt)
 
         # Derivate
         self.derivate()

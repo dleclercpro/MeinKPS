@@ -170,11 +170,9 @@ class FutureBG(BG, FutureProfile):
             # Loop on ISF changes
             for j in range(len(t) - 1):
 
-                # Define step
-                dt = t[j + 1] - t[j]
-
                 # Move net insulin profile into the past
-                net.t = [t_ - dt for t_ in net.t]
+                dt = t[j + 1] - t[j]
+                net.shift(-dt)
 
                 # Compute new IOB and difference with last one
                 IOB = calculator.computeIOB(net, IDC)

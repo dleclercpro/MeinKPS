@@ -84,7 +84,7 @@ def computeExpectedBGDeltas(t, T, IDC, ISFs):
         # Move net insulin profile into the past by the time that passes until
         # next BG value
         dt = t[i + 1] - t[i]
-        net_.t = [t_ - dt for t_ in net_.t]
+        net_.shift(-dt)
 
         # Compute new IOB, and the difference with the last one
         IOB1 = calculator.computeIOB(net_, IDC)
