@@ -23,6 +23,7 @@
 """
 
 # LIBRARIES
+import copy
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
@@ -54,7 +55,7 @@ def computeObservedBGDeltas(BGs):
 
 
 
-def computeExpectedBGDeltas(t, T, IDC, ISFs):
+def computeExpectedBGDeltas(t, T, Net, IDC, ISFs):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -67,16 +68,17 @@ def computeExpectedBGDeltas(t, T, IDC, ISFs):
     # Initialize expected BG deltas
     expectedDeltaBGs = []
 
-    # Instanciate net insulin profile
-    net_ = net.Net()
-
     # Compute expected BG deltas
     for i in range(len(T) - 1):
 
-        # Define start/end times of net profile, and build the latter
+        # Copy net insulin profile
+        net_ = copy.deepcopy(Net)
+
+        # Cut it for current IOB computation
         start = T[i] - datetime.timedelta(hours = IDC.DIA)
         end = T[i]
-        net_.build(start, end)
+        net_.cut(start, end)
+        net_.normalize()
 
         # Compute corresponding IOB
         IOB0 = calculator.computeIOB(net_, IDC)
@@ -104,7 +106,7 @@ def computeExpectedBGDeltas(t, T, IDC, ISFs):
 
 
 
-def computeIOBs(t, T, IDC):
+def computeIOBs(t, T, Net, IDC):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,18 +118,17 @@ def computeIOBs(t, T, IDC):
     # Initialize IOBs
     IOBs = []
 
-    # Instanciate net insulin profile
-    net_ = net.Net()
-
     # Compute IOB for each BG
     for i in range(len(T)):
 
-        # Define start/end times of current net profile
+        # Copy net insulin profile
+        net_ = copy.deepcopy(Net)
+
+        # Cut it for current IOB computation
         start = T[i] - datetime.timedelta(hours = IDC.DIA)
         end = T[i]
-
-        # Build net insulin profile
-        net_.build(start, end)
+        net_.cut(start, end)
+        net_.normalize()
 
         # Compute corresponding IOB, store, and show it
         IOB = calculator.computeIOB(net_, IDC)
@@ -153,13 +154,15 @@ def compareExpectedVsObservedBGDeltas(now, t, IDC):
     # Instanciate profiles
     BGs = bg.PastBG()
     ISFs = isf.PastISF()
+    Net = net.Net()
 
-    # Build past profiles
+    # Build them
     BGs.build(past, now)
     ISFs.build(past, now)
+    Net.build(past - datetime.timedelta(hours = IDC.DIA), now)
 
     # Compute expected and observed BGs
-    expectedBGDeltas = computeExpectedBGDeltas(BGs.t, BGs.T, IDC, ISFs)
+    expectedBGDeltas = computeExpectedBGDeltas(BGs.t, BGs.T, Net, IDC, ISFs)
     observedBGDeltas = computeObservedBGDeltas(BGs.y)
 
     # Compute difference between expectations and observations
@@ -168,7 +171,7 @@ def compareExpectedVsObservedBGDeltas(now, t, IDC):
     print "STD ddBG: " + fmt.BG(np.std(ddBGs))
 
     # Compute IOBs
-    IOBs = computeIOBs(BGs.t, BGs.T, IDC)
+    IOBs = computeIOBs(BGs.t, BGs.T, Net, IDC)
 
     # Plot results
     plot(BGs.t[:-1], expectedBGDeltas, observedBGDeltas, ddBGs, BGs.y[:-1], IOBs[:-1])
