@@ -90,7 +90,7 @@ class PastProfile(Profile):
 
         # No data
         if not self.data:
-            Logger.warning("No data found for: " + repr(self))
+            Logger.debug("No data found for: " + repr(self))
             return
 
         # Info

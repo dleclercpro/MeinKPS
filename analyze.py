@@ -39,109 +39,156 @@ from Profiles import bg, net, isf, csf, iob, cob, targets
 
 
 
-def analyze(now, DIA, PIA, t = 24):
+def computeObservedBGDeltas(BGs):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ANALYZE
+        COMPUTEOBSERVEDBGDELTAS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Analyze differences between observations and expectations associated
-        with treatments
+        This function computes an array of observed BG variations.
+    """
+
+    BGs = np.array(BGs)
+
+    return BGs[1:] - BGs[:-1]
+
+
+
+def computeExpectedBGDeltas(t, T, IDC, ISFs):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPUTEEXPECTEDBGDELTAS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        This function computes an array of expected BG variations, given an IDC
+        and a net insulin profile.
+    """
+
+    # Initialize expected BG deltas
+    expectedDeltaBGs = []
+
+    # Instanciate net insulin profile
+    net_ = net.Net()
+
+    # Compute expected BG deltas
+    for i in range(len(T) - 1):
+
+        # Define start/end times of net profile, and build the latter
+        start = T[i] - datetime.timedelta(hours = IDC.DIA)
+        end = T[i]
+        net_.build(start, end)
+
+        # Compute corresponding IOB
+        IOB0 = calculator.computeIOB(net_, IDC)
+        
+        # Move net insulin profile into the past by the time that passes until
+        # next BG value
+        dt = t[i + 1] - t[i]
+        net_.t = [t_ - dt for t_ in net_.t]
+
+        # Compute new IOB, and the difference with the last one
+        IOB1 = calculator.computeIOB(net_, IDC)
+        dIOB = IOB1 - IOB0
+
+        # Get current ISF and compute dBG using dIOB
+        # NOTE: there might be some error slipping in here if ISF changes
+        # between the two IOBs
+        ISF = ISFs.f(t[i])
+        dBG = dIOB * ISF
+
+        # Store and show expected BG delta
+        expectedDeltaBGs += [dBG]
+        print "dBG(" + lib.formatTime(start) + ") = " + fmt.BG(dBG)
+
+    return expectedDeltaBGs
+
+
+
+def computeIOBs(t, T, IDC):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPUTEIOBS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        This function computes the IOB at a given time.
+    """
+
+    # Initialize IOBs
+    IOBs = []
+
+    # Instanciate net insulin profile
+    net_ = net.Net()
+
+    # Compute IOB for each BG
+    for i in range(len(T)):
+
+        # Define start/end times of current net profile
+        start = T[i] - datetime.timedelta(hours = IDC.DIA)
+        end = T[i]
+
+        # Build net insulin profile
+        net_.build(start, end)
+
+        # Compute corresponding IOB, store, and show it
+        IOB = calculator.computeIOB(net_, IDC)
+        IOBs += [IOB]
+        print "IOB(" + lib.formatTime(end) + ") = " + fmt.IOB(IOB)
+
+    return IOBs
+
+
+
+def compareExpectedVsObservedBGDeltas(now, t, IDC):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        COMPAREEXPECTEDVSOBSERVEDBGDELTAS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ...
     """
 
     # Define reference times
     past = now - datetime.timedelta(hours = t)
 
     # Instanciate profiles
-    profiles = {"IDC": idc.ExponentialIDC(DIA, PIA),
-                "Net": net.Net(),
-                "PastBG": bg.PastBG(),
-                "PastISF": isf.PastISF()}
+    BGs = bg.PastBG()
+    ISFs = isf.PastISF()
 
     # Build past profiles
-    profiles["PastBG"].build(past, now)
-    profiles["PastISF"].build(past, now)
+    BGs.build(past, now)
+    ISFs.build(past, now)
 
-    # Get carbs
-    carbs = reporter.getDatedEntries(reporter.TreatmentsReport,
-        [yesterday, today], ["Carbs"])
+    # Compute expected and observed BGs
+    expectedBGDeltas = computeExpectedBGDeltas(BGs.t, BGs.T, IDC, ISFs)
+    observedBGDeltas = computeObservedBGDeltas(BGs.y)
 
-    # Reference to BG time axes
-    T = profiles["PastBG"].T
-    t = profiles["PastBG"].t
-
-    # Initialize IOB arrays
-    IOBs = []
-
-    # Get number of BGs
-    n = len(T)
-
-    # Compute IOB for each BG
-    for i in range(n):
-
-        # Define start/end times of current net profile
-        [start, end] = [T[i] - datetime.timedelta(hours = DIA), T[i]]
-
-        # Build net insulin profile
-        profiles["Net"].build(start, end)
-
-        # Do it
-        IOBs.append(calculator.computeIOB(profiles["Net"], profiles["IDC"]))
-
-        # Show IOB
-        print "IOB(" + lib.formatTime(end) + ") = " + fmt.IOB(IOBs[-1])
-
-    # Initialize dBG deviations
-    ddBGs = []
-
-    # Go through IOBs and find difference between expected dBG and actual
-    # one
-    for i in range(n - 1):
-
-        # Compute dIOB
-        dIOB = IOBs[i + 1] - IOBs[i]
-
-        # Get associated ISF
-        # NOTE: there might be some error slipping in here if ISF changes
-        # between two IOBs
-        ISF = profiles["PastISF"].f(t[i])
-
-        # Compute dBGs
-        dBG = profiles["PastBG"].y[i + 1] - profiles["PastBG"].y[i]
-        expecteddBG = dIOB * ISF
-
-        # Compute difference between observed and expected dBG associated
-        # with dIOB
-        ddBGs.append(dBG - expecteddBG)
-
-        # Info
-        print "dIOB: " + fmt.IOB(dIOB)
-        print "dBG: " + fmt.BG(dBG)
-        print "Expected dBG: " + fmt.BG(expecteddBG)
-        print "ddBG: " + fmt.BG(ddBGs[i])
-        print
-
-    # Info
+    # Compute difference between expectations and observations
+    ddBGs = np.array(observedBGDeltas) - np.array(expectedBGDeltas)
     print "AVG ddBG: " + fmt.BG(np.mean(ddBGs))
     print "STD ddBG: " + fmt.BG(np.std(ddBGs))
 
+    # Compute IOBs
+    IOBs = computeIOBs(BGs.t, BGs.T, IDC)
+
     # Plot results
-    plot(t, ddBGs, profiles["PastBG"].y, IOBs)
+    plot(BGs.t[:-1], expectedBGDeltas, observedBGDeltas, ddBGs, BGs.y[:-1], IOBs[:-1])
 
 
 
-def plot(t, ddBGs, BGs, IOBs):
+def plot(t, expectedBGDeltas, observedBGDeltas, ddBGs, BGs, IOBs):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         PLOT
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Plot results of analysis
+        Plot results of analysis.
     """
 
     # Initialize plot
     lib.initPlot()
-    axes = {"ddBGs": plt.subplot(3, 1, 1),
+    axes = {#"expected": plt.subplot(5, 1, 1),
+            #"observed": plt.subplot(5, 1, 2),
+            "ddBGs": plt.subplot(3, 1, 1),
             "BGs": plt.subplot(3, 1, 2),
             "IOBs": plt.subplot(3, 1, 3)}
 
@@ -150,11 +197,17 @@ def plot(t, ddBGs, BGs, IOBs):
     y = "(mmol/L)"
 
     # Set title
+    #axes["expected"].set_title("Expected dBGs", fontweight = "semibold")
+    #axes["observed"].set_title("Observed dBGs", fontweight = "semibold")
     axes["ddBGs"].set_title("ddBGs", fontweight = "semibold")
     axes["BGs"].set_title("BGs", fontweight = "semibold")
     axes["IOBs"].set_title("IOBs", fontweight = "semibold")
 
     # Set axis labels
+    #axes["expected"].set_xlabel(x)
+    #axes["expected"].set_ylabel(y)
+    #axes["observed"].set_xlabel(x)
+    #axes["observed"].set_ylabel(y)
     axes["ddBGs"].set_xlabel(x)
     axes["ddBGs"].set_ylabel(y)
     axes["BGs"].set_xlabel(x)
@@ -163,9 +216,18 @@ def plot(t, ddBGs, BGs, IOBs):
     axes["IOBs"].set_ylabel("U")
 
     # Plot axes
-    axes["ddBGs"].plot(t[:-1], ddBGs, marker = "o", ms = 3.5, lw = 0, c = "black")
-    axes["BGs"].plot(t[:-1], BGs[:-1], marker = "o", ms = 3.5, lw = 0, c = "red")
-    axes["IOBs"].plot(t[:-1], IOBs[:-1], marker = "o", ms = 3.5, lw = 0, c = "orange")
+    #axes["expected"].plot(t, expectedBGDeltas,
+    #    marker = "o", ms = 3.5, lw = 0, c = "black")
+    #axes["observed"].plot(t, observedBGDeltas,
+    #    marker = "o", ms = 3.5, lw = 0, c = "black")
+    axes["ddBGs"].plot(t, ddBGs,
+        marker = "o", ms = 3.5, lw = 0, c = "black")
+    axes["BGs"].plot(t, BGs,
+        marker = "o", ms = 3.5, lw = 0, c = "red")
+    axes["IOBs"].plot(t, IOBs,
+        marker = "o", ms = 3.5, lw = 0, c = "orange")
+    axes["ddBGs"].axhline(y = 0, color = "black", linestyle = "-")
+    
     plt.show()
 
 
@@ -181,15 +243,16 @@ def main():
     # Get current time
     now = datetime.datetime.now()
 
-    # Get IDC related quantities
+    # Get IDC
     DIA = reporter.getPumpReport().get(["Settings", "DIA"])
     PIA = 1.25
+    IDC = idc.ExponentialIDC(DIA, PIA)
 
-    # Define timespan for autotune
-    t = 24 # h
+    # Define timespan for autotune (h)
+    t = 24
 
     # Run analyze and plot results
-    analyze(now, DIA, PIA, t)
+    compareExpectedVsObservedBGDeltas(now, t, IDC)
 
 
 

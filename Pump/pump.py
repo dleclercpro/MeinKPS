@@ -871,7 +871,7 @@ class Basal(PumpComponent):
         n = len(self.value["Times"])
 
         # Info
-        Logger.info("Bolus profile '" + self.profile + "':")
+        Logger.info("Basal profile '" + self.profile + "':")
 
         # Print rates
         for i in range(n):
