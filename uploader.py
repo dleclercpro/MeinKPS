@@ -24,7 +24,7 @@
 
 # LIBRARIES
 import os
-import ftplib
+import pysftp
 
 
 
@@ -53,11 +53,11 @@ class Uploader(object):
         """
 
         # Define report
-        self.report = reporter.getFTPReport()
+        self.report = reporter.getSFTPReport()
 
 
 
-    def upload(self, ftp, path, ext = None):
+    def upload(self, sftp, path, ext = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,35 +86,29 @@ class Uploader(object):
                 # Info
                 Logger.debug("Uploading: '" + os.getcwd() + "/" + f + "'")
 
-                # Open file
-                F = open(f, "r")
-
                 # Upload file
-                ftp.storlines("STOR " + f, F)
-
-                # Close file
-                F.close()
+                sftp.put(f, preserve_mtime = True)
 
             # If directory
             elif os.path.isdir(f):
 
                 # If directory does not exist
-                if f not in ftp.nlst():
+                if f not in sftp.listdir():
 
                     # Info
                     Logger.debug("Making directory: '" + f + "'")
 
                     # Make directory
-                    ftp.mkd(f)
+                    sftp.mkdir(f)
 
                 # Move in directory
-                ftp.cwd(f)
+                sftp.cwd(f)
 
                 # Upload files in directory
-                self.upload(ftp, f, ext)
+                self.upload(sftp, f, ext)
 
         # Get back to original directory on server
-        ftp.cwd("..")
+        sftp.cwd("..")
 
         # Locally as well
         os.chdir("..")
@@ -131,18 +125,27 @@ class Uploader(object):
 
         # Test if report is empty before proceding
         if not self.report.isValid():
-            raise errors.InvalidFTPReport
+            raise errors.InvalidSFTPReport
+
+        # Disable host key checking (FIXME)
+        cnopts = pysftp.CnOpts()
+        cnopts.hostkeys = None
 
         # Instanciate an FTP object
-        ftp = ftplib.FTP(self.report.get(["Host"]),
-                         self.report.get(["User"]),
-                         self.report.get(["Password"]))
+        sftp = pysftp.Connection(
+            host = self.report.get(["Host"]),
+            username = self.report.get(["Username"]),
+            private_key = path.REPORTS.path + self.report.get(["Key"]),
+            cnopts = cnopts)
 
         # Move to directory
-        ftp.cwd(self.report.get(["Path"]))
+        sftp.cwd(self.report.get(["Path"]))
 
         # Upload files
-        self.upload(ftp, path.EXPORTS.path, "json")
+        self.upload(sftp, path.EXPORTS.path, "json")
+
+        # Close SFTP connection
+        sftp.close()
 
 
 

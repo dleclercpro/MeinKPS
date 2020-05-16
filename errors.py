@@ -649,7 +649,7 @@ class NoOverwriting(ReporterError):
 
 
 
-class InvalidFTPReport(ReporterError):
+class InvalidSFTPReport(ReporterError):
 
     def define(self):
 
@@ -663,7 +663,7 @@ class InvalidFTPReport(ReporterError):
         self.level = "CRITICAL"
 
         # Define error info
-        self.info = "Invalid FTP report."
+        self.info = "Invalid SFTP report."
 
 
 

@@ -75,10 +75,6 @@ class Path:
             Prepare path: check its type and replace backslashes.
         """
 
-        # Wrong path type
-        if type(path) is not str:
-            raise TypeError("String path expected. Got: " + type(path))
-
         # Replace backslashes
         return path.replace("\\", "/")
 
@@ -120,6 +116,9 @@ class Path:
 
         # Normalize it
         self.normalize()
+
+        # Return object for further processing
+        return self
 
 
 

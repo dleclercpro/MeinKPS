@@ -848,9 +848,9 @@ class ErrorsReport(DatedReport):
 
 
 
-class FTPReport(Report):
+class SFTPReport(Report):
 
-    name = "ftp.json"
+    name = "sftp.json"
 
     def __init__(self, directory = path.REPORTS):
 
@@ -860,7 +860,7 @@ class FTPReport(Report):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        super(FTPReport, self).__init__(self.name, directory)
+        super(SFTPReport, self).__init__(self.name, directory)
 
 
 
@@ -918,7 +918,7 @@ def reset():
     global REPORTS
 
     # Instanciate default reports
-    REPORTS = [PumpReport(), StickReport(), CGMReport(), FTPReport()]
+    REPORTS = [PumpReport(), StickReport(), CGMReport(), SFTPReport()]
 
     # Load them
     for report in REPORTS:
@@ -1273,8 +1273,8 @@ def getStickReport():
 def getCGMReport():
     return getReportByType(CGMReport)
 
-def getFTPReport():
-    return getReportByType(FTPReport)
+def getSFTPReport():
+    return getReportByType(SFTPReport)
 
 
 
