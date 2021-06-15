@@ -65,7 +65,7 @@ class Bolus(PastProfile, StepProfile):
 
 
 
-    def decouple(self):
+    def decouple(self, data):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,7 +74,7 @@ class Bolus(PastProfile, StepProfile):
         """
 
         # Start decoupling
-        super(Bolus, self).decouple()
+        super(Bolus, self).decouple(data)
 
         # Compute bolus durations (delivery time) and store them
         self.durations = [datetime.timedelta(hours = 1 / self.rate * y)

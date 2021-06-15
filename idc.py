@@ -52,10 +52,6 @@ class IDC(object):
         # Define PIA
         self.PIA = PIA if PIA is None else float(PIA)
 
-        # Define plot limits
-        self.xlim = [-self.DIA, 0]
-        self.ylim = [0, 1]
-
 
 
     def f(self, t):
@@ -130,6 +126,10 @@ class IDC(object):
         x = "(h)"
         y = "(-)"
 
+        # Define axis limits
+        xlim = [-self.DIA, 0]
+        ylim = [0, 1]
+
         # Define subplot label
         label = self.__class__.__name__
 
@@ -147,8 +147,8 @@ class IDC(object):
         ax.set_ylabel(y)
 
         # Set axis limits
-        ax.set_xlim(self.xlim)
-        ax.set_ylim(self.ylim)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
 
         # Compute axes
         t = np.linspace(-self.DIA, 0, 100)

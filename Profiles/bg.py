@@ -60,6 +60,16 @@ class BG(DotProfile):
         # Read units
         self.units = reporter.getPumpReport().get(["Units", "BG"])
 
+
+
+    def plot(self, n, size, title = None):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PLOT
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """
+
         # Define plot y-axis default limits
         # mmol/L
         if self.units == "mmol/L":
@@ -72,6 +82,9 @@ class BG(DotProfile):
         # Otherwise
         else:
             raise ValueError("Bad BG units.")
+
+        # Finish plotting
+        super(BG, self).plot(n, size, title)
 
 
 
@@ -113,7 +126,7 @@ class FutureBG(BG, FutureProfile):
 
 
 
-    def build(self, past, net, IDC, futureISF, dt, show = False):
+    def build(self, past, net, IDC, futureISF, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -186,16 +199,9 @@ class FutureBG(BG, FutureProfile):
             # Store BG at end of current step
             self.y += [BG]
 
-        # Derivate
-        self.derivate()
-
-        # Show
-        if show:
-            self.show()
 
 
-
-    def define(self, start, DIA, dt):
+    def define(self, start, end, dt):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -204,15 +210,15 @@ class FutureBG(BG, FutureProfile):
             Define time references for prediction of BG decay.
         """
 
-        # Compute end of profile
-        end = start + datetime.timedelta(hours = DIA)
+        # Start defining
+        super(FutureBG, self).define(start, end)
+
+        # Compute DIA
+        DIA = round((end - start).total_seconds() / 3600.0, 1)
 
         # Define step size
         self.dt = dt
 
         # Generate time axes
         self.t = list(np.linspace(0, DIA, int(DIA / dt) + 1))
-        self.T = [start + datetime.timedelta(hours = h) for h in self.t]
-
-        # Finish defining
-        super(FutureBG, self).define(start, end)
+        self.standardize()

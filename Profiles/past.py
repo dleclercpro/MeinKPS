@@ -49,7 +49,7 @@ class PastProfile(Profile):
         # Start initializing
         super(PastProfile, self).__init__()
 
-        # Initialize report properties (past profiles use dated reports)
+        # Initialize report properties (get data from dated reports)
         self.reportType = None
         self.branch = []
 
@@ -64,11 +64,11 @@ class PastProfile(Profile):
             Define profile time references.
         """
 
+        # Start defining profile's time references
+        super(PastProfile, self).define(start, end)
+
         # Define norm
         self.norm = end
-
-        # Finish defining
-        super(PastProfile, self).define(start, end)
 
 
 
@@ -85,13 +85,16 @@ class PastProfile(Profile):
         Logger.debug("Loading data for: " + repr(self))
 
         # Load data
-        self.data = reporter.getDatedEntries(self.reportType, self.days,
+        data = reporter.getDatedEntries(self.reportType, self.dates,
             self.branch, self.src, False)
 
         # No data
-        if not self.data:
+        if not data:
             Logger.debug("No data found for: " + repr(self))
-            return
-
-        # Info
-        Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
+        
+        # Found data
+        else:
+            Logger.debug("Loaded " + str(len(data)) + " entries.")
+        
+            # Decouple it
+            self.decouple(data)

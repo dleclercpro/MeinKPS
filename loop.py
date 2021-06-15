@@ -290,6 +290,9 @@ class Loop(object):
             self.profiles["FutureISF"],
             dt)
 
+        # Store latest IOB
+        self.profiles["FutureIOB"].store()
+
 
 
     def computeTB(self, now):

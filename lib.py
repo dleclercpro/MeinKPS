@@ -124,6 +124,19 @@ def isEqual(x, y, precision):
 
 
 
+def isRealNumber(x):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ISREALNUMBER
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Test whether input is a real number or not.
+    """
+
+    return type(x) in [int, float, np.float64]
+
+
+
 def derivate(x, t):
 
     """
@@ -328,30 +341,49 @@ def formatTime(t):
 
 
 
-def normalizeTime(t, ref):
+def normalizeTimeAxis(axis, norm):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        NORMALIZETIME
+        NORMALIZETIMEAXIS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Compare a datetime object to another one, which serves as a reference.
-        Return the time difference in hours.
+        Convert an array of datetime objects into one that's filled with the
+        corresponding time differences (in hours) based on a given datetime
+        reference.
     """
 
     # Test types
-    if type(t) is not datetime.datetime or type(ref) is not datetime.datetime:
-        raise TypeError("Only datetime objects can be normalized.")
+    if type(norm) is not datetime.datetime:
+        raise TypeError("Wrong norm type.")
 
-    # Compute positive time difference (s)
-    if t >= ref:
-        dt = (t - ref).total_seconds()
-
-    # Compute negative time difference (s)
-    else:
-        dt = -(ref - t).total_seconds()
+    if not all([type(T) is datetime.datetime for T in axis]):
+        raise TypeError("Wrong time axis type.")
 
     # Return time difference in hours
-    return dt / 3600.0
+    return [(T - norm).total_seconds() / 3600.0 for T in axis]
+
+
+
+def standardizeTimeAxis(axis, norm):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        STANDARDIZETIMEAXIS
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Convert an array of time differences in number of hours since/until a
+        given datetime reference to one that's filled with the corresponding
+        datetime objects.
+    """
+
+    # Test types
+    if type(norm) is not datetime.datetime:
+        raise TypeError("Wrong norm type.")
+
+    if not all([isRealNumber(t) for t in axis]):
+        raise TypeError("Wrong time axis type.")
+
+    # Return time difference as datetime objects
+    return [norm + datetime.timedelta(hours = t) for t in axis]
 
 
 
@@ -401,9 +433,9 @@ def nMax(x, n = 1):
 def unzip(z):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         UNZIP
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Unzip lists.
     """
 
@@ -416,12 +448,26 @@ def unzip(z):
 
 
 
+def pair(x):
+
+    """
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        PAIR
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Return an array with each element of original array paired with its
+        next element.
+    """
+
+    return zip(x[:-1], x[1:])
+
+
+
 def merge(base, new, n = 1):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         MERGE
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Merge dictionaries together. Overwriting of entries is forbidden!
     """
 
@@ -471,9 +517,9 @@ def merge(base, new, n = 1):
 def mergeDicts(*args):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         MERGEDICTS
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
     # Verify number of args
@@ -509,11 +555,11 @@ def flatten(l):
 
 
 
-def uniqify(x):
+def unique(x):
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        UNIQIFY
+        UNIQUE
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     """
 
@@ -756,9 +802,9 @@ def split(x, n):
 def withinRangeInt(x, r, error):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         WITHINRANGEINT
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Test a value to see if it is an integer and fits within given range.
         If not, raise input/output error.
     """
@@ -815,42 +861,12 @@ def computeCRC16(x):
 
 
 
-def isNumber(x):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISNUMBER
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-
-    # Python 2
-    if sys.version_info[0] < 3:
-        return (isinstance(x, (int, long, float, complex)) and
-            not isinstance(x, bool))
-
-    # Python 3
-    return isinstance(x, (int, float, complex)) and not isinstance(x, bool)
-
-
-
-def isRealNumber(x):
-
-    """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ISREALNUMBER
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """
-    
-    return isNumber(x) and not isinstance(x, complex)
-
-
-
 def getUSBEP(configuration, direction, interface = 0, setting = 0):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         GETUSBEP
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         This finds a matching EP on a USB device given a configuration, a
         direction, an interface and a setting input, using the PyUSB library.
     """
@@ -884,9 +900,9 @@ def getUSBEP(configuration, direction, interface = 0, setting = 0):
 def initPlot(n = 0):
 
     """
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         INITPLOT
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Initialize matplotlib module and generate a figure to work with.
     """
 

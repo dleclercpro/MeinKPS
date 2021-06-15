@@ -103,7 +103,7 @@ class Exporter(object):
 
         # Build net insulin profile for last 24 hours
         _net = net.Net()
-        _net.build(then, self.now, False)
+        _net.build(then, self.now)
 
         # Format and store its data
         self.data["net"] = dict(zip(

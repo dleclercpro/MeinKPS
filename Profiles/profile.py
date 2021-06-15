@@ -43,8 +43,6 @@ Logger = logger.Logger("Profiles.profile")
 
 class Profile(object):
 
-    name = None
-
     def __init__(self):
 
         """
@@ -85,7 +83,7 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             RESET
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Reset profile data.
+            Reset profile.
         """
 
         # Info
@@ -95,7 +93,6 @@ class Profile(object):
         self.T = []
         self.t = []
         self.y = []
-        self.dydt = []
 
         # Reset start/end times
         self.start = None
@@ -105,14 +102,11 @@ class Profile(object):
         self.norm = None
 
         # Reset range of days covered
-        self.days = []
+        self.dates = []
 
         # Reset plot limits
         self.xlim = []
         self.ylim = []
-
-        # Reset loaded data
-        self.data = {}
 
 
 
@@ -135,11 +129,8 @@ class Profile(object):
         # Define time references
         self.define(start, end)
 
-        # Load data
+        # Load profile data
         self.load()
-
-        # Decouple profile components
-        self.decouple()
 
 
 
@@ -156,39 +147,56 @@ class Profile(object):
         Logger.debug("Defining time references of: " + repr(self))
 
         # Test start/end types
-        if type(start) is not datetime.datetime or type(start) is not type(end):
+        if not all([type(T) is datetime.datetime for T in [start, end]]):
             raise TypeError("Start/end times have to be datetime objects.")
 
         # Does time order make sense?
         if not start < end:
             raise ValueError("Start has to be before end time.")
 
-        # Define start/end times
+        # Store start/end times
         self.start = start
         self.end = end
 
-        # Reset days covered by profile
-        self.days = []
+        # Compute time difference between start/end times
+        dT = end - start
 
-        # First day to cover (always one before start date)
-        day = start.date() - datetime.timedelta(days = 1)
+        # Define dates covered by profile, including one before start, to ensure
+        # beginning of profile is known
+        self.dates = [start.date() + datetime.timedelta(days = d)
+            for d in range(-1, dT.days + 1)]
 
-        # Fill days until end date is reached
-        while day <= end.date():
-            self.days.append(day)
 
-            # Update day
-            day += datetime.timedelta(days = 1)
 
-        # Normalized profile
-        if self.norm is not None:
+    def match(self, p):
 
-            # Compute time difference
-            dT = end - start
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            MATCH
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Check whether limits of current and given profiles match.
 
-            # Define plot x-axis default limits
-            self.xlim = [lib.normalizeTime(t, self.norm) for t in
-                [self.norm - dT, self.norm + dT]]
+            Note: this function assumes both standard and normalized time axes
+                  are defined for both profiles.
+        """
+
+        # Test time axes limits
+        try:
+
+            # Initialize default result
+            isMatching = True
+
+            # Normalized time axis exists on at least one profile
+            if self.t or p.t:
+                isMatching = self.t[0] == p.t[0] and self.t[-1] == p.t[-1]
+
+            return (self.start == p.start and self.end == p.end and
+                    self.T[0] == p.T[0] and self.T[-1] == p.T[-1] and
+                    isMatching)
+
+        # Limits do not match
+        except:
+            return False
 
 
 
@@ -198,30 +206,30 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             LOAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Load profile data.
+            Load data to use while building profile's axes.
         """
 
         raise NotImplementedError
 
 
 
-    def decouple(self):
+    def decouple(self, data):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             DECOUPLE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Decouple profile data into components: convert string time values to
-            datetime objects and get corresponding y-axis value.
+            Decouple profile data into axes: convert string time values to
+            datetime objects, sorted out in chronological order, and get their
+            associated values.
         """
 
         # Info
-        Logger.debug("Decoupling components of: " + repr(self))
+        Logger.debug("Decoupling data into axes of: " + repr(self))
 
-        # Decouple data, convert string times to datetimes, and sort them in
-        # chronological order
+        # Decouple data
         [self.T, self.y] = lib.unzip([(lib.formatTime(T), y) for (T, y) in
-            sorted(self.data.items())])
+            sorted(data.items())])
 
 
 
@@ -238,32 +246,67 @@ class Profile(object):
         # Info
         Logger.debug("Cutting: " + repr(self))
 
-        # No start given
+        # No start/end given
         if a is None:
             a = self.start
-
-        # No end given
+        
         if b is None:
             b = self.end
 
         # Test limit types
-        if type(a) is not datetime.datetime or type(a) is not type(b):
-            raise TypeError("Limit times to use while cutting profile have " +
-                "to be datetime objects.")
+        if type(a) is not type(b):
+            raise TypeError("Limit times must have the same type.")
 
-        # Group axes and filter them
-        data = zip(self.T, self.y)
-        olderData = [x for x in data if x[0] < a]
-        filteredData = [x for x in data if a <= x[0] <= b]
+        # Find time axis to use
+        if type(a) is datetime.datetime:
+            axis = self.T
 
-        # Cut-off steps outside of start and end limits
-        [self.T, self.y] = lib.unzip(filteredData)
+        elif lib.isRealNumber(a):
+            axis = self.t
+        
+        else:
+            raise TypeError("Invalid limit type to cut profile.")
 
-        # Find last value before beginning of profile
-        last = olderData[-1][1] if olderData else None
+        # Group axes
+        data = zip(axis, self.y)
 
-        # Return step value before beginning of profile
+        # Filter axes, while keeping data before starting limit
+        precedingData = [(t, y) for (t, y) in data if t < a]
+        filteredData = [(t, y) for (t, y) in data if a <= t <= b]
+
+        # Cut off steps outside of start and end limits
+        if type(a) is datetime.datetime:
+            [self.T, self.y] = lib.unzip(filteredData)
+
+            # In case no norm is defined don't try to cut normalized time axis
+            if self.norm:
+                self.normalize()
+
+        else:
+            [self.t, self.y] = lib.unzip(filteredData)
+            self.standardize()
+
+        # Find value right before beginning of profile
+        (_, last) = precedingData[-1] if precedingData else (None, None)
+
+        # Return it
         return last
+
+
+
+    def standardize(self):
+
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            STANDARDIZE
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Using its normalized time axis, define profile's standard time axis,
+            based on datetime objects.
+        """
+
+        Logger.debug("Standardizing: " + repr(self))
+
+        self.T = lib.standardizeTimeAxis(self.t, self.norm)
 
 
 
@@ -273,23 +316,17 @@ class Profile(object):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             NORMALIZE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Normalize profile's time axis.
+            Normalize profile's standard time axis to number of hours since/
+            until norm).
         """
 
-        # Info
         Logger.debug("Normalizing: " + repr(self))
 
-        # Before using given reference time, verify its type
-        if self.norm is None or type(self.norm) is not datetime.datetime:
-            raise TypeError("Time axis can only be normalized using a " +
-                "datetime object.")
-
-        # Normalize time to hours since norm
-        self.t = [lib.normalizeTime(T, self.norm) for T in self.T]
+        self.t = lib.normalizeTimeAxis(self.T, self.norm)
 
 
 
-    def shift(self, dt):
+    def shift(self, delta):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -298,17 +335,33 @@ class Profile(object):
             Shift profile's time axes in the past/future.
         """
 
-        if type(dt) is datetime.timedelta:
-            self.T = [T + dt for T in self.T]
-            self.t = [t + (dt.total_seconds() / 3600.0) for t in self.t]
+        # Info
+        Logger.debug("Shifting: " + repr(self))
 
-        elif type(dt) is int or type(dt) is float:
-            self.T = [T + datetime.timedelta(hours = dt) for T in self.T]
-            self.t = [t + dt for t in self.t]
+        # Type checking
+        if type(delta) is datetime.timedelta:
+            dT = delta
+            dt = delta.total_seconds() / 3600.0
+
+        elif lib.isRealNumber(delta):
+            dT = datetime.timedelta(hours = delta)
+            dt = delta
+
+        else:
+            raise TypeError("Cannot shift profile's time axes using type: " +
+                str(type(delta)))
+
+        # Shift start/end times (but not the norm!)
+        self.start += dT
+        self.end += dT
+
+        # Shift time axes
+        self.T = [T + dT for T in self.T]
+        self.t = [t + dt for t in self.t]
 
 
 
-    def show(self):
+    def show(self, version = "Standard"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -317,35 +370,32 @@ class Profile(object):
             Print various versions of profile.
         """
 
-        # Define axes dictionary
-        versions = {"Standard t-axis": zip(self.T, self.y),
-                    "Normalized t-axis": zip(self.t, self.y),
-                    "Derivative": zip(self.t[:-1], self.dydt)}
+        # Get time axis
+        if version == "Standard":
+            timeAxis = self.T
 
-        # Loop on each profile component
-        for version, entries in versions.items():
+        elif version == "Normalized":
+            timeAxis = self.t
 
-            # If not empty
-            if entries:
-                Logger.info(repr(self) + " - " + version)
+        else:
+            raise TypeError("Invalid time axis type to use.")
 
-                # Show entries
-                for entry in entries:
+        # Info
+        Logger.info(repr(self) + " - " + version)
 
-                    # Get time and value
-                    t = entry[0]
-                    y = entry[1]
+        # Show profile
+        for (t, y) in zip(timeAxis, self.y):
 
-                    # Format time if necessary
-                    if type(t) is not float:
-                        t = lib.formatTime(t)
+            # Format time if necessary
+            if version == "Standard":
+                t = lib.formatTime(t)
 
-                    # Format value if necessary
-                    if type(y) is float or type(y) is np.float64:
-                        y = round(y, 2)
+            # Format value if necessary
+            if lib.isRealNumber(y):
+                y = round(y, 2)
 
-                    # Info
-                    Logger.info(str(y) + " (" + str(t) + ")")
+            # Show entry
+            Logger.info(str(y) + " (" + str(t) + ")")
 
 
 
@@ -372,10 +422,22 @@ class Profile(object):
         ax.set_xlabel(x)
         ax.set_ylabel(y)
 
+        # In order to plot, a time reference is necessary
+        if self.norm is None:
+            raise ValueError("Impossible to plot profile without a time " +
+                "reference.")
+
+        # Compute x-axis limits, using time norm of profile
+        dT = self.end - self.start
+        start = self.norm - dT
+        end = self.norm + dT
+
+        # Define x-axis limits
+        self.xlim = lib.normalizeTimeAxis([start, end], self.norm)
+
         # Set x-axis limits
-        if self.xlim:
-            ax.set_xlim(min(ax.get_xlim()[0], self.xlim[0]),
-                max(ax.get_xlim()[1], self.xlim[1]))
+        ax.set_xlim(min(ax.get_xlim()[0], self.xlim[0]),
+            max(ax.get_xlim()[1], self.xlim[1]))
 
         # Set y-axis limits
         if self.ylim:

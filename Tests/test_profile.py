@@ -3,20 +3,13 @@
 
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     Title:    test_profile
-
     Author:   David Leclerc
-
     Version:  0.1
-
     Date:     15.07.2019
-
     License:  GNU General Public License, Version 3
               (http://www.gnu.org/licenses/gpl.html)
-
     Notes: To run tests, use command "python -m pytest".
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
@@ -270,7 +263,7 @@ def test_define():
     assert p.start == datetimes[1] and p.end == datetimes[-1]
 
     # Check day range: it should start one day before the given start datetime
-    assert p.days == [d.date() for d in datetimes]
+    assert p.dates == [d.date() for d in datetimes]
 
 
 
@@ -304,8 +297,8 @@ def test_load(setup_and_teardown):
     # Load its data using previously generated test dated reports
     p.load()
 
-    # One day before start of profile should have been added to its days
-    assert p.data == dict([(lib.formatTime(d), y) for (d, y) in profile])
+    # One day before start of profile should have been added to its dates
+    assert [p.T, p.y] == lib.unzip(sorted(profile))
 
 
 
@@ -323,10 +316,10 @@ def test_decouple():
 
     # Create profile
     p = Profile()
-    p.data = dict([(lib.formatTime(d), y) for (d, y) in profile])
 
-    # Decouple its data
-    p.decouple()
+    # Decouple given data into profile axes
+    data = dict([(lib.formatTime(d), y) for (d, y) in profile])
+    p.decouple(data)
 
     # Check profile axes (they should be time ordered)
     assert [p.T, p.y] == lib.unzip(sorted(profile))
@@ -336,8 +329,8 @@ def test_decouple():
 def test_map():
 
     """
-    Create a daily profile, give it decoupled data and map it over range of days
-    covered by said profile.
+    Create a daily profile, give it decoupled data and map it over range of
+    dates covered by said profile.
     """
 
     profile = [(getTime("00:30:00").time(), 1.30),
@@ -348,20 +341,20 @@ def test_map():
                (getTime("05:30:00").time(), 1.90),
                (getTime("06:30:00").time(), 2.00)]
 
-    nDays = 3
-    days = [getTime().date() + datetime.timedelta(days = d)
-        for d in range(nDays)]
+    nDates = 3
+    dates = [getTime().date() + datetime.timedelta(days = d)
+        for d in range(nDates)]
 
     # Create profile
     p = DailyProfile()
     p.T, p.y = lib.unzip(profile)
-    p.days = days
+    p.dates = dates
 
     # Map its data
     p.map()
 
     assert [p.T, p.y] == lib.unzip(sorted([(datetime.datetime.combine(d, T), y)
-        for d in days for (T, y) in profile]))
+        for d in dates for (T, y) in profile]))
 
     # Test before beginning of profile
     with pytest.raises(ValueError):
@@ -475,9 +468,14 @@ def test_pad():
 
     # Create empty profile
     p = StepProfile()
+    
+    # Try padding it without having defined its time limits
+    with pytest.raises(ValueError):
+        p.pad(last)
 
-    # Pad it
-    p.pad(start, end, last)
+    # Re-try padding it
+    p.start, p.end = start, end
+    p.pad(last)
 
     assert p.T[0] == start and p.T[-1] == end
     assert p.y[0] == last and p.y[-1] == last
@@ -485,9 +483,10 @@ def test_pad():
     # Create profile
     p = StepProfile()
     p.T, p.y = lib.unzip(profile)
+    p.start, p.end = start, end
 
     # Pad it
-    p.pad(start, end, last)
+    p.pad(last)
 
     assert p.T[0] == start and p.T[-1] == end
     assert p.y[0] == last and p.y[-1] == profile[-1][1]
@@ -495,10 +494,11 @@ def test_pad():
     # Create profile with a specific zero value
     p = StepProfile()
     p.T, p.y = lib.unzip(profile)
+    p.start, p.end = start, end
     p.zero = zero
 
     # Pad it without last value
-    p.pad(start, end)
+    p.pad()
 
     assert p.T[0] == start and p.T[-1] == end
     assert p.y[0] == zero and p.y[-1] == profile[-1][1]
@@ -536,10 +536,8 @@ def test_fill_start():
     """
     Create a step profile with a hole at the beginning and fill it using a
     filler.
-
     Filler 1:
         - has 1 step change during profile's first step
-
     Filler 2:
         - has a step that coincides with profile's unknown step
     """
@@ -575,10 +573,8 @@ def test_fill_middle():
     """
     Create a step profile with a hole in the middle and fill it using different
     fillers.
-
     Filler 1:
         - has 2 step changes in the middle of the hole
-
     Filler 2:
         - has 1 step change in the middle of the hole
         - has steps that coincide with beginning and ending of hole
@@ -620,10 +616,8 @@ def test_fill_end():
 
     """
     Create a step profile with a hole at the end and fill it using a filler.
-
     Filler 1:
         - has 1 step that overlaps profile's ending
-
     Filler 2:
         - has a step that coincides with profile's ending
     """
@@ -714,7 +708,7 @@ def test_normalize():
     p.normalize()
 
     # Check normalization
-    assert p.t == [lib.normalizeTime(T, p.norm) for T in p.T]
+    assert p.t == lib.normalizeTimeAxis(p.T, p.norm)
 
 
 

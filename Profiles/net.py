@@ -57,7 +57,7 @@ class Net(PastProfile, StepProfile):
 
 
 
-    def build(self, start, end, useBoluses = True, show = False):
+    def build(self, start, end, useBoluses = True):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,7 +119,3 @@ class Net(PastProfile, StepProfile):
         self.T = net.T
         self.t = net.t
         self.y = net.y
-
-        # Show it
-        if show:
-            self.show()

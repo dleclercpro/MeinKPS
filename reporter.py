@@ -32,6 +32,7 @@
 import os
 import json
 import datetime
+import numpy as np
 from dateutil.relativedelta import relativedelta
 
 
@@ -1196,7 +1197,7 @@ def setDatedEntries(reportType, branch, entries, src = path.REPORTS):
     reports = {}
 
     # Get all concerned dates
-    dates = lib.uniqify([e.date() for e in entries])
+    dates = lib.unique([e.date() for e in entries])
 
     # Each date corresponds to a report
     for date in dates:
@@ -1228,7 +1229,7 @@ def getMonthlyErrors(today, nMonths):
         raise TypeError("Incorrect date type.")
 
     # Type check number of months
-    if not lib.isRealNumber(nMonths):
+    if type(nMonths) is not int:
         raise TypeError("Incorrect type for number of months.")
 
     # Check number of months

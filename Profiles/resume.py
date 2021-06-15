@@ -63,8 +63,8 @@ class Resume(PastProfile, StepProfile):
             Load latest available resume command.
         """
 
-        # Load data
-        self.data = reporter.getRecentDatedEntries(self.reportType, self.norm,
+        # Load and return data
+        return reporter.getRecentDatedEntries(self.reportType, self.norm,
             self.branch, src = self.src, strict = False)
 
 

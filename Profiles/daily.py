@@ -70,27 +70,19 @@ class DailyProfile(StepProfile):
         Logger.debug("Loading data for: " + repr(self))
 
         # Load data
-        self.data = self.report.get(self.branch)
+        data = self.report.get(self.branch)
 
-        # Info
-        Logger.debug("Loaded " + str(len(self.data)) + " data point(s).")
+        # No data
+        if not data:
+            Logger.debug("No data found for: " + repr(self))
 
-
-
-    def decouple(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DECOUPLE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Decouple profile components.
-        """
-
-        # Start decoupling
-        super(DailyProfile, self).decouple()
-
-        # Map time
-        self.map()
+        # Found data
+        else:
+            Logger.debug("Loaded " + str(len(data)) + " data entries.")
+            
+            # Decouple and map it
+            self.decouple(data)
+            self.map()
 
 
 
@@ -100,16 +92,12 @@ class DailyProfile(StepProfile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             MAP
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            After decoupling daily profile data, reproduce it on the whole range
-            of days that the profile covers.
+            Repeat daily entries over the days covered by profile.
         """
 
-        # Info
-        Logger.debug("Mapping time of: " + repr(self))
-
         # Map each time and value to profile's whole set of days
-        mappedEntries = [(datetime.datetime.combine(day, T), y)
-            for (T, y) in zip(self.T, self.y) for day in self.days]
+        mappedEntries = [(datetime.datetime.combine(date, T), y)
+            for (T, y) in zip(self.T, self.y) for date in self.dates]
 
         # Sort entries in chronological order and store them
         [self.T, self.y] = lib.unzip(sorted(mappedEntries))

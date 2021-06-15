@@ -62,45 +62,47 @@ def computeExpectedBGDeltas(t, T, Net, IDC, ISFs):
         COMPUTEEXPECTEDBGDELTAS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         This function computes an array of expected BG variations, given an IDC
-        and a net insulin profile.
+        and a net insulin profile. The latter is expected to cover the following
+        time range:
+
+            [T[0] - IDC.DIA, T[-1] - IDC.DIA]
     """
+
+    # Ensure time axis is defined
+    if not t or not T:
+        raise ValueError("No time axis given for which to compute IOBs.")
 
     # Initialize expected BG deltas
     expectedDeltaBGs = []
 
-    # Compute expected BG deltas
-    for i in range(len(T) - 1):
+    # Make a copy of net insulin profile to work on, and shift it to match first
+    # time point of given BG time axis
+    Net = copy.deepcopy(Net)
+    Net.shift(Net.norm - T[0])
 
-        # Copy net insulin profile
-        net_ = copy.deepcopy(Net)
-
-        # Cut it for current IOB computation
-        start = T[i] - datetime.timedelta(hours = IDC.DIA)
-        end = T[i]
-        net_.cut(start, end)
-        net_.normalize()
+    # Compute BG deltas to expect for each time point
+    for (T0, T1) in lib.pair(T):
 
         # Compute corresponding IOB
-        IOB0 = calculator.computeIOB(net_, IDC)
+        IOB0 = calculator.computeIOB(Net, IDC)
         
         # Move net insulin profile into the past by the time that passes until
         # next BG value
-        dt = t[i + 1] - t[i]
-        net_.shift(-dt)
+        dT = T1 - T0
+        Net.shift(-dT)
 
         # Compute new IOB, and the difference with the last one
-        IOB1 = calculator.computeIOB(net_, IDC)
+        IOB1 = calculator.computeIOB(Net, IDC)
         dIOB = IOB1 - IOB0
 
         # Get current ISF and compute dBG using dIOB
         # NOTE: there might be some error slipping in here if ISF changes
         # between the two IOBs
-        ISF = ISFs.f(t[i])
+        ISF = ISFs.f(T0)
         dBG = dIOB * ISF
 
         # Store and show expected BG delta
         expectedDeltaBGs += [dBG]
-        print "dBG(" + lib.formatTime(start) + ") = " + fmt.BG(dBG)
 
     return expectedDeltaBGs
 
@@ -112,28 +114,34 @@ def computeIOBs(t, T, Net, IDC):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         COMPUTEIOBS
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        This function computes the IOB at a given time.
+        This function computes the IOB at a given time, using a net insulin
+        profile. The latter is expected to cover the following time range:
+
+            [T[0] - IDC.DIA, T[-1] - IDC.DIA]
     """
+
+    # Ensure time axis is defined
+    if not t or not T:
+        raise ValueError("No time axis given for which to compute IOBs.")
 
     # Initialize IOBs
     IOBs = []
 
-    # Compute IOB for each BG
-    for i in range(len(T)):
+    # Make a copy of net insulin profile to work on, and shift it to match first
+    # time point of given BG time axis
+    Net = copy.deepcopy(Net)
+    Net.shift(Net.norm - T[0])
 
-        # Copy net insulin profile
-        net_ = copy.deepcopy(Net)
-
-        # Cut it for current IOB computation
-        start = T[i] - datetime.timedelta(hours = IDC.DIA)
-        end = T[i]
-        net_.cut(start, end)
-        net_.normalize()
+    # Compute IOB for each time point
+    for (T0, T1) in lib.pair(T) + [(T[-1], T[-1])]:
 
         # Compute corresponding IOB, store, and show it
-        IOB = calculator.computeIOB(net_, IDC)
+        IOB = calculator.computeIOB(Net, IDC)
         IOBs += [IOB]
-        print "IOB(" + lib.formatTime(end) + ") = " + fmt.IOB(IOB)
+
+        # Shift net insulin profile accordingly for next IOB computation
+        dT = T1 - T0
+        Net.shift(-dT)
 
     return IOBs
 
@@ -161,6 +169,9 @@ def compareExpectedVsObservedBGDeltas(now, t, IDC):
     ISFs.build(past, now)
     Net.build(past - datetime.timedelta(hours = IDC.DIA), now)
 
+    # Compute IOBs
+    IOBs = computeIOBs(BGs.t, BGs.T, Net, IDC)
+
     # Compute expected and observed BGs
     expectedBGDeltas = computeExpectedBGDeltas(BGs.t, BGs.T, Net, IDC, ISFs)
     observedBGDeltas = computeObservedBGDeltas(BGs.y)
@@ -169,9 +180,6 @@ def compareExpectedVsObservedBGDeltas(now, t, IDC):
     ddBGs = np.array(observedBGDeltas) - np.array(expectedBGDeltas)
     print "AVG ddBG: " + fmt.BG(np.mean(ddBGs))
     print "STD ddBG: " + fmt.BG(np.std(ddBGs))
-
-    # Compute IOBs
-    IOBs = computeIOBs(BGs.t, BGs.T, Net, IDC)
 
     # Plot results
     plot(BGs.t[:-1], expectedBGDeltas, observedBGDeltas, ddBGs, BGs.y[:-1], IOBs[:-1])
@@ -189,28 +197,28 @@ def plot(t, expectedBGDeltas, observedBGDeltas, ddBGs, BGs, IOBs):
 
     # Initialize plot
     lib.initPlot()
-    axes = {#"expected": plt.subplot(5, 1, 1),
-            #"observed": plt.subplot(5, 1, 2),
-            "ddBGs": plt.subplot(3, 1, 1),
+    axes = {"ddBGs": plt.subplot(3, 1, 1),
             "BGs": plt.subplot(3, 1, 2),
             "IOBs": plt.subplot(3, 1, 3)}
+
+    # Define default BG limits in plot
+    minBG = 2
+    maxBG = 22
 
     # Define axis labels
     x = "(h)"
     y = "(mmol/L)"
 
+    # Define axis limits
+    xlim = [min(t), 0]
+    ylim = [min(minBG, min(BGs)), max(maxBG, max(BGs))]
+
     # Set title
-    #axes["expected"].set_title("Expected dBGs", fontweight = "semibold")
-    #axes["observed"].set_title("Observed dBGs", fontweight = "semibold")
     axes["ddBGs"].set_title("ddBGs", fontweight = "semibold")
     axes["BGs"].set_title("BGs", fontweight = "semibold")
     axes["IOBs"].set_title("IOBs", fontweight = "semibold")
 
     # Set axis labels
-    #axes["expected"].set_xlabel(x)
-    #axes["expected"].set_ylabel(y)
-    #axes["observed"].set_xlabel(x)
-    #axes["observed"].set_ylabel(y)
     axes["ddBGs"].set_xlabel(x)
     axes["ddBGs"].set_ylabel(y)
     axes["BGs"].set_xlabel(x)
@@ -218,19 +226,29 @@ def plot(t, expectedBGDeltas, observedBGDeltas, ddBGs, BGs, IOBs):
     axes["IOBs"].set_xlabel(x)
     axes["IOBs"].set_ylabel("U")
 
+    # Set x-axis limits
+    axes["ddBGs"].set_xlim(xlim)
+    axes["BGs"].set_xlim(xlim)
+    axes["IOBs"].set_xlim(xlim)
+
+    # Set y-axis limits
+    axes["BGs"].set_ylim(ylim)
+
+    # Plot horizontal lines
+    axes["BGs"].axhline(y = 4, color = "red", linestyle = "-")
+    axes["BGs"].axhline(y = 8, color = "orange", linestyle = "-")
+    axes["ddBGs"].axhline(y = 0, color = "black", linestyle = "--")
+    axes["IOBs"].axhline(y = 0, color = "black", linestyle = "--")
+
     # Plot axes
-    #axes["expected"].plot(t, expectedBGDeltas,
-    #    marker = "o", ms = 3.5, lw = 0, c = "black")
-    #axes["observed"].plot(t, observedBGDeltas,
-    #    marker = "o", ms = 3.5, lw = 0, c = "black")
     axes["ddBGs"].plot(t, ddBGs,
-        marker = "o", ms = 3.5, lw = 0, c = "black")
+        marker = "o", ms = 2, lw = 0, c = "purple")
     axes["BGs"].plot(t, BGs,
-        marker = "o", ms = 3.5, lw = 0, c = "red")
+        marker = "o", ms = 2, lw = 0, c = "black")
     axes["IOBs"].plot(t, IOBs,
-        marker = "o", ms = 3.5, lw = 0, c = "orange")
-    axes["ddBGs"].axhline(y = 0, color = "black", linestyle = "-")
+        marker = "o", ms = 2, lw = 0, c = "grey")
     
+    # Show plot
     plt.show()
 
 

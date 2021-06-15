@@ -41,7 +41,7 @@ Logger = logger.Logger("Profiles.dot")
 
 class DotProfile(Profile):
 
-    def build(self, start, end, show = False):
+    def build(self, start, end):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,34 +58,10 @@ class DotProfile(Profile):
         # Normalize profile
         self.normalize()
 
-        # Compute profile derivative
-        self.derivate()
-
-        # Show profile
-        if show:
-            self.show()
-
-
-
-    def derivate(self):
-
-        """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            DERIVATE
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Derivate dot typed profiles using their normalized time axis.
-        """
-
-        # Info
-        Logger.debug("Derivating: " + repr(self))
-
-        # Derivate
-        self.dydt = lib.derivate(self.y, self.t)
-
 
 
     def plot(self, n = 1, size = [1, 1], show = True, title = None,
-                   color = "black"):
+        color = "black"):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1229,6 +1229,7 @@ class History(PumpComponent):
         for i in reversed(range(n)):
 
             # Get page
+            Logger.info("Reading pump history page: " + str(i + 1) + "/" + str(n))
             page = self.commands["Read"].run(i)
 
             # Extend known history of pump if page passes CRC check
@@ -1375,7 +1376,7 @@ def main():
     pump.dailyTotals.read()
 
     # Read history
-    pump.history.read(2)
+    pump.history.read(8)
 
     # Enact bolus
     #pump.bolus.deliver(0.2)

@@ -45,8 +45,8 @@ class FutureProfile(Profile):
             Define profile time references.
         """
 
+        # Start defining profile's time references
+        super(FutureProfile, self).define(start, end)
+
         # Define norm
         self.norm = start
-
-        # Finish defining
-        super(FutureProfile, self).define(start, end)

@@ -82,12 +82,22 @@ def computeIOB(net, IDC):
         - S_{t'}:   integral over step t'
     """
 
+    # Verify IOB can be computed using given net insulin profile
+    if -IDC.DIA < net.t[0] or net.t[-1] < 0:
+        raise ValueError("Cannot compute IOB with given net insulin profile: " +
+            "missing values.")
+
+    # Get cropped time axis to match IDC
+    timeAxis = lib.unique([-IDC.DIA] +
+                           [t for t in net.t if -IDC.DIA <= t <= 0] +
+                           [0])
+
     # Initialize IOB
     IOB = 0
 
     # Compute IOB for each step and add it to total
-    for i in range(len(net.t) - 1):
-        IOB += net.y[i] * (IDC.F(net.t[i + 1]) - IDC.F(net.t[i]))
+    for (t0, t1) in lib.pair(timeAxis):
+        IOB += net.f(t0) * (IDC.F(t1) - IDC.F(t0))
 
     # Return IOB
     return IOB
@@ -162,8 +172,7 @@ def countValidBGs(pastBG, maxAge = 30, N = 4):
     """
 
     # Count how many BGs are not older than T
-    n = np.sum(np.array(pastBG.T) > pastBG.end -
-        datetime.timedelta(minutes = maxAge))
+    n = np.sum(np.array(pastBG.T) > pastBG.end - datetime.timedelta(minutes = maxAge))
 
     # Check for insufficient valid BGs
     if n < N:
@@ -259,12 +268,6 @@ def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF,
     # Compute deviation between expected and projected BG
     shortdBG = shortProjectedBG - shortExpectedBG
 
-    # Compute expected BGI based on IOB decay
-    expectedBGI = futureIOB.dydt[0] * futureISF.y[0]
-
-    # Compute deviation between expected and real BGI
-    dBGI = BGI - expectedBGI
-
     # Compute eventual BG at the end of DIA
     eventualBG = expectedBG + shortdBG
 
@@ -287,9 +290,7 @@ def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF,
     Logger.info("dBG to BG Target (DIA): " + fmt.BG(dBGTarget))
 
     # Info (BGI)
-    Logger.info("Expected BGI: " + fmt.BGI(expectedBGI))
     Logger.info("Current BGI: " + fmt.BGI(BGI))
-    Logger.info("dBGI: " + fmt.BGI(dBGI))
 
     # Return BG dynamics computations
     return {"BG": pastBG.y[-1],
@@ -300,9 +301,7 @@ def computeBGDynamics(pastBG, futureBG, BGTargets, futureIOB, futureISF,
             "eventualBG": eventualBG,
             "BGTarget": BGTarget,
             "dBGTarget": dBGTarget,
-            "expectedBGI": expectedBGI,
-            "BGI": BGI,
-            "dBGI": dBGI}
+            "BGI": BGI}
 
 
 

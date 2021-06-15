@@ -56,7 +56,7 @@ class TB(PastProfile, StepProfile):
 
 
 
-    def decouple(self):
+    def decouple(self, data):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,7 +65,7 @@ class TB(PastProfile, StepProfile):
         """
 
         # Start decoupling
-        super(TB, self).decouple()
+        super(TB, self).decouple(data)
 
         # Decouple components
         for i in range(len(self.T)):

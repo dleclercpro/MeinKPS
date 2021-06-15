@@ -25,6 +25,7 @@
 # LIBRARIES
 import copy
 import datetime
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -60,7 +61,7 @@ class StepProfile(Profile):
 
 
 
-    def build(self, start, end, filler = None, show = False):
+    def build(self, start, end, filler = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,14 +72,14 @@ class StepProfile(Profile):
         # Start building
         super(StepProfile, self).build(start, end)
 
-        # If step durations present: inject zeros between profile steps
+        # If step durations exist: inject zeros between steps
         if self.durations:
             self.inject()
 
-        # Cut entries outside of time limits, then ensure ends of profile fit
-        self.pad(start, end, self.cut())
+        # Cut entries outside of time limits, and enforce start/end of profile
+        self.pad(self.cut())
 
-        # Filling required?
+        # Fill profile if needed
         if filler is not None:
             self.fill(filler)
 
@@ -87,10 +88,6 @@ class StepProfile(Profile):
 
         # Normalize profile
         self.normalize()
-
-        # Show profile
-        if show:
-            self.show()
 
 
 
@@ -107,18 +104,14 @@ class StepProfile(Profile):
         Logger.debug("Injecting zeros in: " + repr(self))
 
         # Initialize temporary components
-        T = []
-        y = []
-
-        # Get number of steps
-        n = len(self.T)
+        T, y = [], []
 
         # Pad end of time axis with infinitely far away datetime, in order to
         # correctly allow last step duration
         self.T += [datetime.datetime.max]
 
         # Rebuild profile and inject zeros where needed
-        for i in range(n):
+        for i in range(len(self.T) - 1):
 
             # Add step
             T += [self.T[i]]
@@ -128,14 +121,14 @@ class StepProfile(Profile):
             d = self.durations[i]
 
             # Compute time between current and next steps
-            dt = self.T[i + 1] - self.T[i]
+            dT = self.T[i + 1] - self.T[i]
 
             # Step is a canceling one: replace it with a zero (default step)
             if d == datetime.timedelta(0):
                 y[-1] = self.zero
 
             # Step ended before next one start: inject zero in profile
-            elif d < dt:
+            elif d < dT:
                 T += [self.T[i] + d]
                 y += [self.zero]
 
@@ -144,30 +137,34 @@ class StepProfile(Profile):
 
 
 
-    def pad(self, a, b, last = None):
+    def pad(self, last = None):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             PAD
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Force specific profile limits after profile is cut.
+            Force profile limits as defined.
         """
 
         # Info
         Logger.debug("Padding: " + repr(self))
+
+        # Make sure limits are defined
+        if self.start is None or self.end is None:
+            raise ValueError("Cannot pad, since profile limits undefined.")
 
         # No previous step was found: use profile zero (default) value
         if last is None:
             last = self.zero
 
         # Start of profile: extend precedent step's value
-        if len(self.T) == 0 or self.T[0] != a:
-            self.T = [a] + self.T
+        if not self.T or self.T[0] != self.start:
+            self.T = [self.start] + self.T
             self.y = [last] + self.y
 
         # End of profile
-        if self.T[-1] != b:
-            self.T += [b]
+        if self.T[-1] != self.end:
+            self.T += [self.end]
             self.y += [self.y[-1]]
 
 
@@ -180,10 +177,6 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Fill holes in profile y-axis (replace 'None' values with the ones
             of filler profile).
-
-            TODO: test if filling possible? Not doing it so far, because
-                  computing f(t) for a given t will fail if corresponding step
-                  does not exist in filler.
         """
 
         # Is filling needed?
@@ -238,27 +231,21 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             SMOOTH
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            Smooth profile (remove redundant steps) after it is cut and padded.
+            Remove redundant steps in profile's axes.
         """
 
         # Info
         Logger.debug("Smoothing: " + repr(self))
 
         # Initialize components for smoothed profile
-        T = []
-        y = []
-
-        # Restore start of profile
-        T += [self.T[0]]
-        y += [self.y[0]]
+        T = [self.T[0]]
+        y = [self.y[0]]
 
         # Look for redundancies
         for i in range(1, len(self.T) - 1):
 
-            # Non-redundancy criteria
+            # If not redundant, add step
             if self.y[i] != y[-1]:
-
-                # Add step
                 T += [self.T[i]]
                 y += [self.y[i]]
 
@@ -280,15 +267,13 @@ class StepProfile(Profile):
             Compute profile's value (y) for a given time (t).
         """
 
-        # Datetime axis
+        # Define time axis to use based on input type
         if type(t) is datetime.datetime:
             axis = self.T
 
-        # Normalized axis
         elif lib.isRealNumber(t):
             axis = self.t
-
-        # Otherwise
+            
         else:
             raise TypeError("Invalid time t to compute f(t) for.")
 
@@ -300,10 +285,8 @@ class StepProfile(Profile):
             raise ArithmeticError("Cannot compute f(t): axes' lengths do not " +
                 "fit.")
 
-        # Compute profile value
+        # Compute profile value corresponding to given time:
         for i in range(n):
-
-            # Either end of last step, or within one of the other steps
             if i == n - 1 and axis[i] == t or axis[i] <= t < axis[i + 1]:
                 return self.y[i]
 
@@ -313,46 +296,35 @@ class StepProfile(Profile):
 
 
 
-    def op(self, op, profiles):
+    def operate(self, op, profiles):
 
         """
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            OP
+            OPERATE
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Execute a given operation on profiles, and return the resulting
-            profile. Said operation is executed on each step of the combined
-            time axes.
+            profile.
         """
 
         # Test profile limits
-        if not all([p.start == self.start and p.end == self.end
-            for p in profiles]):
+        if not all([self.match(p) for p in profiles]):
             raise errors.MismatchedLimits
 
-        # Copy profile on which operation is done
+        # Deep copy original profile to use as baseline
         new = copy.deepcopy(self)
 
-        # Reset its components
-        new.reset()
+        # Combine all time axes, and recompute y-axis of baseline
+        new.T = lib.unique(lib.flatten([p.T for p in profiles + [self]]))
+        new.y = [self.f(T) for T in new.T]
 
-        # Re-define time references
-        new.define(self.start, self.end)
+        # Execute operation on baseline using given profiles
+        for p in profiles:
+            new.y = [op(new.f(T), p.f(T)) for T in new.T]
 
-        # Merge all steps
-        new.T = lib.uniqify(self.T + lib.flatten([p.T for p in profiles]))
-
-        # Compute each step of new profile
-        for T in new.T:
-            new.y += [self.f(T)]
-
-            for p in profiles:
-                new.y[-1] = op(new.y[-1], p.f(T))
-
-        # Normalize it
+        # Normalize it if possible
         if new.norm is not None:
             new.normalize()
 
-        # Return it
         return new
 
 
@@ -365,10 +337,8 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Info
         Logger.debug("Adding:")
-
-        return self.op(lambda x, y: x + y, list(args))
+        return self.operate(lambda x, y: x + y, list(args))
 
 
 
@@ -380,10 +350,8 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Info
         Logger.debug("Subtracting:")
-
-        return self.op(lambda x, y: x - y, list(args))
+        return self.operate(lambda x, y: x - y, list(args))
 
 
 
@@ -395,10 +363,8 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Info
         Logger.debug("Multiplying:")
-
-        return self.op(lambda x, y: x * y, list(args))
+        return self.operate(lambda x, y: x * y, list(args))
 
 
 
@@ -410,10 +376,8 @@ class StepProfile(Profile):
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """
 
-        # Info
         Logger.debug("Dividing:")
-
-        return self.op(lambda x, y: x / y, list(args))
+        return self.operate(lambda x, y: x / y, list(args))
 
 
 
